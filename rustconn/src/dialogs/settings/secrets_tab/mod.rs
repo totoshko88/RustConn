@@ -1400,21 +1400,12 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             // Try to open a terminal with op signin
             // This requires user interaction for biometric or password
             let op_cmd_str = op_cmd.borrow().clone();
-            let xfce_cmd = format!("{op_cmd_str} signin");
-            let terminal_cmds: [(&str, Vec<&str>); 4] = [
-                ("gnome-terminal", vec!["--", &op_cmd_str, "signin"]),
-                ("konsole", vec!["-e", &op_cmd_str, "signin"]),
-                ("xfce4-terminal", vec!["-e", &xfce_cmd]),
-                ("xterm", vec!["-e", &op_cmd_str, "signin"]),
-            ];
+            let terminal_cmds = terminal_launchers(&op_cmd_str);
 
             let mut launched = false;
             for (term, args) in &terminal_cmds {
                 if rustconn_core::which::is_available(term)
-                    && std::process::Command::new(term)
-                        .args(args.iter().copied())
-                        .spawn()
-                        .is_ok()
+                    && std::process::Command::new(term).args(args).spawn().is_ok()
                 {
                     launched = true;
                     update_status_label(&status_label, &i18n("Check terminal"), "warning");
@@ -4187,6 +4178,29 @@ fn revoke_stale_keyring_credentials(previous: &SecretSettings, current: &SecretS
     failures
 }
 
+/// External terminals to try for `op signin`, desktop-native choice first.
+/// `xdg-terminal-exec` follows the user's configured default; the rest are the
+/// terminals shipped by GNOME (ptyxis, gnome-terminal), KDE (konsole), XFCE and
+/// the common standalone ones. Each takes the command in its own syntax.
+fn terminal_launchers(op: &str) -> Vec<(&'static str, Vec<String>)> {
+    let own = |args: &[&str]| args.iter().map(|a| (*a).to_string()).collect::<Vec<_>>();
+    vec![
+        ("xdg-terminal-exec", own(&[op, "signin"])),
+        ("ptyxis", own(&["--", op, "signin"])),
+        ("kitty", own(&[op, "signin"])),
+        ("foot", own(&[op, "signin"])),
+        ("alacritty", own(&["-e", op, "signin"])),
+        ("gnome-terminal", own(&["--", op, "signin"])),
+        ("konsole", own(&["-e", op, "signin"])),
+        // xfce4-terminal takes the whole command line as one string.
+        (
+            "xfce4-terminal",
+            vec!["-e".to_string(), format!("{op} signin")],
+        ),
+        ("xterm", own(&["-e", op, "signin"])),
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4262,5 +4276,17 @@ mod tests {
             );
         }
         assert_eq!(SecretBackendType::from_backend_id("nonesuch"), None);
+    }
+
+    #[test]
+    fn signin_terminals_cover_kde_and_gnome_defaults() {
+        let list = terminal_launchers("op");
+        let names: Vec<_> = list.iter().map(|(n, _)| *n).collect();
+        for want in ["xdg-terminal-exec", "ptyxis", "konsole", "kitty", "foot"] {
+            assert!(names.contains(&want), "{want} missing");
+        }
+        // xfce4-terminal wants one string, not separate arguments.
+        let xfce = list.iter().find(|(n, _)| *n == "xfce4-terminal").unwrap();
+        assert_eq!(xfce.1, ["-e", "op signin"]);
     }
 }

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 11:45+0200\n"
+"POT-Creation-Date: 2026-11-13 12:12+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2252 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2284 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -100,18 +100,18 @@ msgstr "Lưu"
 msgid "Initialization Error"
 msgstr "Lỗi khởi tạo"
 
-#: rustconn/src/app.rs:876
+#: rustconn/src/app.rs:878
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "Chưa tải được mật khẩu KeePass từ chùm khóa — hãy nhập lại trong Cài đặt"
 
-#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:204
+#: rustconn/src/app.rs:883 rustconn/src/dialogs/shortcuts.rs:204
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2204
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Cài đặt"
 
-#: rustconn/src/app.rs:1731
+#: rustconn/src/app.rs:1733
 msgid ""
 "{} is selected, but the system keyring is not accessible. Run: sudo snap "
 "connect rustconn:password-manager-service — or open Settings, then Secrets, "
@@ -121,20 +121,20 @@ msgstr ""
 "snap connect rustconn:password-manager-service — hoặc mở Cài đặt, rồi Bí "
 "mật, để chọn trình lưu trữ khác."
 
-#: rustconn/src/app.rs:1736
+#: rustconn/src/app.rs:1738
 msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
 msgstr ""
 "Đã chọn {}, nhưng nó chưa thể lưu mật khẩu: {}. Hãy mở Cài đặt, rồi Bí mật."
 
-#: rustconn/src/app.rs:2087 rustconn/src/window/edit_actions.rs:1726
+#: rustconn/src/app.rs:2119 rustconn/src/window/edit_actions.rs:1726
 #: rustconn/src/window/edit_actions.rs:1865
 #: rustconn/src/window/edit_actions.rs:1893
 msgid "Failed to open URL: {}"
 msgstr "Mở URL thất bại: {}"
 
-#: rustconn/src/app.rs:2096
+#: rustconn/src/app.rs:2128
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -144,31 +144,31 @@ msgstr ""
 "Quản lý các kết nối SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes và Zero "
 "Trust từ một ứng dụng duy nhất."
 
-#: rustconn/src/app.rs:2177
+#: rustconn/src/app.rs:2209
 msgid "User Guide"
 msgstr "Hướng dẫn sử dụng"
 
-#: rustconn/src/app.rs:2179
+#: rustconn/src/app.rs:2211
 msgid "Installation"
 msgstr "Hướng dẫn cài đặt"
 
-#: rustconn/src/app.rs:2183
+#: rustconn/src/app.rs:2215
 msgid "Releases"
 msgstr "Các bản phát hành"
 
-#: rustconn/src/app.rs:2187
+#: rustconn/src/app.rs:2219
 msgid "Changelog"
 msgstr "Nhật ký thay đổi"
 
-#: rustconn/src/app.rs:2197
+#: rustconn/src/app.rs:2229
 msgid "Special Thanks"
 msgstr "Lời cảm ơn đặc biệt"
 
-#: rustconn/src/app.rs:2212
+#: rustconn/src/app.rs:2244
 msgid "Made in Ukraine"
 msgstr "Sản xuất tại Ukraina"
 
-#: rustconn/src/app.rs:2213
+#: rustconn/src/app.rs:2245
 msgid "All contributors and supporters"
 msgstr "Tất cả những người đóng góp và ủng hộ"
 
@@ -238,8 +238,8 @@ msgstr "Phím tắt…"
 msgid "Help"
 msgstr "Trợ giúp"
 
-#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:281
-#: rustconn/src/tray.rs:656 rustconn/src/window/ui.rs:346
+#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:331
+#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:346
 msgid "About RustConn"
 msgstr "Giới thiệu RustConn"
 
@@ -838,7 +838,7 @@ msgid "Enabled"
 msgstr "Đã bật"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:828
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3345
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3336
 msgid "Disabled"
 msgstr "Đã tắt"
 
@@ -2171,7 +2171,7 @@ msgstr ""
 #: rustconn/src/dialogs/connection/vnc.rs:307
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:85
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:390
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2287
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2278
 #: rustconn/src/dialogs/template.rs:626
 msgid "Authentication"
 msgstr "Xác thực"
@@ -2297,7 +2297,7 @@ msgid "Test the script command"
 msgstr "Kiểm tra lệnh của tập lệnh"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:396
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2227
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2218
 #: rustconn/src/window/edit_group.rs:571
 msgid "KeePass Database"
 msgstr "Cơ sở dữ liệu KeePass"
@@ -2736,7 +2736,7 @@ msgstr "Chuyển hướng máy in"
 msgid "Share your local printer with the remote session"
 msgstr "Chia sẻ máy in cục bộ với phiên từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:363 rustconn/src/window/mod.rs:5749
+#: rustconn/src/dialogs/connection/rdp.rs:382 rustconn/src/window/mod.rs:5749
 msgid "Microphone"
 msgstr "Micrô"
 
@@ -2744,7 +2744,7 @@ msgstr "Micrô"
 msgid "Send the local microphone to the remote session"
 msgstr "Gửi micrô cục bộ tới phiên từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:373 rustconn/src/window/mod.rs:5752
+#: rustconn/src/dialogs/connection/rdp.rs:392 rustconn/src/window/mod.rs:5752
 msgid "Smart Cards"
 msgstr "Thẻ thông minh"
 
@@ -3334,7 +3334,9 @@ msgstr "Các tùy chọn dòng lệnh FreeRDP bổ sung"
 msgid ""
 "Numbers for the external client, comma-separated; empty uses the current "
 "monitor"
-msgstr "Số cho ứng dụng khách ngoài, cách nhau bằng dấu phẩy; để trống sẽ dùng màn hình hiện tại"
+msgstr ""
+"Số cho ứng dụng khách ngoài, cách nhau bằng dấu phẩy; để trống sẽ dùng màn "
+"hình hiện tại"
 
 #: rustconn/src/dialogs/connection/rdp.rs:1122
 msgid "unknown"
@@ -3739,8 +3741,8 @@ msgid "Path to SSH key"
 msgstr "Đường dẫn tới khóa SSH"
 
 #: rustconn/src/dialogs/connection/ssh.rs:432
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2345
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2348
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2336
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2339
 msgid "Browse for key file"
 msgstr "Duyệt tìm tệp khóa"
 
@@ -3752,7 +3754,7 @@ msgstr "Duyệt tìm tệp khóa SSH"
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:124
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:338
 #: rustconn/src/dialogs/key_setup.rs:515 rustconn/src/dialogs/key_setup.rs:539
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2358
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2349
 #: rustconn/src/dialogs/template.rs:677
 msgid "Key File"
 msgstr "Tệp khóa"
@@ -4870,7 +4872,7 @@ msgstr ""
 "tạo tệp."
 
 #: rustconn/src/dialogs/credential_transfer.rs:607
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2186
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2177
 msgid "Cannot open the portable file: {}"
 msgstr "Không thể mở tệp di động: {}"
 
@@ -5982,7 +5984,7 @@ msgstr ""
 "Mật khẩu sẽ chỉ được giữ trong bộ nhớ cho phiên này."
 
 #: rustconn/src/dialogs/kdbx_unlock.rs:80
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2301
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2292
 msgid "Database password"
 msgstr "Mật khẩu cơ sở dữ liệu"
 
@@ -6002,7 +6004,7 @@ msgstr "Đang xác minh…"
 
 #: rustconn/src/dialogs/kdbx_unlock.rs:188
 #: rustconn/src/dialogs/portable_unlock.rs:166
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2808
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2799
 msgid "Verification failed"
 msgstr "Xác minh thất bại"
 
@@ -6437,8 +6439,8 @@ msgstr "Mở khóa khóa SSH"
 
 #: rustconn/src/dialogs/key_unlock.rs:56
 #: rustconn/src/dialogs/portable_unlock.rs:75
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1819
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2079
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1810
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2070
 msgid "Passphrase"
 msgstr "Cụm mật khẩu"
 
@@ -6745,7 +6747,7 @@ msgstr ""
 "Bản gốc vẫn được giữ lại, nên không mất gì nếu bạn đổi ý."
 
 #: rustconn/src/dialogs/portable_migration.rs:59
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2090
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2081
 msgid "Copy Credentials"
 msgstr "Sao chép thông tin đăng nhập"
 
@@ -7243,7 +7245,7 @@ msgstr "Không thể lưu cài đặt tăng tốc phần cứng: {}"
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:77
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:755
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:999
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2781
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2772
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:41
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:191
 msgid "Checking…"
@@ -7886,12 +7888,12 @@ msgid "Ready"
 msgstr "Sẵn sàng"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:76
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2506
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2497
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2946
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2955
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2964
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2972
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2989
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2996
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2963
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2980
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2987
 msgid "Not installed"
 msgstr "Chưa cài đặt"
 
@@ -7969,7 +7971,7 @@ msgid "Session expired"
 msgstr "Phiên đã hết hạn"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:862
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3340
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3331
 msgid "Configured"
 msgstr "Đã cấu hình"
 
@@ -8080,12 +8082,12 @@ msgid "Enter the passphrase that will protect the portable file"
 msgstr "Nhập cụm mật khẩu sẽ dùng để bảo vệ tệp di động"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:732
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1912
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1903
 msgid "The two passphrases do not match"
 msgstr "Hai cụm mật khẩu không khớp nhau"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:736
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1927
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1918
 msgid ""
 "Repeat the passphrase to confirm it. A new file cannot be recovered if the "
 "passphrase is wrong."
@@ -8144,9 +8146,9 @@ msgstr ""
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1091
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1110
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1352
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1479
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1616
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2509
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1470
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1607
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2500
 msgid "Detecting…"
 msgstr "Đang phát hiện…"
 
@@ -8226,33 +8228,33 @@ msgid "Unlock failed"
 msgstr "Mở khóa thất bại"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1312
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1435
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1563
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1657
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2270
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1426
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1554
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1648
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2261
 msgid "Read-only mode"
 msgstr "Chế độ chỉ đọc"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1313
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1436
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1564
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1658
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2271
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1427
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1555
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1649
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2262
 msgid "Block writes to this vault; only read secrets"
 msgstr "Chặn ghi vào kho này; chỉ đọc bí mật"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1318
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1441
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1569
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1663
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2276
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1432
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1560
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1654
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2267
 msgid "Search from vault root"
 msgstr "Tìm từ gốc của kho"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1320
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1443
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1571
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2278
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1434
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1562
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2269
 msgid ""
 "Look up secrets anywhere in the vault, not just the RustConn folder. The "
 "first entry with a matching name is used"
@@ -8316,113 +8318,113 @@ msgstr ""
 msgid "Opening terminal…"
 msgstr "Đang mở terminal…"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1420
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1411
 msgid "Check terminal"
 msgstr "Hãy xem terminal"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1426
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1417
 msgid "No terminal found"
 msgstr "Không tìm thấy terminal"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1452
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1443
 msgid "Passbolt"
 msgstr "Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1453
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1444
 msgid "Configure Passbolt CLI integration"
 msgstr "Cấu hình tích hợp Passbolt CLI"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1463
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1454
 msgid "Server URL"
 msgstr "URL máy chủ"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1464
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1455
 msgid "Passbolt web vault address"
 msgstr "Địa chỉ kho web Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1472
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1463
 msgid "GPG Passphrase"
 msgstr "Cụm mật khẩu GPG"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1473
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1464
 msgid "Required to decrypt credentials from Passbolt"
 msgstr "Cần để giải mã thông tin đăng nhập từ Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1488
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1971
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1479
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1962
 msgid "Save passphrase"
 msgstr "Lưu cụm mật khẩu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1495
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1486
 msgid "Open Vault"
 msgstr "Mở kho"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1498
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1489
 msgid "Open Passbolt web vault in browser"
 msgstr "Mở kho web Passbolt trong trình duyệt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1510
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1501
 msgid "Server Status"
 msgstr "Trạng thái máy chủ"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1511
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1502
 msgid "Configure with 'passbolt configure' in terminal"
 msgstr "Cấu hình bằng 'passbolt configure' trong terminal"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1545
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1536
 msgid "Failed to open browser"
 msgstr "Không thể mở trình duyệt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1554
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1545
 msgid "Enter server URL or run 'passbolt configure'"
 msgstr "Nhập URL máy chủ hoặc chạy 'passbolt configure'"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1580
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1571
 msgid "Pass"
 msgstr "Pass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1581
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1572
 msgid "Configure Pass (passwordstore.org) integration"
 msgstr "Cấu hình tích hợp Pass (passwordstore.org)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1586
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1577
 msgid "~/.password-store"
 msgstr "~/.password-store"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1594
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1597
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1585
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1588
 msgid "Choose password store directory"
 msgstr "Chọn thư mục kho mật khẩu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1608
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1599
 msgid "Store Directory"
 msgstr "Thư mục kho"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1609
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1600
 msgid "Location of password-store (leave empty for default)"
 msgstr "Vị trí của password-store (để trống để dùng mặc định)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1623
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1614
 msgid "Initialization Status"
 msgstr "Trạng thái khởi tạo"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1624
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1615
 msgid "Run 'pass init &lt;gpg-id&gt;' to initialize"
 msgstr "Chạy 'pass init &lt;gpg-id&gt;' để khởi tạo"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1635
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1626
 msgid "Select Password Store Directory"
 msgstr "Chọn thư mục kho mật khẩu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1665
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1656
 msgid "Look up secrets anywhere in the vault, not just the RustConn folder"
 msgstr "Tìm bí mật ở bất kỳ đâu trong kho, không chỉ trong thư mục RustConn"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1679
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1670
 msgid "Encrypted File"
 msgstr "Tệp mã hóa"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1681
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1672
 msgid ""
 "Credentials in a file on this computer. The key is derived from this "
 "machine, so the file cannot be opened anywhere else — and cannot be "
@@ -8432,16 +8434,16 @@ msgstr ""
 "chính máy này, nên tệp không thể mở ở nơi khác — và không thể khôi phục nếu "
 "mất máy."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1687
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1739
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1678
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1730
 msgid "File path"
 msgstr "Đường dẫn tệp"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1707
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1698
 msgid "Portable Encrypted File"
 msgstr "Tệp mã hóa di động"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1709
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1700
 msgid ""
 "Credentials in a file encrypted with a passphrase you choose. Put it in a "
 "folder your cloud client syncs and the same file opens on your other "
@@ -8453,15 +8455,15 @@ msgstr ""
 "một tệp sẽ mở được trên các máy tính khác. Không có cách nào khôi phục cụm "
 "mật khẩu, nên bạn sẽ được hỏi hai lần."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1726
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1717
 msgid "Browse"
 msgstr "Duyệt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1730
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1721
 msgid "Browse for portable credential file"
 msgstr "Duyệt tìm tệp thông tin đăng nhập di động"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1740
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1731
 msgid ""
 "Name a file inside a folder your cloud client syncs. Leave empty for the "
 "default location."
@@ -8469,23 +8471,23 @@ msgstr ""
 "Đặt tên tệp trong một thư mục mà ứng dụng đám mây của bạn đồng bộ. Để trống "
 "để dùng vị trí mặc định."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1791
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1782
 msgid "Select Portable Credential File"
 msgstr "Chọn tệp thông tin đăng nhập di động"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1824
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1815
 msgid "Confirm passphrase"
 msgstr "Xác nhận cụm mật khẩu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1987
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1978
 msgid "Create File"
 msgstr "Tạo tệp"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1992
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1983
 msgid "Set up the file"
 msgstr "Thiết lập tệp"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1994
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1985
 msgid ""
 "Create the file now, or check that your passphrase opens one that is already "
 "there"
@@ -8493,20 +8495,20 @@ msgstr ""
 "Tạo tệp ngay, hoặc kiểm tra xem cụm mật khẩu của bạn có mở được tệp đã có "
 "không"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2026
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2017
 msgid "Setting up the file…"
 msgstr "Đang thiết lập tệp…"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2042
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2033
 msgid "Created {}"
 msgstr "Đã tạo {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2046
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2037
 msgid "That file is already there and your passphrase opens it"
 msgstr "Tệp đó đã có sẵn và cụm mật khẩu của bạn mở được nó"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2051
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2183
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2042
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2174
 msgid ""
 "That passphrase does not open the existing portable file. Enter the "
 "passphrase the file was created with."
@@ -8514,108 +8516,108 @@ msgstr ""
 "Cụm mật khẩu đó không mở được tệp di động hiện có. Hãy nhập cụm mật khẩu đã "
 "dùng khi tạo tệp."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2056
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2047
 msgid "Cannot set up the file: {}"
 msgstr "Không thể thiết lập tệp: {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2059
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2050
 msgid "Could not set up the file"
 msgstr "Không thể thiết lập tệp"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2074
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2065
 msgid "Change Passphrase…"
 msgstr "Đổi cụm mật khẩu…"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2081
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2072
 msgid ""
 "Choose a new passphrase and encrypt every password in the file again under it"
 msgstr "Chọn cụm mật khẩu mới và mã hóa lại mọi mật khẩu trong tệp bằng cụm đó"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2092
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2083
 msgid ""
 "Copy passwords from the machine-bound encrypted file into this portable file"
 msgstr "Sao chép mật khẩu từ tệp mã hóa gắn với máy sang tệp di động này"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2098
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2089
 msgid "Existing passwords"
 msgstr "Mật khẩu hiện có"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2100
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2091
 msgid "Re-encrypt credentials from the machine-bound file with your passphrase"
 msgstr ""
 "Mã hóa lại thông tin đăng nhập từ tệp gắn với máy bằng cụm mật khẩu của bạn"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2146
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2137
 msgid "No stored passwords to copy"
 msgstr "Không có mật khẩu đã lưu nào để sao chép"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2164
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2155
 msgid "Checking the passphrase…"
 msgstr "Đang kiểm tra cụm mật khẩu…"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2189
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2180
 msgid "Could not check the passphrase"
 msgstr "Không thể kiểm tra cụm mật khẩu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2229
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2220
 msgid ""
 "Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)"
 msgstr ""
 "Cấu hình tích hợp tệp KDBX (dùng được với KeePassXC, GNOME Secrets, v.v.)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2234
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2225
 msgid "KDBX Integration"
 msgstr "Tích hợp KDBX"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2235
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2226
 msgid "Enable direct database access"
 msgstr "Bật truy cập trực tiếp cơ sở dữ liệu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2241
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2232
 msgid "Select .kdbx file"
 msgstr "Chọn tệp .kdbx"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2248
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2239
 msgid "Browse for database file"
 msgstr "Duyệt tìm tệp cơ sở dữ liệu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2251
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2242
 msgid "Browse for KeePass database file"
 msgstr "Duyệt tìm tệp cơ sở dữ liệu KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2262
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2253
 msgid "Database File"
 msgstr "Tệp cơ sở dữ liệu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2288
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2279
 msgid "Database unlock methods"
 msgstr "Phương thức mở khóa cơ sở dữ liệu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2293
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2284
 msgid "Use password"
 msgstr "Dùng mật khẩu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2308
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2299
 msgid "Not connected"
 msgstr "Chưa kết nối"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2324
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2315
 msgid "Save password"
 msgstr "Lưu mật khẩu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2332
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2323
 msgid "Use key file"
 msgstr "Dùng tệp khóa"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2338
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2329
 msgid "Select .keyx or .key file"
 msgstr "Chọn tệp .keyx hoặc .key"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2367
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2358
 msgid "YubiKey slot (Challenge-Response)"
 msgstr "Khe YubiKey (Challenge-Response)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2370
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2361
 msgid ""
 "YubiKey Challenge-Response slot for unlocking, as slot or slot:serial (e.g. "
 "2 or 2:12345678). Touch the key when it blinks."
@@ -8623,66 +8625,66 @@ msgstr ""
 "Khe Challenge-Response của YubiKey để mở khóa, dạng slot hoặc slot:serial "
 "(ví dụ: 2 hoặc 2:12345678). Chạm vào khóa khi nó nhấp nháy."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2378
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2369
 msgid "KDBX Status"
 msgstr "Trạng thái KDBX"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2383
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2374
 msgid "Check"
 msgstr "Kiểm tra"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2385
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2376
 msgid "Test database connection"
 msgstr "Kiểm tra kết nối cơ sở dữ liệu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2397
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2388
 msgid "Connection Status"
 msgstr "Trạng thái kết nối"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2593
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3507
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2584
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3498
 msgid "Token loaded from keyring"
 msgstr "Đã tải token từ chùm khóa"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2655
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2646
 #: rustconn/src/dialogs/widgets.rs:977 rustconn/src/dialogs/widgets.rs:982
 #: rustconn/src/dialogs/widgets.rs:994
 msgid "Select KeePass Database"
 msgstr "Chọn cơ sở dữ liệu KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2661
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2652
 #: rustconn/src/dialogs/widgets.rs:990
 msgid "KeePass Database (*.kdbx)"
 msgstr "Cơ sở dữ liệu KeePass (*.kdbx)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2689
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2680
 msgid "Select Key File"
 msgstr "Chọn tệp khóa"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2696
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2687
 msgid "Key Files (*.keyx, *.key)"
 msgstr "Tệp khóa (*.keyx, *.key)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2700
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2691
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:619
 msgid "All Files"
 msgstr "Tất cả tệp"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2737
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2728
 msgid "No database selected"
 msgstr "Chưa chọn cơ sở dữ liệu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2779
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2770
 msgid "Checking… touch your YubiKey when it blinks"
 msgstr "Đang kiểm tra… hãy chạm vào YubiKey khi nó nhấp nháy"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2802
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2793
 #: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:342
 #: rustconn/src/sidebar/view.rs:793
 msgid "Connected"
 msgstr "Đã kết nối"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3342
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3333
 msgid "Database path required"
 msgstr "Cần đường dẫn cơ sở dữ liệu"
 
@@ -9084,8 +9086,8 @@ msgstr "Gửi tiền tố Escape thay vì ký tự ghép (cho vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
 #: rustconn/src/dialogs/settings/ui_tab.rs:926
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:259
-#: rustconn/src/tray.rs:649 rustconn/src/window/ui.rs:266
+#: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:309
+#: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Shell cục bộ"
 
@@ -9629,8 +9631,8 @@ msgstr "Chia màn hình"
 msgid "View"
 msgstr "Xem"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:288
-#: rustconn/src/tray.rs:662 rustconn/src/window/ui.rs:347
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:338
+#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:347
 msgid "Quit"
 msgstr "Thoát"
 
@@ -12140,6 +12142,14 @@ msgstr "Thời gian hoạt động"
 msgid "⚠ Monitoring stopped — metrics may be stale"
 msgstr "⚠ Đã dừng giám sát — số liệu có thể đã cũ"
 
+#: rustconn/src/portal_check.rs:84
+msgid ""
+"Desktop portal not found — file dialogs may not open. See Troubleshooting in "
+"the User Guide"
+msgstr ""
+"Không tìm thấy cổng thông tin máy tính (portal) — hộp thoại tệp có thể không "
+"mở được. Xem mục “Khắc phục sự cố” trong Hướng dẫn sử dụng"
+
 #: rustconn/src/script_runner.rs:603
 msgid "Script error: {}"
 msgstr "Lỗi tập lệnh: {}"
@@ -12994,36 +13004,36 @@ msgstr "Hoàn tác"
 msgid "Retry"
 msgstr "Thử lại"
 
-#: rustconn/src/tray.rs:150 rustconn/src/window/sessions.rs:245
+#: rustconn/src/tray.rs:200 rustconn/src/window/sessions.rs:245
 msgid "{} active session(s)"
 msgstr "{} phiên đang hoạt động"
 
-#: rustconn/src/tray.rs:156
+#: rustconn/src/tray.rs:206
 msgid "No active sessions"
 msgstr "Không có phiên nào đang hoạt động"
 
-#: rustconn/src/tray.rs:190 rustconn/src/tray.rs:570
+#: rustconn/src/tray.rs:240 rustconn/src/tray.rs:620
 msgid "Hide Window"
 msgstr "Ẩn cửa sổ"
 
-#: rustconn/src/tray.rs:192 rustconn/src/tray.rs:572
+#: rustconn/src/tray.rs:242 rustconn/src/tray.rs:622
 msgid "Show Window"
 msgstr "Hiện cửa sổ"
 
-#: rustconn/src/tray.rs:221 rustconn/src/tray.rs:589
+#: rustconn/src/tray.rs:271 rustconn/src/tray.rs:639
 #: rustconn/src/window/sorting.rs:200
 msgid "Favorites"
 msgstr "Yêu thích"
 
-#: rustconn/src/tray.rs:244 rustconn/src/tray.rs:608
+#: rustconn/src/tray.rs:294 rustconn/src/tray.rs:658
 msgid "Recent Connections"
 msgstr "Kết nối gần đây"
 
-#: rustconn/src/tray.rs:252 rustconn/src/tray.rs:643
+#: rustconn/src/tray.rs:302 rustconn/src/tray.rs:693
 msgid "Quick Connect…"
 msgstr "Kết nối nhanh…"
 
-#: rustconn/src/tray.rs:268 rustconn/src/tray.rs:627
+#: rustconn/src/tray.rs:318 rustconn/src/tray.rs:677
 msgid "{} Active Session(s)"
 msgstr "{} phiên đang hoạt động"
 
@@ -13226,7 +13236,7 @@ msgid "Jump Host Unavailable"
 msgstr "Máy chủ trung gian không khả dụng"
 
 #: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3652
-#: rustconn/src/window/mod.rs:3718 rustconn/src/window/rdp_vnc.rs:787
+#: rustconn/src/window/mod.rs:3718 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Vẫn kết nối"
 
@@ -14713,7 +14723,7 @@ msgstr "Không truy cập được máy chủ trung gian, đang kết nối qua 
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Không có máy chủ trung gian nào phản hồi, đang thử ‘{}’"
 
-#: rustconn/src/window/protocols.rs:1476 rustconn/src/window/rdp_vnc.rs:1591
+#: rustconn/src/window/protocols.rs:1476 rustconn/src/window/rdp_vnc.rs:1593
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Không tìm thấy trình xem VNC. Hãy cài đặt TigerVNC hoặc Remmina."
 

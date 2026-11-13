@@ -83,6 +83,8 @@ mod i18n_markers;
 pub mod icon_render;
 pub mod monitor_mode;
 pub mod monitoring;
+#[cfg(not(target_os = "macos"))]
+mod portal_check;
 mod renderer;
 pub mod script_runner;
 pub mod session;

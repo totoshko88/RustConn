@@ -9,6 +9,7 @@ rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml
 rustconn/src/i18n.rs
 rustconn/src/i18n_markers.rs
 rustconn/src/app.rs
+rustconn/src/portal_check.rs
 rustconn/src/toast.rs
 rustconn/src/alert.rs
 rustconn/src/command_macros.rs

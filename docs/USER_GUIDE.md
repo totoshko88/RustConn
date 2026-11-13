@@ -62,6 +62,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Adaptive UI](#adaptive-ui)
    - [Startup Action](#startup-action)
    - [Backup & Restore](#backup--restore)
+   - [Accessibility](#accessibility)
 9. [Import, Export & Migration](#import-export--migration)
    - [Import](#import-ctrli)
    - [Export](#export-ctrlshifte)
@@ -4010,6 +4011,32 @@ Back up your entire RustConn configuration as a single ZIP archive.
 
 > **Important:** The `.machine-key` file (`~/.local/share/rustconn/.machine-key`) is **not** included in backups. This key is used to encrypt credentials stored locally (AES-256-GCM). To migrate encrypted credentials to a different machine, copy `.machine-key` from the old machine **before** restoring the backup, or re-enter passwords after restore.
 
+### Accessibility
+
+**Keyboard only.** Every dialog and the main window can be driven without a mouse: Tab and the arrow keys move focus, **F10** opens the main menu, **Menu** or **Shift+F10** opens the context menu of the selected row, **Ctrl+P** opens the command palette. The full list is in [Keyboard Shortcuts](#keyboard-shortcuts); all of them can be changed in Settings → Interface → Keybindings.
+
+**Screen readers (Orca).** Icon-only buttons carry an accessible label as well as a tooltip, and toast messages are announced. Terminal tabs rely on VTE's own accessibility support. An embedded RDP or VNC session is a bitmap, so a screen reader only hears its label ("session view"), not the remote desktop; use the remote machine's own screen reader, or open the connection in an external viewer.
+
+**Leaving an embedded session with the keyboard.** While focus is inside a terminal or an embedded RDP/VNC session, the keys go to the remote side. To get out:
+
+| Keys | Result |
+|------|--------|
+| **Ctrl+1** or **Alt+1** | Focus the sidebar (the connection list) |
+| **Ctrl+2** or **Alt+2** | Focus the active session again |
+| **Ctrl+Shift+Backspace** | Turn [keyboard passthrough](#keyboard-passthrough-mode) off first, if it is on: in passthrough only this key, **Ctrl+Q** and **F11** still work |
+| **Super+Esc** | Give desktop shortcuts (Alt+Tab, Super) back to the desktop after passthrough took them |
+
+**Reduced motion.** RustConn follows the desktop's animation switch (`gtk-enable-animations`). When it is off, the pulsing indicators (a starting SSH tunnel, an active broadcast toggle) stay still. Turn it off in GNOME with Settings → Accessibility → Seeing → Reduce Animation, or for any desktop by adding this to `~/.config/gtk-4.0/settings.ini`:
+
+```ini
+[Settings]
+gtk-enable-animations=false
+```
+
+**Contrast and colors.** The light/dark choice and high-contrast mode come from the system (Settings → Interface → Appearance can override light/dark).
+
+---
+
 ---
 
 ## Import, Export & Migration
@@ -4779,6 +4806,22 @@ RustConn opens the KeePass database directly by file (`.kdbx`); it does not use 
 1. Requires `tray-icon` feature
 2. Check DE tray support
 3. Some DEs need extensions
+
+### KDE Plasma and Wayland
+
+**Tray icon does not raise the window.** Plasma hands every tray click an activation token, and RustConn passes it to the window (0.25.0+). Without a token KWin only flashes the taskbar entry. If it still does, check that the click really reaches the app: run `RUST_LOG=rustconn=debug rustconn` and look for `handling tray message` when you click. On GNOME the tray needs the AppIndicator extension; a tray host that sends no token can still get a refused raise.
+
+**File dialogs do not open, or theme and notifications are wrong.** GTK 4 uses `xdg-desktop-portal` and the portal backend of your desktop. RustConn checks this at startup and shows "Desktop portal not found…" (and a `portal_check` line in the log) when the service or its file-chooser backend is missing. Install `xdg-desktop-portal` plus `xdg-desktop-portal-kde` (KDE), `xdg-desktop-portal-gnome` (GNOME) or `xdg-desktop-portal-gtk`, then log out and in. To check by hand:
+
+```bash
+busctl --user get-property org.freedesktop.portal.Desktop \
+  /org/freedesktop/portal/desktop org.freedesktop.portal.FileChooser version
+systemctl --user status xdg-desktop-portal xdg-desktop-portal-kde
+```
+
+**External terminal for 1Password sign-in.** The button tries `xdg-terminal-exec`, `ptyxis`, `kitty`, `foot`, `alacritty`, `gnome-terminal`, `konsole`, `xfce4-terminal` and `xterm` in that order and uses the first one found in `PATH`. Install one of them, or sign in with `op signin` yourself.
+
+**Flatpak on a KDE host.** The Flatpak build uses the GNOME runtime, which runs on Plasma. The tray, file dialogs and notifications go through the host's `xdg-desktop-portal-kde` and `StatusNotifierWatcher`, so the portal checks above apply to the host, not to the sandbox.
 
 ### Debug Logging
 
