@@ -1546,7 +1546,7 @@ rustconn-core/src/
 ├── snap.rs                # Snap environment detection and paths
 ├── performance/           # Search debouncer
 ├── tracing/               # Span name constants + the `rustconn::perf` timing target (PerfSpan)
-└── ...                    # ssh_tunnel, ssh_agent, sync, split, tmux_control, cluster, lock_events,
+└── ...                    # ssh_tunnel, ssh_agent, sync, split, tmux_control (experimental, unused by the GUI), cluster, lock_events,
                            # mc_ssh, socks_relay, jump_route, remote_script, … — full list: `pub mod` in lib.rs
 ```
 

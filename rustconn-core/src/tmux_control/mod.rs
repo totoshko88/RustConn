@@ -1,4 +1,5 @@
-//! GUI-free foundation for a future `tmux -CC` (control mode) integration.
+//! **Experimental** — GUI-free foundation for a future `tmux -CC` (control mode)
+//! integration. Nothing in the application uses it yet; the API may change.
 //!
 //! tmux control mode is a line-oriented, text-only protocol: tmux emits
 //! `%`-prefixed notifications and wraps each command's output in `%begin`/`%end`
