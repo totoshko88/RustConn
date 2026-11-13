@@ -461,7 +461,8 @@ impl SearchEngine {
 
         // Index groups by id once: group scoring/filtering is O(1) per
         // connection instead of a linear scan (was O(connections × groups)).
-        let group_map: HashMap<Uuid, &ConnectionGroup> = groups.iter().map(|g| (g.id, *g)).collect();
+        let group_map: HashMap<Uuid, &ConnectionGroup> =
+            groups.iter().map(|g| (g.id, *g)).collect();
 
         let mut results: Vec<ConnectionSearchResult> = connections
             .iter()
