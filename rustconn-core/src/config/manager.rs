@@ -66,22 +66,22 @@ type NewerFiles = std::collections::BTreeMap<PathBuf, String>;
 
 /// Wrapper for serializing a list of connections
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct ConnectionsFile {
+struct ConnectionsFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    connections: Vec<Connection>,
+    connections: std::borrow::Cow<'a, [Connection]>,
 }
 
 /// Wrapper for serializing a list of groups
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct GroupsFile {
+struct GroupsFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    groups: Vec<ConnectionGroup>,
+    groups: std::borrow::Cow<'a, [ConnectionGroup]>,
 }
 
 /// A file wrapper that records which `RustConn` version wrote it.
@@ -90,55 +90,55 @@ trait Marked {
     fn marker(&self) -> Option<&str>;
 }
 
-impl Marked for ConnectionsFile {
+impl Marked for ConnectionsFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for GroupsFile {
+impl Marked for GroupsFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for SnippetsFile {
+impl Marked for SnippetsFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for ClustersFile {
+impl Marked for ClustersFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for TemplatesFile {
+impl Marked for TemplatesFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for WorkspaceProfilesFile {
+impl Marked for WorkspaceProfilesFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for HistoryFile {
+impl Marked for HistoryFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for TombstonesFile {
+impl Marked for TombstonesFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for TrashFile {
+impl Marked for TrashFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
@@ -146,74 +146,74 @@ impl Marked for TrashFile {
 
 /// Wrapper for serializing a list of snippets
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct SnippetsFile {
+struct SnippetsFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    snippets: Vec<Snippet>,
+    snippets: std::borrow::Cow<'a, [Snippet]>,
 }
 
 /// Wrapper for serializing a list of clusters
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct ClustersFile {
+struct ClustersFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    clusters: Vec<Cluster>,
+    clusters: std::borrow::Cow<'a, [Cluster]>,
 }
 
 /// Wrapper for serializing a list of templates
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct TemplatesFile {
+struct TemplatesFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    templates: Vec<ConnectionTemplate>,
+    templates: std::borrow::Cow<'a, [ConnectionTemplate]>,
 }
 
 /// Wrapper for serializing connection history
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct HistoryFile {
+struct HistoryFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    entries: Vec<ConnectionHistoryEntry>,
+    entries: std::borrow::Cow<'a, [ConnectionHistoryEntry]>,
 }
 
 /// Wrapper for serializing Simple Sync tombstones
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct TombstonesFile {
+struct TombstonesFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    tombstones: Vec<Tombstone>,
+    tombstones: std::borrow::Cow<'a, [Tombstone]>,
 }
 
 /// Wrapper for serializing trash (deleted items)
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-pub(super) struct TrashFile {
+pub(super) struct TrashFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    pub connections: Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
+    pub connections: std::borrow::Cow<'a, [(Connection, chrono::DateTime<chrono::Utc>)]>,
     #[serde(default)]
-    pub groups: Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+    pub groups: std::borrow::Cow<'a, [(ConnectionGroup, chrono::DateTime<chrono::Utc>)]>,
 }
 
 /// Wrapper for serializing workspace profiles
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct WorkspaceProfilesFile {
+struct WorkspaceProfilesFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    profiles: Vec<WorkspaceProfile>,
+    profiles: std::borrow::Cow<'a, [WorkspaceProfile]>,
 }
 
 /// Configuration manager for `RustConn`
@@ -655,7 +655,7 @@ impl ConfigManager {
     pub fn load_connections(&self) -> ConfigResult<Vec<Connection>> {
         let path = self.config_dir.join(CONNECTIONS_FILE);
         let file: ConnectionsFile = self.load_marked_toml_file(&path)?;
-        Ok(file.connections)
+        Ok(file.connections.into_owned())
     }
 
     /// Saves connections to the configuration file
@@ -670,7 +670,7 @@ impl ConfigManager {
         let path = self.config_dir.join(CONNECTIONS_FILE);
         let file = ConnectionsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            connections: connections.to_vec(),
+            connections: std::borrow::Cow::Borrowed(connections),
         };
         self.save_toml_file(&path, &file)
     }
@@ -687,7 +687,7 @@ impl ConfigManager {
         let path = self.config_dir.join(CONNECTIONS_FILE);
         let file = ConnectionsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            connections: connections.to_vec(),
+            connections: std::borrow::Cow::Borrowed(connections),
         };
         self.save_toml_file_async(&path, &file).await
     }
@@ -704,7 +704,7 @@ impl ConfigManager {
     pub fn load_groups(&self) -> ConfigResult<Vec<ConnectionGroup>> {
         let path = self.config_dir.join(GROUPS_FILE);
         let file: GroupsFile = self.load_marked_toml_file(&path)?;
-        Ok(file.groups)
+        Ok(file.groups.into_owned())
     }
 
     /// Saves connection groups to the configuration file
@@ -719,7 +719,7 @@ impl ConfigManager {
         let path = self.config_dir.join(GROUPS_FILE);
         let file = GroupsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            groups: groups.to_vec(),
+            groups: std::borrow::Cow::Borrowed(groups),
         };
         self.save_toml_file(&path, &file)
     }
@@ -736,7 +736,7 @@ impl ConfigManager {
         let path = self.config_dir.join(GROUPS_FILE);
         let file = GroupsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            groups: groups.to_vec(),
+            groups: std::borrow::Cow::Borrowed(groups),
         };
         self.save_toml_file_async(&path, &file).await
     }
@@ -753,7 +753,7 @@ impl ConfigManager {
     pub fn load_snippets(&self) -> ConfigResult<Vec<Snippet>> {
         let path = self.config_dir.join(SNIPPETS_FILE);
         self.load_marked_toml_file::<SnippetsFile>(&path)
-            .map(|f| f.snippets)
+            .map(|f| f.snippets.into_owned())
     }
 
     /// Saves snippets to the configuration file
@@ -768,7 +768,7 @@ impl ConfigManager {
         let path = self.config_dir.join(SNIPPETS_FILE);
         let file = SnippetsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            snippets: snippets.to_vec(),
+            snippets: std::borrow::Cow::Borrowed(snippets),
         };
         self.save_toml_file(&path, &file)
     }
@@ -785,7 +785,7 @@ impl ConfigManager {
     pub fn load_clusters(&self) -> ConfigResult<Vec<Cluster>> {
         let path = self.config_dir.join(CLUSTERS_FILE);
         self.load_marked_toml_file::<ClustersFile>(&path)
-            .map(|f| f.clusters)
+            .map(|f| f.clusters.into_owned())
     }
 
     /// Saves clusters to the configuration file
@@ -800,7 +800,7 @@ impl ConfigManager {
         let path = self.config_dir.join(CLUSTERS_FILE);
         let file = ClustersFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            clusters: clusters.to_vec(),
+            clusters: std::borrow::Cow::Borrowed(clusters),
         };
         self.save_toml_file(&path, &file)
     }
@@ -817,7 +817,7 @@ impl ConfigManager {
     pub fn load_templates(&self) -> ConfigResult<Vec<ConnectionTemplate>> {
         let path = self.config_dir.join(TEMPLATES_FILE);
         self.load_marked_toml_file::<TemplatesFile>(&path)
-            .map(|f| f.templates)
+            .map(|f| f.templates.into_owned())
     }
 
     /// Saves templates to the configuration file
@@ -832,7 +832,7 @@ impl ConfigManager {
         let path = self.config_dir.join(TEMPLATES_FILE);
         let file = TemplatesFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            templates: templates.to_vec(),
+            templates: std::borrow::Cow::Borrowed(templates),
         };
         self.save_toml_file(&path, &file)
     }
@@ -849,7 +849,7 @@ impl ConfigManager {
     pub fn load_workspace_profiles(&self) -> ConfigResult<Vec<WorkspaceProfile>> {
         let path = self.config_dir.join(WORKSPACE_PROFILES_FILE);
         self.load_marked_toml_file::<WorkspaceProfilesFile>(&path)
-            .map(|f| f.profiles)
+            .map(|f| f.profiles.into_owned())
     }
 
     /// Saves workspace profiles to the configuration file
@@ -864,7 +864,7 @@ impl ConfigManager {
         let path = self.config_dir.join(WORKSPACE_PROFILES_FILE);
         let file = WorkspaceProfilesFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            profiles: profiles.to_vec(),
+            profiles: std::borrow::Cow::Borrowed(profiles),
         };
         self.save_toml_file(&path, &file)
     }
@@ -881,7 +881,7 @@ impl ConfigManager {
     pub fn load_history(&self) -> ConfigResult<Vec<ConnectionHistoryEntry>> {
         let path = self.config_dir.join(HISTORY_FILE);
         self.load_marked_toml_file::<HistoryFile>(&path)
-            .map(|f| f.entries)
+            .map(|f| f.entries.into_owned())
     }
 
     /// Saves connection history to the configuration file
@@ -896,7 +896,7 @@ impl ConfigManager {
         let path = self.config_dir.join(HISTORY_FILE);
         let file = HistoryFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            entries: entries.to_vec(),
+            entries: std::borrow::Cow::Borrowed(entries),
         };
         self.save_toml_file(&path, &file)
     }
@@ -913,7 +913,7 @@ impl ConfigManager {
     pub fn load_tombstones(&self) -> ConfigResult<Vec<Tombstone>> {
         let path = self.config_dir.join(TOMBSTONES_FILE);
         self.load_marked_toml_file::<TombstonesFile>(&path)
-            .map(|f| f.tombstones)
+            .map(|f| f.tombstones.into_owned())
     }
 
     /// Saves Simple Sync tombstones to the configuration file.
@@ -928,7 +928,7 @@ impl ConfigManager {
         let path = self.config_dir.join(TOMBSTONES_FILE);
         let file = TombstonesFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            tombstones: tombstones.to_vec(),
+            tombstones: std::borrow::Cow::Borrowed(tombstones),
         };
         self.save_toml_file(&path, &file)
     }
@@ -952,7 +952,7 @@ impl ConfigManager {
     )> {
         let path = self.config_dir.join(TRASH_FILE);
         let file = self.load_marked_toml_file::<TrashFile>(&path)?;
-        Ok((file.connections, file.groups))
+        Ok((file.connections.into_owned(), file.groups.into_owned()))
     }
 
     /// Saves trash items to the configuration file asynchronously
@@ -969,8 +969,8 @@ impl ConfigManager {
         let path = self.config_dir.join(TRASH_FILE);
         let file = TrashFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            connections: connections.to_vec(),
-            groups: groups.to_vec(),
+            connections: std::borrow::Cow::Borrowed(connections),
+            groups: std::borrow::Cow::Borrowed(groups),
         };
         self.save_toml_file_async(&path, &file).await
     }
