@@ -527,23 +527,6 @@ impl ExportDialog {
         (vbox, result_label, result_details)
     }
 
-    /// Gets the selected export format
-    #[must_use]
-    pub fn get_selected_format(&self) -> ExportFormat {
-        Self::format_from_index(self.format_dropdown.selected())
-    }
-
-    /// Gets the output path
-    #[must_use]
-    pub fn get_output_path(&self) -> Option<PathBuf> {
-        let text = self.output_path_entry.text();
-        if text.is_empty() {
-            None
-        } else {
-            Some(PathBuf::from(text.as_str()))
-        }
-    }
-
     /// Sets the connections to export
     pub fn set_connections(&self, connections: Vec<Connection>) {
         *self.connections.borrow_mut() = connections;

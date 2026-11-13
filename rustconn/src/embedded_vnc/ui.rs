@@ -251,11 +251,13 @@ impl EmbeddedVncWidget {
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
 
-                // Dark background
-                cr.set_source_rgb(0.12, 0.12, 0.14);
-                let _ = cr.paint();
-
                 if embedded && current_state == VncConnectionState::Connected {
+                    // Dark letterbox behind the video. Painted only on this
+                    // branch: the status branch below fills the whole area with
+                    // its own themed color, so a dark fill first is overdraw.
+                    cr.set_source_rgb(0.12, 0.12, 0.14);
+                    let _ = cr.paint();
+
                     // Fast path: use the persistent Cairo surface (zero-copy)
                     let buffer = cairo_buffer.borrow();
                     let buf_width = buffer.width();
@@ -280,10 +282,8 @@ impl EmbeddedVncWidget {
                         let _ = cr.paint();
                     }
                 } else {
-                    // Show status overlay. Repaint the background with the
-                    // themed placeholder color (the base fill above stays dark as
-                    // a letterbox behind actual video; here there is no video, so
-                    // follow the light/dark theme instead of a black rectangle).
+                    // Show status overlay. The background follows the
+                    // light/dark theme instead of the dark video letterbox.
                     let (bg, fg) = crate::utils::placeholder_surface_colors();
                     cr.set_source_rgb(bg.0, bg.1, bg.2);
                     let _ = cr.paint();

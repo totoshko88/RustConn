@@ -554,15 +554,6 @@ impl SafeFreeRdpLauncher {
         super::detect::detect_best_freerdp()
     }
 
-    /// Detects the best FreeRDP binary for RemoteApp (RAIL) sessions.
-    ///
-    /// `wlfreerdp` does not support RAIL — it renders a full desktop into a
-    /// Wayland subsurface and cannot create individual application windows.
-    /// This method skips `wl*` variants and prefers `xfreerdp3`/`sdl-freerdp3`.
-    pub fn detect_freerdp_for_remoteapp() -> Option<String> {
-        super::detect::detect_best_freerdp_for_remoteapp()
-    }
-
     /// Translates the embedded widget's configuration into the shared
     /// [`FreeRdpConfig`](rustconn_core::protocol::FreeRdpConfig).
     ///

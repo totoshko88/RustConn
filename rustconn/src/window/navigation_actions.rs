@@ -364,7 +364,6 @@ impl MainWindow {
         &self,
         window: &adw::ApplicationWindow,
         state: &SharedAppState,
-        terminal_notebook: &SharedNotebook,
         sidebar: &SharedSidebar,
     ) {
         // Group operations action (toggle mode)
@@ -462,30 +461,6 @@ impl MainWindow {
             Self::sort_recent(&state_clone, &sidebar_clone);
         });
         window.add_action(&sort_recent_action);
-
-        // Create cluster from sidebar selection
-        let cluster_from_selection_action = gio::SimpleAction::new("cluster-from-selection", None);
-        let window_weak = window.downgrade();
-        let state_clone = state.clone();
-        let notebook_clone = terminal_notebook.clone();
-        let sidebar_clone = sidebar.clone();
-        let toast_clone = self.toast_overlay.clone();
-        cluster_from_selection_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                let selected_ids = sidebar_clone.get_selected_ids();
-                if selected_ids.is_empty() {
-                    return;
-                }
-                clusters::show_new_cluster_dialog_with_selection(
-                    win.upcast_ref(),
-                    state_clone.clone(),
-                    notebook_clone.clone(),
-                    selected_ids,
-                    toast_clone.clone(),
-                );
-            }
-        });
-        window.add_action(&cluster_from_selection_action);
     }
 }
 

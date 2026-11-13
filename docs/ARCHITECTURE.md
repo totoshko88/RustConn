@@ -1362,7 +1362,7 @@ window.set_content(Some(&toolbar_view));
 ### Toast Notifications
 
 ```rust
-// rustconn/src/dialogs/adw_dialogs.rs
+// rustconn/src/toast.rs (see plain_toast)
 pub fn show_toast(overlay: &adw::ToastOverlay, message: &str) {
     let toast = adw::Toast::builder()
         .title(message)
@@ -1442,7 +1442,6 @@ rustconn/src/
 │   │   ├── kubernetes.rs  # Kubernetes options
 │   │   ├── web.rs         # Web (browser) options
 │   │   └── zerotrust.rs   # Zero Trust provider options
-│   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── command_palette.rs # Command palette dialog (Ctrl+P)
 │   ├── wol.rs             # Wake On LAN dialog (standalone + manual entry)
 │   ├── flatpak_components.rs  # Flatpak CLI download dialog

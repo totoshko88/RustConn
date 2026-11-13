@@ -261,36 +261,6 @@ impl MainWindow {
         });
         window.add_action(&move_to_group_action);
 
-        // Copy username to clipboard
-        let copy_username_action = gio::SimpleAction::new("copy-username", None);
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        let window_weak = window.downgrade();
-        let toast_clone = self.toast_overlay.clone();
-        copy_username_action.connect_activate(move |_, _| {
-            if let Some(conn_id) = selected_connection_id(&sidebar_clone)
-                && let Some(win) = window_weak.upgrade()
-            {
-                super::copy_field_actions::copy_username(&win, &state_clone, &toast_clone, conn_id);
-            }
-        });
-        window.add_action(&copy_username_action);
-
-        // Copy password to clipboard (with auto-clear after 30 seconds)
-        let copy_password_action = gio::SimpleAction::new("copy-password", None);
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        let window_weak = window.downgrade();
-        let toast_clone = self.toast_overlay.clone();
-        copy_password_action.connect_activate(move |_, _| {
-            if let Some(conn_id) = selected_connection_id(&sidebar_clone)
-                && let Some(win) = window_weak.upgrade()
-            {
-                super::copy_field_actions::copy_password(&win, &state_clone, &toast_clone, conn_id);
-            }
-        });
-        window.add_action(&copy_password_action);
-
         self.setup_copy_field_actions(window, state, sidebar);
 
         // Rename item action (works for both connections and groups)

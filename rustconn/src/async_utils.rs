@@ -6,18 +6,16 @@
 //! # Architecture
 //!
 //! GTK4 runs on a single-threaded main loop. Async operations need special
-//! handling to avoid blocking the UI. This module provides two approaches:
+//! handling to avoid blocking the UI:
 //!
 //! 1. **`spawn_async`** - Spawns async work on the GLib main context (preferred)
-//! 2. **`block_on_async`** - Blocks on async work using a thread-local runtime
-//!
-//! ## When to use each approach
+//! 2. **`with_runtime`** - Thread-local tokio runtime for code that already runs
+//!    on a worker thread (never call it from the GTK main thread)
 //!
 //! | Scenario | Approach | Reason |
 //! |----------|----------|--------|
 //! | Short async ops (<100ms) | `spawn_async` | Non-blocking, UI stays responsive |
 //! | Long async ops | `spawn_async` + loading indicator | User feedback |
-//! | Must have result immediately | `block_on_async` | Synchronous return value needed |
 //! | In GTK callback | `spawn_async` | Callbacks should return quickly |
 //!
 //! # Examples
@@ -40,15 +38,6 @@
 //! });
 //! ```
 //!
-//! ## Blocking async (when result is needed immediately)
-//!
-//! ```ignore
-//! use crate::async_utils::block_on_async;
-//!
-//! let result = block_on_async(async {
-//!     secret_manager.get_password(&id).await
-//! });
-//! ```
 
 use std::cell::RefCell;
 use std::future::Future;
@@ -84,81 +73,10 @@ where
     ctx.spawn_local(future);
 }
 
-/// Spawns an async task and calls a callback with the result.
-///
-/// This is useful when you need to process the result of an async operation.
-///
-/// # Arguments
-/// * `future` - The async task to run
-/// * `callback` - Called with the result on the main thread
-///
-/// # Example
-/// ```ignore
-/// spawn_async_with_callback(
-///     async { fetch_connections().await },
-///     |connections| {
-///         update_sidebar(connections);
-///     }
-/// );
-/// ```
-pub fn spawn_async_with_callback<F, T, C>(future: F, callback: C)
-where
-    F: Future<Output = T> + 'static,
-    T: 'static,
-    C: FnOnce(T) + 'static,
-{
-    let ctx = glib::MainContext::default();
-    ctx.spawn_local(async move {
-        let result = future.await;
-        callback(result);
-    });
-}
-
-/// Blocks on an async operation using a thread-local tokio runtime.
-///
-/// **Warning**: This blocks the current thread. Use `spawn_async` instead
-/// when possible to keep the UI responsive.
-///
-/// This is useful when you need the result immediately and can't restructure
-/// the code to be async-friendly.
-///
-/// # Arguments
-/// * `future` - The async task to run
-///
-/// # Returns
-/// * `Ok(T)` - The result of the async operation
-/// * `Err(String)` - If the runtime couldn't be created
-///
-/// # Example
-/// ```ignore
-/// let password = block_on_async(async {
-///     secret_manager.get_password(&id).await
-/// })?;
-/// ```
-pub fn block_on_async<F, T>(future: F) -> Result<T, String>
-where
-    F: Future<Output = T>,
-{
-    let start = std::time::Instant::now();
-    let result = with_runtime(|rt| rt.block_on(future));
-    let elapsed = start.elapsed();
-    if elapsed > std::time::Duration::from_millis(100) {
-        tracing::warn!(
-            elapsed_ms = elapsed.as_millis(),
-            "block_on_async blocked GTK main thread for >100ms — \
-             consider using spawn_async instead"
-        );
-    }
-    result
-}
-
 /// Gets or creates the thread-local tokio runtime and executes a closure with it.
 ///
-/// This is the low-level primitive used by `block_on_async`. Use this when you
-/// need direct access to the runtime (e.g., for `block_on` with custom logic).
-///
-/// **Warning**: This blocks the current thread. Use `spawn_async` instead
-/// when possible to keep the UI responsive.
+/// **Warning**: this blocks the current thread. Call it only from worker
+/// threads, never from the GTK main thread.
 ///
 /// # Arguments
 /// * `f` - Closure that receives a reference to the tokio runtime
@@ -192,32 +110,6 @@ where
             .map(f)
             .ok_or_else(|| "thread-local Tokio runtime unavailable".to_string())
     })
-}
-
-/// Checks if we're on the GTK main thread.
-///
-/// Useful for assertions in code that must run on the main thread.
-#[must_use]
-pub fn is_main_thread() -> bool {
-    glib::MainContext::default().is_owner()
-}
-
-/// Ensures code runs on the main thread.
-///
-/// If already on the main thread, runs immediately.
-/// Otherwise, schedules to run on the main thread.
-///
-/// # Arguments
-/// * `f` - The function to run on the main thread
-pub fn ensure_main_thread<F>(f: F)
-where
-    F: FnOnce() + Send + 'static,
-{
-    if is_main_thread() {
-        f();
-    } else {
-        glib::idle_add_once(f);
-    }
 }
 
 #[cfg(test)]

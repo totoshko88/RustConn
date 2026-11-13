@@ -188,23 +188,6 @@ impl ToastOverlay {
     pub fn show_error(&self, message: &str) {
         self.show_toast_with_type(message, ToastType::Error);
     }
-
-    /// Shows a toast with an action (e.g. "Undo")
-    pub fn show_toast_with_action(
-        &self,
-        message: &str,
-        action_label: &str,
-        action_name: &str,
-        action_target: Option<&glib::Variant>,
-    ) {
-        let toast = plain_toast(message);
-        toast.set_button_label(Some(action_label));
-        toast.set_action_name(Some(action_name));
-        if let Some(target) = action_target {
-            toast.set_action_target_value(Some(target));
-        }
-        self.overlay.add_toast(toast);
-    }
 }
 
 impl Default for ToastOverlay {

@@ -492,39 +492,23 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 
         // Linux: Spawn TrayManager on a background thread so that the blocking
         // D-Bus registration (`tray.spawn()` → `compat::block_on`) does
-        // not stall the GTK main loop.  The result is polled back via a
-        // lightweight channel.
+        // not stall the GTK main loop.  The result is delivered back to the main
+        // loop by a oneshot future.
         #[cfg(feature = "tray")]
         {
-            let (tray_tx, tray_rx) = std::sync::mpsc::channel::<TrayManager>();
-            std::thread::Builder::new()
-                .name("tray-init".into())
-                .spawn(move || {
-                    if let Some(tray) = TrayManager::new() {
-                        let _ = tray_tx.send(tray);
-                    }
-                })
-                .ok();
-
             let state_for_tray = state.clone();
             let tray_mgr_for_init = tray_manager.clone();
-            glib::timeout_add_local(std::time::Duration::from_millis(50), move || match tray_rx
-                .try_recv()
-            {
-                Ok(tray) => {
-                    let mut initial_cache = TrayStateCache::default();
-                    // No session can be open before the tray exists; the 2 s
-                    // sync in `setup_tray_handling` keeps the count current.
-                    update_tray_state(&tray, &state_for_tray, 0, &mut initial_cache);
-                    tray.force_refresh();
-                    *tray_mgr_for_init.borrow_mut() = Some(tray);
-                    glib::ControlFlow::Break
-                }
-                Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+            crate::utils::spawn_blocking_with_callback(TrayManager::new, move |tray| {
+                let Some(tray) = tray else {
                     tracing::warn!("Tray initialization thread exited without creating tray");
-                    glib::ControlFlow::Break
-                }
+                    return;
+                };
+                let mut initial_cache = TrayStateCache::default();
+                // No session can be open before the tray exists; the 2 s
+                // sync in `setup_tray_handling` keeps the count current.
+                update_tray_state(&tray, &state_for_tray, 0, &mut initial_cache);
+                tray.force_refresh();
+                *tray_mgr_for_init.borrow_mut() = Some(tray);
             });
         }
     }
@@ -906,7 +890,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             let secret_settings = state_for_secrets.borrow().settings().secrets.clone();
 
             // Channel to receive the result on the GTK main thread
-            let (tx, rx) = std::sync::mpsc::channel::<bool>();
+            let (tx, rx) = tokio::sync::oneshot::channel::<bool>();
 
             // Run slow Bitwarden unlock in a background thread
             std::thread::spawn(move || {
@@ -981,34 +965,23 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                 }
             });
 
-            // Poll for the result on the GTK main thread (non-blocking)
+            // Wait for the result on the GTK main loop (non-blocking)
             let state_for_poll = state_for_secrets.clone();
             let sidebar_for_poll = sidebar_for_secrets.clone();
             let window_for_poll = window_for_secrets.clone();
             let secret_banner_for_poll = secret_banner_for_secrets.clone();
-            glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-                match rx.try_recv() {
-                    Ok(_) => {
-                        refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
-                        check_secret_backend_available(
-                            &state_for_poll,
-                            &window_for_poll,
-                            &secret_banner_for_poll,
-                        );
-                        tracing::info!("Secret backends initialized after window presentation");
-                        glib::ControlFlow::Break
-                    }
-                    Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-                    Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                        refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
-                        check_secret_backend_available(
-                            &state_for_poll,
-                            &window_for_poll,
-                            &secret_banner_for_poll,
-                        );
-                        tracing::warn!("Bitwarden unlock thread disconnected");
-                        glib::ControlFlow::Break
-                    }
+            glib::spawn_future_local(async move {
+                let unlocked = rx.await;
+                refresh_sidebar_secret_status(&state_for_poll, &sidebar_for_poll);
+                check_secret_backend_available(
+                    &state_for_poll,
+                    &window_for_poll,
+                    &secret_banner_for_poll,
+                );
+                if unlocked.is_ok() {
+                    tracing::info!("Secret backends initialized after window presentation");
+                } else {
+                    tracing::warn!("Bitwarden unlock thread disconnected");
                 }
             });
         } else {
@@ -1674,7 +1647,7 @@ fn check_secret_backend_available(
     // this is called on the GTK main thread both at startup and after a save.
     let banner = secret_banner.clone();
     let window_weak = window_weak.clone();
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (tx, rx) = tokio::sync::oneshot::channel();
     std::thread::spawn(move || {
         let detection = detect_secret_backends(
             secrets
@@ -1686,18 +1659,12 @@ fn check_secret_backend_available(
         let _ = tx.send(backend_readiness(Some(&detection), backend, &local));
     });
 
-    glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-        let readiness = match rx.try_recv() {
-            Ok(readiness) => readiness,
-            Err(std::sync::mpsc::TryRecvError::Empty) => return glib::ControlFlow::Continue,
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                tracing::warn!("secret backend probe thread disconnected");
-                return glib::ControlFlow::Break;
-            }
+    glib::spawn_future_local(async move {
+        let Ok(readiness) = rx.await else {
+            tracing::warn!("secret backend probe thread disconnected");
+            return;
         };
-
         render_secret_backend_banner(backend, &readiness, &banner, &window_weak);
-        glib::ControlFlow::Break
     });
 }
 

@@ -2865,7 +2865,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 | `print <text>` | Print an ANSI-coloured message on the terminal |
 | `ask "<prompt>" [hide] <var>` | Ask the user for input; `hide` masks it |
 | `msg <text> [ok]` | Show a message window (optionally with an OK button) |
-| `start <name-or-uuid> [manual] [cluster=<name>] [-> uuid,tmp]` | Start a session; optionally record its ids |
+| `start <name-or-uuid> [manual] [-> uuid,tmp]` | Start a session; optionally record its ids |
 | `select <name-or-uuid> [-> uuid,tmp]` | Select an open session |
 | `stop <session-var>` | Close a session |
 | `split <a> <b> [vertical]` | Split two sessions into a shared layout |
@@ -5015,6 +5015,7 @@ markers appear; nothing else changes.
 | Ctrl+Shift+R | Pop Pane to Tab (keeps the session, returns it to its own tab) |
 | Ctrl+Shift+J | Unsplit (return every session to its own tab) |
 | Ctrl+` | Focus Next Pane |
+| Ctrl+Shift+Y | Reconnect Session (focused pane, or the active tab when not split) |
 
 ### Application
 

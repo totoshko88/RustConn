@@ -56,24 +56,6 @@ impl TerminalSession {
     pub fn started_at(&self) -> chrono::DateTime<chrono::Utc> {
         self.reconnected_at.unwrap_or(self.connected_at)
     }
-
-    /// Formats the session duration as a human-readable string.
-    pub fn format_duration(&self) -> String {
-        let elapsed = chrono::Utc::now()
-            .signed_duration_since(self.connected_at)
-            .num_seconds()
-            .max(0);
-        let hours = elapsed / 3600;
-        let minutes = (elapsed % 3600) / 60;
-        let seconds = elapsed % 60;
-        if hours > 0 {
-            format!("{hours}h {minutes:02}m")
-        } else if minutes > 0 {
-            format!("{minutes}m {seconds:02}s")
-        } else {
-            format!("{seconds}s")
-        }
-    }
 }
 
 /// Session widget storage for non-SSH sessions

@@ -16,7 +16,6 @@ use crate::i18n::{i18n, i18n_f, ni18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
-use crate::window::SharedToastOverlay;
 use libadwaita as adw;
 
 /// Type alias for shared terminal notebook
@@ -24,51 +23,6 @@ pub type SharedNotebook = Rc<TerminalNotebook>;
 
 /// Type alias for shared sidebar
 pub type SharedSidebar = Rc<ConnectionSidebar>;
-
-/// Shows the new cluster dialog with pre-selected connections from sidebar selection
-pub fn show_new_cluster_dialog_with_selection(
-    window: &gtk4::Window,
-    state: SharedAppState,
-    notebook: SharedNotebook,
-    selected_ids: Vec<Uuid>,
-    toast: SharedToastOverlay,
-) {
-    let dialog = ClusterDialog::new(Some(&window.clone().upcast()));
-
-    // Populate available connections
-    if let Ok(state_ref) = state.try_borrow() {
-        let connections: Vec<_> = state_ref
-            .list_connections()
-            .iter()
-            .cloned()
-            .cloned()
-            .collect();
-        dialog.set_connections(&connections);
-    }
-
-    // Pre-select the connections chosen in sidebar
-    dialog.pre_select_connections(&selected_ids);
-
-    let window_clone = window.clone();
-    let state_clone = state.clone();
-    let notebook_clone = notebook.clone();
-    dialog.run(move |result| {
-        if let Some(cluster) = result
-            && let Ok(mut state_mut) = state_clone.try_borrow_mut()
-        {
-            match state_mut.create_cluster(cluster) {
-                Ok(_) => {
-                    toast.show_success(&i18n("Cluster has been saved successfully."));
-                }
-                Err(e) => {
-                    crate::alert::show_error(&window_clone, &i18n("Error Creating Cluster"), &e);
-                }
-            }
-        }
-        // Keep notebook reference alive
-        let _ = &notebook_clone;
-    });
-}
 
 /// Shows the clusters manager dialog
 pub fn show_clusters_manager(

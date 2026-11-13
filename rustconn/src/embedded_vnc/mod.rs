@@ -261,14 +261,6 @@ impl EmbeddedVncWidget {
         *self.on_error.borrow_mut() = Some(Box::new(callback));
     }
 
-    /// Connects a callback for frame updates
-    pub fn connect_frame_update<F>(&self, callback: F)
-    where
-        F: Fn(u32, u32, u32, u32) + 'static,
-    {
-        *self.on_frame_update.borrow_mut() = Some(Box::new(callback));
-    }
-
     /// Sets the connection state and notifies listeners
     fn set_state(&self, new_state: VncConnectionState) {
         *self.state.borrow_mut() = new_state;

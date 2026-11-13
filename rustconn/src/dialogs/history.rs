@@ -397,22 +397,6 @@ impl HistoryDialog {
         *self.on_connect.borrow_mut() = Some(Box::new(callback));
     }
 
-    /// Connects a callback for when a single history entry is deleted
-    pub fn connect_on_delete_entry<F>(&self, callback: F)
-    where
-        F: Fn(&ConnectionHistoryEntry) + 'static,
-    {
-        *self.on_delete_entry.borrow_mut() = Some(Box::new(callback));
-    }
-
-    /// Connects a callback for when all history is cleared
-    pub fn connect_on_clear_all<F>(&self, callback: F)
-    where
-        F: Fn() + 'static,
-    {
-        *self.on_clear_all.borrow_mut() = Some(Box::new(callback));
-    }
-
     /// Shows the dialog
     pub fn present(&self) {
         self.dialog
