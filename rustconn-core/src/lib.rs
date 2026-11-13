@@ -62,7 +62,6 @@ pub mod connection;
 pub mod crash_report;
 pub mod dialog_utils;
 pub mod display_geometry;
-pub mod drag_drop;
 pub mod dynamic_folder;
 pub mod embedded_client_error;
 pub mod error;
@@ -161,10 +160,6 @@ pub use connection::{
     looks_like_password_prompt, looks_like_username_prompt,
 };
 pub use display_geometry::{DesktopRequest, desktop_request_for_area};
-pub use drag_drop::{
-    DropConfig, DropPosition, ItemType, calculate_drop_position, calculate_indicator_y,
-    calculate_row_index, is_valid_drop_position,
-};
 pub use embedded_client_error::EmbeddedClientError;
 pub use error::{
     ConfigError, ConfigResult, ImportError, ProtocolError, RustConnError, SecretError,
