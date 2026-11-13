@@ -777,6 +777,9 @@ impl MainWindow {
         terminal_notebook.set_on_page_closed(move |session_id, connection_id| {
             monitoring_for_close.stop_monitoring(session_id);
             activity_for_close.stop(session_id);
+            // A script still running on the closed tab would keep its timer and
+            // its `ACTIVE_SCRIPTS` entry alive against a terminal that is gone.
+            crate::script_runner::cancel_script_for_session(session_id);
             // Drop the closed session from the broadcast set so a reused UUID
             // can never inherit its membership, and the wired set stays bounded.
             group_broadcast_for_close.forget(session_id);
@@ -2371,6 +2374,7 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let notebook_for_close = terminal_notebook.clone();
         let tunnel_manager_for_close = self.tunnel_manager.clone();
+        let monitoring_for_exit = self.monitoring.clone();
         // One-shot flag: set after the user confirms closing with open
         // sessions, so the second close() pass proceeds without re-asking.
         let force_close = Rc::new(std::cell::Cell::new(false));
@@ -2494,6 +2498,9 @@ impl MainWindow {
             // Stop all standalone SSH tunnels. Separate from the session teardown
             // because a standalone forward belongs to the window, not to a session.
             tunnel_manager_for_close.borrow_mut().stop_all();
+
+            // Stop every monitoring collector so none outlives the window.
+            monitoring_for_exit.stop_all();
 
             // End every live session: external viewers, session children, detached
             // windows (issues #209, #304, #236). One call, so this path cannot
