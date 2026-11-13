@@ -105,7 +105,7 @@ use crate::automation::{AutomationSession, prepare_rules_from_config};
 use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::i18n::{i18n, i18n_f};
 use crate::monitoring::MonitoringCoordinator;
-use crate::session::{SessionState, SessionWidget, VncSessionWidget};
+use crate::session::VncSessionWidget;
 use crate::terminal::highlight_overlay::HighlightOverlay;
 use crate::terminal::tab_container::TabPageContainer;
 
@@ -908,21 +908,6 @@ impl TerminalNotebook {
         }
     }
 
-    /// Gets the session widget (VNC) for a session
-    #[must_use]
-    pub fn get_session_widget(&self, session_id: Uuid) -> Option<SessionWidget> {
-        let widgets = self.session_widgets.borrow();
-        if let Some(SessionWidgetStorage::Vnc(_)) = widgets.get(&session_id) {
-            Some(SessionWidget::Vnc(VncSessionWidget::new()))
-        } else {
-            drop(widgets);
-            self.terminals
-                .borrow()
-                .get(&session_id)
-                .map(|terminal| SessionWidget::Ssh(terminal.clone()))
-        }
-    }
-
     /// Gets the GTK widget for a session (for display in split view)
     #[must_use]
     pub fn get_session_display_widget(&self, session_id: Uuid) -> Option<Widget> {
@@ -960,16 +945,6 @@ impl TerminalNotebook {
 
         let has_terminal = self.terminals.borrow().contains_key(&session_id);
         eligibility_from(has_terminal, None)
-    }
-
-    /// Gets the session state for a VNC session
-    #[must_use]
-    pub fn get_session_state(&self, session_id: Uuid) -> Option<SessionState> {
-        let widgets = self.session_widgets.borrow();
-        match widgets.get(&session_id) {
-            Some(SessionWidgetStorage::Vnc(widget)) => Some(widget.state()),
-            _ => None,
-        }
     }
 
     /// Spawns a session command on its own PTY and attaches it to the terminal.
@@ -2951,12 +2926,6 @@ impl TerminalNotebook {
         self.sessions.clone()
     }
 
-    /// Returns the number of open tabs
-    #[must_use]
-    pub fn tab_count(&self) -> u32 {
-        self.tab_view.n_pages() as u32
-    }
-
     /// Returns the number of active sessions (excluding Welcome tab)
     #[must_use]
     pub fn session_count(&self) -> usize {
@@ -3223,12 +3192,6 @@ impl TerminalNotebook {
     pub fn show_tab_view_content(&self) {
         self.tab_view.set_visible(true);
         self.tab_view.set_vexpand(true);
-    }
-
-    /// Returns whether the TabView content is currently visible
-    #[must_use]
-    pub fn is_tab_view_content_visible(&self) -> bool {
-        self.tab_view.is_visible()
     }
 
     // ========================================================================
@@ -3508,11 +3471,6 @@ impl TerminalNotebook {
         F: Fn(Uuid, Uuid) + 'static,
     {
         *self.on_tab_added.borrow_mut() = Some(Box::new(callback));
-    }
-
-    /// Clears the `on_tab_added` callback.
-    pub fn clear_on_tab_added(&self) {
-        *self.on_tab_added.borrow_mut() = None;
     }
 
     /// Fires the `on_tab_added` callback if set.

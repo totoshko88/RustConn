@@ -253,25 +253,6 @@ impl TerminalNotebook {
     // Terminal Tab Creation
     // ========================================================================
 
-    /// Creates a new terminal tab for an SSH session with default settings
-    pub fn create_terminal_tab(
-        &self,
-        connection_id: Uuid,
-        title: &str,
-        protocol: &str,
-        automation: Option<&AutomationConfig>,
-    ) -> Uuid {
-        self.create_terminal_tab_with_settings(
-            connection_id,
-            title,
-            protocol,
-            automation,
-            &rustconn_core::config::TerminalSettings::default(),
-            None,
-            &[], // no variables for default tab
-        )
-    }
-
     /// Creates a new terminal tab with specific settings
     ///
     /// When `theme_override` is `Some`, the per-connection colors are applied
