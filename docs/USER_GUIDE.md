@@ -744,6 +744,12 @@ Deleted items are moved to Trash and can be restored:
 - Click "Undo" to restore the deleted item
 - Trash is persisted across sessions for recovery
 
+**The Trash row:** while the trash holds anything, a 🗑 **Trash** row appears at the bottom of the sidebar tree, like the Favorites group at the top. Expand it to see the deleted connections and groups.
+- Right-click an item → **Restore** puts it back (the same action as the "Undo" notification)
+- Right-click the row or an item → **Empty Trash** asks for confirmation, then removes everything in the trash for good, including saved vault credentials. This cannot be undone
+- The row disappears when the last item is restored or the trash is emptied
+- Items in the Trash row cannot be connected, edited or dragged; restore them first
+
 ### Test Connection
 
 In connection dialog, click **Test** to verify connectivity before saving.
