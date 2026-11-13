@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 12:12+0200\n"
+"POT-Creation-Date: 2026-11-13 13:47+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: p-bo <https://github.com/p-bo>\n"
 "Language-Team: Czech\n"
@@ -15,8 +15,8 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2284 rustconn/src/script_runner.rs:774
-#: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
+#: rustconn/src/app.rs:2251 rustconn/src/script_runner.rs:785
+#: rustconn/src/script_runner.rs:817 rustconn/src/toast.rs:266
 msgid "OK"
 msgstr "OK"
 
@@ -45,14 +45,14 @@ msgstr "OK"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:571
 #: rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
-#: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:773
+#: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:784
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1198
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/tab_menu.rs:367 rustconn/src/terminal/tab_menu.rs:490
 #: rustconn/src/terminal/tab_menu.rs:714 rustconn/src/vault_ops.rs:315
-#: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
-#: rustconn/src/window/clusters.rs:456
+#: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:355
+#: rustconn/src/window/clusters.rs:410
 #: rustconn/src/window/connection_dialogs.rs:944
 #: rustconn/src/window/edit_group.rs:2040
 #: rustconn/src/window/edit_group.rs:2089
@@ -97,18 +97,18 @@ msgstr "Uložit"
 msgid "Initialization Error"
 msgstr "Chyba inicializace"
 
-#: rustconn/src/app.rs:878
+#: rustconn/src/app.rs:862
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "Heslo KeePass nebylo načteno z klíčenky — zadejte jej znovu v Nastavení"
 
-#: rustconn/src/app.rs:883 rustconn/src/dialogs/shortcuts.rs:204
+#: rustconn/src/app.rs:867 rustconn/src/dialogs/shortcuts.rs:204
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2204
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Nastavení"
 
-#: rustconn/src/app.rs:1733
+#: rustconn/src/app.rs:1700
 msgid ""
 "{} is selected, but the system keyring is not accessible. Run: sudo snap "
 "connect rustconn:password-manager-service — or open Settings, then Secrets, "
@@ -118,7 +118,7 @@ msgstr ""
 "connect rustconn:password-manager-service — nebo otevřete Nastavení a poté "
 "Tajemství a zvolte jiný backend."
 
-#: rustconn/src/app.rs:1738
+#: rustconn/src/app.rs:1705
 msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
@@ -126,13 +126,13 @@ msgstr ""
 "{} je vybrán, ale zatím neumí ukládat hesla: {}. Otevřete Nastavení a poté "
 "Tajemství."
 
-#: rustconn/src/app.rs:2119 rustconn/src/window/edit_actions.rs:1726
-#: rustconn/src/window/edit_actions.rs:1865
-#: rustconn/src/window/edit_actions.rs:1893
+#: rustconn/src/app.rs:2086 rustconn/src/window/edit_actions.rs:1696
+#: rustconn/src/window/edit_actions.rs:1835
+#: rustconn/src/window/edit_actions.rs:1863
 msgid "Failed to open URL: {}"
 msgstr "Nepodařilo se otevřít URL: {}"
 
-#: rustconn/src/app.rs:2128
+#: rustconn/src/app.rs:2095
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -143,31 +143,31 @@ msgstr ""
 "připojení, dále ta přes sériový port, do Kubernetes a přes Zero Trust – toto "
 "vše z jediné aplikace."
 
-#: rustconn/src/app.rs:2209
+#: rustconn/src/app.rs:2176
 msgid "User Guide"
 msgstr "Uživatelská příručka"
 
-#: rustconn/src/app.rs:2211
+#: rustconn/src/app.rs:2178
 msgid "Installation"
 msgstr "Instalace"
 
-#: rustconn/src/app.rs:2215
+#: rustconn/src/app.rs:2182
 msgid "Releases"
 msgstr "Vydání"
 
-#: rustconn/src/app.rs:2219
+#: rustconn/src/app.rs:2186
 msgid "Changelog"
 msgstr "Seznam změn"
 
-#: rustconn/src/app.rs:2229
+#: rustconn/src/app.rs:2196
 msgid "Special Thanks"
 msgstr "Zvláštní poděkování"
 
-#: rustconn/src/app.rs:2244
+#: rustconn/src/app.rs:2211
 msgid "Made in Ukraine"
 msgstr "Vytvořeno na Ukrajině"
 
-#: rustconn/src/app.rs:2245
+#: rustconn/src/app.rs:2212
 msgid "All contributors and supporters"
 msgstr "Všem přispěvatelům a podporovatelům"
 
@@ -211,8 +211,8 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:156
-#: rustconn/src/embedded_rdp/connection.rs:1791
-#: rustconn/src/embedded_rdp/connection.rs:2768
+#: rustconn/src/embedded_rdp/connection.rs:1785
+#: rustconn/src/embedded_rdp/connection.rs:2762
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
@@ -262,7 +262,7 @@ msgstr "„{}“ před připojením vyžaduje následující."
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1037
-#: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:438
+#: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5776
 msgid "Connect"
@@ -301,7 +301,7 @@ msgid "Enter Password Manually"
 msgstr "Zadat heslo ručně"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
-#: rustconn/src/embedded_rdp/connection.rs:2490 rustconn/src/vault_ops.rs:66
+#: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
 #: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1205
 msgid "Open Settings"
 msgstr "Otevřít nastavení"
@@ -453,7 +453,7 @@ msgstr ""
 "vytvoření.Nejsou definovány žádné clustery. Klikněte na „Nový cluster“ a "
 "nějaký vytvořte."
 
-#: rustconn/src/dialogs/cluster.rs:804 rustconn/src/window/clusters.rs:628
+#: rustconn/src/dialogs/cluster.rs:804 rustconn/src/window/clusters.rs:582
 msgid "Delete Cluster?"
 msgstr "Smazat cluster?"
 
@@ -468,8 +468,8 @@ msgstr "Tento cluster bude trvale odstraněn."
 #: rustconn/src/dialogs/tunnel.rs:728 rustconn/src/dialogs/workspace.rs:119
 #: rustconn/src/dialogs/workspace.rs:292
 #: rustconn/src/sidebar/saved_searches.rs:265 rustconn/src/sidebar_ui.rs:574
-#: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:460
-#: rustconn/src/window/clusters.rs:633 rustconn/src/window/key_setup.rs:1011
+#: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:459
+#: rustconn/src/window/clusters.rs:587 rustconn/src/window/key_setup.rs:1011
 #: rustconn/src/window/operations.rs:172 rustconn/src/window/snippets.rs:413
 #: rustconn/src/window/snippets.rs:503 rustconn/src/window/templates.rs:151
 msgid "Delete"
@@ -779,7 +779,7 @@ msgstr "Přidat pravidlo"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
-#: rustconn/src/sidebar_ui.rs:530 rustconn/src/smart_folder_ui.rs:453
+#: rustconn/src/sidebar_ui.rs:530 rustconn/src/smart_folder_ui.rs:452
 msgid "Wake On LAN"
 msgstr "Probudit po síti (WoL)"
 
@@ -846,7 +846,7 @@ msgid "Enabled"
 msgstr "Zapnuto"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:828
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3336
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3344
 msgid "Disabled"
 msgstr "Zakázáno"
 
@@ -2174,7 +2174,7 @@ msgstr ""
 #: rustconn/src/dialogs/connection/vnc.rs:307
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:85
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:390
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2278
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2286
 #: rustconn/src/dialogs/template.rs:626
 msgid "Authentication"
 msgstr "Ověření"
@@ -2300,7 +2300,7 @@ msgid "Test the script command"
 msgstr "Otestovat příkaz skriptu"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:396
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2218
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2226
 #: rustconn/src/window/edit_group.rs:571
 msgid "KeePass Database"
 msgstr "Databáze KeePass"
@@ -3748,8 +3748,8 @@ msgid "Path to SSH key"
 msgstr "Cesta ke klíči SSH"
 
 #: rustconn/src/dialogs/connection/ssh.rs:432
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2336
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2339
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2344
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2347
 msgid "Browse for key file"
 msgstr "Procházet soubory klíčů"
 
@@ -3761,7 +3761,7 @@ msgstr "Vyhledat soubor klíče SSH"
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:124
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:338
 #: rustconn/src/dialogs/key_setup.rs:515 rustconn/src/dialogs/key_setup.rs:539
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2349
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2357
 #: rustconn/src/dialogs/template.rs:677
 msgid "Key File"
 msgstr "Soubor klíče"
@@ -4584,7 +4584,7 @@ msgstr ""
 "{host}, ${port}, ${username} a ${name} pocházejí ze samotného připojení"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:68
-#: rustconn/src/dialogs/export.rs:780
+#: rustconn/src/dialogs/export.rs:763
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:74
 msgid "Summary"
 msgstr "Souhrn"
@@ -4885,7 +4885,7 @@ msgstr ""
 "soubor vytvořen."
 
 #: rustconn/src/dialogs/credential_transfer.rs:607
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2177
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2185
 msgid "Cannot open the portable file: {}"
 msgstr "Přenosný soubor nelze otevřít: {}"
 
@@ -4912,7 +4912,7 @@ msgstr "Kopírování zastaveno"
 #: rustconn/src/dialogs/credential_transfer.rs:643
 #: rustconn/src/dialogs/credential_transfer.rs:652
 #: rustconn/src/dialogs/credential_transfer.rs:719
-#: rustconn/src/dialogs/export.rs:1180 rustconn/src/dialogs/history.rs:340
+#: rustconn/src/dialogs/export.rs:1163 rustconn/src/dialogs/history.rs:340
 #: rustconn/src/dialogs/import/sources.rs:708
 #: rustconn/src/dialogs/key_setup.rs:1037
 #: rustconn/src/dialogs/portable_passphrase_change.rs:376
@@ -4959,7 +4959,7 @@ msgid "Export"
 msgstr "Export"
 
 #: rustconn/src/dialogs/export.rs:188 rustconn/src/dialogs/export.rs:282
-#: rustconn/src/dialogs/export.rs:556
+#: rustconn/src/dialogs/export.rs:539
 msgid "All connections"
 msgstr "Všechna připojení"
 
@@ -4985,7 +4985,7 @@ msgstr "Ansible Inventory"
 msgid "Asbru-CM"
 msgstr "Asbru-CM"
 
-#: rustconn/src/dialogs/export.rs:255 rustconn/src/dialogs/export.rs:905
+#: rustconn/src/dialogs/export.rs:255 rustconn/src/dialogs/export.rs:888
 msgid "CSV (*.csv)"
 msgstr "CSV (*.csv)"
 
@@ -5012,7 +5012,7 @@ msgstr "Royal TS (.rtsz)"
 msgid "SecureCRT (.ini)"
 msgstr "SecureCRT (.ini)"
 
-#: rustconn/src/dialogs/export.rs:261 rustconn/src/dialogs/export.rs:879
+#: rustconn/src/dialogs/export.rs:261 rustconn/src/dialogs/export.rs:862
 #: rustconn/src/dialogs/import/sources.rs:148
 #: rustconn/src/dialogs/import/sources.rs:249
 msgid "SSH Config"
@@ -5134,102 +5134,102 @@ msgstr "Export dokončen"
 msgid "Details"
 msgstr "Podrobnosti"
 
-#: rustconn/src/dialogs/export.rs:742
+#: rustconn/src/dialogs/export.rs:725
 msgid "Successfully exported {} connection(s) to {} format."
 msgstr "Úspěšně exportováno {} připojení ve formátu {}."
 
-#: rustconn/src/dialogs/export.rs:754
+#: rustconn/src/dialogs/export.rs:737
 msgid "{} connection(s) were skipped (unsupported protocol)."
 msgstr "{} připojení přeskočeno (nepodporovaný protokol)."
 
-#: rustconn/src/dialogs/export.rs:771
+#: rustconn/src/dialogs/export.rs:754
 msgid "Output files:"
 msgstr "Výstupní soubory:"
 
-#: rustconn/src/dialogs/export.rs:784
+#: rustconn/src/dialogs/export.rs:767
 msgid "Exported"
 msgstr "Exportováno"
 
-#: rustconn/src/dialogs/export.rs:787
+#: rustconn/src/dialogs/export.rs:770
 msgid "Skipped"
 msgstr "Přeskočeno"
 
-#: rustconn/src/dialogs/export.rs:797 rustconn/src/dialogs/import/mod.rs:476
+#: rustconn/src/dialogs/export.rs:780 rustconn/src/dialogs/import/mod.rs:476
 msgid "Warnings ({}):"
 msgstr "Varování ({}):"
 
-#: rustconn/src/dialogs/export.rs:805
+#: rustconn/src/dialogs/export.rs:788
 msgid "No connections were exported."
 msgstr "Žádná připojení nebyla exportována."
 
-#: rustconn/src/dialogs/export.rs:842
+#: rustconn/src/dialogs/export.rs:825
 msgid "Select Export Directory"
 msgstr "Vybrat složku exportu"
 
-#: rustconn/src/dialogs/export.rs:860
+#: rustconn/src/dialogs/export.rs:843
 msgid "Select Export File"
 msgstr "Vybrat soubor exportu"
 
-#: rustconn/src/dialogs/export.rs:875
+#: rustconn/src/dialogs/export.rs:858
 msgid "Ansible Inventory (*.ini, *.yml)"
 msgstr "Ansible Inventory (*.ini, *.yml)"
 
-#: rustconn/src/dialogs/export.rs:884
+#: rustconn/src/dialogs/export.rs:867
 msgid "Asbru-CM YAML (*.yml)"
 msgstr "Asbru-CM YAML (*.yml)"
 
-#: rustconn/src/dialogs/export.rs:889
+#: rustconn/src/dialogs/export.rs:872
 msgid "Remmina (*.remmina)"
 msgstr "Remmina (*.remmina)"
 
-#: rustconn/src/dialogs/export.rs:893
+#: rustconn/src/dialogs/export.rs:876
 #: rustconn/src/dialogs/import/sources.rs:582
 msgid "RustConn Native (*.rcn)"
 msgstr "RustConn Native (*.rcn)"
 
-#: rustconn/src/dialogs/export.rs:897
+#: rustconn/src/dialogs/export.rs:880
 msgid "Royal TS (*.rtsz)"
 msgstr "Royal TS (*.rtsz)"
 
-#: rustconn/src/dialogs/export.rs:901
+#: rustconn/src/dialogs/export.rs:884
 #: rustconn/src/dialogs/import/sources.rs:928
 msgid "MobaXterm Sessions (*.mxtsessions)"
 msgstr "MobaXterm Sessions (*.mxtsessions)"
 
-#: rustconn/src/dialogs/export.rs:910
+#: rustconn/src/dialogs/export.rs:893
 msgid "SecureCRT Sessions (*.ini)"
 msgstr "Relace SecureCRT (*.ini)"
 
-#: rustconn/src/dialogs/export.rs:915
+#: rustconn/src/dialogs/export.rs:898
 #: rustconn/src/dialogs/import/sources.rs:1375
 msgid "RDP Files (*.rdp)"
 msgstr "Soubory RDP (*.rdp)"
 
-#: rustconn/src/dialogs/export.rs:952
+#: rustconn/src/dialogs/export.rs:935
 msgid "Select output directory…"
 msgstr "Vyberte výstupní složku…"
 
-#: rustconn/src/dialogs/export.rs:954
+#: rustconn/src/dialogs/export.rs:937
 msgid "Select output file…"
 msgstr "Vyberte výstupní soubor…"
 
-#: rustconn/src/dialogs/export.rs:1015
+#: rustconn/src/dialogs/export.rs:998
 msgid "Select an output file or directory"
 msgstr "Vyberte výstupní soubor nebo složku"
 
-#: rustconn/src/dialogs/export.rs:1071
+#: rustconn/src/dialogs/export.rs:1054
 msgid "Exporting to {}…"
 msgstr "Exportování do {}…"
 
-#: rustconn/src/dialogs/export.rs:1126
+#: rustconn/src/dialogs/export.rs:1109
 msgid "Writing output files…"
 msgstr "Zápis výstupních souborů…"
 
-#: rustconn/src/dialogs/export.rs:1156
+#: rustconn/src/dialogs/export.rs:1139
 msgid "Export complete"
 msgstr "Export dokončen"
 
-#: rustconn/src/dialogs/export.rs:1167 rustconn/src/dialogs/import/mod.rs:581
+#: rustconn/src/dialogs/export.rs:1150 rustconn/src/dialogs/import/mod.rs:581
 #: rustconn/src/dialogs/import/mod.rs:894
 #: rustconn/src/dialogs/import/sources.rs:353
 #: rustconn/src/dialogs/import/sources.rs:445
@@ -5250,15 +5250,15 @@ msgstr "Export dokončen"
 msgid "Done"
 msgstr "Hotovo"
 
-#: rustconn/src/dialogs/export.rs:1172 rustconn/src/dialogs/recording.rs:698
+#: rustconn/src/dialogs/export.rs:1155 rustconn/src/dialogs/recording.rs:698
 msgid "Export failed"
 msgstr "Export se nezdařil"
 
-#: rustconn/src/dialogs/export.rs:1173
+#: rustconn/src/dialogs/export.rs:1156
 msgid "Export Failed"
 msgstr "Export se nezdařil"
 
-#: rustconn/src/dialogs/export.rs:1175
+#: rustconn/src/dialogs/export.rs:1158
 msgid ""
 "Could not write the export file: {}. Check destination permissions and free "
 "disk space."
@@ -5354,7 +5354,7 @@ msgid "Update component"
 msgstr "Aktualizovat komponentu"
 
 #: rustconn/src/dialogs/flatpak_components.rs:339
-#: rustconn/src/dialogs/flatpak_components.rs:520 rustconn/src/toast.rs:376
+#: rustconn/src/dialogs/flatpak_components.rs:520 rustconn/src/toast.rs:359
 msgid "Install"
 msgstr "Nainstalovat"
 
@@ -5998,7 +5998,7 @@ msgstr ""
 "Heslo zůstane v paměti pouze pro toto sezení."
 
 #: rustconn/src/dialogs/kdbx_unlock.rs:80
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2292
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2300
 msgid "Database password"
 msgstr "Heslo databáze"
 
@@ -6018,7 +6018,7 @@ msgstr "Ověřování…"
 
 #: rustconn/src/dialogs/kdbx_unlock.rs:188
 #: rustconn/src/dialogs/portable_unlock.rs:166
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2799
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2807
 msgid "Verification failed"
 msgstr "Verifikace selhala"
 
@@ -6452,8 +6452,8 @@ msgstr "Odemknout klíč SSH"
 
 #: rustconn/src/dialogs/key_unlock.rs:56
 #: rustconn/src/dialogs/portable_unlock.rs:75
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1810
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2070
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1818
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2078
 msgid "Passphrase"
 msgstr "Přístupová fráze"
 
@@ -6463,7 +6463,7 @@ msgid "Unlock"
 msgstr "Odemknout"
 
 #: rustconn/src/dialogs/key_unlock.rs:148
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1225
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1219
 msgid "Unlocking…"
 msgstr "Odemykání…"
 
@@ -6762,7 +6762,7 @@ msgstr ""
 "Originály zůstávají zachovány, takže se nic neztratí, pokud si to rozmyslíte."
 
 #: rustconn/src/dialogs/portable_migration.rs:59
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2081
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2089
 msgid "Copy Credentials"
 msgstr "Kopírovat přihlašovací údaje"
 
@@ -7047,8 +7047,8 @@ msgstr "Import selhal"
 
 #: rustconn/src/dialogs/recording.rs:828 rustconn/src/dialogs/recording.rs:840
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:288 rustconn/src/toast.rs:110
-#: rustconn/src/toast.rs:370 rustconn/src/toast.rs:400
-#: rustconn/src/window/clusters.rs:599
+#: rustconn/src/toast.rs:353 rustconn/src/toast.rs:383
+#: rustconn/src/window/clusters.rs:553
 #: rustconn/src/window/connection_dialogs.rs:890
 #: rustconn/src/window/edit_dialogs.rs:407
 #: rustconn/src/window/edit_dialogs.rs:511
@@ -7259,7 +7259,7 @@ msgstr "Nastavení hardwarové akcelerace nelze uložit: {}"
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:77
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:755
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:999
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2772
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2780
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:41
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:191
 msgid "Checking…"
@@ -7901,12 +7901,12 @@ msgid "Ready"
 msgstr "Připraveno"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:76
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2497
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2946
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2955
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2505
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2954
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2963
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2980
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2987
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2971
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2988
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2995
 msgid "Not installed"
 msgstr "Nenainstalováno"
 
@@ -7943,7 +7943,7 @@ msgid "Cannot determine store directory"
 msgstr "Nelze určit adresář úložiště"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:719
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1283
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1295
 msgid "Unlocked"
 msgstr "Odemčeno"
 
@@ -7952,7 +7952,7 @@ msgid "Locked"
 msgstr "Zamčeno"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:721
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1296
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1304
 msgid "Not logged in"
 msgstr "Nepřihlášen"
 
@@ -7984,7 +7984,7 @@ msgid "Session expired"
 msgstr "Relace vypršela"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:862
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3331
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3339
 msgid "Configured"
 msgstr "Nakonfigurováno"
 
@@ -8095,12 +8095,12 @@ msgid "Enter the passphrase that will protect the portable file"
 msgstr "Zadejte přístupovou frázi, která bude chránit přenosný soubor"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:732
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1903
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1911
 msgid "The two passphrases do not match"
 msgstr "Obě přístupové fráze se neshodují"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:736
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1918
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1926
 msgid ""
 "Repeat the passphrase to confirm it. A new file cannot be recovered if the "
 "passphrase is wrong."
@@ -8158,10 +8158,10 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1091
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1110
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1352
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1470
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1607
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2500
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1360
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1478
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1615
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2508
 msgid "Detecting…"
 msgstr "Zjišťování…"
 
@@ -8225,47 +8225,47 @@ msgstr "Stav trezoru"
 msgid "Login with 'bw login' in terminal first"
 msgstr "Nejprve se přihlaste pomocí «bw login» v terminálu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1214
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1218
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1211
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1281
 msgid "Enter password"
 msgstr "Zadejte heslo"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1294
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1302
 msgid "Invalid password"
 msgstr "Neplatné heslo"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1298
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1306
 msgid "Unlock failed"
 msgstr "Odemknutí selhalo"
-
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1312
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1426
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1554
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1648
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2261
-msgid "Read-only mode"
-msgstr "Režim jen pro čtení"
-
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1313
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1427
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1555
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1649
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2262
-msgid "Block writes to this vault; only read secrets"
-msgstr "Blokovat zápis do tohoto trezoru; pouze číst tajemství"
-
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1318
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1432
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1560
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1654
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2267
-msgid "Search from vault root"
-msgstr "Hledat od kořene trezoru"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1320
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1434
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1562
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1656
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2269
+msgid "Read-only mode"
+msgstr "Režim jen pro čtení"
+
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1321
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1435
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1563
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1657
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2270
+msgid "Block writes to this vault; only read secrets"
+msgstr "Blokovat zápis do tohoto trezoru; pouze číst tajemství"
+
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1326
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1440
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1568
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1662
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2275
+msgid "Search from vault root"
+msgstr "Hledat od kořene trezoru"
+
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1328
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1442
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1570
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2277
 msgid ""
 "Look up secrets anywhere in the vault, not just the RustConn folder. The "
 "first entry with a matching name is used"
@@ -8273,11 +8273,11 @@ msgstr ""
 "Hledat tajemství kdekoli v trezoru, nejen ve složce RustConn. Použije se "
 "první položka s odpovídajícím názvem"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1326
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1334
 msgid "Keep the CLI running (faster)"
 msgstr "Ponechat CLI spuštěné (rychlejší)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1328
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1336
 msgid ""
 "Keep one Bitwarden CLI process running for the session instead of starting "
 "one per lookup. Much faster, but the unlocked vault stays in the CLI's "
@@ -8288,39 +8288,39 @@ msgstr ""
 "paměti CLI, dokud je odemčený. U starší verze CLI se automaticky použije "
 "původní způsob"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1337
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1345
 msgid "1Password"
 msgstr "1Password"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1338
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1346
 msgid "Configure 1Password CLI integration"
 msgstr "Nastavit napojení na 1Password CLI"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1343
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1351
 msgid "Service Account Token"
 msgstr "Token servisního účtu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1345
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1353
 msgid "For headless/automated access (OP_SERVICE_ACCOUNT_TOKEN)"
 msgstr "Pro bezobslužný/automatizovaný přístup (OP_SERVICE_ACCOUNT_TOKEN)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1362
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1370
 msgid "Save token"
 msgstr "Uložit token"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1369
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1377
 msgid "Sign In"
 msgstr "Přihlásit se"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1372
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1380
 msgid "Sign in to 1Password (opens terminal)"
 msgstr "Přihlásit se do 1Password (otevře terminál)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1384
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1392
 msgid "Account Status"
 msgstr "Stav účtu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1386
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1394
 msgid "Sign in with 'op signin' in terminal or use biometric unlock"
 msgstr ""
 "Přihlaste se pomocí 'op signin' v terminálu nebo použijte biometrické "
@@ -8328,117 +8328,117 @@ msgstr ""
 "biometrické odemknutíPřihlaste se pomocí „op signin“ v terminálu nebo "
 "biometrickým odemknutím"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1398
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1406
 msgid "Opening terminal…"
 msgstr "Otevírání terminálu…"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1411
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1419
 msgid "Check terminal"
 msgstr "Zkontrolovat terminál"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1417
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1425
 msgid "No terminal found"
 msgstr "Terminál nenalezen"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1443
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1451
 msgid "Passbolt"
 msgstr "Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1444
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1452
 msgid "Configure Passbolt CLI integration"
 msgstr "Nastavit napojení na Passbolt CLI"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1454
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1462
 msgid "Server URL"
 msgstr "URL serveru"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1455
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1463
 msgid "Passbolt web vault address"
 msgstr "Adresa webového trezoru Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1463
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1471
 msgid "GPG Passphrase"
 msgstr "Heslo GPG"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1464
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1472
 msgid "Required to decrypt credentials from Passbolt"
 msgstr "Vyžadováno pro dešifrování přihlašovacích údajů z Passbolt"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1479
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1962
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1487
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1970
 msgid "Save passphrase"
 msgstr "Uložit heslo"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1486
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1494
 msgid "Open Vault"
 msgstr "Otevřít trezor"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1489
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1497
 msgid "Open Passbolt web vault in browser"
 msgstr "Otevřít webový trezor Passbolt v prohlížeči"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1501
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1509
 msgid "Server Status"
 msgstr "Stav serveru"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1502
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1510
 msgid "Configure with 'passbolt configure' in terminal"
 msgstr "Nastavte pomocí „passbolt configure“ v terminálu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1536
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1544
 msgid "Failed to open browser"
 msgstr "Nepodařilo se otevřít prohlížeč"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1545
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1553
 msgid "Enter server URL or run 'passbolt configure'"
 msgstr "Zadejte URL serveru nebo spusťte 'passbolt configure'"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1571
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1579
 msgid "Pass"
 msgstr "Pass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1572
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1580
 msgid "Configure Pass (passwordstore.org) integration"
 msgstr "Konfigurovat integraci Pass (passwordstore.org)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1577
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1585
 msgid "~/.password-store"
 msgstr "~/.password-store"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1585
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1588
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1593
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1596
 msgid "Choose password store directory"
 msgstr "Vybrat adresář úložiště hesel"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1599
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1607
 msgid "Store Directory"
 msgstr "Adresář úložiště"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1600
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1608
 msgid "Location of password-store (leave empty for default)"
 msgstr "Umístění úložiště hesel (prázdné pro výchozí)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1614
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1622
 msgid "Initialization Status"
 msgstr "Stav inicializace"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1615
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1623
 msgid "Run 'pass init &lt;gpg-id&gt;' to initialize"
 msgstr "Spusťte 'pass init &lt;gpg-id&gt;' pro inicializaci"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1626
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1634
 msgid "Select Password Store Directory"
 msgstr "Vybrat adresář úložiště hesel"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1656
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1664
 msgid "Look up secrets anywhere in the vault, not just the RustConn folder"
 msgstr "Hledat tajemství kdekoli v trezoru, nejen ve složce RustConn"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1670
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1678
 msgid "Encrypted File"
 msgstr "Zašifrovaný soubor"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1672
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1680
 msgid ""
 "Credentials in a file on this computer. The key is derived from this "
 "machine, so the file cannot be opened anywhere else — and cannot be "
@@ -8448,16 +8448,16 @@ msgstr ""
 "stroje, soubor tedy nelze otevřít nikde jinde — a nelze jej obnovit, pokud "
 "stroj zmizí."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1678
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1730
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1686
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1738
 msgid "File path"
 msgstr "Cesta k souboru"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1698
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1706
 msgid "Portable Encrypted File"
 msgstr "Přenosný zašifrovaný soubor"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1700
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1708
 msgid ""
 "Credentials in a file encrypted with a passphrase you choose. Put it in a "
 "folder your cloud client syncs and the same file opens on your other "
@@ -8469,15 +8469,15 @@ msgstr ""
 "tentýž soubor se otevře na tvých dalších počítačích. Přístupovou frázi nelze "
 "obnovit, proto se na ni ptáme dvakrát."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1717
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1725
 msgid "Browse"
 msgstr "Procházet"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1721
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1729
 msgid "Browse for portable credential file"
 msgstr "Vybrat přenosný soubor s přihlašovacími údaji"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1731
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1739
 msgid ""
 "Name a file inside a folder your cloud client syncs. Leave empty for the "
 "default location."
@@ -8485,23 +8485,23 @@ msgstr ""
 "Pojmenuj soubor ve složce, kterou synchronizuje tvůj cloudový klient. Ponech "
 "prázdné pro výchozí umístění."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1782
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1790
 msgid "Select Portable Credential File"
 msgstr "Vybrat přenosný soubor s přihlašovacími údaji"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1815
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1823
 msgid "Confirm passphrase"
 msgstr "Potvrdit přístupovou frázi"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1978
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1986
 msgid "Create File"
 msgstr "Vytvoř soubor"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1983
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1991
 msgid "Set up the file"
 msgstr "Nastavení souboru"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1985
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1993
 msgid ""
 "Create the file now, or check that your passphrase opens one that is already "
 "there"
@@ -8509,20 +8509,20 @@ msgstr ""
 "Vytvoř soubor nyní, nebo zkontroluj, že tvá přístupová fráze otevře už "
 "existující"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2017
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2025
 msgid "Setting up the file…"
 msgstr "Nastavuji soubor…"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2033
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2041
 msgid "Created {}"
 msgstr "Vytvořeno {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2037
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2045
 msgid "That file is already there and your passphrase opens it"
 msgstr "Takový soubor už existuje a tvá přístupová fráze jej otevře"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2042
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2174
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2050
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2182
 msgid ""
 "That passphrase does not open the existing portable file. Enter the "
 "passphrase the file was created with."
@@ -8530,113 +8530,113 @@ msgstr ""
 "Tato přístupová fráze neotevírá existující přenosný soubor. Zadejte "
 "přístupovou frázi, se kterou byl soubor vytvořen."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2047
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2055
 msgid "Cannot set up the file: {}"
 msgstr "Soubor nelze nastavit: {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2050
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2058
 msgid "Could not set up the file"
 msgstr "Soubor se nepodařilo nastavit"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2065
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2073
 msgid "Change Passphrase…"
 msgstr "Změnit přístupovou frázi…"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2072
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2080
 msgid ""
 "Choose a new passphrase and encrypt every password in the file again under it"
 msgstr ""
 "Vyberte novou přístupovou frázi a znovu pod ní zašifrujte každé heslo v "
 "souboru"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2083
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2091
 msgid ""
 "Copy passwords from the machine-bound encrypted file into this portable file"
 msgstr ""
 "Zkopírovat hesla ze zašifrovaného souboru vázaného na počítač do tohoto "
 "přenosného souboru"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2089
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2097
 msgid "Existing passwords"
 msgstr "Existující hesla"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2091
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2099
 msgid "Re-encrypt credentials from the machine-bound file with your passphrase"
 msgstr ""
 "Znovu zašifrovat přihlašovací údaje ze souboru vázaného na počítač vaší "
 "přístupovou frází"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2137
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2145
 msgid "No stored passwords to copy"
 msgstr "Žádná uložená hesla ke zkopírování"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2155
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2163
 msgid "Checking the passphrase…"
 msgstr "Kontrola hesla…"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2180
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2188
 msgid "Could not check the passphrase"
 msgstr "Heslo nelze zkontrolovat"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2220
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2228
 msgid ""
 "Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)"
 msgstr ""
 "Nastavit začlenění KDBX souborů (funguje s KeePassXC, GNOME Secrets atd.)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2225
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2233
 msgid "KDBX Integration"
 msgstr "Začlenění KDBX"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2226
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2234
 msgid "Enable direct database access"
 msgstr "Povolit přímý přístup k databázi"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2232
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2240
 msgid "Select .kdbx file"
 msgstr "Vybrat soubor .kdbx"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2239
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2247
 msgid "Browse for database file"
 msgstr "Procházet databázové soubory"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2242
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2250
 msgid "Browse for KeePass database file"
 msgstr "Vybrat soubor databáze KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2253
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2261
 msgid "Database File"
 msgstr "Soubor databáze"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2279
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2287
 msgid "Database unlock methods"
 msgstr "Metody odemknutí databáze"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2284
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2292
 msgid "Use password"
 msgstr "Použít heslo"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2299
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2307
 msgid "Not connected"
 msgstr "Nepřipojeno"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2315
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2323
 msgid "Save password"
 msgstr "Uložit heslo"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2323
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2331
 msgid "Use key file"
 msgstr "Použít soubor klíče"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2329
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2337
 msgid "Select .keyx or .key file"
 msgstr "Vybrat soubor .keyx nebo .key"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2358
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2366
 msgid "YubiKey slot (Challenge-Response)"
 msgstr "Slot YubiKey (výzva-odpověď)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2361
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2369
 msgid ""
 "YubiKey Challenge-Response slot for unlocking, as slot or slot:serial (e.g. "
 "2 or 2:12345678). Touch the key when it blinks."
@@ -8644,66 +8644,66 @@ msgstr ""
 "Slot výzva-odpověď YubiKey pro odemčení ve formátu slot nebo slot:serial "
 "(např. 2 nebo 2:12345678). Dotkněte se klíče, když bliká."
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2369
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2377
 msgid "KDBX Status"
 msgstr "Stav KDBX"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2374
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2382
 msgid "Check"
 msgstr "Zkontrolovat"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2376
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2384
 msgid "Test database connection"
 msgstr "Testovat připojení k databázi"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2388
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2396
 msgid "Connection Status"
 msgstr "Stav připojení"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2584
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3498
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2592
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3506
 msgid "Token loaded from keyring"
 msgstr "Token načten z klíčenky"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2646
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2654
 #: rustconn/src/dialogs/widgets.rs:977 rustconn/src/dialogs/widgets.rs:982
 #: rustconn/src/dialogs/widgets.rs:994
 msgid "Select KeePass Database"
 msgstr "Vybrat databázi KeePass"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2652
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2660
 #: rustconn/src/dialogs/widgets.rs:990
 msgid "KeePass Database (*.kdbx)"
 msgstr "Databáze KeePass (*.kdbx)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2680
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2688
 msgid "Select Key File"
 msgstr "Vybrat soubor klíče"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2687
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2695
 msgid "Key Files (*.keyx, *.key)"
 msgstr "Soubory klíčů (*.keyx, *.key)"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2691
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2699
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:619
 msgid "All Files"
 msgstr "Všechny soubory"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2728
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2736
 msgid "No database selected"
 msgstr "Žádná databáze nevybrána"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2770
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2778
 msgid "Checking… touch your YubiKey when it blinks"
 msgstr "Ověřování… dotkněte se YubiKey, když bliká"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2793
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2801
 #: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:342
 #: rustconn/src/sidebar/view.rs:793
 msgid "Connected"
 msgstr "Připojeno"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3333
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3341
 msgid "Database path required"
 msgstr "Vyžadována cesta k databázi"
 
@@ -10327,7 +10327,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/template_manager.rs:110 rustconn/src/sidebar_ui.rs:371
 #: rustconn/src/sidebar_ui.rs:555 rustconn/src/smart_folder_ui.rs:404
-#: rustconn/src/smart_folder_ui.rs:443 rustconn/src/window/snippets.rs:407
+#: rustconn/src/smart_folder_ui.rs:442 rustconn/src/window/snippets.rs:407
 msgid "Edit"
 msgstr "Upravit"
 
@@ -10345,22 +10345,22 @@ msgstr "Smazat šablonu?"
 msgid "This template will be permanently removed."
 msgstr "Tato šablona bude trvale odstraněna."
 
-#: rustconn/src/dialogs/template_manager.rs:402
+#: rustconn/src/dialogs/template_manager.rs:389
 #: rustconn/src/window/templates.rs:334
 msgid "SSH Templates"
 msgstr "Šablony SSH"
 
-#: rustconn/src/dialogs/template_manager.rs:409
+#: rustconn/src/dialogs/template_manager.rs:396
 #: rustconn/src/window/templates.rs:342
 msgid "RDP Templates"
 msgstr "Šablony RDP"
 
-#: rustconn/src/dialogs/template_manager.rs:416
+#: rustconn/src/dialogs/template_manager.rs:403
 #: rustconn/src/window/templates.rs:350
 msgid "VNC Templates"
 msgstr "Šablony VNC"
 
-#: rustconn/src/dialogs/template_manager.rs:423
+#: rustconn/src/dialogs/template_manager.rs:410
 #: rustconn/src/window/templates.rs:358
 msgid "SPICE Templates"
 msgstr "Šablony SPICE"
@@ -11379,13 +11379,13 @@ msgstr ""
 "Vestavěný klient nepodporuje přesměrování mikrofonu. Místo něj se používá "
 "FreeRDP."
 
-#: rustconn/src/embedded_rdp/connection.rs:873
-#: rustconn/src/embedded_rdp/connection.rs:2978
+#: rustconn/src/embedded_rdp/connection.rs:867
+#: rustconn/src/embedded_rdp/connection.rs:2972
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr ""
 "Připojení bylo zrušeno, protože server vyžaduje zastaralé zabezpečení RDP."
 
-#: rustconn/src/embedded_rdp/connection.rs:981
+#: rustconn/src/embedded_rdp/connection.rs:975
 msgid ""
 "Custom FreeRDP arguments are ignored by the embedded "
 "client.                          Set the RDP client mode to External to "
@@ -11394,11 +11394,11 @@ msgstr ""
 "Vestavěný klient ignoruje vlastní argumenty FreeRDP. Chcete-li je použít, "
 "přepněte režim klienta RDP na Externí."
 
-#: rustconn/src/embedded_rdp/connection.rs:2401
+#: rustconn/src/embedded_rdp/connection.rs:2395
 msgid "The server refused the shared folder “{}”"
 msgstr "Server odmítl sdílenou složku „{}“"
 
-#: rustconn/src/embedded_rdp/connection.rs:2467
+#: rustconn/src/embedded_rdp/connection.rs:2461
 msgid ""
 "H.264 is off — the installed OpenH264 isn't a Cisco build. Open Settings → "
 "Connection → Media Codecs to download it."
@@ -11406,7 +11406,7 @@ msgstr ""
 "H.264 je vypnuto — nainstalovaný OpenH264 není sestavení od Cisco. Otevřete "
 "Nastavení → Připojení → Mediální kodeky a stáhněte jej."
 
-#: rustconn/src/embedded_rdp/connection.rs:2471
+#: rustconn/src/embedded_rdp/connection.rs:2465
 msgid ""
 "H.264 is off — no OpenH264 codec is installed. Open Settings → Connection → "
 "Media Codecs to download it."
@@ -11414,7 +11414,7 @@ msgstr ""
 "H.264 je vypnuto — kodek OpenH264 není nainstalován. Otevřete Nastavení → "
 "Připojení → Mediální kodeky a stáhněte jej."
 
-#: rustconn/src/embedded_rdp/connection.rs:2475
+#: rustconn/src/embedded_rdp/connection.rs:2469
 msgid ""
 "H.264 is off — the OpenH264 codec could not be loaded. Open Settings → "
 "Connection → Media Codecs to re-download it."
@@ -11422,51 +11422,51 @@ msgstr ""
 "H.264 je vypnuto — kodek OpenH264 se nepodařilo načíst. Otevřete Nastavení → "
 "Připojení → Mediální kodeky a stáhněte jej znovu."
 
-#: rustconn/src/embedded_rdp/connection.rs:2685
+#: rustconn/src/embedded_rdp/connection.rs:2679
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr "Spojení ztraceno. Opětovné připojování (pokus {} z {})…"
 
-#: rustconn/src/embedded_rdp/connection.rs:3015
+#: rustconn/src/embedded_rdp/connection.rs:3009
 msgid "Could not prepare the external RDP compatibility client."
 msgstr ""
 "Nepodařilo se připravit externího klienta RDP pro zajištění kompatibility."
 
-#: rustconn/src/embedded_rdp/connection.rs:3026
+#: rustconn/src/embedded_rdp/connection.rs:3020
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "Používá se externí RDP klient (server vyžaduje licencování RDS)"
 
-#: rustconn/src/embedded_rdp/connection.rs:3028
+#: rustconn/src/embedded_rdp/connection.rs:3022
 msgid "Using external RDP client (server incompatible)"
 msgstr "Používá se externí RDP klient (server nekompatibilní)"
 
-#: rustconn/src/embedded_rdp/connection.rs:3046
-#: rustconn/src/embedded_rdp/connection.rs:3632
+#: rustconn/src/embedded_rdp/connection.rs:3040
+#: rustconn/src/embedded_rdp/connection.rs:3626
 msgid "The external RDP client could not be started."
 msgstr "Externího klienta RDP se nepodařilo spustit."
 
-#: rustconn/src/embedded_rdp/connection.rs:3084
+#: rustconn/src/embedded_rdp/connection.rs:3078
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Externího klienta RDP se nepodařilo spustit. Nainstalujte FreeRDP 3 a zkuste "
 "to znovu."
 
-#: rustconn/src/embedded_rdp/connection.rs:3165
+#: rustconn/src/embedded_rdp/connection.rs:3159
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "Připojení TLS selhalo. Server nemusí podporovat tuto úroveň zabezpečení."
 
-#: rustconn/src/embedded_rdp/connection.rs:3169
+#: rustconn/src/embedded_rdp/connection.rs:3163
 msgid "Connection refused. Check host and port."
 msgstr "Připojení odmítnuto. Zkontrolujte hostitele a port."
 
-#: rustconn/src/embedded_rdp/connection.rs:3172
+#: rustconn/src/embedded_rdp/connection.rs:3166
 #: rustconn/src/embedded_web/mod.rs:653
 msgid "Connection timed out. Check that the host is reachable."
 msgstr ""
 "Časový limit připojení vypršel. Zkontrolujte, zda je hostitel dostupný."
 
-#: rustconn/src/embedded_rdp/connection.rs:3193
+#: rustconn/src/embedded_rdp/connection.rs:3187
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -11479,7 +11479,7 @@ msgstr ""
 "6.7.90 nebo novější, nebo nastavte na serveru ExtSecurity=0 (FreeRDP issue "
 "#13567)."
 
-#: rustconn/src/embedded_rdp/connection.rs:3198
+#: rustconn/src/embedded_rdp/connection.rs:3192
 msgid ""
 "Account restrictions refused this sign-in. Protected Users members cannot "
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
@@ -11487,41 +11487,41 @@ msgstr ""
 "Omezení účtu odmítla toto přihlášení. Členové skupiny Protected Users "
 "nemohou používat NTLM: zapněte ověřování Kerberos v nastavení RDP připojení."
 
-#: rustconn/src/embedded_rdp/connection.rs:3201
+#: rustconn/src/embedded_rdp/connection.rs:3195
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr "Ověření selhalo: omezení účtu brání přihlášení."
 
-#: rustconn/src/embedded_rdp/connection.rs:3204
+#: rustconn/src/embedded_rdp/connection.rs:3198
 msgid "Authentication failed: password must be changed before first login."
 msgstr "Ověření selhalo: heslo je třeba změnit před prvním přihlášením."
 
-#: rustconn/src/embedded_rdp/connection.rs:3206
+#: rustconn/src/embedded_rdp/connection.rs:3200
 msgid "Authentication failed: account is disabled."
 msgstr "Ověření selhalo: účet je zakázán."
 
-#: rustconn/src/embedded_rdp/connection.rs:3207
+#: rustconn/src/embedded_rdp/connection.rs:3201
 msgid "Authentication failed: account is locked out."
 msgstr "Ověření selhalo: účet je uzamčen."
 
-#: rustconn/src/embedded_rdp/connection.rs:3208
+#: rustconn/src/embedded_rdp/connection.rs:3202
 msgid "Authentication failed: password has expired."
 msgstr "Ověření selhalo: platnost hesla vypršela."
 
-#: rustconn/src/embedded_rdp/connection.rs:3209
+#: rustconn/src/embedded_rdp/connection.rs:3203
 msgid "Authentication failed: account has expired."
 msgstr "Ověření selhalo: platnost účtu vypršela."
 
-#: rustconn/src/embedded_rdp/connection.rs:3211
+#: rustconn/src/embedded_rdp/connection.rs:3205
 msgid "Authentication failed: account is disabled, locked out or expired."
 msgstr ""
 "Ověření selhalo: účet je zakázaný, uzamčený nebo jeho platnost vypršela."
 
-#: rustconn/src/embedded_rdp/connection.rs:3214
+#: rustconn/src/embedded_rdp/connection.rs:3208
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Ověření selhalo: uživatel nemá oprávnění přihlásit se k tomuto počítači."
 
-#: rustconn/src/embedded_rdp/connection.rs:3218
+#: rustconn/src/embedded_rdp/connection.rs:3212
 msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
@@ -11529,8 +11529,8 @@ msgstr ""
 "Pro oblast {} nebyl nalezen žádný server KDC Kerberos. Zadejte adresu KDC v "
 "nastavení RDP připojení nebo přidejte oblast do /etc/krb5.conf."
 
-#: rustconn/src/embedded_rdp/connection.rs:3222
-#: rustconn/src/embedded_rdp/connection.rs:3262
+#: rustconn/src/embedded_rdp/connection.rs:3216
+#: rustconn/src/embedded_rdp/connection.rs:3256
 msgid ""
 "Kerberos needs the DNS domain. Enter it in the Domain field, for example "
 "EXAMPLE.COM."
@@ -11538,7 +11538,7 @@ msgstr ""
 "Kerberos potřebuje doménu DNS. Zadejte ji do pole Doména, například "
 "EXAMPLE.COM."
 
-#: rustconn/src/embedded_rdp/connection.rs:3226
+#: rustconn/src/embedded_rdp/connection.rs:3220
 msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
@@ -11546,7 +11546,7 @@ msgstr ""
 "Nepodařilo se spojit se serverem KDC Kerberos. Zadejte název nebo IP adresu "
 "řadiče domény jako adresu KDC v nastavení RDP připojení."
 
-#: rustconn/src/embedded_rdp/connection.rs:3229
+#: rustconn/src/embedded_rdp/connection.rs:3223
 msgid ""
 "Kerberos sign-in failed: this computer's clock differs from the domain's by "
 "more than five minutes. Synchronize the clock and try again."
@@ -11554,7 +11554,7 @@ msgstr ""
 "Přihlášení přes Kerberos selhalo: hodiny tohoto počítače se od hodin domény "
 "liší o více než pět minut. Synchronizujte hodiny a zkuste to znovu."
 
-#: rustconn/src/embedded_rdp/connection.rs:3232
+#: rustconn/src/embedded_rdp/connection.rs:3226
 msgid ""
 "The domain does not know this server by the name in Host. Connect by the "
 "server's DNS name, as registered in the domain."
@@ -11562,11 +11562,11 @@ msgstr ""
 "Doména nezná tento server pod názvem uvedeným v poli Hostitel. Připojte se "
 "pomocí názvu DNS serveru tak, jak je zaregistrován v doméně."
 
-#: rustconn/src/embedded_rdp/connection.rs:3234
+#: rustconn/src/embedded_rdp/connection.rs:3228
 msgid "NLA authentication failed. Check username and password."
 msgstr "Ověření NLA selhalo. Zkontrolujte uživatelské jméno a heslo."
 
-#: rustconn/src/embedded_rdp/connection.rs:3256
+#: rustconn/src/embedded_rdp/connection.rs:3250
 msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
@@ -11574,7 +11574,7 @@ msgstr ""
 "Kerberos potřebuje název DNS serveru. Připojení pomocí IP adresy nebo přes "
 "tunel SSH selže."
 
-#: rustconn/src/embedded_rdp/connection.rs:3259
+#: rustconn/src/embedded_rdp/connection.rs:3253
 msgid ""
 "Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
 "name."
@@ -11582,11 +11582,11 @@ msgstr ""
 "Kerberos potřebuje doménu DNS, například EXAMPLE.COM, nikoli krátký název "
 "domény."
 
-#: rustconn/src/embedded_rdp/connection.rs:3659
+#: rustconn/src/embedded_rdp/connection.rs:3653
 msgid "RDP session will open in an external window"
 msgstr "Relace RDP se otevře v externím okně"
 
-#: rustconn/src/embedded_rdp/connection.rs:3688
+#: rustconn/src/embedded_rdp/connection.rs:3682
 msgid "Failed to start FreeRDP: {}"
 msgstr "Nepodařilo se spustit FreeRDP: {}"
 
@@ -11708,14 +11708,14 @@ msgstr "Uložit soubory ze vzdálené schránky"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1487
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1462
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1153
 msgid "Reconnect"
 msgstr "Znovu připojit"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1489
+#: rustconn/src/terminal/mod.rs:1464
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Znovu připojit k této relaci"
@@ -11777,7 +11777,7 @@ msgid "Connection may have been lost while the computer slept"
 msgstr "Připojení mohlo být přerušeno, když počítač spal"
 
 #: rustconn/src/embedded_rdp/polling_handlers.rs:172
-#: rustconn/src/embedded_vnc/mod.rs:696 rustconn/src/embedded_vnc/ui.rs:56
+#: rustconn/src/embedded_vnc/mod.rs:688 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr "Kopírovat vzdálenou schránku do místní"
 
@@ -11856,7 +11856,7 @@ msgstr "Další akce"
 msgid "Show session toolbar"
 msgstr "Zobrazit panel nástrojů relace"
 
-#: rustconn/src/embedded_vnc/mod.rs:584
+#: rustconn/src/embedded_vnc/mod.rs:576
 msgid ""
 "VNC encryption not supported. Install TigerVNC and enable 'Accept "
 "Certificate'."
@@ -11864,7 +11864,7 @@ msgstr ""
 "Šifrování VNC není podporováno. Nainstalujte TigerVNC a zapněte «Přijmout "
 "certifikát»."
 
-#: rustconn/src/embedded_vnc/mod.rs:659
+#: rustconn/src/embedded_vnc/mod.rs:651
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Použití externího prohlížeče (nepodporované šifrování)"
 
@@ -12185,15 +12185,15 @@ msgstr ""
 "Portál pracovní plochy nebyl nalezen — dialogová okna souborů se nemusí "
 "otevřít. Viz „Řešení potíží“ v uživatelské příručce"
 
-#: rustconn/src/script_runner.rs:603
+#: rustconn/src/script_runner.rs:614
 msgid "Script error: {}"
 msgstr "Chyba skriptu: {}"
 
-#: rustconn/src/script_runner.rs:912
+#: rustconn/src/script_runner.rs:923
 msgid "Could not start script “{}”: {}"
 msgstr "Skript „{}“ se nepodařilo spustit: {}"
 
-#: rustconn/src/script_runner.rs:920
+#: rustconn/src/script_runner.rs:931
 msgid "Auto-run script “{}” could not be loaded: {}"
 msgstr "Automaticky spouštěný skript „{}“ se nepodařilo načíst: {}"
 
@@ -12361,7 +12361,7 @@ msgstr "Chyba synchronizace: {}"
 msgid "Connecting"
 msgstr "Připojování"
 
-#: rustconn/src/sidebar_ui.rs:352 rustconn/src/window/clusters.rs:402
+#: rustconn/src/sidebar_ui.rs:352 rustconn/src/window/clusters.rs:356
 msgid "Connect All"
 msgstr "Připojit vše"
 
@@ -12436,7 +12436,7 @@ msgstr "Otevřít SFTP"
 msgid "Open Browser via Tunnel"
 msgstr "Otevřít prohlížeč přes tunel"
 
-#: rustconn/src/sidebar_ui.rs:532 rustconn/src/smart_folder_ui.rs:455
+#: rustconn/src/sidebar_ui.rs:532 rustconn/src/smart_folder_ui.rs:454
 msgid "Check if Online"
 msgstr "Zkontrolovat dostupnost"
 
@@ -12785,23 +12785,23 @@ msgstr "Přehled karet (Ctrl+Shift+O)"
 msgid "Welcome"
 msgstr "Vítejte"
 
-#: rustconn/src/terminal/mod.rs:1131
+#: rustconn/src/terminal/mod.rs:1106
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "Filtr výstupu „{}“ není nainstalován; výstup sezení se nefiltruje"
 
-#: rustconn/src/terminal/mod.rs:1481
+#: rustconn/src/terminal/mod.rs:1456
 msgid "Command not found: {}"
 msgstr "Příkaz nenalezen: {}"
 
-#: rustconn/src/terminal/mod.rs:1483
+#: rustconn/src/terminal/mod.rs:1458
 msgid "Failed to start '{}'"
 msgstr "Nepodařilo se spustit „{}“"
 
-#: rustconn/src/terminal/mod.rs:1505
+#: rustconn/src/terminal/mod.rs:1480
 msgid "'{}' is not installed"
 msgstr "„{}“ není nainstalovanáno"
 
-#: rustconn/src/terminal/mod.rs:1508
+#: rustconn/src/terminal/mod.rs:1483
 msgid "Failed to start '{}': {}"
 msgstr "Nepodařilo se spustit „{}“: {}"
 
@@ -13029,16 +13029,16 @@ msgstr "Zavřít vše bez skupiny"
 msgid "Close All Tabs"
 msgstr "Zavřít všechny karty"
 
-#: rustconn/src/toast.rs:281
+#: rustconn/src/toast.rs:264
 msgid "Info"
 msgstr "Informace"
 
-#: rustconn/src/toast.rs:332 rustconn/src/window/batch_edit.rs:240
+#: rustconn/src/toast.rs:315 rustconn/src/window/batch_edit.rs:240
 #: rustconn/src/window/key_setup.rs:868
 msgid "Undo"
 msgstr "Zpět"
 
-#: rustconn/src/toast.rs:397
+#: rustconn/src/toast.rs:380
 msgid "Retry"
 msgstr "Opakovat"
 
@@ -13217,30 +13217,26 @@ msgstr "Ikona (emoji nebo název GTK ikony, prázdné pro vymazání)"
 msgid "Updated {} connections"
 msgstr "{} připojení aktualizováno"
 
-#: rustconn/src/window/clusters.rs:61
-msgid "Cluster has been saved successfully."
-msgstr "Cluster byl úspěšně uložen."
-
-#: rustconn/src/window/clusters.rs:64 rustconn/src/window/clusters.rs:243
+#: rustconn/src/window/clusters.rs:197
 msgid "Error Creating Cluster"
 msgstr "Chyba při vytváření clusteru"
 
-#: rustconn/src/window/clusters.rs:244 rustconn/src/window/clusters.rs:592
+#: rustconn/src/window/clusters.rs:198 rustconn/src/window/clusters.rs:546
 msgid "Failed to save cluster: {}"
 msgstr "Nepodařilo se uložit cluster: {}"
 
-#: rustconn/src/window/clusters.rs:302
+#: rustconn/src/window/clusters.rs:256
 msgid "Cluster has no connections"
 msgstr "Cluster nemá žádná připojení"
 
-#: rustconn/src/window/clusters.rs:388
+#: rustconn/src/window/clusters.rs:342
 msgid "“{}” opens {} connection at once."
 msgid_plural "“{}” opens {} connections at once."
 msgstr[0] "„{}“ otevře {} připojení najednou."
 msgstr[1] "„{}“ otevře {} připojení najednou."
 msgstr[2] "„{}“ otevře {} připojení najednou."
 
-#: rustconn/src/window/clusters.rs:396
+#: rustconn/src/window/clusters.rs:350
 msgid ""
 "Most of them may come from its auto-membership pattern. If that is more than "
 "you expected, cancel and narrow the pattern."
@@ -13248,11 +13244,11 @@ msgstr ""
 "Většina z nich může pocházet z jeho vzoru automatického členství. Pokud je "
 "to více, než jste čekali, zrušte to a vzor zužte."
 
-#: rustconn/src/window/clusters.rs:400
+#: rustconn/src/window/clusters.rs:354
 msgid "Open All Connections?"
 msgstr "Otevřít všechna připojení?"
 
-#: rustconn/src/window/clusters.rs:445
+#: rustconn/src/window/clusters.rs:399
 msgid ""
 "{} cluster member has a jump host that no longer exists or points to itself: "
 "{}."
@@ -13269,7 +13265,7 @@ msgstr[2] ""
 "{} členů klastru má mezihostitele, který již neexistuje nebo odkazuje sám na "
 "sebe: {}."
 
-#: rustconn/src/window/clusters.rs:451
+#: rustconn/src/window/clusters.rs:405
 msgid ""
 "Connecting now skips those jump hosts, so these members may reach their "
 "servers directly. Open a member on its own to see the details."
@@ -13277,24 +13273,24 @@ msgstr ""
 "Připojení nyní tyto mezihostitele přeskočí, takže tito členové mohou své "
 "servery dosáhnout přímo. Otevřete člena samostatně a zobrazte podrobnosti."
 
-#: rustconn/src/window/clusters.rs:455
+#: rustconn/src/window/clusters.rs:409
 msgid "Jump Host Unavailable"
 msgstr "Mezihostitel není dostupný"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3652
+#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3652
 #: rustconn/src/window/mod.rs:3718 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Přesto připojit"
 
-#: rustconn/src/window/clusters.rs:591
+#: rustconn/src/window/clusters.rs:545
 msgid "Error Updating Cluster"
 msgstr "Chyba při aktualizaci clusteru"
 
-#: rustconn/src/window/clusters.rs:600
+#: rustconn/src/window/clusters.rs:554
 msgid "Could not access application state"
 msgstr "Nelze přistoupit ke stavu aplikace"
 
-#: rustconn/src/window/clusters.rs:630
+#: rustconn/src/window/clusters.rs:584
 msgid ""
 "Are you sure you want to delete the cluster '{}'?\n"
 "This will not delete the connections in the cluster."
@@ -13302,11 +13298,11 @@ msgstr ""
 "Opravdu chcete smazat cluster '{}'?\n"
 "Připojení v clusteru nebudou smazána."
 
-#: rustconn/src/window/clusters.rs:653
+#: rustconn/src/window/clusters.rs:607
 msgid "Error Deleting Cluster"
 msgstr "Chyba při mazání clusteru"
 
-#: rustconn/src/window/clusters.rs:654
+#: rustconn/src/window/clusters.rs:608
 msgid "Failed to delete cluster: {}"
 msgstr "Nepodařilo se smazat cluster: {}"
 
@@ -13531,7 +13527,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:1050
 #: rustconn/src/window/credentials.rs:1286
-#: rustconn/src/window/edit_actions.rs:2319
+#: rustconn/src/window/edit_actions.rs:2289
 msgid "Connection failed. Host unreachable."
 msgstr "Připojení selhalo. Hostitel nedostupný."
 
@@ -13572,62 +13568,62 @@ msgstr "Relaci se nepodařilo přesunout do vlastního okna."
 msgid "Could not move the session back to the main window."
 msgstr "Relaci se nepodařilo přesunout zpět do hlavního okna."
 
-#: rustconn/src/window/edit_actions.rs:380
+#: rustconn/src/window/edit_actions.rs:350
 msgid "Item restored"
 msgstr "Položka obnovena"
 
-#: rustconn/src/window/edit_actions.rs:509
+#: rustconn/src/window/edit_actions.rs:479
 msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
 msgstr "Wake On LAN není nastaveno. Upravte připojení a zadejte MAC adresu."
 
-#: rustconn/src/window/edit_actions.rs:537
+#: rustconn/src/window/edit_actions.rs:507
 msgid "Wake On LAN sent to {} — waiting for host to come online…"
 msgstr "Wake On LAN odesláno na {} — čekání na spuštění hostitele…"
 
-#: rustconn/src/window/edit_actions.rs:578
+#: rustconn/src/window/edit_actions.rs:548
 msgid "{} is online — connecting…"
 msgstr "{} je online — připojování…"
 
-#: rustconn/src/window/edit_actions.rs:593
+#: rustconn/src/window/edit_actions.rs:563
 msgid "{} did not come online after WoL"
 msgstr "{} se nespustil po WoL"
 
-#: rustconn/src/window/edit_actions.rs:605
+#: rustconn/src/window/edit_actions.rs:575
 msgid "Failed to send Wake On LAN packet. Check network permissions."
 msgstr ""
 "Nepodařilo se odeslat paket Wake On LAN. Zkontrolujte síťová "
 "oprávnění.Nepodařilo se odeslat paket Wake On LAN. Zkontrolujte síťová "
 "oprávnění."
 
-#: rustconn/src/window/edit_actions.rs:640
+#: rustconn/src/window/edit_actions.rs:610
 msgid "Checking if {} is online…"
 msgstr "Kontrola, zda je {} online…"
 
-#: rustconn/src/window/edit_actions.rs:671
+#: rustconn/src/window/edit_actions.rs:641
 msgid "{} is online"
 msgstr "{} je online"
 
-#: rustconn/src/window/edit_actions.rs:686
+#: rustconn/src/window/edit_actions.rs:656
 msgid "{} did not come online within timeout"
 msgstr "{} se nespustil v časovém limitu"
 
-#: rustconn/src/window/edit_actions.rs:693
+#: rustconn/src/window/edit_actions.rs:663
 msgid "Host check failed: {}"
 msgstr "Kontrola hostitele selhala: {}"
 
-#: rustconn/src/window/edit_actions.rs:837
+#: rustconn/src/window/edit_actions.rs:807
 msgid "This connection type cannot host a SOCKS tunnel"
 msgstr "Tento typ připojení nepodporuje tunel SOCKS"
 
-#: rustconn/src/window/edit_actions.rs:858
+#: rustconn/src/window/edit_actions.rs:828
 msgid "application is busy"
 msgstr "aplikace je zaneprázdněna"
 
-#: rustconn/src/window/edit_actions.rs:861
+#: rustconn/src/window/edit_actions.rs:831
 msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH připojení, přes které tuneluje, již neexistuje"
 
-#: rustconn/src/window/edit_actions.rs:995
+#: rustconn/src/window/edit_actions.rs:965
 msgid ""
 "The SOCKS proxy password variable ‘{}’ is not secret, so it was not used. "
 "Mark it as secret in Global Variables."
@@ -13635,28 +13631,28 @@ msgstr ""
 "Proměnná s heslem proxy SOCKS ‘{}’ není tajná, proto nebyla použita. Označte "
 "ji jako tajnou v Globálních proměnných."
 
-#: rustconn/src/window/edit_actions.rs:1001
+#: rustconn/src/window/edit_actions.rs:971
 msgid "The SOCKS proxy password variable ‘{}’ has no value"
 msgstr "Proměnná s heslem proxy SOCKS ‘{}’ nemá hodnotu"
 
-#: rustconn/src/window/edit_actions.rs:1008
+#: rustconn/src/window/edit_actions.rs:978
 msgid "Could not start the SOCKS relay: {}"
 msgstr "Nepodařilo se spustit předávání SOCKS: {}"
 
-#: rustconn/src/window/edit_actions.rs:1261
-#: rustconn/src/window/edit_actions.rs:1395
-#: rustconn/src/window/edit_actions.rs:1654
-#: rustconn/src/window/edit_actions.rs:1763
+#: rustconn/src/window/edit_actions.rs:1231
+#: rustconn/src/window/edit_actions.rs:1365
+#: rustconn/src/window/edit_actions.rs:1624
+#: rustconn/src/window/edit_actions.rs:1733
 #: rustconn/src/window/protocols.rs:2385
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Nepodařilo se otevřít SSH tunel: {}"
 
-#: rustconn/src/window/edit_actions.rs:1274
-#: rustconn/src/window/edit_actions.rs:1374
+#: rustconn/src/window/edit_actions.rs:1244
+#: rustconn/src/window/edit_actions.rs:1344
 msgid "Starting the tunnel…"
 msgstr "Spouští se tunel…"
 
-#: rustconn/src/window/edit_actions.rs:1334
+#: rustconn/src/window/edit_actions.rs:1304
 msgid ""
 "The tunnelled browser command ‘{}’ can't use a proxy; opening the embedded "
 "browser instead. Set a Chromium-based browser or Firefox in Settings to use "
@@ -13666,7 +13662,7 @@ msgstr ""
 "otevře vestavěný prohlížeč. Chcete-li externí prohlížeč, nastavte v "
 "Nastavení prohlížeč založený na Chromiu nebo Firefox."
 
-#: rustconn/src/window/edit_actions.rs:1338
+#: rustconn/src/window/edit_actions.rs:1308
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a chromium/"
@@ -13676,7 +13672,7 @@ msgstr ""
 "tunel lze proxovat pouze prohlížeče z rodiny Chromium; nastavte v "
 "předvolbách příkaz chromium/chrome/brave/vivaldi/edge."
 
-#: rustconn/src/window/edit_actions.rs:1344
+#: rustconn/src/window/edit_actions.rs:1314
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
 "embedded browser instead. Check the command in Settings, or clear it to auto-"
@@ -13686,7 +13682,7 @@ msgstr ""
 "prohlížeč. Zkontrolujte příkaz v předvolbách nebo jej vymažte pro "
 "automatické zjištění prohlížeče."
 
-#: rustconn/src/window/edit_actions.rs:1348
+#: rustconn/src/window/edit_actions.rs:1318
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -13694,7 +13690,7 @@ msgstr ""
 "Příkaz tunelovaného prohlížeče ‘{}’ nebyl nalezen v PATH. Zkontrolujte "
 "příkaz v předvolbách nebo jej vymažte pro automatické zjištění prohlížeče."
 
-#: rustconn/src/window/edit_actions.rs:1354
+#: rustconn/src/window/edit_actions.rs:1324
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -13702,7 +13698,7 @@ msgstr ""
 "Nenalezen žádný prohlížeč na bázi Chromium; otevírám vestavěný prohlížeč. "
 "Nainstalujte prohlížeč na bázi Chromium, abyste mohli tunelovat externí."
 
-#: rustconn/src/window/edit_actions.rs:1357
+#: rustconn/src/window/edit_actions.rs:1327
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -13711,26 +13707,26 @@ msgstr ""
 "Chromium nebo použijte sestavení s vestavěným prohlížečem k otevření "
 "tunelovaného prohlížeče."
 
-#: rustconn/src/window/edit_actions.rs:1465
-#: rustconn/src/window/edit_actions.rs:1488
-#: rustconn/src/window/edit_actions.rs:1541
+#: rustconn/src/window/edit_actions.rs:1435
+#: rustconn/src/window/edit_actions.rs:1458
+#: rustconn/src/window/edit_actions.rs:1511
 msgid "Failed to open browser: {}"
 msgstr "Nepodařilo se otevřít prohlížeč: {}"
 
-#: rustconn/src/window/edit_actions.rs:1483
+#: rustconn/src/window/edit_actions.rs:1453
 msgid "Opened a tunnelled browser"
 msgstr "Tunelovaný prohlížeč otevřen"
 
-#: rustconn/src/window/edit_actions.rs:1518
+#: rustconn/src/window/edit_actions.rs:1488
 msgid "{} (tunnel)"
 msgstr "{} (tunel)"
 
-#: rustconn/src/window/edit_actions.rs:1532
-#: rustconn/src/window/edit_actions.rs:1694
+#: rustconn/src/window/edit_actions.rs:1502
+#: rustconn/src/window/edit_actions.rs:1664
 msgid "Could not open the page: {}"
 msgstr "Stránku se nepodařilo otevřít: {}"
 
-#: rustconn/src/window/edit_actions.rs:1788
+#: rustconn/src/window/edit_actions.rs:1758
 msgid ""
 "This browser can't use a proxy, so the page was not opened. Use a Chromium-"
 "based browser, Firefox or the embedded browser."
@@ -13738,12 +13734,12 @@ msgstr ""
 "Tento prohlížeč nemůže použít proxy, proto stránka nebyla otevřena. Použijte "
 "prohlížeč založený na Chromiu, Firefox nebo vestavěný prohlížeč."
 
-#: rustconn/src/window/edit_actions.rs:1854
-#: rustconn/src/window/edit_actions.rs:1907
+#: rustconn/src/window/edit_actions.rs:1824
+#: rustconn/src/window/edit_actions.rs:1877
 msgid "Opened in browser"
 msgstr "Otevřeno v prohlížeči"
 
-#: rustconn/src/window/edit_actions.rs:1879
+#: rustconn/src/window/edit_actions.rs:1849
 msgid ""
 "No browser that can use a proxy was found, so the page was not opened. "
 "Install Chromium or Firefox, or use the embedded browser."
@@ -13751,24 +13747,24 @@ msgstr ""
 "Nebyl nalezen prohlížeč schopný použít proxy, proto stránka nebyla otevřena. "
 "Nainstalujte Chromium nebo Firefox, nebo použijte vestavěný prohlížeč."
 
-#: rustconn/src/window/edit_actions.rs:2056
+#: rustconn/src/window/edit_actions.rs:2026
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr "Agent SSH neběží. Spusťte „eval $(ssh-agent)“ a zkuste to znovu."
 
-#: rustconn/src/window/edit_actions.rs:2067
+#: rustconn/src/window/edit_actions.rs:2037
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr "Nelze ověřit, zda agent SSH obsahuje klíč. mc se přesto otevře."
 
-#: rustconn/src/window/edit_actions.rs:2073
+#: rustconn/src/window/edit_actions.rs:2043
 msgid "SSH key not available"
 msgstr "SSH klíč není dostupný"
 
-#: rustconn/src/window/edit_actions.rs:2094 rustconn/src/window/mc_launch.rs:62
+#: rustconn/src/window/edit_actions.rs:2064 rustconn/src/window/mc_launch.rs:62
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP je dostupné pouze pro SSH připojení."
 
-#: rustconn/src/window/edit_actions.rs:2123
-#: rustconn/src/window/edit_actions.rs:2420
+#: rustconn/src/window/edit_actions.rs:2093
+#: rustconn/src/window/edit_actions.rs:2390
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13777,17 +13773,17 @@ msgstr ""
 "Externí správci souborů nemají přístup k SSH agentovi ve Flatpaku. Pro "
 "spolehlivý přístup povolte \"SFTP přes mc\" v Nastavení."
 
-#: rustconn/src/window/edit_actions.rs:2139
-#: rustconn/src/window/edit_actions.rs:2438
+#: rustconn/src/window/edit_actions.rs:2109
+#: rustconn/src/window/edit_actions.rs:2408
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Zjištěn přestupní hostitel. SFTP se otevírá přes mc místo správce souborů."
 
-#: rustconn/src/window/edit_actions.rs:2166
+#: rustconn/src/window/edit_actions.rs:2136
 msgid "Opening SFTP…"
 msgstr "Otevírání SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2213
+#: rustconn/src/window/edit_actions.rs:2183
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr "Agent SSH neběží — správce souborů se nemusí ověřit."
 
@@ -15547,3 +15543,6 @@ msgstr "Správce připojení"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Cluster has been saved successfully."
+#~ msgstr "Cluster byl úspěšně uložen."
