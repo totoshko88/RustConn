@@ -100,7 +100,11 @@ impl AppState {
         self.spawn_trashed_credential_cleanup(std::slice::from_ref(&conn), &[]);
         if let Err(e) = self.connection_manager.purge_trash_connection(id) {
             tracing::warn!(connection = %id, error = %e, "Failed to purge trashed connection");
+            return;
         }
+        // Only now is the deletion permanent: dropping the id from workspaces at
+        // delete time would lose it for good when the user hits Undo.
+        self.workspace_on_connection_deleted(id);
     }
 
     /// Permanently removes a soft-deleted group, its subtree, and their vault
@@ -141,7 +145,9 @@ impl AppState {
         for conn_id in trashed_conns.iter().map(|c| c.id) {
             if let Err(e) = self.connection_manager.purge_trash_connection(conn_id) {
                 tracing::warn!(connection = %conn_id, error = %e, "Failed to purge trashed connection");
+                continue;
             }
+            self.workspace_on_connection_deleted(conn_id);
         }
         for group_id in &subtree_ids {
             if let Err(e) = self.connection_manager.purge_trash_group(*group_id) {
@@ -233,6 +239,12 @@ impl AppState {
     pub fn empty_trash(&mut self) -> ConfigResult<()> {
         use rustconn_core::models::PasswordSource;
 
+        let trashed_ids: Vec<uuid::Uuid> = self
+            .connection_manager
+            .list_trash_connections()
+            .iter()
+            .map(|c| c.id)
+            .collect();
         let settings = self.settings.clone();
         let groups: Vec<rustconn_core::models::ConnectionGroup> = self
             .connection_manager
@@ -329,7 +341,13 @@ impl AppState {
             });
         }
 
-        self.connection_manager.empty_trash()
+        let result = self.connection_manager.empty_trash();
+        if result.is_ok() {
+            for id in trashed_ids {
+                self.workspace_on_connection_deleted(id);
+            }
+        }
+        result
     }
 
     /// Generates a unique group name among siblings by appending a number if needed

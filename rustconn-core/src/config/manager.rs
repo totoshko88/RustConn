@@ -655,7 +655,9 @@ impl ConfigManager {
     pub fn load_connections(&self) -> ConfigResult<Vec<Connection>> {
         let path = self.config_dir.join(CONNECTIONS_FILE);
         let file: ConnectionsFile = self.load_marked_toml_file(&path)?;
-        Ok(file.connections.into_owned())
+        let connections = file.connections.into_owned();
+        warn_invalid("connection", &Self::validate_connections(&connections));
+        Ok(connections)
     }
 
     /// Saves connections to the configuration file
@@ -704,7 +706,9 @@ impl ConfigManager {
     pub fn load_groups(&self) -> ConfigResult<Vec<ConnectionGroup>> {
         let path = self.config_dir.join(GROUPS_FILE);
         let file: GroupsFile = self.load_marked_toml_file(&path)?;
-        Ok(file.groups.into_owned())
+        let groups = file.groups.into_owned();
+        warn_invalid("group", &Self::validate_groups(&groups));
+        Ok(groups)
     }
 
     /// Saves connection groups to the configuration file
@@ -752,8 +756,12 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_snippets(&self) -> ConfigResult<Vec<Snippet>> {
         let path = self.config_dir.join(SNIPPETS_FILE);
-        self.load_marked_toml_file::<SnippetsFile>(&path)
-            .map(|f| f.snippets.into_owned())
+        let snippets = self
+            .load_marked_toml_file::<SnippetsFile>(&path)?
+            .snippets
+            .into_owned();
+        warn_invalid("snippet", &Self::validate_snippets(&snippets));
+        Ok(snippets)
     }
 
     /// Saves snippets to the configuration file
@@ -784,8 +792,12 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_clusters(&self) -> ConfigResult<Vec<Cluster>> {
         let path = self.config_dir.join(CLUSTERS_FILE);
-        self.load_marked_toml_file::<ClustersFile>(&path)
-            .map(|f| f.clusters.into_owned())
+        let clusters = self
+            .load_marked_toml_file::<ClustersFile>(&path)?
+            .clusters
+            .into_owned();
+        warn_invalid("cluster", &Self::validate_clusters(&clusters));
+        Ok(clusters)
     }
 
     /// Saves clusters to the configuration file
@@ -816,8 +828,12 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_templates(&self) -> ConfigResult<Vec<ConnectionTemplate>> {
         let path = self.config_dir.join(TEMPLATES_FILE);
-        self.load_marked_toml_file::<TemplatesFile>(&path)
-            .map(|f| f.templates.into_owned())
+        let templates = self
+            .load_marked_toml_file::<TemplatesFile>(&path)?
+            .templates
+            .into_owned();
+        warn_invalid("template", &Self::validate_templates(&templates));
+        Ok(templates)
     }
 
     /// Saves templates to the configuration file
@@ -1424,6 +1440,15 @@ impl ConfigManager {
     }
 }
 
+/// Logs the entries a `validate_*` pass flagged. Warning only: the loaded data
+/// is never filtered, so a config that an older version wrote (an empty name, a
+/// port of 0) still opens exactly as it was saved and the user can fix it.
+fn warn_invalid(kind: &str, problems: &[(usize, ConfigError)]) {
+    for (index, error) in problems {
+        tracing::warn!(kind, index, %error, "Loaded {kind} fails validation; kept unchanged");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::TempDir;
@@ -1435,6 +1460,48 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
         (manager, temp_dir)
+    }
+
+    #[test]
+    fn test_invalid_entries_load_unchanged() {
+        let (manager, temp) = create_test_manager();
+
+        // Name, host and port that validation rejects, as an old config may hold.
+        let mut conn = Connection::new(
+            String::new(),
+            String::new(),
+            0,
+            ProtocolConfig::Ssh(SshConfig::default()),
+        );
+        conn.name = String::new();
+        let group = ConnectionGroup::new(String::new());
+        manager
+            .save_connections(std::slice::from_ref(&conn))
+            .unwrap();
+        manager.save_groups(std::slice::from_ref(&group)).unwrap();
+
+        let conns_file = temp.path().join(CONNECTIONS_FILE);
+        let groups_file = temp.path().join(GROUPS_FILE);
+        let before = (
+            fs::read(&conns_file).unwrap(),
+            fs::read(&groups_file).unwrap(),
+        );
+
+        assert_eq!(
+            ConfigManager::validate_connections(&[conn.clone()]).len(),
+            1
+        );
+        let loaded = manager.load_connections().unwrap();
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].id, conn.id);
+        assert!(loaded[0].name.is_empty() && loaded[0].port == 0);
+        let loaded_groups = manager.load_groups().unwrap();
+        assert_eq!(loaded_groups.len(), 1);
+        assert_eq!(loaded_groups[0].id, group.id);
+
+        // Loading must not rewrite or remove anything on disk.
+        assert_eq!(fs::read(&conns_file).unwrap(), before.0);
+        assert_eq!(fs::read(&groups_file).unwrap(), before.1);
     }
 
     #[test]

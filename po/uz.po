@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 16:38+0200\n"
+"POT-Creation-Date: 2026-11-13 17:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Uzbek\n"
@@ -35,7 +35,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/portable_unlock.rs:93
 #: rustconn/src/dialogs/recording.rs:523 rustconn/src/dialogs/recording.rs:599
 #: rustconn/src/dialogs/script.rs:682
-#: rustconn/src/dialogs/settings/clients_tab.rs:355
+#: rustconn/src/dialogs/settings/clients_tab.rs:411
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:171
 #: rustconn/src/dialogs/settings/mod.rs:595
 #: rustconn/src/dialogs/settings/mod.rs:942
@@ -61,8 +61,8 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2089
 #: rustconn/src/window/group_broadcast.rs:379
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:453
-#: rustconn/src/window/mod.rs:3651 rustconn/src/window/mod.rs:3715
-#: rustconn/src/window/mod.rs:4727 rustconn/src/window/mod.rs:5775
+#: rustconn/src/window/mod.rs:3658 rustconn/src/window/mod.rs:3722
+#: rustconn/src/window/mod.rs:4734 rustconn/src/window/mod.rs:5782
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
 #: rustconn/src/window/operations.rs:824 rustconn/src/window/operations.rs:1007
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -130,9 +130,9 @@ msgstr ""
 "{} tanlangan, lekin u hali parollarni saqlay olmaydi: {}. Sozlamalarni, "
 "so‘ng Sirlarni oching."
 
-#: rustconn/src/app.rs:2086 rustconn/src/window/edit_actions.rs:1696
-#: rustconn/src/window/edit_actions.rs:1835
-#: rustconn/src/window/edit_actions.rs:1863
+#: rustconn/src/app.rs:2086 rustconn/src/window/edit_actions.rs:1748
+#: rustconn/src/window/edit_actions.rs:1887
+#: rustconn/src/window/edit_actions.rs:1915
 msgid "Failed to open URL: {}"
 msgstr "URL ni ochib bo’lmadi: {}"
 
@@ -267,7 +267,7 @@ msgstr "«{}» ulanishdan oldin quyidagilarni talab qiladi."
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1037
 #: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5776
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5783
 msgid "Connect"
 msgstr "Ulanish"
 
@@ -305,7 +305,7 @@ msgstr "Parolni qo'lda kiritish"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1205
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1208
 msgid "Open Settings"
 msgstr "Sozlamalarni ochish"
 
@@ -1154,7 +1154,7 @@ msgid "Executable name or path (e.g., chromaterm, pv, ccze)"
 msgstr "Bajariluvchi fayl nomi yoki yo'li (masalan, chromaterm, pv, ccze)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:575
-#: rustconn/src/dialogs/connection/rdp.rs:911
+#: rustconn/src/dialogs/connection/rdp.rs:930
 msgid "Arguments"
 msgstr "Argumentlar"
 
@@ -1371,7 +1371,7 @@ msgstr "Avtomatlashtirish"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:464
 #: rustconn/src/dialogs/connection/kubernetes.rs:141
-#: rustconn/src/dialogs/connection/rdp.rs:960
+#: rustconn/src/dialogs/connection/rdp.rs:979
 #: rustconn/src/dialogs/connection/vnc.rs:318
 #: rustconn/src/dialogs/connection/zerotrust.rs:189
 #: rustconn/src/dialogs/template.rs:944 rustconn/src/dialogs/template.rs:1121
@@ -1780,7 +1780,7 @@ msgid "Direct — an inherited jump host is ignored"
 msgstr "To'g'ridan-to'g'ri — meros olingan o'tish xosti e'tiborsiz qoldiriladi"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1516
-#: rustconn/src/dialogs/connection/rdp.rs:803
+#: rustconn/src/dialogs/connection/rdp.rs:822
 msgid "Tunnel RDP through an SSH connection"
 msgstr "RDP ni SSH ulanishi orqali tunnel qilish"
 
@@ -2141,7 +2141,7 @@ msgid "Zero Trust"
 msgstr "Zero Trust"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:152
-#: rustconn/src/dialogs/connection/rdp.rs:786
+#: rustconn/src/dialogs/connection/rdp.rs:805
 #: rustconn/src/dialogs/connection/spice.rs:299
 #: rustconn/src/dialogs/connection/ssh.rs:659
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2459,7 +2459,7 @@ msgid "Container image for temporary pod"
 msgstr "Vaqtinchalik pod uchun konteyner tasviri"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:144
-#: rustconn/src/dialogs/connection/rdp.rs:1019
+#: rustconn/src/dialogs/connection/rdp.rs:1038
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
 #: rustconn/src/dialogs/connection/vnc.rs:328
@@ -2608,7 +2608,7 @@ msgid "Quality/speed tradeoff for image rendering and visual effects"
 msgstr "Tasvir ko'rsatish va vizual effektlar uchun sifat/tezlik murosasi"
 
 #: rustconn/src/dialogs/connection/rdp.rs:153
-#: rustconn/src/dialogs/connection/rdp.rs:677
+#: rustconn/src/dialogs/connection/rdp.rs:696
 #: rustconn/src/dialogs/connection/vnc.rs:89 rustconn/src/i18n_markers.rs:99
 msgid "Automatic"
 msgstr "Avtomatik"
@@ -2758,7 +2758,7 @@ msgstr "Printerni qayta yo‘naltirish"
 msgid "Share your local printer with the remote session"
 msgstr "Mahalliy printeringizni masofaviy seans bilan ulashish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:382 rustconn/src/window/mod.rs:5749
+#: rustconn/src/dialogs/connection/rdp.rs:382 rustconn/src/window/mod.rs:5756
 msgid "Microphone"
 msgstr "Mikrofon"
 
@@ -2766,11 +2766,12 @@ msgstr "Mikrofon"
 msgid "Send the local microphone to the remote session"
 msgstr "Mahalliy mikrofonni masofaviy sessiyaga yuborish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:392 rustconn/src/window/mod.rs:5752
+#: rustconn/src/dialogs/connection/rdp.rs:392 rustconn/src/window/mod.rs:5759
 msgid "Smart Cards"
 msgstr "Smart-kartalar"
 
 #: rustconn/src/dialogs/connection/rdp.rs:394
+#: rustconn/src/dialogs/connection/rdp.rs:411
 msgid ""
 "Use local smart card readers in the remote session (External client, needs "
 "PC/SC)"
@@ -2778,11 +2779,17 @@ msgstr ""
 "Masofaviy sessiyada mahalliy smart-karta oʻquvchilarini ishlatish (tashqi "
 "mijoz, PC/SC talab qilinadi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:414
+#: rustconn/src/dialogs/connection/rdp.rs:408
+msgid "Not used in Embedded mode. Set Client Mode to External RDP client."
+msgstr ""
+"O'rnatilgan rejimda ishlatilmaydi. Mijoz rejimini \"Tashqi RDP mijozi\" ga "
+"o'rnating."
+
+#: rustconn/src/dialogs/connection/rdp.rs:433
 msgid "Windows Key Combinations"
 msgstr "Windows tugmalar birikmalari"
 
-#: rustconn/src/dialogs/connection/rdp.rs:416
+#: rustconn/src/dialogs/connection/rdp.rs:435
 msgid ""
 "Where shortcuts such as Alt+Tab and Super apply while the session has focus "
 "(Embedded client)"
@@ -2790,45 +2797,45 @@ msgstr ""
 "Sessiya fokusda boʻlganda Alt+Tab va Super kabi tezkor tugmalar qayerda "
 "ishlaydi (oʻrnatilgan mijoz)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:424
+#: rustconn/src/dialogs/connection/rdp.rs:443
 msgid "Reconnect Automatically"
 msgstr "Avtomatik qayta ulanish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:426
+#: rustconn/src/dialogs/connection/rdp.rs:445
 msgid ""
 "Reconnect when the connection drops, up to {} attempts (Embedded client)"
 msgstr ""
 "Ulanish uzilganda qayta ulanish, koʻpi bilan {} urinish (oʻrnatilgan mijoz)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:444
+#: rustconn/src/dialogs/connection/rdp.rs:463
 #: rustconn/src/dialogs/connection/spice.rs:171
 #: rustconn/src/dialogs/connection/vnc.rs:257
 #: rustconn/src/dialogs/template.rs:1111 rustconn/src/dialogs/template.rs:1246
 msgid "Clipboard Sharing"
 msgstr "Almashish buferi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:445
+#: rustconn/src/dialogs/connection/rdp.rs:464
 msgid "Which way the clipboard synchronises with the remote"
 msgstr "Almashish buferi masofaviy bilan qaysi yo‘nalishda sinxronlanadi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:453
+#: rustconn/src/dialogs/connection/rdp.rs:472
 #: rustconn/src/dialogs/connection/spice.rs:215
 #: rustconn/src/dialogs/connection/vnc.rs:265
 msgid "Show Local Cursor"
 msgstr "Mahalliy kursorni ko'rsatish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:454
+#: rustconn/src/dialogs/connection/rdp.rs:473
 #: rustconn/src/dialogs/connection/spice.rs:216
 #: rustconn/src/dialogs/connection/vnc.rs:266
 msgid "Hide to avoid double cursor in embedded mode"
 msgstr "O'rnatilgan rejimda ikki kursorni oldini olish uchun o'chiring"
 
-#: rustconn/src/dialogs/connection/rdp.rs:465
+#: rustconn/src/dialogs/connection/rdp.rs:484
 #: rustconn/src/dialogs/connection/vnc.rs:274
 msgid "Session Toolbar"
 msgstr "Sessiya asboblar paneli"
 
-#: rustconn/src/dialogs/connection/rdp.rs:467
+#: rustconn/src/dialogs/connection/rdp.rs:486
 #: rustconn/src/dialogs/connection/vnc.rs:276
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Ctrl+Alt+Del "
@@ -2837,11 +2844,11 @@ msgstr ""
 "Suzuvchi asboblar panelini va uning ochish strelkasini olib tashlash uchun "
 "oʻchiring. U bilan birga Ctrl+Alt+Del va panel tugmalari ham yoʻqoladi."
 
-#: rustconn/src/dialogs/connection/rdp.rs:475
+#: rustconn/src/dialogs/connection/rdp.rs:494
 msgid "Mouse Jiggler"
 msgstr "Sichqoncha harakatlantiruvchi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:476
+#: rustconn/src/dialogs/connection/rdp.rs:495
 msgid "Prevent idle disconnect by simulating mouse movement"
 msgstr ""
 "Sichqoncha harakatini simulyatsiya qilib boshqarmasdan uzilishni oldini "
@@ -2849,35 +2856,35 @@ msgstr ""
 "oldini olishSichqoncha harakatini simulyatsiya qilib, bo'sh turish "
 "uzilishini oldini oladi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:489
+#: rustconn/src/dialogs/connection/rdp.rs:508
 msgid "Jiggler Interval"
 msgstr "Harakat oralig'i"
 
-#: rustconn/src/dialogs/connection/rdp.rs:490
+#: rustconn/src/dialogs/connection/rdp.rs:509
 msgid "Seconds between mouse movements"
 msgstr "Sichqoncha harakatlari orasidagi soniyalar"
 
-#: rustconn/src/dialogs/connection/rdp.rs:509
+#: rustconn/src/dialogs/connection/rdp.rs:528
 msgid "Autotype Delay"
 msgstr "Avtoterish kechikishi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:511
+#: rustconn/src/dialogs/connection/rdp.rs:530
 msgid "Milliseconds between keystrokes (increase for Citrix)"
 msgstr "Tugmalar orasidagi millisekundlar (Citrix uchun oshiring)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:524
+#: rustconn/src/dialogs/connection/rdp.rs:543
 msgid "Autotype Initial Delay"
 msgstr "Avtoterishning boshlang'ich kechikishi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:525
+#: rustconn/src/dialogs/connection/rdp.rs:544
 msgid "Milliseconds to wait before typing starts"
 msgstr "Terish boshlanishidan oldin kutish millisekundlari"
 
-#: rustconn/src/dialogs/connection/rdp.rs:532
+#: rustconn/src/dialogs/connection/rdp.rs:551
 msgid "Dynamic resolution"
 msgstr "Dinamik ruxsat"
 
-#: rustconn/src/dialogs/connection/rdp.rs:534
+#: rustconn/src/dialogs/connection/rdp.rs:553
 msgid ""
 "Resize the remote desktop to match the window (External client). Turn off "
 "for legacy servers"
@@ -2885,11 +2892,11 @@ msgstr ""
 "Masofaviy ish stolini oynaga moslashtirish (tashqi mijoz). Eski serverlar "
 "uchun o‘chiring"
 
-#: rustconn/src/dialogs/connection/rdp.rs:542
+#: rustconn/src/dialogs/connection/rdp.rs:561
 msgid "Smart sizing"
 msgstr "Aqlli o‘lchamlash"
 
-#: rustconn/src/dialogs/connection/rdp.rs:544
+#: rustconn/src/dialogs/connection/rdp.rs:563
 msgid ""
 "Scale the remote screen to fit the window (External client). For servers "
 "that do not resize dynamically, such as KDE KRdp, or legacy servers on HiDPI "
@@ -2899,11 +2906,11 @@ msgstr ""
 "O‘lchamini dinamik o‘zgartirmaydigan serverlar uchun, masalan KDE KRdp, yoki "
 "HiDPI displeylaridagi eski serverlar uchun. Dinamik ruxsatni bekor qiladi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:563
+#: rustconn/src/dialogs/connection/rdp.rs:582
 msgid "Reconnect on Resize"
 msgstr "O'lcham o'zgarganda qayta ulanish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:565
+#: rustconn/src/dialogs/connection/rdp.rs:584
 msgid ""
 "Full reconnect instead of dynamic resize (Embedded client). For legacy "
 "servers or fixed resolution"
@@ -2911,7 +2918,7 @@ msgstr ""
 "Dinamik o'lcham o'zgartirish o'rniga to'liq qayta ulanish (o'rnatilgan "
 "mijoz). Eski serverlar yoki qat'iy o'lchamlar uchun"
 
-#: rustconn/src/dialogs/connection/rdp.rs:573
+#: rustconn/src/dialogs/connection/rdp.rs:592
 #: rustconn/src/dialogs/connection/vnc.rs:294
 msgid ""
 "Use multiple network paths for seamless mobility (Linux 5.6+, embedded mode "
@@ -2920,7 +2927,7 @@ msgstr ""
 "Uzluksiz harakatchanlik uchun bir nechta tarmoq yoʻlidan foydalanish (Linux "
 "5.6+, faqat oʻrnatilgan rejim)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:575
+#: rustconn/src/dialogs/connection/rdp.rs:594
 #: rustconn/src/dialogs/connection/vnc.rs:296
 msgid ""
 "Multiple network paths (embedded mode only). Not available: kernel MPTCP is "
@@ -2929,28 +2936,28 @@ msgstr ""
 "Bir nechta tarmoq yoʻllari (faqat oʻrnatilgan rejim). Mavjud emas: yadro "
 "MPTCP oʻchirilgan"
 
-#: rustconn/src/dialogs/connection/rdp.rs:578
+#: rustconn/src/dialogs/connection/rdp.rs:597
 #: rustconn/src/dialogs/connection/ssh.rs:868
 #: rustconn/src/dialogs/connection/vnc.rs:299
 msgid "Multipath TCP"
 msgstr "Multipath TCP"
 
-#: rustconn/src/dialogs/connection/rdp.rs:586
+#: rustconn/src/dialogs/connection/rdp.rs:605
 msgid "FIDO2 Passkey Redirection"
 msgstr "FIDO2 kirish kalitlarini yo'naltirish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:588
+#: rustconn/src/dialogs/connection/rdp.rs:607
 msgid ""
 "Use local security keys in the remote session (External client, FreeRDP 3.x)"
 msgstr ""
 "Masofaviy sessiyada mahalliy xavfsizlik kalitlarini ishlatish (tashqi mijoz, "
 "FreeRDP 3.x)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:600
+#: rustconn/src/dialogs/connection/rdp.rs:619
 msgid "Admin/console session (/admin)"
 msgstr "Administrator/konsol seansi (/admin)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:602
+#: rustconn/src/dialogs/connection/rdp.rs:621
 msgid ""
 "Connect to the console/admin session (External client). Bypasses RDS CAL "
 "licensing"
@@ -2958,7 +2965,7 @@ msgstr ""
 "Konsol/administrator seansiga ulanish (tashqi mijoz). RDS CAL litsenziyasini "
 "chetlab o‘tadi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:607
+#: rustconn/src/dialogs/connection/rdp.rs:626
 msgid ""
 "Passes /admin to the external FreeRDP client, connecting to the server's "
 "console/administrative session instead of a normal RDS session. This "
@@ -2970,11 +2977,11 @@ msgstr ""
 "chetlab o‘tadi. Faqat tashqi mijoz; o‘rnatilgan mijoz buni hali so‘ray "
 "olmaydi."
 
-#: rustconn/src/dialogs/connection/rdp.rs:618
+#: rustconn/src/dialogs/connection/rdp.rs:637
 msgid "Kerberos Authentication"
 msgstr "Kerberos autentifikatsiyasi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:620
+#: rustconn/src/dialogs/connection/rdp.rs:639
 msgid ""
 "Required for AD \"Protected Users\"; Host must be the server's DNS name. "
 "Embedded client: Kerberos only, with the saved password. External client: "
@@ -2984,11 +2991,11 @@ msgstr ""
 "mijoz: faqat Kerberos, saqlangan parol bilan. Tashqi mijoz: FreeRDP "
 "Kerberosni oʻzi sinaydi va RemoteApp endi NTLM bilan cheklanmaydi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:632
+#: rustconn/src/dialogs/connection/rdp.rs:651
 msgid "KDC Address"
 msgstr "KDC manzili"
 
-#: rustconn/src/dialogs/connection/rdp.rs:634
+#: rustconn/src/dialogs/connection/rdp.rs:653
 msgid ""
 "Optional. A domain controller name or IP address, a tcp:// or udp:// "
 "address, or an https:// KDC proxy URL. Leave empty to find it automatically. "
@@ -3000,11 +3007,11 @@ msgstr ""
 "qoldiring. Tashqi mijoz faqat https://…/KdcProxy proksisidan foydalanadi va "
 "aks holda tizim Kerberos konfiguratsiyasiga amal qiladi."
 
-#: rustconn/src/dialogs/connection/rdp.rs:649
+#: rustconn/src/dialogs/connection/rdp.rs:668
 msgid "Disable NLA"
 msgstr "NLA o'chirish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:650
+#: rustconn/src/dialogs/connection/rdp.rs:669
 msgid "Skip Network Level Authentication (less secure)"
 msgstr ""
 "Tarmoq darajasidagi autentifikatsiyani otkazib yuborish (kamroq "
@@ -3012,80 +3019,80 @@ msgstr ""
 "xavfsiz)Tarmoq darajasidagi autentifikatsiyani o'tkazib yuborish (kamroq "
 "xavfsiz)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:666
-#: rustconn/src/dialogs/connection/rdp.rs:668
+#: rustconn/src/dialogs/connection/rdp.rs:685
+#: rustconn/src/dialogs/connection/rdp.rs:687
 msgid "Security Layer"
 msgstr "Xavfsizlik qatlami"
 
-#: rustconn/src/dialogs/connection/rdp.rs:669
+#: rustconn/src/dialogs/connection/rdp.rs:688
 msgid "RDP/TLS for legacy servers (forces external FreeRDP)"
 msgstr "Eski serverlar uchun RDP/TLS (tashqi FreeRDP majburlaydi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:685
-#: rustconn/src/dialogs/connection/rdp.rs:687
+#: rustconn/src/dialogs/connection/rdp.rs:704
+#: rustconn/src/dialogs/connection/rdp.rs:706
 msgid "FreeRDP client"
 msgstr "FreeRDP mijozi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:689
+#: rustconn/src/dialogs/connection/rdp.rs:708
 msgid "External client binary. Automatic picks the best available"
 msgstr ""
 "Tashqi mijozning ijro etiluvchi fayli. «Avtomatik» eng yaxshi mavjudini "
 "tanlaydi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:704
+#: rustconn/src/dialogs/connection/rdp.rs:723
 msgid "TLS Security Level"
 msgstr "TLS xavfsizlik darajasi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:705
+#: rustconn/src/dialogs/connection/rdp.rs:724
 msgid "0 = legacy (Win7/2012), 2 = default, 5 = strict"
 msgstr "0 = eski (Win7/2012), 2 = standart, 5 = qat'iy"
 
-#: rustconn/src/dialogs/connection/rdp.rs:721
+#: rustconn/src/dialogs/connection/rdp.rs:740
 #: rustconn/src/dialogs/connection/vnc.rs:284
 msgid "Accept Certificate"
 msgstr "Sertifikatni qabul qilish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:723
+#: rustconn/src/dialogs/connection/rdp.rs:742
 msgid "Accept changed/self-signed certificates (removes stored fingerprint)"
 msgstr ""
 "Oʻzgartirilgan/oʻzi imzolangan sertifikatlarni qabul qilish (saqlangan "
 "barmoq izini oʻchiradi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:732
+#: rustconn/src/dialogs/connection/rdp.rs:751
 msgid "gateway.example.com"
 msgstr "gateway.example.com"
 
-#: rustconn/src/dialogs/connection/rdp.rs:737
+#: rustconn/src/dialogs/connection/rdp.rs:756
 #: rustconn/src/dialogs/template.rs:934
 msgid "RDP Gateway"
 msgstr "RDP shlyuz"
 
-#: rustconn/src/dialogs/connection/rdp.rs:738
+#: rustconn/src/dialogs/connection/rdp.rs:757
 #: rustconn/src/dialogs/template.rs:935
 msgid "Remote Desktop Gateway server"
 msgstr "Masofaviy ish stoli shlyuz serveri"
 
-#: rustconn/src/dialogs/connection/rdp.rs:752
+#: rustconn/src/dialogs/connection/rdp.rs:771
 msgid "Gateway Port"
 msgstr "Shlyuz porti"
 
-#: rustconn/src/dialogs/connection/rdp.rs:753
+#: rustconn/src/dialogs/connection/rdp.rs:772
 msgid "Default: 443"
 msgstr "Standart: 443"
 
-#: rustconn/src/dialogs/connection/rdp.rs:761
+#: rustconn/src/dialogs/connection/rdp.rs:780
 msgid "Same as connection username"
 msgstr "Ulanish foydalanuvchi nomi bilan bir xil"
 
-#: rustconn/src/dialogs/connection/rdp.rs:765
+#: rustconn/src/dialogs/connection/rdp.rs:784
 msgid "Gateway Username"
 msgstr "Shlyuz foydalanuvchi nomi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:766
+#: rustconn/src/dialogs/connection/rdp.rs:785
 msgid "If different from connection username"
 msgstr "Ulanish foydalanuvchi nomidan farq qilsa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:789
+#: rustconn/src/dialogs/connection/rdp.rs:808
 #: rustconn/src/dialogs/connection/spice.rs:336
 #: rustconn/src/dialogs/connection/ssh.rs:668
 #: rustconn/src/dialogs/connection/vnc.rs:341
@@ -3102,8 +3109,8 @@ msgstr "Ulanish foydalanuvchi nomidan farq qilsa"
 msgid "(None)"
 msgstr "(Yo'q)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:799
-#: rustconn/src/dialogs/connection/rdp.rs:802
+#: rustconn/src/dialogs/connection/rdp.rs:818
+#: rustconn/src/dialogs/connection/rdp.rs:821
 #: rustconn/src/dialogs/connection/spice.rs:347
 #: rustconn/src/dialogs/connection/spice.rs:350
 #: rustconn/src/dialogs/connection/ssh.rs:678
@@ -3121,241 +3128,241 @@ msgstr "(Yo'q)"
 msgid "Jump Host"
 msgstr "O'tish xosti"
 
-#: rustconn/src/dialogs/connection/rdp.rs:815
+#: rustconn/src/dialogs/connection/rdp.rs:834
 msgid "Broker Routing Value"
 msgstr "Broker marshrutlash qiymati"
 
-#: rustconn/src/dialogs/connection/rdp.rs:817
+#: rustconn/src/dialogs/connection/rdp.rs:836
 msgid "Connection broker routing value (loadbalanceinfo) from an .rdp file"
 msgstr ""
 "Ulanish brokerining .rdp fayldagi marshrutlash qiymati (loadbalanceinfo)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:827
+#: rustconn/src/dialogs/connection/rdp.rs:846
 #: rustconn/src/dialogs/connection/spice.rs:239
 msgid "Shared Folders"
 msgstr "Umumiy papkalar"
 
-#: rustconn/src/dialogs/connection/rdp.rs:828
+#: rustconn/src/dialogs/connection/rdp.rs:847
 #: rustconn/src/dialogs/connection/spice.rs:240
 msgid "Local folders accessible from remote session"
 msgstr "Masofaviy sessiyadan foydalanish mumkin bo'lgan mahalliy papkalar"
 
-#: rustconn/src/dialogs/connection/rdp.rs:835
+#: rustconn/src/dialogs/connection/rdp.rs:854
 #: rustconn/src/dialogs/connection/spice.rs:247
 msgid "No shared folders"
 msgstr "Umumiy papkalar yo'q"
 
-#: rustconn/src/dialogs/connection/rdp.rs:850
+#: rustconn/src/dialogs/connection/rdp.rs:869
 #: rustconn/src/dialogs/connection/spice.rs:262
 msgid "Add"
 msgstr "Qo'shish"
 
-#: rustconn/src/dialogs/connection/rdp.rs:854
+#: rustconn/src/dialogs/connection/rdp.rs:873
 #: rustconn/src/dialogs/connection/spice.rs:266
 #: rustconn/src/dialogs/flatpak_components.rs:117
 #: rustconn/src/dialogs/flatpak_components.rs:336
 #: rustconn/src/dialogs/flatpak_components.rs:372
 #: rustconn/src/dialogs/flatpak_components.rs:512
-#: rustconn/src/dialogs/settings/clients_tab.rs:296
+#: rustconn/src/dialogs/settings/clients_tab.rs:352
 #: rustconn/src/dialogs/widgets.rs:349
 msgid "Remove"
 msgstr "Olib tashlash"
 
-#: rustconn/src/dialogs/connection/rdp.rs:887
+#: rustconn/src/dialogs/connection/rdp.rs:906
 msgid "RemoteApp"
 msgstr "RemoteApp"
 
-#: rustconn/src/dialogs/connection/rdp.rs:889
+#: rustconn/src/dialogs/connection/rdp.rs:908
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
 msgstr ""
 "Toʻliq ish stoli oʻrniga bitta dasturni ishga tushirish (FreeRDP talab "
 "qilinadi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:895
+#: rustconn/src/dialogs/connection/rdp.rs:914
 msgid "||notepad or C:\\Program Files\\app.exe"
 msgstr "||notepad yoki C:\\Program Files\\app.exe"
 
-#: rustconn/src/dialogs/connection/rdp.rs:899
+#: rustconn/src/dialogs/connection/rdp.rs:918
 msgid "Program"
 msgstr "Dastur"
 
-#: rustconn/src/dialogs/connection/rdp.rs:900
+#: rustconn/src/dialogs/connection/rdp.rs:919
 msgid "Application alias (||name) or full path"
 msgstr "Dastur taxallusi (||nomi) yoki toʻliq yoʻl"
 
-#: rustconn/src/dialogs/connection/rdp.rs:907
+#: rustconn/src/dialogs/connection/rdp.rs:926
 msgid "Command-line arguments"
 msgstr "Buyruq qatori argumentlari"
 
-#: rustconn/src/dialogs/connection/rdp.rs:912
+#: rustconn/src/dialogs/connection/rdp.rs:931
 msgid "Arguments passed to the remote application"
 msgstr "Masofadagi dasturga uzatiladigan argumentlar"
 
-#: rustconn/src/dialogs/connection/rdp.rs:919
+#: rustconn/src/dialogs/connection/rdp.rs:938
 msgid "Display name (optional)"
 msgstr "Koʻrsatiladigan nom (ixtiyoriy)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:923
+#: rustconn/src/dialogs/connection/rdp.rs:942
 #: rustconn/src/dialogs/recording.rs:531
 msgid "Display Name"
 msgstr "Ko'rsatiladigan nom"
 
-#: rustconn/src/dialogs/connection/rdp.rs:924
+#: rustconn/src/dialogs/connection/rdp.rs:943
 msgid "Shown in taskbar and window title"
 msgstr "Vazifalar paneli va oyna sarlavhasida koʻrsatiladi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:937
+#: rustconn/src/dialogs/connection/rdp.rs:956
 msgid "⚠ FreeRDP not found"
 msgstr "⚠ FreeRDP topilmadi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:939
+#: rustconn/src/dialogs/connection/rdp.rs:958
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr ""
 "RemoteApp uchun FreeRDP kerak. sdl-freerdp3, xfreerdp yoki wlfreerdp "
 "oʻrnating."
 
-#: rustconn/src/dialogs/connection/rdp.rs:965
+#: rustconn/src/dialogs/connection/rdp.rs:984
 msgid "Auto (detect)"
 msgstr "Auto (detect)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:966
+#: rustconn/src/dialogs/connection/rdp.rs:985
 msgid "US English"
 msgstr "US English"
 
-#: rustconn/src/dialogs/connection/rdp.rs:967
+#: rustconn/src/dialogs/connection/rdp.rs:986
 msgid "German (de)"
 msgstr "German (de)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:968
+#: rustconn/src/dialogs/connection/rdp.rs:987
 msgid "French (fr)"
 msgstr "French (fr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:969
+#: rustconn/src/dialogs/connection/rdp.rs:988
 msgid "Spanish (es)"
 msgstr "Spanish (es)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:970
+#: rustconn/src/dialogs/connection/rdp.rs:989
 msgid "Italian (it)"
 msgstr "Italian (it)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:971
+#: rustconn/src/dialogs/connection/rdp.rs:990
 msgid "Portuguese (pt)"
 msgstr "Portuguese (pt)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:972
+#: rustconn/src/dialogs/connection/rdp.rs:991
 msgid "Portuguese - Brazil (br)"
 msgstr "Portugalcha - Braziliya (br)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:973
+#: rustconn/src/dialogs/connection/rdp.rs:992
 msgid "English - UK (gb)"
 msgstr "Inglizcha - Buyuk Britaniya (gb)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:974
+#: rustconn/src/dialogs/connection/rdp.rs:993
 msgid "German - Switzerland (ch)"
 msgstr "Nemischa - Shveytsariya (ch)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:975
+#: rustconn/src/dialogs/connection/rdp.rs:994
 msgid "German - Austria (at)"
 msgstr "Nemischa - Avstriya (at)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:976
+#: rustconn/src/dialogs/connection/rdp.rs:995
 msgid "French - Belgium (be)"
 msgstr "Fransuzcha - Belgiya (be)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:977
+#: rustconn/src/dialogs/connection/rdp.rs:996
 msgid "Dutch (nl)"
 msgstr "Dutch (nl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:978
+#: rustconn/src/dialogs/connection/rdp.rs:997
 msgid "Swedish (se)"
 msgstr "Swedish (se)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:979
+#: rustconn/src/dialogs/connection/rdp.rs:998
 msgid "Norwegian (no)"
 msgstr "Norwegian (no)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:980
+#: rustconn/src/dialogs/connection/rdp.rs:999
 msgid "Danish (dk)"
 msgstr "Danish (dk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:981
+#: rustconn/src/dialogs/connection/rdp.rs:1000
 msgid "Finnish (fi)"
 msgstr "Finnish (fi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:982
+#: rustconn/src/dialogs/connection/rdp.rs:1001
 msgid "Polish (pl)"
 msgstr "Polish (pl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:983
+#: rustconn/src/dialogs/connection/rdp.rs:1002
 msgid "Czech (cz)"
 msgstr "Czech (cz)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:984
+#: rustconn/src/dialogs/connection/rdp.rs:1003
 msgid "Slovak (sk)"
 msgstr "Slovak (sk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:985
+#: rustconn/src/dialogs/connection/rdp.rs:1004
 msgid "Hungarian (hu)"
 msgstr "Hungarian (hu)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:986
+#: rustconn/src/dialogs/connection/rdp.rs:1005
 msgid "Romanian (ro)"
 msgstr "Romanian (ro)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:987
+#: rustconn/src/dialogs/connection/rdp.rs:1006
 msgid "Croatian (hr)"
 msgstr "Croatian (hr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:988
+#: rustconn/src/dialogs/connection/rdp.rs:1007
 msgid "Slovenian (si)"
 msgstr "Slovenian (si)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:989
+#: rustconn/src/dialogs/connection/rdp.rs:1008
 msgid "Serbian (rs)"
 msgstr "Serbian (rs)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:990
+#: rustconn/src/dialogs/connection/rdp.rs:1009
 msgid "Bulgarian (bg)"
 msgstr "Bulgarian (bg)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:991
+#: rustconn/src/dialogs/connection/rdp.rs:1010
 msgid "Russian (ru)"
 msgstr "Russian (ru)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:992
+#: rustconn/src/dialogs/connection/rdp.rs:1011
 msgid "Ukrainian (ua)"
 msgstr "Ukrainian (ua)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:993
+#: rustconn/src/dialogs/connection/rdp.rs:1012
 msgid "Turkish (tr)"
 msgstr "Turkish (tr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:994
+#: rustconn/src/dialogs/connection/rdp.rs:1013
 msgid "Greek (gr)"
 msgstr "Greek (gr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:995
+#: rustconn/src/dialogs/connection/rdp.rs:1014
 msgid "Japanese (jp)"
 msgstr "Japanese (jp)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:996
+#: rustconn/src/dialogs/connection/rdp.rs:1015
 msgid "Korean (kr)"
 msgstr "Korean (kr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:997
+#: rustconn/src/dialogs/connection/rdp.rs:1016
 msgid "United States - Dvorak"
 msgstr "Inglizcha - AQSH (Dvorak)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1006
+#: rustconn/src/dialogs/connection/rdp.rs:1025
 msgid "Keyboard Layout"
 msgstr "Klaviatura tartibi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1007
+#: rustconn/src/dialogs/connection/rdp.rs:1026
 msgid "Layout sent to RDP server (Auto uses system setting)"
 msgstr "RDP serveriga yuboriladigan tartib (Auto tizim sozlamasini ishlatadi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1014
+#: rustconn/src/dialogs/connection/rdp.rs:1033
 #: rustconn/src/dialogs/connection/telnet.rs:43
 #: rustconn/src/dialogs/connection/winrm.rs:64
 #: rustconn/src/dialogs/connection/zerotrust.rs:194
@@ -3363,12 +3370,12 @@ msgstr "RDP serveriga yuboriladigan tartib (Auto tizim sozlamasini ishlatadi)"
 msgid "Additional command-line arguments"
 msgstr "Qo'shimcha buyruq qatori argumentlari"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1020
+#: rustconn/src/dialogs/connection/rdp.rs:1039
 #: rustconn/src/dialogs/template.rs:955
 msgid "Extra FreeRDP command-line options"
 msgstr "Qo'shimcha FreeRDP buyruq qatori parametrlari"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1096
+#: rustconn/src/dialogs/connection/rdp.rs:1115
 msgid ""
 "Numbers for the external client, comma-separated; empty uses the current "
 "monitor"
@@ -3376,7 +3383,7 @@ msgstr ""
 "Tashqi mijoz uchun vergul bilan ajratilgan raqamlar; bo‘sh bo‘lsa joriy "
 "monitor ishlatiladi"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1122
+#: rustconn/src/dialogs/connection/rdp.rs:1141
 msgid "unknown"
 msgstr "noma’lum"
 
@@ -3733,7 +3740,7 @@ msgstr "SSH agent"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5755
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5762
 msgid "Security Key (FIDO2)"
 msgstr "Xavfsizlik kaliti (FIDO2)"
 
@@ -4840,7 +4847,7 @@ msgstr "Nusxalash"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1317
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1320
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "Toʻxtatish"
@@ -4961,7 +4968,7 @@ msgstr "Ko'chirish to'xtatildi"
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4728
+#: rustconn/src/window/mod.rs:4735
 msgid "Close"
 msgstr "Yopish"
 
@@ -5356,7 +5363,7 @@ msgid "Required for Bitwarden and 1Password integration"
 msgstr "Bitwarden va 1Password integratsiyasi uchun talab qilinadi"
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
-#: rustconn/src/dialogs/settings/clients_tab.rs:91
+#: rustconn/src/dialogs/settings/clients_tab.rs:92
 msgid "Container Orchestration"
 msgstr "Konteyner orkestratsiyasi"
 
@@ -5378,8 +5385,8 @@ msgstr ""
 #: rustconn/src/dialogs/flatpak_components.rs:285
 #: rustconn/src/dialogs/flatpak_components.rs:500
 #: rustconn/src/dialogs/flatpak_components.rs:502
-#: rustconn/src/dialogs/settings/clients_tab.rs:489
-#: rustconn/src/dialogs/settings/clients_tab.rs:494
+#: rustconn/src/dialogs/settings/clients_tab.rs:549
+#: rustconn/src/dialogs/settings/clients_tab.rs:554
 msgid "Installed"
 msgstr "O'rnatilgan"
 
@@ -7263,35 +7270,35 @@ msgstr "“{}” skripti oʻchirildi"
 msgid "Could not delete script"
 msgstr "Skriptni oʻchirib boʻlmadi"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:36
+#: rustconn/src/dialogs/settings/clients_tab.rs:37
 msgid "Clients"
 msgstr "Mijozlar"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:42
+#: rustconn/src/dialogs/settings/clients_tab.rs:43
 msgid "Core Clients"
 msgstr "Asosiy mijozlar"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:43
+#: rustconn/src/dialogs/settings/clients_tab.rs:44
 msgid "Essential connection clients"
 msgstr "Zaruriy ulanish mijozlari"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:63
+#: rustconn/src/dialogs/settings/clients_tab.rs:64
 msgid "Zero Trust Clients"
 msgstr "Zero Trust mijozlar"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:64
+#: rustconn/src/dialogs/settings/clients_tab.rs:65
 msgid "Cloud provider CLI tools"
 msgstr "Bulut provayder CLI vositalari"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:92
+#: rustconn/src/dialogs/settings/clients_tab.rs:93
 msgid "Kubernetes CLI tools"
 msgstr "Kubernetes CLI vositalari"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:109
+#: rustconn/src/dialogs/settings/clients_tab.rs:110
 msgid "Media Codecs"
 msgstr "Media kodeklar"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:111
+#: rustconn/src/dialogs/settings/clients_tab.rs:112
 msgid ""
 "OpenH264 Video Codec provided by Cisco Systems, Inc. — optional H.264 "
 "decoder for RDP graphics (GFX) sessions."
@@ -7299,21 +7306,25 @@ msgstr ""
 "OpenH264 Video Codec provided by Cisco Systems, Inc. — RDP grafik (GFX) "
 "seanslari uchun ixtiyoriy H.264 dekoderi."
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:125
+#: rustconn/src/dialogs/settings/clients_tab.rs:126
 msgid "Use OpenH264"
 msgstr "OpenH264 dan foydalanish"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:127
+#: rustconn/src/dialogs/settings/clients_tab.rs:128
 msgid ""
 "Decode H.264 in RDP GFX sessions with the Cisco codec when it is installed."
 msgstr ""
 "Oʻrnatilgan boʻlsa, Cisco kodeki bilan RDP GFX seanslarida H.264 dekodlash."
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:140
+#: rustconn/src/dialogs/settings/clients_tab.rs:141
 msgid "Could not save the hardware acceleration setting: {}"
 msgstr "Apparat tezlashtirish sozlamasini saqlab bo‘lmadi: {}"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:212
+#: rustconn/src/dialogs/settings/clients_tab.rs:168
+msgid "Refresh client detection"
+msgstr "Mijozlarni aniqlashni yangilash"
+
+#: rustconn/src/dialogs/settings/clients_tab.rs:268
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:77
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:755
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:999
@@ -7323,11 +7334,11 @@ msgstr "Apparat tezlashtirish sozlamasini saqlab bo‘lmadi: {}"
 msgid "Checking…"
 msgstr "Tekshirilmoqda…"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:242
+#: rustconn/src/dialogs/settings/clients_tab.rs:298
 msgid "H.264 codec (Cisco OpenH264)"
 msgstr "H.264 kodeki (Cisco OpenH264)"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:244
+#: rustconn/src/dialogs/settings/clients_tab.rs:300
 msgid ""
 "Enables H.264 in RDP graphics (GFX) sessions. Fetched on demand from "
 "openh264.org under Cisco's binary licence."
@@ -7335,21 +7346,21 @@ msgstr ""
 "RDP grafik (GFX) seanslarida H.264 ni yoqadi. Zarurat boʻyicha openh264.org "
 "dan Cisco binar litsenziyasi ostida yuklab olinadi."
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:259
-#: rustconn/src/dialogs/settings/clients_tab.rs:407
+#: rustconn/src/dialogs/settings/clients_tab.rs:315
+#: rustconn/src/dialogs/settings/clients_tab.rs:463
 msgid "Installed ✓"
 msgstr "Oʻrnatildi ✓"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:274
-#: rustconn/src/dialogs/settings/clients_tab.rs:356
+#: rustconn/src/dialogs/settings/clients_tab.rs:330
+#: rustconn/src/dialogs/settings/clients_tab.rs:412
 msgid "Download"
 msgstr "Yuklab olish"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:319
+#: rustconn/src/dialogs/settings/clients_tab.rs:375
 msgid "Remove failed"
 msgstr "Oʻchirish amalga oshmadi"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:347
+#: rustconn/src/dialogs/settings/clients_tab.rs:403
 msgid ""
 "This downloads the OpenH264 Video Codec provided by Cisco Systems, Inc. "
 "from:\n"
@@ -7378,16 +7389,16 @@ msgstr ""
 "\n"
 "Yuklab olinsinmi?"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:354
+#: rustconn/src/dialogs/settings/clients_tab.rs:410
 msgid "Download H.264 codec?"
 msgstr "H.264 kodeki yuklab olinsinmi?"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:385
+#: rustconn/src/dialogs/settings/clients_tab.rs:441
 #: rustconn/src/embedded_rdp/mod.rs:1747
 msgid "Downloading…"
 msgstr "Yuklab olinmoqda…"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:409
+#: rustconn/src/dialogs/settings/clients_tab.rs:465
 msgid ""
 "H.264 is active for new RDP connections. Open sessions keep their current "
 "path until reconnected."
@@ -7395,27 +7406,27 @@ msgstr ""
 "H.264 yangi RDP ulanishlari uchun faol. Ochiq seanslar qayta ulanmaguncha "
 "joriy yoʻlini saqlaydi."
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:417
+#: rustconn/src/dialogs/settings/clients_tab.rs:473
 msgid "Download failed"
 msgstr "Yuklab olish amalga oshmadi"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:428
+#: rustconn/src/dialogs/settings/clients_tab.rs:484
 msgid "Download failed: {}"
 msgstr "Yuklab olish amalga oshmadi: {}"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:458
+#: rustconn/src/dialogs/settings/clients_tab.rs:518
 msgid "Using embedded {} (external not found)"
 msgstr "O'rnatilgan {} ishlatilmoqda (tashqi topilmadi)"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:491
+#: rustconn/src/dialogs/settings/clients_tab.rs:551
 msgid "Using embedded client"
 msgstr "O'rnatilgan mijoz ishlatilmoqda"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:496
+#: rustconn/src/dialogs/settings/clients_tab.rs:556
 msgid "Not found"
 msgstr "Topilmadi"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:526
+#: rustconn/src/dialogs/settings/clients_tab.rs:586
 msgid "Embedded"
 msgstr "O'rnatilgan"
 
@@ -9779,7 +9790,7 @@ msgstr "Joylash"
 msgid "Find in Terminal"
 msgstr "Terminalda qidirish"
 
-#: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:810
+#: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:811
 #: rustconn/src/terminal/tab_menu.rs:1321
 msgid "Close Tab"
 msgstr "Varaqni yopish"
@@ -11962,7 +11973,7 @@ msgid "RDP session running in external window"
 msgstr "RDP sessiyasi tashqi oynada ishlayapti"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3212
+#: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3219
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Ulanish muvaffaqiyatsiz"
@@ -13204,7 +13215,7 @@ msgstr "Tez ulanish…"
 msgid "{} Active Session(s)"
 msgstr "{} faol sessiya(lar)"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5732
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5739
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Parol iborasi ko'chma faylni ochmaydi"
 
@@ -13400,8 +13411,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Oʻtish xosti mavjud emas"
 
-#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3652
-#: rustconn/src/window/mod.rs:3718 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3659
+#: rustconn/src/window/mod.rs:3725 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Baribir ulanish"
 
@@ -13649,7 +13660,7 @@ msgstr "'{}' uchun ombor yozuvi topilmadi. Sizdan parol soʻraladi."
 
 #: rustconn/src/window/credentials.rs:1050
 #: rustconn/src/window/credentials.rs:1286
-#: rustconn/src/window/edit_actions.rs:2289
+#: rustconn/src/window/edit_actions.rs:2341
 msgid "Connection failed. Host unreachable."
 msgstr "Ulanish muvaffaqiyatsiz. Xost mavjud emas."
 
@@ -13694,59 +13705,80 @@ msgstr "Seansni asosiy oynaga qaytarib boʻlmadi."
 msgid "Item restored"
 msgstr "Element tiklandi"
 
-#: rustconn/src/window/edit_actions.rs:479
+#: rustconn/src/window/edit_actions.rs:407
+msgid "Empty trash?"
+msgstr "Axlat qutisi tozalansinmi?"
+
+#: rustconn/src/window/edit_actions.rs:409
+msgid "Deleted items will be removed permanently. This cannot be undone."
+msgstr ""
+"O'chirilgan elementlar butunlay o'chiriladi. Buni bekor qilib bo'lmaydi."
+
+#: rustconn/src/window/edit_actions.rs:411
+msgid "Empty Trash"
+msgstr "Axlat qutisini tozalash"
+
+#: rustconn/src/window/edit_actions.rs:424
+msgid "Trash emptied"
+msgstr "Axlat qutisi tozalandi"
+
+#: rustconn/src/window/edit_actions.rs:432
+msgid "Failed to empty trash: {}"
+msgstr "Axlat qutisini tozalab bo'lmadi: {}"
+
+#: rustconn/src/window/edit_actions.rs:531
 msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
 msgstr ""
 "Wake On LAN sozlanmagan. MAC manzilini belgilash uchun ulanishni tahrirlang."
 
-#: rustconn/src/window/edit_actions.rs:507
+#: rustconn/src/window/edit_actions.rs:559
 msgid "Wake On LAN sent to {} — waiting for host to come online…"
 msgstr "Wake On LAN {} ga yuborildi — host onlayn bo’lishi kutilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:548
+#: rustconn/src/window/edit_actions.rs:600
 msgid "{} is online — connecting…"
 msgstr "{} onlayn — ulanilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:563
+#: rustconn/src/window/edit_actions.rs:615
 msgid "{} did not come online after WoL"
 msgstr "{} WoL dan keyin onlayn bo’lmadi"
 
-#: rustconn/src/window/edit_actions.rs:575
+#: rustconn/src/window/edit_actions.rs:627
 msgid "Failed to send Wake On LAN packet. Check network permissions."
 msgstr ""
 "Wake On LAN paketini yuborib bolmadi. Tarmoq ruxsatlarini tekshiring.Wake On "
 "LAN paketini yuborish muvaffaqiyatsiz. Tarmoq ruxsatlarini tekshiring.Wake "
 "On LAN paketini yuborish muvaffaqiyatsiz. Tarmoq ruxsatlarini tekshiring."
 
-#: rustconn/src/window/edit_actions.rs:610
+#: rustconn/src/window/edit_actions.rs:662
 msgid "Checking if {} is online…"
 msgstr "{} onlaynmi tekshirilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:641
+#: rustconn/src/window/edit_actions.rs:693
 msgid "{} is online"
 msgstr "{} onlayn"
 
-#: rustconn/src/window/edit_actions.rs:656
+#: rustconn/src/window/edit_actions.rs:708
 msgid "{} did not come online within timeout"
 msgstr "{} belgilangan vaqt ichida onlayn bo’lmadi"
 
-#: rustconn/src/window/edit_actions.rs:663
+#: rustconn/src/window/edit_actions.rs:715
 msgid "Host check failed: {}"
 msgstr "Host tekshiruvi muvaffaqiyatsiz: {}"
 
-#: rustconn/src/window/edit_actions.rs:807
+#: rustconn/src/window/edit_actions.rs:859
 msgid "This connection type cannot host a SOCKS tunnel"
 msgstr "Bu ulanish turi SOCKS tunnelini qo'llab-quvvatlamaydi"
 
-#: rustconn/src/window/edit_actions.rs:828
+#: rustconn/src/window/edit_actions.rs:880
 msgid "application is busy"
 msgstr "ilova band"
 
-#: rustconn/src/window/edit_actions.rs:831
+#: rustconn/src/window/edit_actions.rs:883
 msgid "the SSH connection it tunnels through is gone"
 msgstr "tunnel oʻtadigan SSH ulanishi endi mavjud emas"
 
-#: rustconn/src/window/edit_actions.rs:965
+#: rustconn/src/window/edit_actions.rs:1017
 msgid ""
 "The SOCKS proxy password variable ‘{}’ is not secret, so it was not used. "
 "Mark it as secret in Global Variables."
@@ -13754,28 +13786,28 @@ msgstr ""
 "SOCKS proksi parol o'zgaruvchisi ‘{}’ maxfiy emas, shuning uchun "
 "ishlatilmadi. Uni Global o'zgaruvchilarda maxfiy deb belgilang."
 
-#: rustconn/src/window/edit_actions.rs:971
+#: rustconn/src/window/edit_actions.rs:1023
 msgid "The SOCKS proxy password variable ‘{}’ has no value"
 msgstr "SOCKS proksi parol o'zgaruvchisi ‘{}’ qiymatga ega emas"
 
-#: rustconn/src/window/edit_actions.rs:978
+#: rustconn/src/window/edit_actions.rs:1030
 msgid "Could not start the SOCKS relay: {}"
 msgstr "SOCKS relesini ishga tushirib bo'lmadi: {}"
 
-#: rustconn/src/window/edit_actions.rs:1231
-#: rustconn/src/window/edit_actions.rs:1365
-#: rustconn/src/window/edit_actions.rs:1624
-#: rustconn/src/window/edit_actions.rs:1733
+#: rustconn/src/window/edit_actions.rs:1283
+#: rustconn/src/window/edit_actions.rs:1417
+#: rustconn/src/window/edit_actions.rs:1676
+#: rustconn/src/window/edit_actions.rs:1785
 #: rustconn/src/window/protocols.rs:2385
 msgid "Could not open the SSH tunnel: {}"
 msgstr "SSH tunnelini ochib boʻlmadi: {}"
 
-#: rustconn/src/window/edit_actions.rs:1244
-#: rustconn/src/window/edit_actions.rs:1344
+#: rustconn/src/window/edit_actions.rs:1296
+#: rustconn/src/window/edit_actions.rs:1396
 msgid "Starting the tunnel…"
 msgstr "Tunnel ishga tushirilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:1304
+#: rustconn/src/window/edit_actions.rs:1356
 msgid ""
 "The tunnelled browser command ‘{}’ can't use a proxy; opening the embedded "
 "browser instead. Set a Chromium-based browser or Firefox in Settings to use "
@@ -13785,7 +13817,7 @@ msgstr ""
 "o'rniga o'rnatilgan brauzer ochiladi. Tashqi brauzer uchun Sozlamalarda "
 "Chromium asosidagi brauzer yoki Firefox'ni belgilang."
 
-#: rustconn/src/window/edit_actions.rs:1308
+#: rustconn/src/window/edit_actions.rs:1360
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a chromium/"
@@ -13795,7 +13827,7 @@ msgstr ""
 "orqali faqat Chromium oilasidagi brauzerlarni proksilash mumkin; "
 "Sozlamalarda chromium/chrome/brave/vivaldi/edge buyrug‘ini kiriting."
 
-#: rustconn/src/window/edit_actions.rs:1314
+#: rustconn/src/window/edit_actions.rs:1366
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
 "embedded browser instead. Check the command in Settings, or clear it to auto-"
@@ -13805,7 +13837,7 @@ msgstr ""
 "ochilmoqda. Sozlamalardagi buyruqni tekshiring yoki brauzerni avtoaniqlash "
 "uchun uni tozalang."
 
-#: rustconn/src/window/edit_actions.rs:1318
+#: rustconn/src/window/edit_actions.rs:1370
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -13813,7 +13845,7 @@ msgstr ""
 "Tunnellangan brauzer buyrug‘i ‘{}’ PATH’da topilmadi. Sozlamalardagi "
 "buyruqni tekshiring yoki brauzerni avtoaniqlash uchun uni tozalang."
 
-#: rustconn/src/window/edit_actions.rs:1324
+#: rustconn/src/window/edit_actions.rs:1376
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -13821,7 +13853,7 @@ msgstr ""
 "Chromium asosidagi brauzer topilmadi; oʻrniga ichki brauzer ochilmoqda. "
 "Tashqi brauzerni tunnellash uchun Chromium asosidagi brauzer oʻrnating."
 
-#: rustconn/src/window/edit_actions.rs:1327
+#: rustconn/src/window/edit_actions.rs:1379
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -13830,26 +13862,26 @@ msgstr ""
 "Chromium asosidagi brauzer o‘rnating yoki ichki brauzerli builddan "
 "foydalaning."
 
-#: rustconn/src/window/edit_actions.rs:1435
-#: rustconn/src/window/edit_actions.rs:1458
-#: rustconn/src/window/edit_actions.rs:1511
+#: rustconn/src/window/edit_actions.rs:1487
+#: rustconn/src/window/edit_actions.rs:1510
+#: rustconn/src/window/edit_actions.rs:1563
 msgid "Failed to open browser: {}"
 msgstr "Brauzerni ochib boʻlmadi: {}"
 
-#: rustconn/src/window/edit_actions.rs:1453
+#: rustconn/src/window/edit_actions.rs:1505
 msgid "Opened a tunnelled browser"
 msgstr "Tunnellangan brauzer ochildi"
 
-#: rustconn/src/window/edit_actions.rs:1488
+#: rustconn/src/window/edit_actions.rs:1540
 msgid "{} (tunnel)"
 msgstr "{} (tunnel)"
 
-#: rustconn/src/window/edit_actions.rs:1502
-#: rustconn/src/window/edit_actions.rs:1664
+#: rustconn/src/window/edit_actions.rs:1554
+#: rustconn/src/window/edit_actions.rs:1716
 msgid "Could not open the page: {}"
 msgstr "Sahifani ochib boʻlmadi: {}"
 
-#: rustconn/src/window/edit_actions.rs:1758
+#: rustconn/src/window/edit_actions.rs:1810
 msgid ""
 "This browser can't use a proxy, so the page was not opened. Use a Chromium-"
 "based browser, Firefox or the embedded browser."
@@ -13857,12 +13889,12 @@ msgstr ""
 "Bu brauzer proksidan foydalana olmaydi, shuning uchun sahifa ochilmadi. "
 "Chromium asosidagi brauzer, Firefox yoki o'rnatilgan brauzerdan foydalaning."
 
-#: rustconn/src/window/edit_actions.rs:1824
-#: rustconn/src/window/edit_actions.rs:1877
+#: rustconn/src/window/edit_actions.rs:1876
+#: rustconn/src/window/edit_actions.rs:1929
 msgid "Opened in browser"
 msgstr "Brauzerda ochildi"
 
-#: rustconn/src/window/edit_actions.rs:1849
+#: rustconn/src/window/edit_actions.rs:1901
 msgid ""
 "No browser that can use a proxy was found, so the page was not opened. "
 "Install Chromium or Firefox, or use the embedded browser."
@@ -13871,27 +13903,27 @@ msgstr ""
 "ochilmadi. Chromium yoki Firefox o'rnating yoki o'rnatilgan brauzerdan "
 "foydalaning."
 
-#: rustconn/src/window/edit_actions.rs:2026
+#: rustconn/src/window/edit_actions.rs:2078
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr ""
 "SSH agenti ishlamayapti. «eval $(ssh-agent)» ni bajaring va qayta urinib "
 "koʻring."
 
-#: rustconn/src/window/edit_actions.rs:2037
+#: rustconn/src/window/edit_actions.rs:2089
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr ""
 "SSH agentida kalit bor-yoʻqligini tekshirib boʻlmadi. mc baribir ochiladi."
 
-#: rustconn/src/window/edit_actions.rs:2043
+#: rustconn/src/window/edit_actions.rs:2095
 msgid "SSH key not available"
 msgstr "SSH kalit mavjud emas"
 
-#: rustconn/src/window/edit_actions.rs:2064 rustconn/src/window/mc_launch.rs:62
+#: rustconn/src/window/edit_actions.rs:2116 rustconn/src/window/mc_launch.rs:62
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP faqat SSH ulanishlari uchun mavjud."
 
-#: rustconn/src/window/edit_actions.rs:2093
-#: rustconn/src/window/edit_actions.rs:2390
+#: rustconn/src/window/edit_actions.rs:2145
+#: rustconn/src/window/edit_actions.rs:2442
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13901,16 +13933,16 @@ msgstr ""
 "olmaydi.                          Ishonchli kirish uchun Sozlamalarda \"SFTP "
 "via mc\" ni yoqing."
 
-#: rustconn/src/window/edit_actions.rs:2109
-#: rustconn/src/window/edit_actions.rs:2408
+#: rustconn/src/window/edit_actions.rs:2161
+#: rustconn/src/window/edit_actions.rs:2460
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr "O‘tish xosti aniqlandi. SFTP fayl menejeri o‘rniga mc orqali ochiladi."
 
-#: rustconn/src/window/edit_actions.rs:2136
+#: rustconn/src/window/edit_actions.rs:2188
 msgid "Opening SFTP…"
 msgstr "SFTP ochilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:2183
+#: rustconn/src/window/edit_actions.rs:2235
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "SSH agenti ishlamayapti — fayl menejeri autentifikatsiyadan oʻtmasligi "
@@ -14416,15 +14448,15 @@ msgstr ""
 "«{}» ga ulanish endi oʻsha oʻtish xostini oʻtkazib yuboradi va faqat "
 "sozlangan marshrutning qolganidan foydalanadi."
 
-#: rustconn/src/window/mod.rs:1181 rustconn/src/window/mod.rs:1192
+#: rustconn/src/window/mod.rs:1184 rustconn/src/window/mod.rs:1195
 msgid "Dismiss"
 msgstr "Yopish"
 
-#: rustconn/src/window/mod.rs:1224
+#: rustconn/src/window/mod.rs:1227
 msgid "Open Log"
 msgstr "Jurnalni ochish"
 
-#: rustconn/src/window/mod.rs:1227
+#: rustconn/src/window/mod.rs:1230
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
@@ -14432,39 +14464,39 @@ msgstr ""
 "RustConn oxirgi ishga tushganda kutilmaganda yopildi. Nosozlik jurnali "
 "mahalliy saqlandi."
 
-#: rustconn/src/window/mod.rs:1252
+#: rustconn/src/window/mod.rs:1255
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Nosozlik jurnalini ochib bo'lmadi. U shu yerda saqlangan: {}"
 
-#: rustconn/src/window/mod.rs:1281
+#: rustconn/src/window/mod.rs:1284
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Parollar ma'lumotlar bazasini ochish uchun apparat kalitiga teging"
 
-#: rustconn/src/window/mod.rs:2779
+#: rustconn/src/window/mod.rs:2786
 msgid "Already running in an external window"
 msgstr "Allaqachon tashqi oynada ishlamoqda"
 
-#: rustconn/src/window/mod.rs:3008
+#: rustconn/src/window/mod.rs:3015
 msgid "Connection to ‘{}’ failed"
 msgstr "‘{}’ ga ulanish muvaffaqiyatsiz"
 
-#: rustconn/src/window/mod.rs:3356 rustconn/src/window/mod.rs:3370
+#: rustconn/src/window/mod.rs:3363 rustconn/src/window/mod.rs:3377
 msgid "Pre-connect task failed: {}"
 msgstr "Ulanish oldidan vazifa bajarilmadi: {}"
 
-#: rustconn/src/window/mod.rs:3404
+#: rustconn/src/window/mod.rs:3411
 msgid "Port knock failed: {}"
 msgstr "Port knock amalga oshmadi: {}"
 
-#: rustconn/src/window/mod.rs:3453
+#: rustconn/src/window/mod.rs:3460
 msgid "SPA failed: {}"
 msgstr "SPA amalga oshmadi: {}"
 
-#: rustconn/src/window/mod.rs:3637
+#: rustconn/src/window/mod.rs:3644
 msgid "{} (via {})"
 msgstr "{} ({} orqali)"
 
-#: rustconn/src/window/mod.rs:3643
+#: rustconn/src/window/mod.rs:3650
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14488,35 +14520,35 @@ msgstr ""
 "Agar bu o‘zgarishni siz qilmagan bo‘lsangiz, bekor qiling — ulanish "
 "saqlangan hisob ma’lumotlarini boshqa mashinaga yuborishi mumkin."
 
-#: rustconn/src/window/mod.rs:3648
+#: rustconn/src/window/mod.rs:3655
 msgid "Routing changed for “{}”"
 msgstr "«{}» uchun marshrut o‘zgardi"
 
-#: rustconn/src/window/mod.rs:3712
+#: rustconn/src/window/mod.rs:3719
 msgid "Jump Host Unavailable for “{}”"
 msgstr "«{}» uchun oʻtish xosti mavjud emas"
 
-#: rustconn/src/window/mod.rs:3717
+#: rustconn/src/window/mod.rs:3724
 msgid "Connect Directly"
 msgstr "Toʻgʻridan-toʻgʻri ulanish"
 
-#: rustconn/src/window/mod.rs:3806 rustconn/src/window/mod.rs:3981
+#: rustconn/src/window/mod.rs:3813 rustconn/src/window/mod.rs:3988
 msgid "Connection “{}” created"
 msgstr "“{}” ulanishi yaratildi"
 
-#: rustconn/src/window/mod.rs:4238
+#: rustconn/src/window/mod.rs:4245
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4450
+#: rustconn/src/window/mod.rs:4457
 msgid "Settings saved"
 msgstr "Sozlamalar saqlandi"
 
-#: rustconn/src/window/mod.rs:4487
+#: rustconn/src/window/mod.rs:4494
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Parol iborasi bu kompyuterda saqlanmadi"
 
-#: rustconn/src/window/mod.rs:4489
+#: rustconn/src/window/mod.rs:4496
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14528,11 +14560,11 @@ msgstr ""
 "so'raladi. Buning o'rniga «Tizim kalitlar shodasi»ni tanlang yoki RustConn "
 "o'z ma'lumotlar katalogiga yozishi mumkinligini tekshiring."
 
-#: rustconn/src/window/mod.rs:4535
+#: rustconn/src/window/mod.rs:4542
 msgid "Credentials Not Saved to Keyring"
 msgstr "Hisob ma’lumotlari kalitlar to‘plamiga saqlanmadi"
 
-#: rustconn/src/window/mod.rs:4537
+#: rustconn/src/window/mod.rs:4544
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14543,15 +14575,15 @@ msgstr ""
 "yo‘qoladi. Kalitlar to‘plami xizmati ishlayotganini va qulfi ochilganini "
 "tekshirib, sozlamalarni qayta saqlang."
 
-#: rustconn/src/window/mod.rs:4721
+#: rustconn/src/window/mod.rs:4728
 msgid "Close RustConn?"
 msgstr "RustConn yopilsinmi?"
 
-#: rustconn/src/window/mod.rs:4723
+#: rustconn/src/window/mod.rs:4730
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "{} ta seans varag'i ochiq. Faol ulanishlar uziladi."
 
-#: rustconn/src/window/mod.rs:4760
+#: rustconn/src/window/mod.rs:4767
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14559,7 +14591,7 @@ msgstr ""
 "Sozlamalarni o'qib bo'lmadi, shuning uchun standart qiymatlar ishlatilmoqda. "
 "O'qib bo'lmaydigan fayl {} sifatida saqlandi."
 
-#: rustconn/src/window/mod.rs:4765
+#: rustconn/src/window/mod.rs:4772
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14567,35 +14599,35 @@ msgstr ""
 "Ushbu sozlamalar yangiroq RustConn ({}) tomonidan saqlangan. Ular "
 "o'zgartirilishdan oldin zaxira nusxa saqlanadi."
 
-#: rustconn/src/window/mod.rs:4790
+#: rustconn/src/window/mod.rs:4797
 msgid "Cloud sync failed for '{}': {}"
 msgstr "'{}' uchun bulutli sinxronlash muvaffaqiyatsiz tugadi: {}"
 
-#: rustconn/src/window/mod.rs:4973
+#: rustconn/src/window/mod.rs:4980
 msgid "Startup connection not found"
 msgstr "Ishga tushirish ulanishi topilmadi"
 
-#: rustconn/src/window/mod.rs:5046
+#: rustconn/src/window/mod.rs:5053
 msgid "Failed to open .rdp file"
 msgstr ".rdp faylni ochib bo’lmadi"
 
-#: rustconn/src/window/mod.rs:5082
+#: rustconn/src/window/mod.rs:5089
 msgid "Failed to open .vv file"
 msgstr ".vv faylni ochib bo'lmadi"
 
-#: rustconn/src/window/mod.rs:5119
+#: rustconn/src/window/mod.rs:5126
 msgid "Tunnel “{}” stopped: {}"
 msgstr "“{}” tunneli to'xtadi: {}"
 
-#: rustconn/src/window/mod.rs:5135
+#: rustconn/src/window/mod.rs:5142
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "“{}” tunnelini qayta ulash to'xtatildi: {}"
 
-#: rustconn/src/window/mod.rs:5648
+#: rustconn/src/window/mod.rs:5655
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "{} ta ulanish muvaffaqiyatli eksport qilindi. {} tashlab yuborildi."
 
-#: rustconn/src/window/mod.rs:5734
+#: rustconn/src/window/mod.rs:5741
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14606,11 +14638,11 @@ msgstr ""
 "Sozlamalar ▸ Maxfiy ma'lumotlar bo'limini ochib, fayl yaratilgan parol "
 "iborasini kiriting."
 
-#: rustconn/src/window/mod.rs:5769
+#: rustconn/src/window/mod.rs:5776
 msgid "Share Local Devices?"
 msgstr "Mahalliy qurilmalar ulashilsinmi?"
 
-#: rustconn/src/window/mod.rs:5771
+#: rustconn/src/window/mod.rs:5778
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"

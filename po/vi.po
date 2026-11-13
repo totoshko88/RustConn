@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 16:38+0200\n"
+"POT-Creation-Date: 2026-11-13 17:29+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -35,7 +35,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/portable_unlock.rs:93
 #: rustconn/src/dialogs/recording.rs:523 rustconn/src/dialogs/recording.rs:599
 #: rustconn/src/dialogs/script.rs:682
-#: rustconn/src/dialogs/settings/clients_tab.rs:355
+#: rustconn/src/dialogs/settings/clients_tab.rs:411
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:171
 #: rustconn/src/dialogs/settings/mod.rs:595
 #: rustconn/src/dialogs/settings/mod.rs:942
@@ -61,8 +61,8 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2089
 #: rustconn/src/window/group_broadcast.rs:379
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:453
-#: rustconn/src/window/mod.rs:3651 rustconn/src/window/mod.rs:3715
-#: rustconn/src/window/mod.rs:4727 rustconn/src/window/mod.rs:5775
+#: rustconn/src/window/mod.rs:3658 rustconn/src/window/mod.rs:3722
+#: rustconn/src/window/mod.rs:4734 rustconn/src/window/mod.rs:5782
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
 #: rustconn/src/window/operations.rs:824 rustconn/src/window/operations.rs:1007
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -128,9 +128,9 @@ msgid ""
 msgstr ""
 "Đã chọn {}, nhưng nó chưa thể lưu mật khẩu: {}. Hãy mở Cài đặt, rồi Bí mật."
 
-#: rustconn/src/app.rs:2086 rustconn/src/window/edit_actions.rs:1696
-#: rustconn/src/window/edit_actions.rs:1835
-#: rustconn/src/window/edit_actions.rs:1863
+#: rustconn/src/app.rs:2086 rustconn/src/window/edit_actions.rs:1748
+#: rustconn/src/window/edit_actions.rs:1887
+#: rustconn/src/window/edit_actions.rs:1915
 msgid "Failed to open URL: {}"
 msgstr "Mở URL thất bại: {}"
 
@@ -265,7 +265,7 @@ msgstr "‘{}’ cần những thông tin sau trước khi có thể kết nối
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1037
 #: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5776
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5783
 msgid "Connect"
 msgstr "Kết nối"
 
@@ -303,7 +303,7 @@ msgstr "Nhập mật khẩu thủ công"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1205
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1208
 msgid "Open Settings"
 msgstr "Mở Cài đặt"
 
@@ -1136,7 +1136,7 @@ msgid "Executable name or path (e.g., chromaterm, pv, ccze)"
 msgstr "Tên hoặc đường dẫn tệp thực thi (ví dụ: chromaterm, pv, ccze)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:575
-#: rustconn/src/dialogs/connection/rdp.rs:911
+#: rustconn/src/dialogs/connection/rdp.rs:930
 msgid "Arguments"
 msgstr "Đối số"
 
@@ -1352,7 +1352,7 @@ msgstr "Tự động hóa"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:464
 #: rustconn/src/dialogs/connection/kubernetes.rs:141
-#: rustconn/src/dialogs/connection/rdp.rs:960
+#: rustconn/src/dialogs/connection/rdp.rs:979
 #: rustconn/src/dialogs/connection/vnc.rs:318
 #: rustconn/src/dialogs/connection/zerotrust.rs:189
 #: rustconn/src/dialogs/template.rs:944 rustconn/src/dialogs/template.rs:1121
@@ -1761,7 +1761,7 @@ msgid "Direct — an inherited jump host is ignored"
 msgstr "Trực tiếp — bỏ qua máy chủ trung gian được kế thừa"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1516
-#: rustconn/src/dialogs/connection/rdp.rs:803
+#: rustconn/src/dialogs/connection/rdp.rs:822
 msgid "Tunnel RDP through an SSH connection"
 msgstr "Tạo đường hầm RDP qua một kết nối SSH"
 
@@ -2122,7 +2122,7 @@ msgid "Zero Trust"
 msgstr "Zero Trust"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:152
-#: rustconn/src/dialogs/connection/rdp.rs:786
+#: rustconn/src/dialogs/connection/rdp.rs:805
 #: rustconn/src/dialogs/connection/spice.rs:299
 #: rustconn/src/dialogs/connection/ssh.rs:659
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2439,7 +2439,7 @@ msgid "Container image for temporary pod"
 msgstr "Image container cho pod tạm thời"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:144
-#: rustconn/src/dialogs/connection/rdp.rs:1019
+#: rustconn/src/dialogs/connection/rdp.rs:1038
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
 #: rustconn/src/dialogs/connection/vnc.rs:328
@@ -2588,7 +2588,7 @@ msgid "Quality/speed tradeoff for image rendering and visual effects"
 msgstr "Cân bằng chất lượng/tốc độ cho việc kết xuất hình ảnh và hiệu ứng"
 
 #: rustconn/src/dialogs/connection/rdp.rs:153
-#: rustconn/src/dialogs/connection/rdp.rs:677
+#: rustconn/src/dialogs/connection/rdp.rs:696
 #: rustconn/src/dialogs/connection/vnc.rs:89 rustconn/src/i18n_markers.rs:99
 msgid "Automatic"
 msgstr "Tự động"
@@ -2736,7 +2736,7 @@ msgstr "Chuyển hướng máy in"
 msgid "Share your local printer with the remote session"
 msgstr "Chia sẻ máy in cục bộ với phiên từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:382 rustconn/src/window/mod.rs:5749
+#: rustconn/src/dialogs/connection/rdp.rs:382 rustconn/src/window/mod.rs:5756
 msgid "Microphone"
 msgstr "Micrô"
 
@@ -2744,11 +2744,12 @@ msgstr "Micrô"
 msgid "Send the local microphone to the remote session"
 msgstr "Gửi micrô cục bộ tới phiên từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:392 rustconn/src/window/mod.rs:5752
+#: rustconn/src/dialogs/connection/rdp.rs:392 rustconn/src/window/mod.rs:5759
 msgid "Smart Cards"
 msgstr "Thẻ thông minh"
 
 #: rustconn/src/dialogs/connection/rdp.rs:394
+#: rustconn/src/dialogs/connection/rdp.rs:411
 msgid ""
 "Use local smart card readers in the remote session (External client, needs "
 "PC/SC)"
@@ -2756,11 +2757,17 @@ msgstr ""
 "Dùng đầu đọc thẻ thông minh cục bộ trong phiên từ xa (máy khách bên ngoài, "
 "cần PC/SC)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:414
+#: rustconn/src/dialogs/connection/rdp.rs:408
+msgid "Not used in Embedded mode. Set Client Mode to External RDP client."
+msgstr ""
+"Không dùng ở chế độ nhúng. Hãy đặt Chế độ máy khách thành \"Máy khách RDP "
+"bên ngoài\"."
+
+#: rustconn/src/dialogs/connection/rdp.rs:433
 msgid "Windows Key Combinations"
 msgstr "Tổ hợp phím Windows"
 
-#: rustconn/src/dialogs/connection/rdp.rs:416
+#: rustconn/src/dialogs/connection/rdp.rs:435
 msgid ""
 "Where shortcuts such as Alt+Tab and Super apply while the session has focus "
 "(Embedded client)"
@@ -2768,44 +2775,44 @@ msgstr ""
 "Nơi các phím tắt như Alt+Tab và Super có tác dụng khi phiên đang được chọn "
 "(máy khách nhúng)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:424
+#: rustconn/src/dialogs/connection/rdp.rs:443
 msgid "Reconnect Automatically"
 msgstr "Tự động kết nối lại"
 
-#: rustconn/src/dialogs/connection/rdp.rs:426
+#: rustconn/src/dialogs/connection/rdp.rs:445
 msgid ""
 "Reconnect when the connection drops, up to {} attempts (Embedded client)"
 msgstr "Kết nối lại khi kết nối bị ngắt, tối đa {} lần thử (máy khách nhúng)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:444
+#: rustconn/src/dialogs/connection/rdp.rs:463
 #: rustconn/src/dialogs/connection/spice.rs:171
 #: rustconn/src/dialogs/connection/vnc.rs:257
 #: rustconn/src/dialogs/template.rs:1111 rustconn/src/dialogs/template.rs:1246
 msgid "Clipboard Sharing"
 msgstr "Chia sẻ bộ nhớ tạm"
 
-#: rustconn/src/dialogs/connection/rdp.rs:445
+#: rustconn/src/dialogs/connection/rdp.rs:464
 msgid "Which way the clipboard synchronises with the remote"
 msgstr "Chiều đồng bộ bộ nhớ tạm với máy từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:453
+#: rustconn/src/dialogs/connection/rdp.rs:472
 #: rustconn/src/dialogs/connection/spice.rs:215
 #: rustconn/src/dialogs/connection/vnc.rs:265
 msgid "Show Local Cursor"
 msgstr "Hiện con trỏ cục bộ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:454
+#: rustconn/src/dialogs/connection/rdp.rs:473
 #: rustconn/src/dialogs/connection/spice.rs:216
 #: rustconn/src/dialogs/connection/vnc.rs:266
 msgid "Hide to avoid double cursor in embedded mode"
 msgstr "Ẩn để tránh hiện hai con trỏ trong chế độ nhúng"
 
-#: rustconn/src/dialogs/connection/rdp.rs:465
+#: rustconn/src/dialogs/connection/rdp.rs:484
 #: rustconn/src/dialogs/connection/vnc.rs:274
 msgid "Session Toolbar"
 msgstr "Thanh công cụ phiên"
 
-#: rustconn/src/dialogs/connection/rdp.rs:467
+#: rustconn/src/dialogs/connection/rdp.rs:486
 #: rustconn/src/dialogs/connection/vnc.rs:276
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Ctrl+Alt+Del "
@@ -2814,44 +2821,44 @@ msgstr ""
 "Tắt để gỡ bỏ thanh công cụ nổi và mũi tên hiện thanh. Ctrl+Alt+Del và các "
 "nút trên thanh công cụ cũng sẽ mất theo."
 
-#: rustconn/src/dialogs/connection/rdp.rs:475
+#: rustconn/src/dialogs/connection/rdp.rs:494
 msgid "Mouse Jiggler"
 msgstr "Lắc chuột"
 
-#: rustconn/src/dialogs/connection/rdp.rs:476
+#: rustconn/src/dialogs/connection/rdp.rs:495
 msgid "Prevent idle disconnect by simulating mouse movement"
 msgstr ""
 "Ngăn bị ngắt kết nối do không hoạt động bằng cách giả lập di chuyển chuột"
 
-#: rustconn/src/dialogs/connection/rdp.rs:489
+#: rustconn/src/dialogs/connection/rdp.rs:508
 msgid "Jiggler Interval"
 msgstr "Chu kỳ lắc chuột"
 
-#: rustconn/src/dialogs/connection/rdp.rs:490
+#: rustconn/src/dialogs/connection/rdp.rs:509
 msgid "Seconds between mouse movements"
 msgstr "Số giây giữa các lần di chuyển chuột"
 
-#: rustconn/src/dialogs/connection/rdp.rs:509
+#: rustconn/src/dialogs/connection/rdp.rs:528
 msgid "Autotype Delay"
 msgstr "Độ trễ tự động gõ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:511
+#: rustconn/src/dialogs/connection/rdp.rs:530
 msgid "Milliseconds between keystrokes (increase for Citrix)"
 msgstr "Số mili giây giữa các lần gõ phím (tăng lên cho Citrix)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:524
+#: rustconn/src/dialogs/connection/rdp.rs:543
 msgid "Autotype Initial Delay"
 msgstr "Độ trễ ban đầu khi tự động gõ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:525
+#: rustconn/src/dialogs/connection/rdp.rs:544
 msgid "Milliseconds to wait before typing starts"
 msgstr "Số mili giây chờ trước khi bắt đầu gõ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:532
+#: rustconn/src/dialogs/connection/rdp.rs:551
 msgid "Dynamic resolution"
 msgstr "Độ phân giải động"
 
-#: rustconn/src/dialogs/connection/rdp.rs:534
+#: rustconn/src/dialogs/connection/rdp.rs:553
 msgid ""
 "Resize the remote desktop to match the window (External client). Turn off "
 "for legacy servers"
@@ -2859,11 +2866,11 @@ msgstr ""
 "Thay đổi kích thước màn hình từ xa cho khớp với cửa sổ (máy khách bên "
 "ngoài). Tắt cho máy chủ đời cũ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:542
+#: rustconn/src/dialogs/connection/rdp.rs:561
 msgid "Smart sizing"
 msgstr "Co giãn thông minh"
 
-#: rustconn/src/dialogs/connection/rdp.rs:544
+#: rustconn/src/dialogs/connection/rdp.rs:563
 msgid ""
 "Scale the remote screen to fit the window (External client). For servers "
 "that do not resize dynamically, such as KDE KRdp, or legacy servers on HiDPI "
@@ -2873,11 +2880,11 @@ msgstr ""
 "chủ không tự đổi kích thước, như KDE KRdp, hoặc máy chủ đời cũ trên màn hình "
 "HiDPI. Ghi đè độ phân giải động"
 
-#: rustconn/src/dialogs/connection/rdp.rs:563
+#: rustconn/src/dialogs/connection/rdp.rs:582
 msgid "Reconnect on Resize"
 msgstr "Kết nối lại khi đổi kích thước"
 
-#: rustconn/src/dialogs/connection/rdp.rs:565
+#: rustconn/src/dialogs/connection/rdp.rs:584
 msgid ""
 "Full reconnect instead of dynamic resize (Embedded client). For legacy "
 "servers or fixed resolution"
@@ -2885,7 +2892,7 @@ msgstr ""
 "Kết nối lại hoàn toàn thay vì đổi kích thước động (máy khách nhúng). Dành "
 "cho máy chủ đời cũ hoặc độ phân giải cố định"
 
-#: rustconn/src/dialogs/connection/rdp.rs:573
+#: rustconn/src/dialogs/connection/rdp.rs:592
 #: rustconn/src/dialogs/connection/vnc.rs:294
 msgid ""
 "Use multiple network paths for seamless mobility (Linux 5.6+, embedded mode "
@@ -2893,7 +2900,7 @@ msgid ""
 msgstr ""
 "Dùng nhiều đường mạng để di chuyển liền mạch (Linux 5.6+, chỉ chế độ nhúng)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:575
+#: rustconn/src/dialogs/connection/rdp.rs:594
 #: rustconn/src/dialogs/connection/vnc.rs:296
 msgid ""
 "Multiple network paths (embedded mode only). Not available: kernel MPTCP is "
@@ -2902,27 +2909,27 @@ msgstr ""
 "Nhiều đường mạng (chỉ chế độ nhúng). Không khả dụng: MPTCP của nhân đang bị "
 "tắt"
 
-#: rustconn/src/dialogs/connection/rdp.rs:578
+#: rustconn/src/dialogs/connection/rdp.rs:597
 #: rustconn/src/dialogs/connection/ssh.rs:868
 #: rustconn/src/dialogs/connection/vnc.rs:299
 msgid "Multipath TCP"
 msgstr "Multipath TCP"
 
-#: rustconn/src/dialogs/connection/rdp.rs:586
+#: rustconn/src/dialogs/connection/rdp.rs:605
 msgid "FIDO2 Passkey Redirection"
 msgstr "Chuyển hướng passkey FIDO2"
 
-#: rustconn/src/dialogs/connection/rdp.rs:588
+#: rustconn/src/dialogs/connection/rdp.rs:607
 msgid ""
 "Use local security keys in the remote session (External client, FreeRDP 3.x)"
 msgstr ""
 "Dùng khóa bảo mật cục bộ trong phiên từ xa (máy khách bên ngoài, FreeRDP 3.x)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:600
+#: rustconn/src/dialogs/connection/rdp.rs:619
 msgid "Admin/console session (/admin)"
 msgstr "Phiên quản trị/console (/admin)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:602
+#: rustconn/src/dialogs/connection/rdp.rs:621
 msgid ""
 "Connect to the console/admin session (External client). Bypasses RDS CAL "
 "licensing"
@@ -2930,7 +2937,7 @@ msgstr ""
 "Kết nối tới phiên console/quản trị (máy khách bên ngoài). Bỏ qua cấp phép "
 "RDS CAL"
 
-#: rustconn/src/dialogs/connection/rdp.rs:607
+#: rustconn/src/dialogs/connection/rdp.rs:626
 msgid ""
 "Passes /admin to the external FreeRDP client, connecting to the server's "
 "console/administrative session instead of a normal RDS session. This "
@@ -2942,11 +2949,11 @@ msgstr ""
 "phép RDS CAL. Chỉ dành cho máy khách bên ngoài; máy khách nhúng chưa thể yêu "
 "cầu."
 
-#: rustconn/src/dialogs/connection/rdp.rs:618
+#: rustconn/src/dialogs/connection/rdp.rs:637
 msgid "Kerberos Authentication"
 msgstr "Xác thực Kerberos"
 
-#: rustconn/src/dialogs/connection/rdp.rs:620
+#: rustconn/src/dialogs/connection/rdp.rs:639
 msgid ""
 "Required for AD \"Protected Users\"; Host must be the server's DNS name. "
 "Embedded client: Kerberos only, with the saved password. External client: "
@@ -2956,11 +2963,11 @@ msgstr ""
 "Máy khách nhúng: chỉ Kerberos, với mật khẩu đã lưu. Máy khách bên ngoài: "
 "FreeRDP tự thử Kerberos, và RemoteApp không còn bị giới hạn ở NTLM"
 
-#: rustconn/src/dialogs/connection/rdp.rs:632
+#: rustconn/src/dialogs/connection/rdp.rs:651
 msgid "KDC Address"
 msgstr "Địa chỉ KDC"
 
-#: rustconn/src/dialogs/connection/rdp.rs:634
+#: rustconn/src/dialogs/connection/rdp.rs:653
 msgid ""
 "Optional. A domain controller name or IP address, a tcp:// or udp:// "
 "address, or an https:// KDC proxy URL. Leave empty to find it automatically. "
@@ -2972,85 +2979,85 @@ msgstr ""
 "khách bên ngoài chỉ dùng proxy https://…/KdcProxy, nếu không thì theo cấu "
 "hình Kerberos của hệ thống."
 
-#: rustconn/src/dialogs/connection/rdp.rs:649
+#: rustconn/src/dialogs/connection/rdp.rs:668
 msgid "Disable NLA"
 msgstr "Tắt NLA"
 
-#: rustconn/src/dialogs/connection/rdp.rs:650
+#: rustconn/src/dialogs/connection/rdp.rs:669
 msgid "Skip Network Level Authentication (less secure)"
 msgstr "Bỏ qua Network Level Authentication (kém an toàn hơn)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:666
-#: rustconn/src/dialogs/connection/rdp.rs:668
+#: rustconn/src/dialogs/connection/rdp.rs:685
+#: rustconn/src/dialogs/connection/rdp.rs:687
 msgid "Security Layer"
 msgstr "Lớp bảo mật"
 
-#: rustconn/src/dialogs/connection/rdp.rs:669
+#: rustconn/src/dialogs/connection/rdp.rs:688
 msgid "RDP/TLS for legacy servers (forces external FreeRDP)"
 msgstr "RDP/TLS cho máy chủ đời cũ (bắt buộc dùng FreeRDP bên ngoài)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:685
-#: rustconn/src/dialogs/connection/rdp.rs:687
+#: rustconn/src/dialogs/connection/rdp.rs:704
+#: rustconn/src/dialogs/connection/rdp.rs:706
 msgid "FreeRDP client"
 msgstr "Máy khách FreeRDP"
 
-#: rustconn/src/dialogs/connection/rdp.rs:689
+#: rustconn/src/dialogs/connection/rdp.rs:708
 msgid "External client binary. Automatic picks the best available"
 msgstr ""
 "Tệp thực thi của máy khách bên ngoài. Tự động sẽ chọn bản tốt nhất hiện có"
 
-#: rustconn/src/dialogs/connection/rdp.rs:704
+#: rustconn/src/dialogs/connection/rdp.rs:723
 msgid "TLS Security Level"
 msgstr "Mức bảo mật TLS"
 
-#: rustconn/src/dialogs/connection/rdp.rs:705
+#: rustconn/src/dialogs/connection/rdp.rs:724
 msgid "0 = legacy (Win7/2012), 2 = default, 5 = strict"
 msgstr "0 = cũ (Win7/2012), 2 = mặc định, 5 = nghiêm ngặt"
 
-#: rustconn/src/dialogs/connection/rdp.rs:721
+#: rustconn/src/dialogs/connection/rdp.rs:740
 #: rustconn/src/dialogs/connection/vnc.rs:284
 msgid "Accept Certificate"
 msgstr "Chấp nhận chứng chỉ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:723
+#: rustconn/src/dialogs/connection/rdp.rs:742
 msgid "Accept changed/self-signed certificates (removes stored fingerprint)"
 msgstr "Chấp nhận chứng chỉ đã thay đổi/tự ký (xóa dấu vân tay đã lưu)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:732
+#: rustconn/src/dialogs/connection/rdp.rs:751
 msgid "gateway.example.com"
 msgstr "gateway.example.com"
 
-#: rustconn/src/dialogs/connection/rdp.rs:737
+#: rustconn/src/dialogs/connection/rdp.rs:756
 #: rustconn/src/dialogs/template.rs:934
 msgid "RDP Gateway"
 msgstr "RDP Gateway"
 
-#: rustconn/src/dialogs/connection/rdp.rs:738
+#: rustconn/src/dialogs/connection/rdp.rs:757
 #: rustconn/src/dialogs/template.rs:935
 msgid "Remote Desktop Gateway server"
 msgstr "Máy chủ Remote Desktop Gateway"
 
-#: rustconn/src/dialogs/connection/rdp.rs:752
+#: rustconn/src/dialogs/connection/rdp.rs:771
 msgid "Gateway Port"
 msgstr "Cổng của gateway"
 
-#: rustconn/src/dialogs/connection/rdp.rs:753
+#: rustconn/src/dialogs/connection/rdp.rs:772
 msgid "Default: 443"
 msgstr "Mặc định: 443"
 
-#: rustconn/src/dialogs/connection/rdp.rs:761
+#: rustconn/src/dialogs/connection/rdp.rs:780
 msgid "Same as connection username"
 msgstr "Giống tên người dùng của kết nối"
 
-#: rustconn/src/dialogs/connection/rdp.rs:765
+#: rustconn/src/dialogs/connection/rdp.rs:784
 msgid "Gateway Username"
 msgstr "Tên người dùng gateway"
 
-#: rustconn/src/dialogs/connection/rdp.rs:766
+#: rustconn/src/dialogs/connection/rdp.rs:785
 msgid "If different from connection username"
 msgstr "Nếu khác với tên người dùng của kết nối"
 
-#: rustconn/src/dialogs/connection/rdp.rs:789
+#: rustconn/src/dialogs/connection/rdp.rs:808
 #: rustconn/src/dialogs/connection/spice.rs:336
 #: rustconn/src/dialogs/connection/ssh.rs:668
 #: rustconn/src/dialogs/connection/vnc.rs:341
@@ -3067,8 +3074,8 @@ msgstr "Nếu khác với tên người dùng của kết nối"
 msgid "(None)"
 msgstr "(Không có)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:799
-#: rustconn/src/dialogs/connection/rdp.rs:802
+#: rustconn/src/dialogs/connection/rdp.rs:818
+#: rustconn/src/dialogs/connection/rdp.rs:821
 #: rustconn/src/dialogs/connection/spice.rs:347
 #: rustconn/src/dialogs/connection/spice.rs:350
 #: rustconn/src/dialogs/connection/ssh.rs:678
@@ -3086,238 +3093,238 @@ msgstr "(Không có)"
 msgid "Jump Host"
 msgstr "Máy chủ trung gian"
 
-#: rustconn/src/dialogs/connection/rdp.rs:815
+#: rustconn/src/dialogs/connection/rdp.rs:834
 msgid "Broker Routing Value"
 msgstr "Giá trị định tuyến broker"
 
-#: rustconn/src/dialogs/connection/rdp.rs:817
+#: rustconn/src/dialogs/connection/rdp.rs:836
 msgid "Connection broker routing value (loadbalanceinfo) from an .rdp file"
 msgstr "Giá trị định tuyến của connection broker (loadbalanceinfo) từ tệp .rdp"
 
-#: rustconn/src/dialogs/connection/rdp.rs:827
+#: rustconn/src/dialogs/connection/rdp.rs:846
 #: rustconn/src/dialogs/connection/spice.rs:239
 msgid "Shared Folders"
 msgstr "Thư mục chia sẻ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:828
+#: rustconn/src/dialogs/connection/rdp.rs:847
 #: rustconn/src/dialogs/connection/spice.rs:240
 msgid "Local folders accessible from remote session"
 msgstr "Các thư mục cục bộ có thể truy cập từ phiên từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:835
+#: rustconn/src/dialogs/connection/rdp.rs:854
 #: rustconn/src/dialogs/connection/spice.rs:247
 msgid "No shared folders"
 msgstr "Không có thư mục chia sẻ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:850
+#: rustconn/src/dialogs/connection/rdp.rs:869
 #: rustconn/src/dialogs/connection/spice.rs:262
 msgid "Add"
 msgstr "Thêm"
 
-#: rustconn/src/dialogs/connection/rdp.rs:854
+#: rustconn/src/dialogs/connection/rdp.rs:873
 #: rustconn/src/dialogs/connection/spice.rs:266
 #: rustconn/src/dialogs/flatpak_components.rs:117
 #: rustconn/src/dialogs/flatpak_components.rs:336
 #: rustconn/src/dialogs/flatpak_components.rs:372
 #: rustconn/src/dialogs/flatpak_components.rs:512
-#: rustconn/src/dialogs/settings/clients_tab.rs:296
+#: rustconn/src/dialogs/settings/clients_tab.rs:352
 #: rustconn/src/dialogs/widgets.rs:349
 msgid "Remove"
 msgstr "Gỡ bỏ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:887
+#: rustconn/src/dialogs/connection/rdp.rs:906
 msgid "RemoteApp"
 msgstr "RemoteApp"
 
-#: rustconn/src/dialogs/connection/rdp.rs:889
+#: rustconn/src/dialogs/connection/rdp.rs:908
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
 msgstr ""
 "Khởi chạy một ứng dụng duy nhất thay vì toàn bộ màn hình nền (cần FreeRDP)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:895
+#: rustconn/src/dialogs/connection/rdp.rs:914
 msgid "||notepad or C:\\Program Files\\app.exe"
 msgstr "||notepad hoặc C:\\Program Files\\app.exe"
 
-#: rustconn/src/dialogs/connection/rdp.rs:899
+#: rustconn/src/dialogs/connection/rdp.rs:918
 msgid "Program"
 msgstr "Chương trình"
 
-#: rustconn/src/dialogs/connection/rdp.rs:900
+#: rustconn/src/dialogs/connection/rdp.rs:919
 msgid "Application alias (||name) or full path"
 msgstr "Bí danh ứng dụng (||name) hoặc đường dẫn đầy đủ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:907
+#: rustconn/src/dialogs/connection/rdp.rs:926
 msgid "Command-line arguments"
 msgstr "Đối số dòng lệnh"
 
-#: rustconn/src/dialogs/connection/rdp.rs:912
+#: rustconn/src/dialogs/connection/rdp.rs:931
 msgid "Arguments passed to the remote application"
 msgstr "Các đối số truyền cho ứng dụng từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:919
+#: rustconn/src/dialogs/connection/rdp.rs:938
 msgid "Display name (optional)"
 msgstr "Tên hiển thị (không bắt buộc)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:923
+#: rustconn/src/dialogs/connection/rdp.rs:942
 #: rustconn/src/dialogs/recording.rs:531
 msgid "Display Name"
 msgstr "Tên hiển thị"
 
-#: rustconn/src/dialogs/connection/rdp.rs:924
+#: rustconn/src/dialogs/connection/rdp.rs:943
 msgid "Shown in taskbar and window title"
 msgstr "Hiển thị trên thanh tác vụ và tiêu đề cửa sổ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:937
+#: rustconn/src/dialogs/connection/rdp.rs:956
 msgid "⚠ FreeRDP not found"
 msgstr "⚠ Không tìm thấy FreeRDP"
 
-#: rustconn/src/dialogs/connection/rdp.rs:939
+#: rustconn/src/dialogs/connection/rdp.rs:958
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr ""
 "RemoteApp cần FreeRDP. Hãy cài đặt sdl-freerdp3, xfreerdp hoặc wlfreerdp."
 
-#: rustconn/src/dialogs/connection/rdp.rs:965
+#: rustconn/src/dialogs/connection/rdp.rs:984
 msgid "Auto (detect)"
 msgstr "Tự động (phát hiện)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:966
+#: rustconn/src/dialogs/connection/rdp.rs:985
 msgid "US English"
 msgstr "Tiếng Anh Mỹ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:967
+#: rustconn/src/dialogs/connection/rdp.rs:986
 msgid "German (de)"
 msgstr "Tiếng Đức (de)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:968
+#: rustconn/src/dialogs/connection/rdp.rs:987
 msgid "French (fr)"
 msgstr "Tiếng Pháp (fr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:969
+#: rustconn/src/dialogs/connection/rdp.rs:988
 msgid "Spanish (es)"
 msgstr "Tiếng Tây Ban Nha (es)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:970
+#: rustconn/src/dialogs/connection/rdp.rs:989
 msgid "Italian (it)"
 msgstr "Tiếng Ý (it)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:971
+#: rustconn/src/dialogs/connection/rdp.rs:990
 msgid "Portuguese (pt)"
 msgstr "Tiếng Bồ Đào Nha (pt)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:972
+#: rustconn/src/dialogs/connection/rdp.rs:991
 msgid "Portuguese - Brazil (br)"
 msgstr "Tiếng Bồ Đào Nha - Brazil (br)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:973
+#: rustconn/src/dialogs/connection/rdp.rs:992
 msgid "English - UK (gb)"
 msgstr "Tiếng Anh - Anh (gb)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:974
+#: rustconn/src/dialogs/connection/rdp.rs:993
 msgid "German - Switzerland (ch)"
 msgstr "Tiếng Đức - Thụy Sĩ (ch)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:975
+#: rustconn/src/dialogs/connection/rdp.rs:994
 msgid "German - Austria (at)"
 msgstr "Tiếng Đức - Áo (at)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:976
+#: rustconn/src/dialogs/connection/rdp.rs:995
 msgid "French - Belgium (be)"
 msgstr "Tiếng Pháp - Bỉ (be)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:977
+#: rustconn/src/dialogs/connection/rdp.rs:996
 msgid "Dutch (nl)"
 msgstr "Tiếng Hà Lan (nl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:978
+#: rustconn/src/dialogs/connection/rdp.rs:997
 msgid "Swedish (se)"
 msgstr "Tiếng Thụy Điển (se)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:979
+#: rustconn/src/dialogs/connection/rdp.rs:998
 msgid "Norwegian (no)"
 msgstr "Tiếng Na Uy (no)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:980
+#: rustconn/src/dialogs/connection/rdp.rs:999
 msgid "Danish (dk)"
 msgstr "Tiếng Đan Mạch (dk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:981
+#: rustconn/src/dialogs/connection/rdp.rs:1000
 msgid "Finnish (fi)"
 msgstr "Tiếng Phần Lan (fi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:982
+#: rustconn/src/dialogs/connection/rdp.rs:1001
 msgid "Polish (pl)"
 msgstr "Tiếng Ba Lan (pl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:983
+#: rustconn/src/dialogs/connection/rdp.rs:1002
 msgid "Czech (cz)"
 msgstr "Tiếng Séc (cz)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:984
+#: rustconn/src/dialogs/connection/rdp.rs:1003
 msgid "Slovak (sk)"
 msgstr "Tiếng Slovakia (sk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:985
+#: rustconn/src/dialogs/connection/rdp.rs:1004
 msgid "Hungarian (hu)"
 msgstr "Tiếng Hungary (hu)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:986
+#: rustconn/src/dialogs/connection/rdp.rs:1005
 msgid "Romanian (ro)"
 msgstr "Tiếng Romania (ro)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:987
+#: rustconn/src/dialogs/connection/rdp.rs:1006
 msgid "Croatian (hr)"
 msgstr "Tiếng Croatia (hr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:988
+#: rustconn/src/dialogs/connection/rdp.rs:1007
 msgid "Slovenian (si)"
 msgstr "Tiếng Slovenia (si)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:989
+#: rustconn/src/dialogs/connection/rdp.rs:1008
 msgid "Serbian (rs)"
 msgstr "Tiếng Serbia (rs)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:990
+#: rustconn/src/dialogs/connection/rdp.rs:1009
 msgid "Bulgarian (bg)"
 msgstr "Tiếng Bulgaria (bg)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:991
+#: rustconn/src/dialogs/connection/rdp.rs:1010
 msgid "Russian (ru)"
 msgstr "Tiếng Nga (ru)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:992
+#: rustconn/src/dialogs/connection/rdp.rs:1011
 msgid "Ukrainian (ua)"
 msgstr "Tiếng Ukraina (ua)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:993
+#: rustconn/src/dialogs/connection/rdp.rs:1012
 msgid "Turkish (tr)"
 msgstr "Tiếng Thổ Nhĩ Kỳ (tr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:994
+#: rustconn/src/dialogs/connection/rdp.rs:1013
 msgid "Greek (gr)"
 msgstr "Tiếng Hy Lạp (gr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:995
+#: rustconn/src/dialogs/connection/rdp.rs:1014
 msgid "Japanese (jp)"
 msgstr "Tiếng Nhật (jp)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:996
+#: rustconn/src/dialogs/connection/rdp.rs:1015
 msgid "Korean (kr)"
 msgstr "Tiếng Hàn (kr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:997
+#: rustconn/src/dialogs/connection/rdp.rs:1016
 msgid "United States - Dvorak"
 msgstr "Hoa Kỳ - Dvorak"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1006
+#: rustconn/src/dialogs/connection/rdp.rs:1025
 msgid "Keyboard Layout"
 msgstr "Bố cục bàn phím"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1007
+#: rustconn/src/dialogs/connection/rdp.rs:1026
 msgid "Layout sent to RDP server (Auto uses system setting)"
 msgstr "Bố cục gửi tới máy chủ RDP (Tự động sẽ dùng cài đặt hệ thống)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1014
+#: rustconn/src/dialogs/connection/rdp.rs:1033
 #: rustconn/src/dialogs/connection/telnet.rs:43
 #: rustconn/src/dialogs/connection/winrm.rs:64
 #: rustconn/src/dialogs/connection/zerotrust.rs:194
@@ -3325,12 +3332,12 @@ msgstr "Bố cục gửi tới máy chủ RDP (Tự động sẽ dùng cài đ�
 msgid "Additional command-line arguments"
 msgstr "Đối số dòng lệnh bổ sung"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1020
+#: rustconn/src/dialogs/connection/rdp.rs:1039
 #: rustconn/src/dialogs/template.rs:955
 msgid "Extra FreeRDP command-line options"
 msgstr "Các tùy chọn dòng lệnh FreeRDP bổ sung"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1096
+#: rustconn/src/dialogs/connection/rdp.rs:1115
 msgid ""
 "Numbers for the external client, comma-separated; empty uses the current "
 "monitor"
@@ -3338,7 +3345,7 @@ msgstr ""
 "Số cho ứng dụng khách ngoài, cách nhau bằng dấu phẩy; để trống sẽ dùng màn "
 "hình hiện tại"
 
-#: rustconn/src/dialogs/connection/rdp.rs:1122
+#: rustconn/src/dialogs/connection/rdp.rs:1141
 msgid "unknown"
 msgstr "không rõ"
 
@@ -3693,7 +3700,7 @@ msgstr "SSH Agent"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5755
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5762
 msgid "Security Key (FIDO2)"
 msgstr "Khóa bảo mật (FIDO2)"
 
@@ -4789,7 +4796,7 @@ msgstr "Sao chép"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1317
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1320
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "Dừng"
@@ -4909,7 +4916,7 @@ msgstr "Đã dừng sao chép"
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4728
+#: rustconn/src/window/mod.rs:4735
 msgid "Close"
 msgstr "Đóng"
 
@@ -5301,7 +5308,7 @@ msgid "Required for Bitwarden and 1Password integration"
 msgstr "Cần cho việc tích hợp Bitwarden và 1Password"
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
-#: rustconn/src/dialogs/settings/clients_tab.rs:91
+#: rustconn/src/dialogs/settings/clients_tab.rs:92
 msgid "Container Orchestration"
 msgstr "Điều phối container"
 
@@ -5322,8 +5329,8 @@ msgstr ""
 #: rustconn/src/dialogs/flatpak_components.rs:285
 #: rustconn/src/dialogs/flatpak_components.rs:500
 #: rustconn/src/dialogs/flatpak_components.rs:502
-#: rustconn/src/dialogs/settings/clients_tab.rs:489
-#: rustconn/src/dialogs/settings/clients_tab.rs:494
+#: rustconn/src/dialogs/settings/clients_tab.rs:549
+#: rustconn/src/dialogs/settings/clients_tab.rs:554
 msgid "Installed"
 msgstr "Đã cài đặt"
 
@@ -7190,35 +7197,35 @@ msgstr "Đã xóa tập lệnh “{}”"
 msgid "Could not delete script"
 msgstr "Không thể xóa tập lệnh"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:36
+#: rustconn/src/dialogs/settings/clients_tab.rs:37
 msgid "Clients"
 msgstr "Máy khách"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:42
+#: rustconn/src/dialogs/settings/clients_tab.rs:43
 msgid "Core Clients"
 msgstr "Máy khách cốt lõi"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:43
+#: rustconn/src/dialogs/settings/clients_tab.rs:44
 msgid "Essential connection clients"
 msgstr "Các máy khách kết nối thiết yếu"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:63
+#: rustconn/src/dialogs/settings/clients_tab.rs:64
 msgid "Zero Trust Clients"
 msgstr "Máy khách Zero Trust"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:64
+#: rustconn/src/dialogs/settings/clients_tab.rs:65
 msgid "Cloud provider CLI tools"
 msgstr "Công cụ CLI của nhà cung cấp đám mây"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:92
+#: rustconn/src/dialogs/settings/clients_tab.rs:93
 msgid "Kubernetes CLI tools"
 msgstr "Công cụ CLI Kubernetes"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:109
+#: rustconn/src/dialogs/settings/clients_tab.rs:110
 msgid "Media Codecs"
 msgstr "Codec đa phương tiện"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:111
+#: rustconn/src/dialogs/settings/clients_tab.rs:112
 msgid ""
 "OpenH264 Video Codec provided by Cisco Systems, Inc. — optional H.264 "
 "decoder for RDP graphics (GFX) sessions."
@@ -7226,22 +7233,26 @@ msgstr ""
 "OpenH264 Video Codec do Cisco Systems, Inc. cung cấp — bộ giải mã H.264 tùy "
 "chọn cho các phiên đồ họa RDP (GFX)."
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:125
+#: rustconn/src/dialogs/settings/clients_tab.rs:126
 msgid "Use OpenH264"
 msgstr "Dùng OpenH264"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:127
+#: rustconn/src/dialogs/settings/clients_tab.rs:128
 msgid ""
 "Decode H.264 in RDP GFX sessions with the Cisco codec when it is installed."
 msgstr ""
 "Giải mã H.264 trong các phiên RDP GFX bằng codec của Cisco khi đã được cài "
 "đặt."
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:140
+#: rustconn/src/dialogs/settings/clients_tab.rs:141
 msgid "Could not save the hardware acceleration setting: {}"
 msgstr "Không thể lưu cài đặt tăng tốc phần cứng: {}"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:212
+#: rustconn/src/dialogs/settings/clients_tab.rs:168
+msgid "Refresh client detection"
+msgstr "Làm mới việc phát hiện máy khách"
+
+#: rustconn/src/dialogs/settings/clients_tab.rs:268
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:77
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:755
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:999
@@ -7251,11 +7262,11 @@ msgstr "Không thể lưu cài đặt tăng tốc phần cứng: {}"
 msgid "Checking…"
 msgstr "Đang kiểm tra…"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:242
+#: rustconn/src/dialogs/settings/clients_tab.rs:298
 msgid "H.264 codec (Cisco OpenH264)"
 msgstr "Codec H.264 (Cisco OpenH264)"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:244
+#: rustconn/src/dialogs/settings/clients_tab.rs:300
 msgid ""
 "Enables H.264 in RDP graphics (GFX) sessions. Fetched on demand from "
 "openh264.org under Cisco's binary licence."
@@ -7263,21 +7274,21 @@ msgstr ""
 "Bật H.264 trong các phiên đồ họa RDP (GFX). Được tải xuống khi cần từ "
 "openh264.org theo giấy phép nhị phân của Cisco."
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:259
-#: rustconn/src/dialogs/settings/clients_tab.rs:407
+#: rustconn/src/dialogs/settings/clients_tab.rs:315
+#: rustconn/src/dialogs/settings/clients_tab.rs:463
 msgid "Installed ✓"
 msgstr "Đã cài đặt ✓"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:274
-#: rustconn/src/dialogs/settings/clients_tab.rs:356
+#: rustconn/src/dialogs/settings/clients_tab.rs:330
+#: rustconn/src/dialogs/settings/clients_tab.rs:412
 msgid "Download"
 msgstr "Tải xuống"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:319
+#: rustconn/src/dialogs/settings/clients_tab.rs:375
 msgid "Remove failed"
 msgstr "Gỡ bỏ thất bại"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:347
+#: rustconn/src/dialogs/settings/clients_tab.rs:403
 msgid ""
 "This downloads the OpenH264 Video Codec provided by Cisco Systems, Inc. "
 "from:\n"
@@ -7306,16 +7317,16 @@ msgstr ""
 "\n"
 "Tải xuống?"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:354
+#: rustconn/src/dialogs/settings/clients_tab.rs:410
 msgid "Download H.264 codec?"
 msgstr "Tải xuống codec H.264?"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:385
+#: rustconn/src/dialogs/settings/clients_tab.rs:441
 #: rustconn/src/embedded_rdp/mod.rs:1747
 msgid "Downloading…"
 msgstr "Đang tải xuống…"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:409
+#: rustconn/src/dialogs/settings/clients_tab.rs:465
 msgid ""
 "H.264 is active for new RDP connections. Open sessions keep their current "
 "path until reconnected."
@@ -7323,27 +7334,27 @@ msgstr ""
 "H.264 đã hoạt động cho các kết nối RDP mới. Các phiên đang mở giữ nguyên "
 "cách hiện tại cho đến khi kết nối lại."
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:417
+#: rustconn/src/dialogs/settings/clients_tab.rs:473
 msgid "Download failed"
 msgstr "Tải xuống thất bại"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:428
+#: rustconn/src/dialogs/settings/clients_tab.rs:484
 msgid "Download failed: {}"
 msgstr "Tải xuống thất bại: {}"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:458
+#: rustconn/src/dialogs/settings/clients_tab.rs:518
 msgid "Using embedded {} (external not found)"
 msgstr "Đang dùng {} nhúng (không tìm thấy bản bên ngoài)"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:491
+#: rustconn/src/dialogs/settings/clients_tab.rs:551
 msgid "Using embedded client"
 msgstr "Đang dùng máy khách nhúng"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:496
+#: rustconn/src/dialogs/settings/clients_tab.rs:556
 msgid "Not found"
 msgstr "Không tìm thấy"
 
-#: rustconn/src/dialogs/settings/clients_tab.rs:526
+#: rustconn/src/dialogs/settings/clients_tab.rs:586
 msgid "Embedded"
 msgstr "Nhúng"
 
@@ -9686,7 +9697,7 @@ msgstr "Dán"
 msgid "Find in Terminal"
 msgstr "Tìm trong terminal"
 
-#: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:810
+#: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:811
 #: rustconn/src/terminal/tab_menu.rs:1321
 msgid "Close Tab"
 msgstr "Đóng thẻ"
@@ -11823,7 +11834,7 @@ msgid "RDP session running in external window"
 msgstr "Phiên RDP đang chạy trong cửa sổ bên ngoài"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3212
+#: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3219
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Kết nối thất bại"
@@ -13061,7 +13072,7 @@ msgstr "Kết nối nhanh…"
 msgid "{} Active Session(s)"
 msgstr "{} phiên đang hoạt động"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5732
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5739
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Cụm mật khẩu không mở được tệp di động"
 
@@ -13255,8 +13266,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Máy chủ trung gian không khả dụng"
 
-#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3652
-#: rustconn/src/window/mod.rs:3718 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3659
+#: rustconn/src/window/mod.rs:3725 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Vẫn kết nối"
 
@@ -13504,7 +13515,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:1050
 #: rustconn/src/window/credentials.rs:1286
-#: rustconn/src/window/edit_actions.rs:2289
+#: rustconn/src/window/edit_actions.rs:2341
 msgid "Connection failed. Host unreachable."
 msgstr "Kết nối thất bại. Không thể truy cập máy chủ."
 
@@ -13548,55 +13559,75 @@ msgstr "Không thể chuyển phiên về cửa sổ chính."
 msgid "Item restored"
 msgstr "Đã khôi phục mục"
 
-#: rustconn/src/window/edit_actions.rs:479
+#: rustconn/src/window/edit_actions.rs:407
+msgid "Empty trash?"
+msgstr "Dọn sạch thùng rác?"
+
+#: rustconn/src/window/edit_actions.rs:409
+msgid "Deleted items will be removed permanently. This cannot be undone."
+msgstr "Các mục đã xóa sẽ bị xóa vĩnh viễn. Không thể hoàn tác thao tác này."
+
+#: rustconn/src/window/edit_actions.rs:411
+msgid "Empty Trash"
+msgstr "Dọn sạch thùng rác"
+
+#: rustconn/src/window/edit_actions.rs:424
+msgid "Trash emptied"
+msgstr "Đã dọn sạch thùng rác"
+
+#: rustconn/src/window/edit_actions.rs:432
+msgid "Failed to empty trash: {}"
+msgstr "Không thể dọn sạch thùng rác: {}"
+
+#: rustconn/src/window/edit_actions.rs:531
 msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
 msgstr "Chưa cấu hình Wake On LAN. Hãy sửa kết nối để đặt địa chỉ MAC."
 
-#: rustconn/src/window/edit_actions.rs:507
+#: rustconn/src/window/edit_actions.rs:559
 msgid "Wake On LAN sent to {} — waiting for host to come online…"
 msgstr "Đã gửi Wake On LAN tới {} — đang chờ máy chủ trực tuyến…"
 
-#: rustconn/src/window/edit_actions.rs:548
+#: rustconn/src/window/edit_actions.rs:600
 msgid "{} is online — connecting…"
 msgstr "{} đã trực tuyến — đang kết nối…"
 
-#: rustconn/src/window/edit_actions.rs:563
+#: rustconn/src/window/edit_actions.rs:615
 msgid "{} did not come online after WoL"
 msgstr "{} không trực tuyến sau khi gửi WoL"
 
-#: rustconn/src/window/edit_actions.rs:575
+#: rustconn/src/window/edit_actions.rs:627
 msgid "Failed to send Wake On LAN packet. Check network permissions."
 msgstr "Gửi gói Wake On LAN thất bại. Hãy kiểm tra quyền mạng."
 
-#: rustconn/src/window/edit_actions.rs:610
+#: rustconn/src/window/edit_actions.rs:662
 msgid "Checking if {} is online…"
 msgstr "Đang kiểm tra {} có trực tuyến không…"
 
-#: rustconn/src/window/edit_actions.rs:641
+#: rustconn/src/window/edit_actions.rs:693
 msgid "{} is online"
 msgstr "{} đang trực tuyến"
 
-#: rustconn/src/window/edit_actions.rs:656
+#: rustconn/src/window/edit_actions.rs:708
 msgid "{} did not come online within timeout"
 msgstr "{} không trực tuyến trong thời gian chờ"
 
-#: rustconn/src/window/edit_actions.rs:663
+#: rustconn/src/window/edit_actions.rs:715
 msgid "Host check failed: {}"
 msgstr "Kiểm tra máy chủ thất bại: {}"
 
-#: rustconn/src/window/edit_actions.rs:807
+#: rustconn/src/window/edit_actions.rs:859
 msgid "This connection type cannot host a SOCKS tunnel"
 msgstr "Loại kết nối này không thể chứa đường hầm SOCKS"
 
-#: rustconn/src/window/edit_actions.rs:828
+#: rustconn/src/window/edit_actions.rs:880
 msgid "application is busy"
 msgstr "ứng dụng đang bận"
 
-#: rustconn/src/window/edit_actions.rs:831
+#: rustconn/src/window/edit_actions.rs:883
 msgid "the SSH connection it tunnels through is gone"
 msgstr "kết nối SSH mà nó đi qua không còn nữa"
 
-#: rustconn/src/window/edit_actions.rs:965
+#: rustconn/src/window/edit_actions.rs:1017
 msgid ""
 "The SOCKS proxy password variable ‘{}’ is not secret, so it was not used. "
 "Mark it as secret in Global Variables."
@@ -13604,28 +13635,28 @@ msgstr ""
 "Biến mật khẩu proxy SOCKS ‘{}’ không phải là bí mật nên đã không được dùng. "
 "Hãy đánh dấu biến này là bí mật trong Biến toàn cục."
 
-#: rustconn/src/window/edit_actions.rs:971
+#: rustconn/src/window/edit_actions.rs:1023
 msgid "The SOCKS proxy password variable ‘{}’ has no value"
 msgstr "Biến mật khẩu proxy SOCKS ‘{}’ không có giá trị"
 
-#: rustconn/src/window/edit_actions.rs:978
+#: rustconn/src/window/edit_actions.rs:1030
 msgid "Could not start the SOCKS relay: {}"
 msgstr "Không thể khởi động bộ chuyển tiếp SOCKS: {}"
 
-#: rustconn/src/window/edit_actions.rs:1231
-#: rustconn/src/window/edit_actions.rs:1365
-#: rustconn/src/window/edit_actions.rs:1624
-#: rustconn/src/window/edit_actions.rs:1733
+#: rustconn/src/window/edit_actions.rs:1283
+#: rustconn/src/window/edit_actions.rs:1417
+#: rustconn/src/window/edit_actions.rs:1676
+#: rustconn/src/window/edit_actions.rs:1785
 #: rustconn/src/window/protocols.rs:2385
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Không thể mở đường hầm SSH: {}"
 
-#: rustconn/src/window/edit_actions.rs:1244
-#: rustconn/src/window/edit_actions.rs:1344
+#: rustconn/src/window/edit_actions.rs:1296
+#: rustconn/src/window/edit_actions.rs:1396
 msgid "Starting the tunnel…"
 msgstr "Đang khởi chạy đường hầm…"
 
-#: rustconn/src/window/edit_actions.rs:1304
+#: rustconn/src/window/edit_actions.rs:1356
 msgid ""
 "The tunnelled browser command ‘{}’ can't use a proxy; opening the embedded "
 "browser instead. Set a Chromium-based browser or Firefox in Settings to use "
@@ -13635,7 +13666,7 @@ msgstr ""
 "sẽ được mở thay thế. Hãy đặt trình duyệt dựa trên Chromium hoặc Firefox "
 "trong Cài đặt để dùng trình duyệt ngoài."
 
-#: rustconn/src/window/edit_actions.rs:1308
+#: rustconn/src/window/edit_actions.rs:1360
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a chromium/"
@@ -13645,7 +13676,7 @@ msgstr ""
 "Chromium. Chỉ các trình duyệt họ Chromium mới có thể đi qua proxy của đường "
 "hầm; hãy đặt lệnh chromium/chrome/brave/vivaldi/edge trong Cài đặt."
 
-#: rustconn/src/window/edit_actions.rs:1314
+#: rustconn/src/window/edit_actions.rs:1366
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
 "embedded browser instead. Check the command in Settings, or clear it to auto-"
@@ -13655,7 +13686,7 @@ msgstr ""
 "duyệt nhúng thay thế. Hãy kiểm tra lệnh trong Cài đặt, hoặc xóa nó để tự "
 "động phát hiện trình duyệt."
 
-#: rustconn/src/window/edit_actions.rs:1318
+#: rustconn/src/window/edit_actions.rs:1370
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -13663,7 +13694,7 @@ msgstr ""
 "Không tìm thấy lệnh trình duyệt qua đường hầm ‘{}’ trong PATH. Hãy kiểm tra "
 "lệnh trong Cài đặt, hoặc xóa nó để tự động phát hiện trình duyệt."
 
-#: rustconn/src/window/edit_actions.rs:1324
+#: rustconn/src/window/edit_actions.rs:1376
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -13672,7 +13703,7 @@ msgstr ""
 "thế. Hãy cài đặt một trình duyệt dựa trên Chromium để dùng trình duyệt bên "
 "ngoài qua đường hầm."
 
-#: rustconn/src/window/edit_actions.rs:1327
+#: rustconn/src/window/edit_actions.rs:1379
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -13681,26 +13712,26 @@ msgstr ""
 "dựa trên Chromium, hoặc dùng bản dựng có trình duyệt nhúng, để mở trình "
 "duyệt qua đường hầm."
 
-#: rustconn/src/window/edit_actions.rs:1435
-#: rustconn/src/window/edit_actions.rs:1458
-#: rustconn/src/window/edit_actions.rs:1511
+#: rustconn/src/window/edit_actions.rs:1487
+#: rustconn/src/window/edit_actions.rs:1510
+#: rustconn/src/window/edit_actions.rs:1563
 msgid "Failed to open browser: {}"
 msgstr "Mở trình duyệt thất bại: {}"
 
-#: rustconn/src/window/edit_actions.rs:1453
+#: rustconn/src/window/edit_actions.rs:1505
 msgid "Opened a tunnelled browser"
 msgstr "Đã mở trình duyệt qua đường hầm"
 
-#: rustconn/src/window/edit_actions.rs:1488
+#: rustconn/src/window/edit_actions.rs:1540
 msgid "{} (tunnel)"
 msgstr "{} (đường hầm)"
 
-#: rustconn/src/window/edit_actions.rs:1502
-#: rustconn/src/window/edit_actions.rs:1664
+#: rustconn/src/window/edit_actions.rs:1554
+#: rustconn/src/window/edit_actions.rs:1716
 msgid "Could not open the page: {}"
 msgstr "Không thể mở trang: {}"
 
-#: rustconn/src/window/edit_actions.rs:1758
+#: rustconn/src/window/edit_actions.rs:1810
 msgid ""
 "This browser can't use a proxy, so the page was not opened. Use a Chromium-"
 "based browser, Firefox or the embedded browser."
@@ -13708,12 +13739,12 @@ msgstr ""
 "Trình duyệt này không thể dùng proxy nên trang chưa được mở. Hãy dùng trình "
 "duyệt dựa trên Chromium, Firefox hoặc trình duyệt nhúng."
 
-#: rustconn/src/window/edit_actions.rs:1824
-#: rustconn/src/window/edit_actions.rs:1877
+#: rustconn/src/window/edit_actions.rs:1876
+#: rustconn/src/window/edit_actions.rs:1929
 msgid "Opened in browser"
 msgstr "Đã mở trong trình duyệt"
 
-#: rustconn/src/window/edit_actions.rs:1849
+#: rustconn/src/window/edit_actions.rs:1901
 msgid ""
 "No browser that can use a proxy was found, so the page was not opened. "
 "Install Chromium or Firefox, or use the embedded browser."
@@ -13721,24 +13752,24 @@ msgstr ""
 "Không tìm thấy trình duyệt có thể dùng proxy nên trang chưa được mở. Hãy cài "
 "Chromium hoặc Firefox, hoặc dùng trình duyệt nhúng."
 
-#: rustconn/src/window/edit_actions.rs:2026
+#: rustconn/src/window/edit_actions.rs:2078
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr "SSH agent không chạy. Hãy chạy 'eval $(ssh-agent)' rồi thử lại."
 
-#: rustconn/src/window/edit_actions.rs:2037
+#: rustconn/src/window/edit_actions.rs:2089
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr "Không thể kiểm tra SSH agent có giữ khóa hay không. Vẫn mở mc."
 
-#: rustconn/src/window/edit_actions.rs:2043
+#: rustconn/src/window/edit_actions.rs:2095
 msgid "SSH key not available"
 msgstr "Không có khóa SSH"
 
-#: rustconn/src/window/edit_actions.rs:2064 rustconn/src/window/mc_launch.rs:62
+#: rustconn/src/window/edit_actions.rs:2116 rustconn/src/window/mc_launch.rs:62
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP chỉ khả dụng cho kết nối SSH."
 
-#: rustconn/src/window/edit_actions.rs:2093
-#: rustconn/src/window/edit_actions.rs:2390
+#: rustconn/src/window/edit_actions.rs:2145
+#: rustconn/src/window/edit_actions.rs:2442
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13747,17 +13778,17 @@ msgstr ""
 "Trình quản lý tệp bên ngoài không thể truy cập SSH agent trong Flatpak. Hãy "
 "bật “SFTP qua mc” trong Cài đặt để truy cập ổn định."
 
-#: rustconn/src/window/edit_actions.rs:2109
-#: rustconn/src/window/edit_actions.rs:2408
+#: rustconn/src/window/edit_actions.rs:2161
+#: rustconn/src/window/edit_actions.rs:2460
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Phát hiện máy chủ trung gian. Đang mở SFTP qua mc thay vì trình quản lý tệp."
 
-#: rustconn/src/window/edit_actions.rs:2136
+#: rustconn/src/window/edit_actions.rs:2188
 msgid "Opening SFTP…"
 msgstr "Đang mở SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2183
+#: rustconn/src/window/edit_actions.rs:2235
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr "SSH agent không chạy — trình quản lý tệp có thể không xác thực được."
 
@@ -14266,54 +14297,54 @@ msgstr ""
 "Kết nối tới “{}” giờ sẽ bỏ qua máy chủ trung gian đó và chỉ dùng phần còn "
 "lại của tuyến đã cấu hình."
 
-#: rustconn/src/window/mod.rs:1181 rustconn/src/window/mod.rs:1192
+#: rustconn/src/window/mod.rs:1184 rustconn/src/window/mod.rs:1195
 msgid "Dismiss"
 msgstr "Bỏ qua"
 
-#: rustconn/src/window/mod.rs:1224
+#: rustconn/src/window/mod.rs:1227
 msgid "Open Log"
 msgstr "Mở nhật ký"
 
-#: rustconn/src/window/mod.rs:1227
+#: rustconn/src/window/mod.rs:1230
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
 msgstr ""
 "Lần chạy trước RustConn đã đóng bất ngờ. Nhật ký sự cố đã được lưu cục bộ."
 
-#: rustconn/src/window/mod.rs:1252
+#: rustconn/src/window/mod.rs:1255
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Không thể mở nhật ký sự cố. Tệp được lưu tại {}"
 
-#: rustconn/src/window/mod.rs:1281
+#: rustconn/src/window/mod.rs:1284
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Chạm vào khóa phần cứng để mở khóa cơ sở dữ liệu mật khẩu"
 
-#: rustconn/src/window/mod.rs:2779
+#: rustconn/src/window/mod.rs:2786
 msgid "Already running in an external window"
 msgstr "Đang chạy trong một cửa sổ bên ngoài"
 
-#: rustconn/src/window/mod.rs:3008
+#: rustconn/src/window/mod.rs:3015
 msgid "Connection to ‘{}’ failed"
 msgstr "Kết nối tới ‘{}’ thất bại"
 
-#: rustconn/src/window/mod.rs:3356 rustconn/src/window/mod.rs:3370
+#: rustconn/src/window/mod.rs:3363 rustconn/src/window/mod.rs:3377
 msgid "Pre-connect task failed: {}"
 msgstr "Tác vụ trước khi kết nối thất bại: {}"
 
-#: rustconn/src/window/mod.rs:3404
+#: rustconn/src/window/mod.rs:3411
 msgid "Port knock failed: {}"
 msgstr "Gõ cổng thất bại: {}"
 
-#: rustconn/src/window/mod.rs:3453
+#: rustconn/src/window/mod.rs:3460
 msgid "SPA failed: {}"
 msgstr "SPA thất bại: {}"
 
-#: rustconn/src/window/mod.rs:3637
+#: rustconn/src/window/mod.rs:3644
 msgid "{} (via {})"
 msgstr "{} (qua {})"
 
-#: rustconn/src/window/mod.rs:3643
+#: rustconn/src/window/mod.rs:3650
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14337,35 +14368,35 @@ msgstr ""
 "Nếu bạn không thực hiện thay đổi này, hãy hủy — kết nối có thể gửi thông tin "
 "đăng nhập đã lưu tới một máy khác."
 
-#: rustconn/src/window/mod.rs:3648
+#: rustconn/src/window/mod.rs:3655
 msgid "Routing changed for “{}”"
 msgstr "Định tuyến đã thay đổi cho “{}”"
 
-#: rustconn/src/window/mod.rs:3712
+#: rustconn/src/window/mod.rs:3719
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Máy chủ trung gian không khả dụng cho “{}”"
 
-#: rustconn/src/window/mod.rs:3717
+#: rustconn/src/window/mod.rs:3724
 msgid "Connect Directly"
 msgstr "Kết nối trực tiếp"
 
-#: rustconn/src/window/mod.rs:3806 rustconn/src/window/mod.rs:3981
+#: rustconn/src/window/mod.rs:3813 rustconn/src/window/mod.rs:3988
 msgid "Connection “{}” created"
 msgstr "Đã tạo kết nối “{}”"
 
-#: rustconn/src/window/mod.rs:4238
+#: rustconn/src/window/mod.rs:4245
 msgid "RustConn - {}"
 msgstr "RustConn - {}"
 
-#: rustconn/src/window/mod.rs:4450
+#: rustconn/src/window/mod.rs:4457
 msgid "Settings saved"
 msgstr "Đã lưu cài đặt"
 
-#: rustconn/src/window/mod.rs:4487
+#: rustconn/src/window/mod.rs:4494
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Chưa lưu cụm mật khẩu trên máy tính này"
 
-#: rustconn/src/window/mod.rs:4489
+#: rustconn/src/window/mod.rs:4496
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14377,11 +14408,11 @@ msgstr ""
 "thống”, hoặc kiểm tra xem RustConn có ghi được vào thư mục dữ liệu của nó "
 "không."
 
-#: rustconn/src/window/mod.rs:4535
+#: rustconn/src/window/mod.rs:4542
 msgid "Credentials Not Saved to Keyring"
 msgstr "Chưa lưu thông tin đăng nhập vào chùm khóa"
 
-#: rustconn/src/window/mod.rs:4537
+#: rustconn/src/window/mod.rs:4544
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14391,15 +14422,15 @@ msgstr ""
 "giữ cho phiên này và sẽ mất sau khi khởi động lại. Hãy kiểm tra dịch vụ chùm "
 "khóa có đang chạy và đã mở khóa không, rồi lưu lại cài đặt."
 
-#: rustconn/src/window/mod.rs:4721
+#: rustconn/src/window/mod.rs:4728
 msgid "Close RustConn?"
 msgstr "Đóng RustConn?"
 
-#: rustconn/src/window/mod.rs:4723
+#: rustconn/src/window/mod.rs:4730
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "Đang mở {} thẻ phiên. Các kết nối đang hoạt động sẽ bị ngắt."
 
-#: rustconn/src/window/mod.rs:4760
+#: rustconn/src/window/mod.rs:4767
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14407,7 +14438,7 @@ msgstr ""
 "Không thể đọc cài đặt, nên đang dùng giá trị mặc định. Tệp không đọc được đã "
 "được giữ lại dưới tên {}."
 
-#: rustconn/src/window/mod.rs:4765
+#: rustconn/src/window/mod.rs:4772
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14415,35 +14446,35 @@ msgstr ""
 "Các cài đặt này được lưu bởi RustConn phiên bản mới hơn ({}). Một bản sao "
 "lưu sẽ được giữ lại trước khi chúng bị thay đổi."
 
-#: rustconn/src/window/mod.rs:4790
+#: rustconn/src/window/mod.rs:4797
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Đồng bộ đám mây thất bại cho “{}”: {}"
 
-#: rustconn/src/window/mod.rs:4973
+#: rustconn/src/window/mod.rs:4980
 msgid "Startup connection not found"
 msgstr "Không tìm thấy kết nối khởi động"
 
-#: rustconn/src/window/mod.rs:5046
+#: rustconn/src/window/mod.rs:5053
 msgid "Failed to open .rdp file"
 msgstr "Mở tệp .rdp thất bại"
 
-#: rustconn/src/window/mod.rs:5082
+#: rustconn/src/window/mod.rs:5089
 msgid "Failed to open .vv file"
 msgstr "Mở tệp .vv thất bại"
 
-#: rustconn/src/window/mod.rs:5119
+#: rustconn/src/window/mod.rs:5126
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Đường hầm “{}” đã dừng: {}"
 
-#: rustconn/src/window/mod.rs:5135
+#: rustconn/src/window/mod.rs:5142
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Đã ngừng thử kết nối lại đường hầm “{}”: {}"
 
-#: rustconn/src/window/mod.rs:5648
+#: rustconn/src/window/mod.rs:5655
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Đã xuất thành công {} kết nối. Đã bỏ qua {}."
 
-#: rustconn/src/window/mod.rs:5734
+#: rustconn/src/window/mod.rs:5741
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14453,11 +14484,11 @@ msgstr ""
 "nên không đọc được mật khẩu nào trong đó. Hãy mở Cài đặt ▸ Bí mật và nhập "
 "cụm mật khẩu đã dùng khi tạo tệp."
 
-#: rustconn/src/window/mod.rs:5769
+#: rustconn/src/window/mod.rs:5776
 msgid "Share Local Devices?"
 msgstr "Chia sẻ thiết bị cục bộ?"
 
-#: rustconn/src/window/mod.rs:5771
+#: rustconn/src/window/mod.rs:5778
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"

@@ -396,6 +396,25 @@ pub(super) fn create_rdp_options() -> (
         .active(false)
         .build();
     features_group.add(&rdp_smartcard_check);
+    // The embedded viewer has no smart card channel, so the switch would do
+    // nothing there. Say so while Embedded is picked instead of letting it
+    // look like it works; the saved value is left alone.
+    {
+        let smartcard_row = rdp_smartcard_check.clone();
+        let sync_subtitle = move |dropdown: &DropDown| {
+            let embedded =
+                RdpClientMode::from_index(dropdown.selected()) == RdpClientMode::Embedded;
+            smartcard_row.set_subtitle(&if embedded {
+                i18n("Not used in Embedded mode. Set Client Mode to External RDP client.")
+            } else {
+                i18n(
+                    "Use local smart card readers in the remote session (External client, needs PC/SC)",
+                )
+            });
+        };
+        sync_subtitle(&client_mode_dropdown);
+        client_mode_dropdown.connect_selected_notify(sync_subtitle);
+    }
 
     // Windows key combinations (mstsc's "Apply Windows key combinations"). The
     // first entry follows Settings → Interface, so a connection only overrides
