@@ -1834,7 +1834,7 @@ impl MainWindow {
             &self.session_split_bridges,
             &state,
         );
-        self.setup_group_operations_actions(window, &state, &terminal_notebook, &sidebar);
+        self.setup_group_operations_actions(window, &state, &sidebar);
         self.setup_group_broadcast_actions(window, &terminal_notebook);
         self.setup_snippet_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_cluster_actions(window, &state, &terminal_notebook, &sidebar);

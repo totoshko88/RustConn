@@ -419,9 +419,8 @@ fn show_smart_folder_context_menu(
 /// Shows a context menu for a connection row inside a smart folder.
 ///
 /// Provides the most common actions: Connect, Edit, the Copy submenu,
-/// Wake On LAN, Check if Online, and Delete. Actions that require sidebar
-/// selection first select the connection in the main sidebar via
-/// `select-item-by-id` action, then activate the standard window action.
+/// Wake On LAN, Check if Online, and Delete. Each item activates a window
+/// action carrying the connection id, so the sidebar selection is not involved.
 fn show_connection_context_menu_in_smart_folder(
     widget: &impl IsA<gtk4::Widget>,
     x: f64,
