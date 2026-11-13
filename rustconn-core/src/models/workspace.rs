@@ -94,8 +94,9 @@ pub struct WorkspaceSplitLayout {
     pub extra_splits: usize,
     /// Direction for each split in tree order (pre-order DFS). First element
     /// is the root split, subsequent are extra splits. `true` = horizontal,
-    /// `false` = vertical. When empty, falls back to `horizontal` field for
-    /// all splits (backward compat with old profiles).
+    /// `false` = vertical. Kept in the file for compatibility, but NOT read on
+    /// restore: the layout is rebuilt as a balanced grid
+    /// (`split_view::run_balanced_splits`). Old profiles that carry it still load.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub split_directions: Vec<bool>,
     /// Index (into `WorkspaceProfile::entries`) of the session that OWNS the
@@ -333,5 +334,15 @@ mod tests {
         assert_eq!(restored.name, "Roundtrip Test");
         assert_eq!(restored.entry_count(), 1);
         assert!(restored.split_layout.is_split);
+    }
+
+    #[test]
+    fn split_layout_loads_with_and_without_split_directions() {
+        let base = "is_split = true\nhorizontal = true\nsplit_ratio = 0.5\n";
+        let old: WorkspaceSplitLayout = toml::from_str(base).expect("old profile");
+        assert!(old.split_directions.is_empty());
+        let new: WorkspaceSplitLayout =
+            toml::from_str(&format!("{base}split_directions = [true, false]\n")).expect("new");
+        assert_eq!(new.split_directions, vec![true, false]);
     }
 }

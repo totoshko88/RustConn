@@ -89,6 +89,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Nix `flake.lock` policy** documented in `docs/INSTALL.md` and `flake.nix`: no lock is committed on purpose. The release-verification example no longer names a fixed version.
 - **Accessibility and KDE/Wayland in the User Guide** — new Accessibility section (keyboard-only use, screen-reader limits, leaving an embedded session with the keyboard, reduced motion) and a "KDE Plasma and Wayland" troubleshooting entry (tray, portals, external terminal, Flatpak on a KDE host)
 - **`Ctrl+Shift+Y` (Reconnect Session) is in the User Guide shortcut table.**
+- **`tmux_control` is marked experimental** in its module docs and `docs/ARCHITECTURE.md`: a tested parser and model that the GUI does not use yet.
+- **Workspace `split_directions` is documented as not read on restore** — restore always builds a balanced grid; old profiles that carry the field still load.
 
 ### Dependencies
 
