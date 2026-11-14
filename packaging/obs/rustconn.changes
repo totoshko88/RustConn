@@ -1,5 +1,5 @@
 -------------------------------------------------------------------
-Fri Nov 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.0
+Sat Nov 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.0
 - Version bump to 0.25.0
 - Added: Split with Other Tabs splits several tabs at once (#423), also
   on Ctrl+Shift+K

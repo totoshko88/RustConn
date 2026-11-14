@@ -395,7 +395,7 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
-* Fri Nov 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.0-0
+* Sat Nov 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.0-0
 - Version bump to 0.25.0
 - Added: Split with Other Tabs (#423), Monitors for an external RDP window
 - Added: rustconn-cli import reads PuTTY and mRemoteNG files

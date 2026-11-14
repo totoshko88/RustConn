@@ -116,7 +116,7 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.25.0" date="2026-11-13">
+    <release version="0.25.0" date="2026-11-14">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.0</url>
       <description>
         <p>Version 0.25.0 - split many tabs at once, saved searches, a Trash row and security hardening:</p>
