@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 17:44+0200\n"
+"POT-Creation-Date: 2026-11-14 18:02+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -67,8 +67,8 @@ msgstr "Гаразд"
 #: rustconn/src/window/edit_group.rs:2095
 #: rustconn/src/window/group_broadcast.rs:379
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:453
-#: rustconn/src/window/mod.rs:3696 rustconn/src/window/mod.rs:3760
-#: rustconn/src/window/mod.rs:4772 rustconn/src/window/mod.rs:5846
+#: rustconn/src/window/mod.rs:3719 rustconn/src/window/mod.rs:3783
+#: rustconn/src/window/mod.rs:4795 rustconn/src/window/mod.rs:5893
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
 #: rustconn/src/window/operations.rs:972 rustconn/src/window/operations.rs:1151
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -224,7 +224,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:346
-#: rustconn/src/terminal/session_lifecycle.rs:397
+#: rustconn/src/terminal/session_lifecycle.rs:724
 msgid "Session disconnected"
 msgstr "Сеанс від'єднано"
 
@@ -272,7 +272,7 @@ msgstr "«{}» потребує такого перед з’єднування�
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1060
 #: rustconn/src/sidebar_ui.rs:419 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5847
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5894
 msgid "Connect"
 msgstr "З'єднайся"
 
@@ -311,7 +311,7 @@ msgstr "Уведи пароль власноруч"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1227
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1250
 msgid "Open Settings"
 msgstr "Відкрий устави"
 
@@ -2766,7 +2766,7 @@ msgstr "Перенаправлення принтера"
 msgid "Share your local printer with the remote session"
 msgstr "Надавай локальний принтер віддаленому сеансові"
 
-#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5820
+#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5867
 msgid "Microphone"
 msgstr "Мікрофон"
 
@@ -2774,7 +2774,7 @@ msgstr "Мікрофон"
 msgid "Send the local microphone to the remote session"
 msgstr "Передавай локальний мікрофон у віддалений сеанс"
 
-#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5823
+#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5870
 msgid "Smart Cards"
 msgstr "Смарт-картки"
 
@@ -3732,7 +3732,7 @@ msgstr "SSH-аґент"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5826
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5873
 msgid "Security Key (FIDO2)"
 msgstr "Ключ безпеки (FIDO2)"
 
@@ -4830,7 +4830,7 @@ msgstr "Копіюй"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1339
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1362
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "Зупини"
@@ -4951,7 +4951,7 @@ msgstr "Копіювання зупинено"
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/sidebar_ui.rs:506
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4773
+#: rustconn/src/window/mod.rs:4796
 msgid "Close"
 msgstr "Закрий"
 
@@ -9865,7 +9865,7 @@ msgstr "Наступна вкладинка"
 msgid "Previous Tab"
 msgstr "Попередня вкладинка"
 
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:565
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:573
 msgid "Tab Overview"
 msgstr "Огляд вкладок"
 
@@ -11872,15 +11872,15 @@ msgstr "Збережи файли з віддаленого буфера"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1491
-#: rustconn/src/terminal/session_lifecycle.rs:422
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1500
+#: rustconn/src/terminal/session_lifecycle.rs:759
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
 msgstr "Перепід'єднай"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1493
-#: rustconn/src/terminal/session_lifecycle.rs:424
+#: rustconn/src/terminal/mod.rs:1502
+#: rustconn/src/terminal/session_lifecycle.rs:761
 msgid "Reconnect to this session"
 msgstr "Перез'єднайся із цим сеансом"
 
@@ -12000,7 +12000,7 @@ msgid "RDP session running in external window"
 msgstr "Сеанс RDP працює у зовнішньому вікні"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3257
+#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3280
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "З'єднування не вдалося"
@@ -12981,31 +12981,31 @@ msgstr "Збережи виділене як сніпет…"
 msgid "Execute Snippet…"
 msgstr "Виконай сніпета…"
 
-#: rustconn/src/terminal/mod.rs:561
+#: rustconn/src/terminal/mod.rs:569
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Огляд вкладок (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:578 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:586 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Ласкаво просимо"
 
-#: rustconn/src/terminal/mod.rs:1135
+#: rustconn/src/terminal/mod.rs:1144
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "Фільтр виведення «{}» не встановлено; виведення сеансу не фільтрується"
 
-#: rustconn/src/terminal/mod.rs:1485
+#: rustconn/src/terminal/mod.rs:1494
 msgid "Command not found: {}"
 msgstr "Команду не знайдено: {}"
 
-#: rustconn/src/terminal/mod.rs:1487
+#: rustconn/src/terminal/mod.rs:1496
 msgid "Failed to start '{}'"
 msgstr "Не вдалося запустити «{}»"
 
-#: rustconn/src/terminal/mod.rs:1509
+#: rustconn/src/terminal/mod.rs:1518
 msgid "'{}' is not installed"
 msgstr "«{}» не встановлено"
 
-#: rustconn/src/terminal/mod.rs:1512
+#: rustconn/src/terminal/mod.rs:1521
 msgid "Failed to start '{}': {}"
 msgstr "Не вдалося запустити «{}»: {}"
 
@@ -13065,34 +13065,49 @@ msgstr ""
 "У буфері обміну більше ніж один рядок. Кожен рядок виконується одразу після "
 "вставлення — перевір його, перш ніж продовжити."
 
-#: rustconn/src/terminal/session_lifecycle.rs:182
+#: rustconn/src/terminal/session_lifecycle.rs:287
+msgid "Press Enter again to log in"
+msgstr "Натисни Enter ще раз, щоб увійти"
+
+#: rustconn/src/terminal/session_lifecycle.rs:289
+msgid "Press Enter again to reconnect"
+msgstr "Натисни Enter ще раз, щоб перепід'єднатися"
+
+#: rustconn/src/terminal/session_lifecycle.rs:301
+#: rustconn/src/terminal/session_lifecycle.rs:748
+msgid "Press R to reconnect, Q to close"
+msgstr "Натисни R, щоб перепід'єднатися, Q, щоб закрити"
+
+#: rustconn/src/terminal/session_lifecycle.rs:504
 msgid "Reconnected at {}"
 msgstr "Перез'єднано в {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:405
-#: rustconn/src/terminal/session_lifecycle.rs:411
-msgid "Press R to reconnect, Q to close"
-msgstr "Натисни R, щоб доєднатися знову, Q, щоб закрити"
+#: rustconn/src/terminal/session_lifecycle.rs:734
+msgid ""
+"Press R to reconnect, Q to close, or Enter twice for the suggested action"
+msgstr ""
+"Натисни R, щоб перепід'єднатися, Q, щоб закрити, або двічі Enter для "
+"запропонованої дії"
 
-#: rustconn/src/terminal/session_lifecycle.rs:416
-#: rustconn/src/terminal/session_lifecycle.rs:557
+#: rustconn/src/terminal/session_lifecycle.rs:753
+#: rustconn/src/terminal/session_lifecycle.rs:905
 msgid "Auto-reconnecting…"
 msgstr "Автоперез'єднування…"
 
-#: rustconn/src/terminal/session_lifecycle.rs:597
-#: rustconn/src/terminal/session_lifecycle.rs:607
+#: rustconn/src/terminal/session_lifecycle.rs:945
+#: rustconn/src/terminal/session_lifecycle.rs:955
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "Автоперез'єднування (спроба {}/{})"
 
-#: rustconn/src/terminal/session_lifecycle.rs:688
+#: rustconn/src/terminal/session_lifecycle.rs:1036
 msgid "Sign-in expired"
 msgstr "Термін входу вичерпано"
 
-#: rustconn/src/terminal/session_lifecycle.rs:697
+#: rustconn/src/terminal/session_lifecycle.rs:1045
 msgid "Log In to {}"
 msgstr "Увійди в {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:701
+#: rustconn/src/terminal/session_lifecycle.rs:1049
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Виконай «{}», щоб знову увійти в браузері"
 
@@ -13288,7 +13303,7 @@ msgstr "Швидке з'єднування…"
 msgid "{} Active Session(s)"
 msgstr "{} активних сесій"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5803
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5850
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Парольна фраза не відкриває портативного файла"
 
@@ -13490,8 +13505,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Проміжний гост недоступний"
 
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3697
-#: rustconn/src/window/mod.rs:3763 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3720
+#: rustconn/src/window/mod.rs:3786 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Усе одно з'єднайся"
 
@@ -14557,15 +14572,15 @@ msgstr ""
 "З'єднування з «{}» тепер пропускає цей проміжний гост і використовує лише "
 "решту налаштованого маршруту."
 
-#: rustconn/src/window/mod.rs:1203 rustconn/src/window/mod.rs:1214
+#: rustconn/src/window/mod.rs:1226 rustconn/src/window/mod.rs:1237
 msgid "Dismiss"
 msgstr "Відхили"
 
-#: rustconn/src/window/mod.rs:1246
+#: rustconn/src/window/mod.rs:1269
 msgid "Open Log"
 msgstr "Відкрий журнал"
 
-#: rustconn/src/window/mod.rs:1249
+#: rustconn/src/window/mod.rs:1272
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
@@ -14573,39 +14588,39 @@ msgstr ""
 "Минулого разу RustConn неочікувано закрився. Журнал аварії збережено "
 "локально."
 
-#: rustconn/src/window/mod.rs:1274
+#: rustconn/src/window/mod.rs:1297
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Не вдалося відкрити журнал аварії. Його збережено в {}"
 
-#: rustconn/src/window/mod.rs:1303
+#: rustconn/src/window/mod.rs:1326
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Торкнися апаратного ключа, щоб розблокувати базу даних паролів"
 
-#: rustconn/src/window/mod.rs:2824
+#: rustconn/src/window/mod.rs:2847
 msgid "Already running in an external window"
 msgstr "Уже працює в зовнішньому вікні"
 
-#: rustconn/src/window/mod.rs:3053
+#: rustconn/src/window/mod.rs:3076
 msgid "Connection to ‘{}’ failed"
 msgstr "З'єднування з «{}» не вдалося"
 
-#: rustconn/src/window/mod.rs:3401 rustconn/src/window/mod.rs:3415
+#: rustconn/src/window/mod.rs:3424 rustconn/src/window/mod.rs:3438
 msgid "Pre-connect task failed: {}"
 msgstr "Завдання перед з'єднуванням не вдалося: {}"
 
-#: rustconn/src/window/mod.rs:3449
+#: rustconn/src/window/mod.rs:3472
 msgid "Port knock failed: {}"
 msgstr "Помилка стуку: {}"
 
-#: rustconn/src/window/mod.rs:3498
+#: rustconn/src/window/mod.rs:3521
 msgid "SPA failed: {}"
 msgstr "Помилка SPA: {}"
 
-#: rustconn/src/window/mod.rs:3682
+#: rustconn/src/window/mod.rs:3705
 msgid "{} (via {})"
 msgstr "{} (через {})"
 
-#: rustconn/src/window/mod.rs:3688
+#: rustconn/src/window/mod.rs:3711
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14629,35 +14644,35 @@ msgstr ""
 "Якщо цю зміну зробив не ти, скасуй — з’єднок може надіслати збережені "
 "облікові дані на іншу машину."
 
-#: rustconn/src/window/mod.rs:3693
+#: rustconn/src/window/mod.rs:3716
 msgid "Routing changed for “{}”"
 msgstr "Змінився маршрут для «{}»"
 
-#: rustconn/src/window/mod.rs:3757
+#: rustconn/src/window/mod.rs:3780
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Проміжний гост недоступний для «{}»"
 
-#: rustconn/src/window/mod.rs:3762
+#: rustconn/src/window/mod.rs:3785
 msgid "Connect Directly"
 msgstr "З'єднайся напряму"
 
-#: rustconn/src/window/mod.rs:3851 rustconn/src/window/mod.rs:4026
+#: rustconn/src/window/mod.rs:3874 rustconn/src/window/mod.rs:4049
 msgid "Connection “{}” created"
 msgstr "З'єднок «{}» створено"
 
-#: rustconn/src/window/mod.rs:4283
+#: rustconn/src/window/mod.rs:4306
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4495
+#: rustconn/src/window/mod.rs:4518
 msgid "Settings saved"
 msgstr "Устави збережено"
 
-#: rustconn/src/window/mod.rs:4532
+#: rustconn/src/window/mod.rs:4555
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Парольної фрази не збережено на цьому комп'ютері"
 
-#: rustconn/src/window/mod.rs:4534
+#: rustconn/src/window/mod.rs:4557
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14669,11 +14684,11 @@ msgstr ""
 "натомість «Системну в'язку ключів» або перевір, чи може RustConn писати до "
 "свого каталогу даних."
 
-#: rustconn/src/window/mod.rs:4580
+#: rustconn/src/window/mod.rs:4603
 msgid "Credentials Not Saved to Keyring"
 msgstr "Облікових даних не збережено у в'язці ключів"
 
-#: rustconn/src/window/mod.rs:4582
+#: rustconn/src/window/mod.rs:4605
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14683,15 +14698,15 @@ msgstr ""
 "на цей сеанс і зникнуть після перезапуску. Перевір, чи запущено і "
 "розблоковано службу в'язки ключів, і збережи устави знову."
 
-#: rustconn/src/window/mod.rs:4766
+#: rustconn/src/window/mod.rs:4789
 msgid "Close RustConn?"
 msgstr "Закрити RustConn?"
 
-#: rustconn/src/window/mod.rs:4768
+#: rustconn/src/window/mod.rs:4791
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "Відкрито вкладок сеансів: {}. Активні з'єднки буде розірвано."
 
-#: rustconn/src/window/mod.rs:4805
+#: rustconn/src/window/mod.rs:4828
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14699,7 +14714,7 @@ msgstr ""
 "Не вдалося прочитати устави, тож застосовано типові. Нечитний файл збережено "
 "як {}."
 
-#: rustconn/src/window/mod.rs:4810
+#: rustconn/src/window/mod.rs:4833
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14707,35 +14722,35 @@ msgstr ""
 "Ці устави збережено новішою версією RustConn ({}). Перед їх зміною збережено "
 "резервну копію."
 
-#: rustconn/src/window/mod.rs:4835
+#: rustconn/src/window/mod.rs:4858
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Хмарна синхронізація «{}» не вдалася: {}"
 
-#: rustconn/src/window/mod.rs:5018
+#: rustconn/src/window/mod.rs:5041
 msgid "Startup connection not found"
 msgstr "З'єднок для запуску не знайдено"
 
-#: rustconn/src/window/mod.rs:5091
+#: rustconn/src/window/mod.rs:5114
 msgid "Failed to open .rdp file"
 msgstr "Не вдалося відкрити .rdp файл"
 
-#: rustconn/src/window/mod.rs:5127
+#: rustconn/src/window/mod.rs:5150
 msgid "Failed to open .vv file"
 msgstr "Не вдалося відкрити .vv файл"
 
-#: rustconn/src/window/mod.rs:5164
+#: rustconn/src/window/mod.rs:5187
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Тунель «{}» зупинився: {}"
 
-#: rustconn/src/window/mod.rs:5180
+#: rustconn/src/window/mod.rs:5203
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Полишено спроби перепід'єднати тунель «{}»: {}"
 
-#: rustconn/src/window/mod.rs:5719
+#: rustconn/src/window/mod.rs:5766
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Успішно експортовано {} з'єднків. {} пропущено."
 
-#: rustconn/src/window/mod.rs:5805
+#: rustconn/src/window/mod.rs:5852
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14745,11 +14760,11 @@ msgstr ""
 "відомостей, тож жодного пароля з нього не прочитати. Відкрий Устави ▸ "
 "Таємниці й введи парольну фразу, з якою створено цей файл."
 
-#: rustconn/src/window/mod.rs:5840
+#: rustconn/src/window/mod.rs:5887
 msgid "Share Local Devices?"
 msgstr "Поділитися локальними пристроями?"
 
-#: rustconn/src/window/mod.rs:5842
+#: rustconn/src/window/mod.rs:5889
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
@@ -15385,7 +15400,7 @@ msgstr "Команда завершена: {}"
 msgid "Command failed with status {}: {}"
 msgstr "Команда невдала, стан {}: {}"
 
-#: rustconn/src/window/session_lifecycle.rs:1296
+#: rustconn/src/window/session_lifecycle.rs:1290
 msgid ""
 "Sign in again in the browser. The session reconnects when the login finishes."
 msgstr ""

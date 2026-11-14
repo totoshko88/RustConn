@@ -278,6 +278,14 @@ pub struct TerminalNotebook {
     /// owner. Returns `None` for a tab with no split, so the caller falls back
     /// to the owner session.
     focused_session_provider: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<Uuid>>>>>,
+    /// Makes the split pane that shows a session the focused pane of its split,
+    /// and reports whether the session is shown in a pane at all.
+    ///
+    /// `win.close-pane` closes the *focused* pane, and the bridge tracks focus
+    /// from pointer clicks, not keyboard focus. Q on an ended session in a split
+    /// sets it here first, so the pane that got the key is the one closed.
+    /// Wired by the window like [`Self::split_pane_box_provider`].
+    split_pane_focuser: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> bool>>>>,
     /// Toggles a tab's membership in the cross-tab broadcast group (issue #329).
     ///
     /// Wired by the window; the tab context menu calls it to activate the
@@ -602,6 +610,7 @@ impl TerminalNotebook {
             on_cloud_login: Rc::new(RefCell::new(None)),
             split_pane_box_provider: Rc::new(RefCell::new(None)),
             focused_session_provider: Rc::new(RefCell::new(None)),
+            split_pane_focuser: Rc::new(RefCell::new(None)),
             on_tab_broadcast_toggle: Rc::new(RefCell::new(None)),
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),

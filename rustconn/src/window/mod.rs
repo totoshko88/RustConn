@@ -971,6 +971,29 @@ impl MainWindow {
             });
         }
 
+        // Focus the pane that shows a session, so Q on an ended session closes
+        // that pane through `win.close-pane` rather than the pane last clicked:
+        // the bridge follows clicks, not keyboard focus.
+        {
+            let bridges_for_focuser = session_split_bridges.clone();
+            terminal_notebook.set_split_pane_focuser(move |session_id| {
+                // Resolved under the borrow, focused after it: focusing notifies
+                // the title source, which reads the bridges map again.
+                let target = bridges_for_focuser.borrow().values().find_map(|bridge| {
+                    bridge
+                        .pane_ids()
+                        .into_iter()
+                        .find(|&pane| bridge.get_pane_session(pane) == Some(session_id))
+                        .map(|pane| (Rc::clone(bridge), pane))
+                });
+                let Some((bridge, pane)) = target else {
+                    return false;
+                };
+                bridge.set_focused_pane(Some(pane));
+                true
+            });
+        }
+
         // Resolve the focused pane's session for a split tab, so "Save Output"
         // saves the pane the user is looking at rather than the tab owner
         // (issue #371). Keyed by the owner session id — the tab's bridge is the
@@ -5397,15 +5420,39 @@ impl MainWindow {
         // A shell that exits leaves a tab that takes no input. Mark it ended
         // and show the banner every other terminal session gets, so the tab
         // can be closed with Q or the shell started again with R (or the
-        // Reconnect button) instead of sitting there dead.
+        // Reconnect button) instead of sitting there dead. With "Close tab on
+        // clean exit" on, a clean exit (`exit`, Ctrl+D) closes the tab instead,
+        // exactly as it does for a connection.
+        let close_on_clean_exit = terminal_settings.close_on_clean_exit;
         let notebook_weak = Rc::downgrade(notebook);
         notebook.connect_child_exited(session_id, ChildExitHook::Disconnect, move |exit_status| {
             let Some(notebook) = notebook_weak.upgrade() else {
                 return;
             };
-            tracing::info!(%session_id, exit_status, "local shell exited");
-            notebook.mark_tab_disconnected(session_id);
-            notebook.show_reconnect_overlay(session_id);
+            let is_failure = session_lifecycle::child_exit_is_failure(exit_status);
+            tracing::info!(%session_id, exit_status, is_failure, "local shell exited");
+            // Deferred like the connection disconnect path: resetting VTE or
+            // changing the widget tree inside `child-exited` can race the
+            // pending GTK snapshot (#171).
+            glib::idle_add_local_once(move || {
+                // Closed by the user, or ended by the quit path.
+                if crate::app::is_shutting_down() || notebook.get_session_info(session_id).is_none()
+                {
+                    return;
+                }
+                // `close_tab` closes a tab or a detached window. A split guest
+                // has neither (its tab is parked), and `close_tab` would only
+                // forget it, leaving a dead pane with no banner; it gets the
+                // banner, and Q closes the pane.
+                let closable = notebook.is_detached(session_id)
+                    || notebook.sessions_map().borrow().contains_key(&session_id);
+                if close_on_clean_exit && !is_failure && closable {
+                    notebook.close_tab(session_id);
+                    return;
+                }
+                notebook.mark_tab_disconnected(session_id);
+                notebook.show_reconnect_overlay(session_id);
+            });
         });
 
         session_id

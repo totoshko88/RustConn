@@ -896,17 +896,11 @@ impl MainWindow {
             // WEXITSTATUS: (status >> 8) & 0xff
 
             let term_sig = exit_status & 0x7f;
-            let is_signaled = term_sig != 0;
             let exit_code = (exit_status >> 8) & 0xff;
 
-            // Consider it a failure if:
-            // 1. Killed by a signal that isn't a standard termination signal (HUP, INT, KILL, TERM)
-            // 2. Exited normally with non-zero code, UNLESS that code indicates a standard signal kill (128+N)
-            let is_failure = if is_signaled {
-                !matches!(term_sig, 1 | 2 | 9 | 15)
-            } else {
-                exit_code != 0 && !matches!(exit_code, 129 | 130 | 137 | 143)
-            };
+            // A failure is anything but exit 0 or a standard termination
+            // signal (see `child_exit_is_failure`).
+            let is_failure = child_exit_is_failure(exit_status);
 
             // Record connection end/failure in history
             if let Some(entry_id) = history_entry_id
@@ -1493,6 +1487,50 @@ impl MainWindow {
                 tracing::warn!(%e, "Session log flush on exit failed");
             }
         });
+    }
+}
+
+/// Whether a terminal child's waitpid status is a failure rather than an
+/// ordinary end.
+///
+/// Exit code 0 is a clean end, and so is a standard termination signal (HUP,
+/// INT, KILL, TERM), delivered directly or reported by a shell as `128 + N`:
+/// those are the user or the system ending the session on purpose. Anything
+/// else is a failure. Shared by the connection disconnect path and the Local
+/// Shell, so `close_on_clean_exit` means the same for both.
+pub(crate) const fn child_exit_is_failure(exit_status: i32) -> bool {
+    // WIFSIGNALED: (status & 0x7f) != 0, WTERMSIG: status & 0x7f,
+    // WEXITSTATUS: (status >> 8) & 0xff
+    let term_sig = exit_status & 0x7f;
+    if term_sig != 0 {
+        !matches!(term_sig, 1 | 2 | 9 | 15)
+    } else {
+        let exit_code = (exit_status >> 8) & 0xff;
+        exit_code != 0 && !matches!(exit_code, 129 | 130 | 137 | 143)
+    }
+}
+
+#[cfg(test)]
+mod child_exit_tests {
+    use super::child_exit_is_failure;
+
+    #[test]
+    fn exit_zero_and_standard_signals_are_clean() {
+        assert!(!child_exit_is_failure(0));
+        for signal in [1, 2, 9, 15] {
+            assert!(!child_exit_is_failure(signal), "signal {signal}");
+        }
+        for code in [129, 130, 137, 143] {
+            assert!(!child_exit_is_failure(code << 8), "exit code {code}");
+        }
+    }
+
+    #[test]
+    fn other_exits_are_failures() {
+        assert!(child_exit_is_failure(1 << 8));
+        assert!(child_exit_is_failure(255 << 8));
+        // SIGSEGV
+        assert!(child_exit_is_failure(11));
     }
 }
 

@@ -2441,8 +2441,15 @@ When a terminal session disconnects (SSH, Telnet, Serial, Kubernetes, Zero Trust
 - Reconnect uses the same connection settings (host, credentials, protocol options)
 - If the connection fails again, the banner reappears
 - Close the tab normally with Ctrl+W to dismiss
-- While the banner is shown, press **R** to reconnect or **Q** to close the session, with focus in its terminal. An ended terminal takes no input, so the two keys are free; they work the same in a tab, a split pane (Q closes that pane) and a detached window, and under a non-Latin keyboard layout
-- A **Local Shell** whose shell exits gets the same banner: **R** (or **Reconnect**) starts a new shell in the same tab
+- While the banner is shown, with focus in the session's terminal, three keys work. An ended terminal takes no input, so the keys are free; they work the same in a tab, a split pane, a detached window and a cluster window, and under a non-Latin keyboard layout. With Ctrl, Alt or Super held they keep their usual meaning:
+
+  | Key | Action |
+  |-----|--------|
+  | **R** | Reconnect, as the **Reconnect** button does |
+  | **Q** | Close the session, without asking. In a split it closes the pane whose terminal has focus |
+  | **Enter**, then **Enter** again | The first Enter highlights the banner's suggested button and the hint reads *Press Enter again to reconnect*; the second Enter clicks it. When the banner offers **Log In to …** for expired cloud credentials, that is the suggested button and Enter twice signs in. Any other key cancels the first Enter, and holding Enter down does not count as a second press |
+
+- A **Local Shell** whose shell exits gets the same banner: **R** (or **Reconnect**) starts a new shell in the same tab. With **Close tab on clean exit** on (Settings → Terminal), a shell that exits cleanly (`exit`, Ctrl+D) closes its tab instead
 
 **Automatic reconnect.** Beyond the manual banner, RustConn reconnects on its own
 after a transient drop — the common cases being the machine waking from sleep and
