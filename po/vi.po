@@ -15665,3 +15665,8 @@ msgstr ""
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Đã lưu cụm thành công."
+
+#: rustconn/src/terminal/session_lifecycle.rs:405
+#: rustconn/src/terminal/session_lifecycle.rs:411
+msgid "Press R to reconnect, Q to close"
+msgstr "Nhấn R để kết nối lại, Q để đóng"

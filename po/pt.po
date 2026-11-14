@@ -15832,3 +15832,8 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ligação;terminal;remoto;kubern
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "O cluster foi salvo com sucesso."
+
+#: rustconn/src/terminal/session_lifecycle.rs:405
+#: rustconn/src/terminal/session_lifecycle.rs:411
+msgid "Press R to reconnect, Q to close"
+msgstr "Prima R para voltar a ligar, Q para fechar"

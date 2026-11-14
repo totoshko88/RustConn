@@ -15758,3 +15758,8 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;pripojenie;terminál;vzdialený;
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klaster bol úspešne uložený."
+
+#: rustconn/src/terminal/session_lifecycle.rs:405
+#: rustconn/src/terminal/session_lifecycle.rs:411
+msgid "Press R to reconnect, Q to close"
+msgstr "Stlačte R na opätovné pripojenie, Q na zatvorenie"
