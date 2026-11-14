@@ -432,6 +432,9 @@ for i in "${!PKG_FILES[@]}"; do
     fi
     if ! grep -qE -- "$pattern" "$file"; then
         warn "Version $VERSION not found in $file (pattern: $pattern)"
+        if [[ "$file" == "packaging/flathub/io.github.totoshko88.RustConn.yml" ]]; then
+            warn "  fix: ./scripts/flathub-tag.sh $VERSION   (maintainer only; an agent hands this over)"
+        fi
         ((PKG_FAILED+=1))
     fi
 done

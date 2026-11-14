@@ -266,8 +266,9 @@ DO NOT modify — uses local path.
         tag: vX.Y.Z
 ```
 An agent does not write this file (`packaging/AGENTS.md`, "Flathub is
-maintainer-only"). List it in the release report as a maintainer step, together
-with the Flathub copy of `cargo-sources.json`.
+maintainer-only"), and does not run the maintainer's command for it either. List
+that command (it is in the same section) in the release report as a maintainer
+step, together with the Flathub copy of `cargo-sources.json`.
 
 ### 15. `rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml`
 Add `<release>` at the TOP of `<releases>`:

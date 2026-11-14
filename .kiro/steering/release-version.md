@@ -47,7 +47,9 @@ Then perform ALL of the following steps:
 
    `--write` also rewrites the Flathub manifest's version line, which an agent
    must not touch (`packaging/AGENTS.md`, "Flathub is maintainer-only"). An agent
-   runs the dry run and reports its diff; the Flathub line is a maintainer step.
+   runs the dry run and reports its diff; the Flathub line is a maintainer step,
+   handed over as the command in `packaging/AGENTS.md` ("Flathub is
+   maintainer-only"). Do not run it yourself.
 
    It takes the file list from `PKG_FILES` in `scripts/release.sh` at runtime, so
    the two cannot drift, and it writes the workspace `Cargo.toml` plus all 16
