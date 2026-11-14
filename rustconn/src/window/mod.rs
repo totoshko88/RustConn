@@ -2214,11 +2214,17 @@ impl MainWindow {
             // the debounce above adds to that. Filter with what the entry holds
             // right now so Enter opens what was typed, not a row of the
             // previous list; clearing the pending query turns the scheduled
-            // debounce timeout into a no-op.
+            // debounce timeout into a no-op. Rebuilding the list resets the
+            // selection to its first row, so the connection selected before is
+            // taken first and opened if the new results still hold it.
+            let preferred_id = sidebar_for_history
+                .get_selected_item()
+                .filter(|item| !item.is_group())
+                .map(|item| item.id());
             sidebar_for_history.hide_search_pending();
             sidebar_for_history.set_pending_search_query(None);
             Self::filter_connections(&state_for_history, &sidebar_for_history, &query);
-            sidebar_for_history.activate_search_result();
+            sidebar_for_history.activate_search_result(preferred_id.as_deref());
         });
 
         // Also add to history when search entry loses focus with non-empty query

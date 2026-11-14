@@ -1561,37 +1561,38 @@ impl ConnectionSidebar {
         None
     }
 
-    /// Opens the connection the search results point at: the selected row when
-    /// it is a connection, otherwise the first connection in the list.
+    /// Opens the connection the search results point at: the connection with
+    /// `preferred_id` when the list still holds it, otherwise the first
+    /// connection in the list.
     ///
     /// Called when Enter is pressed in the search entry, so a search can be
-    /// finished from the keyboard without moving focus into the list. It goes
-    /// through the list view's own `activate` signal, which is what a
-    /// double-click or Enter on a row emits, so every route opens a connection
-    /// the same way. Returns `false` when the list holds no connection.
-    pub fn activate_search_result(&self) -> bool {
-        let selection = self.selection_model.borrow();
-        let Some(model) = selection.model() else {
-            return false;
+    /// finished from the keyboard without moving focus into the list. The
+    /// caller passes the connection that was selected *before* it re-filtered
+    /// the list, because rebuilding the store resets the selection to the first
+    /// row. It goes through the list view's own `activate` signal, which is
+    /// what a double-click or Enter on a row emits, so every route opens a
+    /// connection the same way. Returns `false` when the list holds no
+    /// connection.
+    pub fn activate_search_result(&self, preferred_id: Option<&str>) -> bool {
+        let rows: Vec<Option<String>> = {
+            let selection = self.selection_model.borrow();
+            let Some(model) = selection.model() else {
+                return false;
+            };
+            (0..model.n_items())
+                .map(|position| {
+                    let item = model.item(position)?;
+                    let conn_item = if let Some(row) = item.downcast_ref::<TreeListRow>() {
+                        row.item().and_downcast::<ConnectionItem>()
+                    } else {
+                        item.downcast::<ConnectionItem>().ok()
+                    };
+                    conn_item.filter(|c| !c.is_group()).map(|c| c.id())
+                })
+                .collect()
         };
-        let is_connection = |position: u32| {
-            model.item(position).is_some_and(|item| {
-                let conn_item = if let Some(row) = item.downcast_ref::<TreeListRow>() {
-                    row.item().and_downcast::<ConnectionItem>()
-                } else {
-                    item.downcast::<ConnectionItem>().ok()
-                };
-                conn_item.is_some_and(|c| !c.is_group())
-            })
-        };
-        let position = selection
-            .get_selected_positions()
-            .into_iter()
-            .find(|&position| is_connection(position))
-            .or_else(|| (0..model.n_items()).find(|&position| is_connection(position)));
-        drop(selection);
 
-        let Some(position) = position else {
+        let Some(position) = search::pick_search_result(&rows, preferred_id) else {
             tracing::debug!("search activation: no connection in the result list");
             return false;
         };

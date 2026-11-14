@@ -162,6 +162,10 @@ way GNOME apps surface search. Reveal it by clicking the toggle, pressing
 **Ctrl+F**, or simply starting to type while the connection list has focus; it
 collapses again when you clear it.
 
+Press **Enter** in the search field to open the first matching connection (or the
+one you had selected, if it still matches) and save the query to the search
+history; with no match, or an empty field, Enter opens nothing (0.25.1+).
+
 Filter connections by protocol from the **Filter** menu button in the search row:
 - Open the menu and tick one or more protocols (SSH, RDP, VNC, SPICE, Telnet,
   Serial, ZeroTrust, Kubernetes, Web)
