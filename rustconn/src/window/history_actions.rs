@@ -336,6 +336,72 @@ impl MainWindow {
         });
         window.add_action(&wol_dialog_action);
 
+        // Network scan dialog action. A host it finds becomes a connection
+        // named after its address, at the top level of the connection tree.
+        let network_scan_action = gio::SimpleAction::new("network-scan", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = self.sidebar.clone();
+        network_scan_action.connect_activate(move |_, _| {
+            let Some(win) = window_weak.upgrade() else {
+                return;
+            };
+            let state = state_clone.clone();
+            let sidebar = sidebar_clone.clone();
+            let window_for_toast = win.downgrade();
+            let dialog = crate::dialogs::NetworkScanDialog::new(move |address, port| {
+                let host = address.to_string();
+                let Some(protocol) = port.protocol else {
+                    return false;
+                };
+                let connection = match protocol {
+                    "ssh" => rustconn_core::Connection::new_ssh(host.clone(), host, port.port),
+                    "rdp" => rustconn_core::Connection::new_rdp(host.clone(), host, port.port),
+                    "vnc" => rustconn_core::Connection::new_vnc(host.clone(), host, port.port),
+                    "telnet" => {
+                        rustconn_core::Connection::new_telnet(host.clone(), host, port.port)
+                    }
+                    other => {
+                        tracing::warn!(protocol = other, "network scan: no connection type");
+                        return false;
+                    }
+                };
+                let name = connection.name.clone();
+                let created = match state.try_borrow_mut() {
+                    Ok(mut state_mut) => state_mut.create_connection(connection),
+                    Err(_) => Err("state busy".to_string()),
+                };
+                let window = window_for_toast.upgrade();
+                match created {
+                    Ok(connection_id) => {
+                        tracing::info!(%connection_id, protocol, "connection added from network scan");
+                        Self::reload_sidebar_preserving_state(&state, &sidebar);
+                        if let Some(window) = window {
+                            crate::toast::show_toast_on_window(
+                                &window,
+                                &crate::i18n::i18n_f("Connection “{}” added", &[&name]),
+                                crate::toast::ToastType::Success,
+                            );
+                        }
+                        true
+                    }
+                    Err(error) => {
+                        tracing::error!(%error, "network scan: failed to add connection");
+                        if let Some(window) = window {
+                            crate::toast::show_toast_on_window(
+                                &window,
+                                &crate::i18n::i18n("Failed to add the connection"),
+                                crate::toast::ToastType::Error,
+                            );
+                        }
+                        false
+                    }
+                }
+            });
+            dialog.present(&win);
+        });
+        window.add_action(&network_scan_action);
+
         // Manage recordings action
         let manage_recordings_action = gio::SimpleAction::new("manage-recordings", None);
         let window_weak = window.downgrade();
