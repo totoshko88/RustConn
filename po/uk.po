@@ -13134,7 +13134,7 @@ msgid ""
 "Some of these tabs hold a split view. Closing them also disconnects the "
 "other sessions shown there: {}."
 msgstr ""
-"Деякі з цих вкладинок мають розділений вигляд. Їх закриття від'єднає й інші "
+"Деякі з цих вкладинок мають розділений вигляд. Їхнє закриття від'єднає й інші "
 "сеанси, показані там: {}."
 
 #: rustconn/src/terminal/split_close.rs:269
