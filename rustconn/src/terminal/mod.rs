@@ -2096,17 +2096,24 @@ impl TerminalNotebook {
         self.disconnected_sessions.borrow_mut().remove(&session_id);
         // Cancel any background polling (auto-reconnect, host check) for this session
         self.cancel_poll(session_id);
-        // A detached session has no tab page to close, so route it through the
-        // tabless path — otherwise "close this session" from the session
-        // manager or a clean exit with close-on-clean-exit would silently do
-        // nothing and leave the detached window behind (issue #236).
-        if self.is_detached(session_id) {
-            self.close_session(session_id);
-            return;
-        }
+        // A parked session — a split guest or a detached window — has no tab
+        // page to close, so it goes through the tabless path. Checking only the
+        // detached mark left a split guest running with no pane and no tab when
+        // the sidebar's Close, the session manager, a script or a clean exit
+        // closed it by id (issue #236 for the detached case). The split pane is
+        // taken down by the `on_split_cleanup` hook the close runs.
         let page = self.sessions.borrow().get(&session_id).cloned();
-        if let Some(page) = page {
-            self.tab_view.close_page(&page);
+        let route = detach::close_route(
+            self.parked_in_split.borrow().contains(&session_id),
+            self.is_detached(session_id),
+            page.is_some(),
+        );
+        match (route, page) {
+            (detach::CloseRoute::Parked, _) => self.close_session(session_id),
+            (detach::CloseRoute::Page, Some(page)) => self.tab_view.close_page(&page),
+            (detach::CloseRoute::Page | detach::CloseRoute::Unknown, _) => {
+                tracing::debug!(session = %session_id, "close_tab: no tab or parked session");
+            }
         }
     }
 

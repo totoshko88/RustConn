@@ -295,7 +295,7 @@ fn refresh_unsplit_action(
 /// Grouped into one struct because three actions dismantle splits —
 /// `win.unsplit`, `win.pop-pane-to-tab` and `win.close-pane` — and each would
 /// otherwise capture the same five clones individually in its `'static` closure.
-struct SplitTeardown {
+pub(super) struct SplitTeardown {
     notebook: SharedNotebook,
     bridges: SessionSplitBridges,
     monitoring: Rc<MonitoringCoordinator>,
@@ -306,6 +306,46 @@ struct SplitTeardown {
 }
 
 impl SplitTeardown {
+    /// Bundles the handles for a teardown run outside the split actions.
+    ///
+    /// The `on_split_cleanup` hook is stored inside the notebook, so it holds
+    /// the notebook weakly and builds this per call from the upgraded handle.
+    pub(super) fn new(
+        notebook: SharedNotebook,
+        bridges: SessionSplitBridges,
+        monitoring: Rc<MonitoringCoordinator>,
+        global_split_view: SharedSplitView,
+        split_container: gtk4::Box,
+    ) -> Self {
+        Self {
+            notebook,
+            bridges,
+            monitoring,
+            global_split_view,
+            split_container,
+        }
+    }
+
+    /// Takes down the pane of a split guest whose session is closing.
+    ///
+    /// Same layout result as `win.close-pane`, for a guest closed by id from
+    /// anywhere (the sidebar's Close, the session manager, a script, a cluster
+    /// disconnect, a clean exit): the pane goes away instead of staying as an
+    /// empty slot, and a layout left with one session collapses back into an
+    /// ordinary tab. The session itself is torn down by the caller's
+    /// `close-page`.
+    pub(super) fn remove_guest_pane(&self, bridge: &Rc<SplitViewBridge>, guest: Uuid) {
+        let removed_all = bridge.close_session_from_panes(guest);
+        match bridge.owner_session() {
+            Some(owner) if Self::is_spent(bridge, removed_all) => {
+                self.collapse(owner, bridge, Some(guest));
+            }
+            // Removing a panel rebuilds the layout's widget tree empty, so put
+            // the surviving sessions' widgets back.
+            _ => bridge.restore_panel_contents(),
+        }
+    }
+
     /// Looks up the split layout of the active tab, if it has one.
     ///
     /// Returns the owning session id together with a *cloned* `Rc` so no borrow
@@ -1191,6 +1231,20 @@ impl MainWindow {
                     if let Some(win) = window_weak.upgrade() {
                         refresh_unsplit_action(&win, &notebook, &bridges);
                     }
+                });
+        }
+        {
+            // Closing a split guest by id closes a page that was never selected
+            // (`close_session` restores it unselected), so the selection does
+            // not change while the guest's pane goes away and the layout may
+            // collapse. Every page close detaches its page, so refresh there,
+            // after the `close-page` handler has finished.
+            let refresh_broadcast_detached = refresh_broadcast.clone();
+            self.terminal_notebook
+                .tab_view()
+                .connect_page_detached(move |_, _, _| {
+                    let refresh = Rc::clone(&refresh_broadcast_detached);
+                    glib::idle_add_local_once(move || refresh());
                 });
         }
 

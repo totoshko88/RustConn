@@ -1357,10 +1357,20 @@ impl SplitViewBridge {
             let _ = adapter.remove_panel(panel_id);
 
             // Remove from UUID maps
-            if let Some(uuid) = self.panel_uuid_map.borrow_mut().remove(&panel_id) {
+            let removed_uuid = self.panel_uuid_map.borrow_mut().remove(&panel_id);
+            if let Some(uuid) = removed_uuid {
                 self.uuid_panel_map.borrow_mut().remove(&uuid);
                 // Remove from panes list
                 self.panes.borrow_mut().retain(|p| p.id() != uuid);
+                // A focused pane that is gone would make the next
+                // `close_pane` fail with "Panel not found"; move the focus to
+                // the first remaining pane, as `close_pane` does.
+                if *self.focused_pane_uuid.borrow() == Some(uuid) {
+                    let next = adapter.panel_ids().first().and_then(|next_panel| {
+                        self.panel_uuid_map.borrow().get(next_panel).copied()
+                    });
+                    *self.focused_pane_uuid.borrow_mut() = next;
+                }
             }
         }
 

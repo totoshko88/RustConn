@@ -1969,6 +1969,7 @@ impl MainWindow {
             // notebook) and leak the whole notebook.
             let notebook_for_cleanup = Rc::downgrade(&terminal_notebook);
             let monitoring_for_cleanup = self.monitoring.clone();
+            let split_container_for_cleanup = self.split_container.clone();
             terminal_notebook.set_on_split_cleanup(move |session_id| {
                 // If the closing tab OWNS a split bridge (key == owner session_id),
                 // its guest (Select-Tabbed) sessions live inside this tab's split
@@ -2026,17 +2027,52 @@ impl MainWindow {
                     }
                 }
 
-                // Clear session from ALL per-session split bridges
-                {
+                // Take the session out of every per-session split bridge. The map
+                // holds one entry per displayed session, so the same layout shows
+                // up under several keys; collect each one once, and drop the
+                // borrow before a guest's layout collapses (that takes
+                // `borrow_mut` on the same map).
+                let displaying: Vec<Rc<SplitViewBridge>> = {
                     let bridges = session_bridges_for_cleanup.borrow();
+                    let mut unique: Vec<Rc<SplitViewBridge>> = Vec::new();
                     for bridge in bridges.values() {
-                        if bridge.is_session_displayed(session_id) {
-                            tracing::debug!(
-                                "on_split_cleanup: clearing session {} from per-session bridge",
-                                session_id
-                            );
-                            bridge.clear_session_from_panes(session_id);
+                        if bridge.is_session_displayed(session_id)
+                            && !unique.iter().any(|seen| Rc::ptr_eq(seen, bridge))
+                        {
+                            unique.push(Rc::clone(bridge));
                         }
+                    }
+                    unique
+                };
+                for bridge in displaying {
+                    // A guest's pane goes away, as `win.close-pane` does; leaving
+                    // an empty slot behind made a guest closed by id (sidebar
+                    // Close, session manager, script, clean exit) look like a
+                    // pane still waiting for a session.
+                    let teardown = (!bridge.is_owned_by(session_id))
+                        .then(|| notebook_for_cleanup.upgrade())
+                        .flatten()
+                        .map(|notebook| {
+                            split_view_actions::SplitTeardown::new(
+                                notebook,
+                                session_bridges_for_cleanup.clone(),
+                                Rc::clone(&monitoring_for_cleanup),
+                                split_view_for_cleanup.clone(),
+                                split_container_for_cleanup.clone(),
+                            )
+                        });
+                    if let Some(teardown) = teardown {
+                        tracing::debug!(
+                            session = %session_id,
+                            "on_split_cleanup: removing the closing guest's pane"
+                        );
+                        teardown.remove_guest_pane(&bridge, session_id);
+                    } else {
+                        tracing::debug!(
+                            "on_split_cleanup: clearing session {} from per-session bridge",
+                            session_id
+                        );
+                        bridge.clear_session_from_panes(session_id);
                     }
                 }
                 // Drop the owner's now-emptied bridge so its stale entry does not
@@ -5440,13 +5476,10 @@ impl MainWindow {
                 {
                     return;
                 }
-                // `close_tab` closes a tab or a detached window. A split guest
-                // has neither (its tab is parked), and `close_tab` would only
-                // forget it, leaving a dead pane with no banner; it gets the
-                // banner, and Q closes the pane.
-                let closable = notebook.is_detached(session_id)
-                    || notebook.sessions_map().borrow().contains_key(&session_id);
-                if close_on_clean_exit && !is_failure && closable {
+                // `close_tab` closes a tab, a detached window or a split
+                // guest (whose pane goes with it), exactly as a connection's
+                // clean exit does.
+                if close_on_clean_exit && !is_failure {
                     notebook.close_tab(session_id);
                     return;
                 }

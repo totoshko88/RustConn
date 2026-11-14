@@ -232,7 +232,6 @@ impl MainWindow {
         let notebook_clone = terminal_notebook.clone();
         let split_view_clone = self.split_view.clone();
         let sidebar_clone = self.sidebar.clone();
-        let session_bridges_close = self.session_split_bridges.clone();
         let split_container_close = self.split_container.clone();
         close_tab_by_id_action.connect_activate(move |_, param| {
             if let Some(param) = param
@@ -252,20 +251,11 @@ impl MainWindow {
                 // Clear tab color indicator
                 notebook_clone.clear_tab_split_color(session_id);
 
-                // Clear session from ALL per-session split bridges
-                // This ensures the panel shows "Empty Panel" placeholder
-                {
-                    let bridges = session_bridges_close.borrow();
-                    for bridge in bridges.values() {
-                        if bridge.is_session_displayed(session_id) {
-                            tracing::debug!(
-                                "close-tab-by-id: clearing session {} from per-session bridge",
-                                session_id
-                            );
-                            bridge.clear_session_from_panes(session_id);
-                        }
-                    }
-                }
+                // The per-session split bridges are not touched here: the
+                // close runs `on_split_cleanup`, which removes a split guest's
+                // pane (collapsing a layout left with one session) and clears
+                // an owner's. Emptying the pane here first left a guest's pane
+                // as an empty slot that the hook could no longer find.
 
                 // Close session from global split view with auto-cleanup
                 // Returns true if split view should be hidden

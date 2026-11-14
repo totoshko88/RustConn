@@ -136,6 +136,41 @@ pub(super) fn take_park_mark(
     }
 }
 
+/// How [`TerminalNotebook::close_tab`](super::TerminalNotebook::close_tab)
+/// ends a session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum CloseRoute {
+    /// The session is parked (a split guest or a detached window) and so has
+    /// no tab page: `close_session` gives it one back and closes that.
+    Parked,
+    /// The session has a registered tab page of its own: close the page.
+    Page,
+    /// The notebook knows nothing to close for this id.
+    Unknown,
+}
+
+/// Picks how to close a session from its placement marks (pure).
+///
+/// A parked session wins over a registered page: parking removes the page from
+/// the session map, so a page found for a parked id would be stale. Before
+/// this decision existed, only a detached session took the tabless route, and
+/// closing a split guest by id did nothing while its caller had already
+/// emptied the pane and lowered the sidebar count.
+#[must_use]
+pub(super) const fn close_route(
+    is_parked_in_split: bool,
+    is_detached: bool,
+    has_page: bool,
+) -> CloseRoute {
+    if is_parked_in_split || is_detached {
+        CloseRoute::Parked
+    } else if has_page {
+        CloseRoute::Page
+    } else {
+        CloseRoute::Unknown
+    }
+}
+
 /// Builds the placement context from observed notebook facts (pure, GTK-free).
 #[must_use]
 const fn detach_context_from(
@@ -672,6 +707,48 @@ mod park_mark_tests {
         assert_eq!(take_park_mark(&mut in_split, &mut detached, id), None);
         assert!(in_split.contains(&other), "unrelated marks are untouched");
         assert!(detached.contains(&other));
+    }
+}
+
+#[cfg(test)]
+mod close_route_tests {
+    use super::{CloseRoute, close_route};
+
+    /// Every combination of `(parked_in_split, detached, has_page)`.
+    #[test]
+    fn route_table() {
+        let table = [
+            ((false, false, false), CloseRoute::Unknown),
+            ((false, false, true), CloseRoute::Page),
+            ((false, true, false), CloseRoute::Parked),
+            ((false, true, true), CloseRoute::Parked),
+            ((true, false, false), CloseRoute::Parked),
+            ((true, false, true), CloseRoute::Parked),
+            ((true, true, false), CloseRoute::Parked),
+            ((true, true, true), CloseRoute::Parked),
+        ];
+        for ((in_split, detached, has_page), expected) in table {
+            assert_eq!(
+                close_route(in_split, detached, has_page),
+                expected,
+                "in_split={in_split} detached={detached} has_page={has_page}"
+            );
+        }
+    }
+
+    /// Regression: a split guest has no page (parking removed it from the
+    /// session map) and is not detached. `close_tab` used to check only the
+    /// detached mark, find no page and do nothing, so the sidebar's Close left
+    /// the guest running with no pane and no tab.
+    #[test]
+    fn split_guest_without_page_is_closed_not_ignored() {
+        assert_eq!(close_route(true, false, false), CloseRoute::Parked);
+    }
+
+    /// A detached session keeps its route (issue #236).
+    #[test]
+    fn detached_session_without_page_is_closed() {
+        assert_eq!(close_route(false, true, false), CloseRoute::Parked);
     }
 }
 
