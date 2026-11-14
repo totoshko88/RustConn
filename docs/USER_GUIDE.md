@@ -53,6 +53,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Global Variables](#global-variables)
    - [Password Generator](#password-generator)
    - [Wake-on-LAN](#wake-on-lan)
+   - [Network Scan](#network-scan)
    - [Connection History & Statistics](#connection-history)
    - [Remote Monitoring](#remote-monitoring)
    - [Flatpak Components](#flatpak-components)
@@ -3658,6 +3659,26 @@ Wake sleeping machines before connecting by sending WoL magic packets.
 **Standalone WoL dialog:** Menu → Tools → **Wake On LAN...**
 
 All GUI sends use 3 retries at 500 ms intervals for reliability.
+
+### Network Scan
+
+Menu → Tools → **Network Scan…** (also in the command palette) finds the hosts of an IPv4 range that answer on the ports RustConn connects to: SSH (22), RDP (3389), VNC (5900), Telnet (23), plus HTTP (80) and HTTPS (443).
+
+Enter the range in any of these forms and press **Scan** (or Enter):
+
+| Form | Example |
+|------|---------|
+| Network with a prefix length | `192.168.1.0/24` |
+| Network with a netmask | `192.168.1.0/255.255.255.0` |
+| First and last address | `192.168.1.10-192.168.1.50` |
+| First address and last octet | `192.168.1.10-50` |
+| Single address | `192.168.1.10` |
+
+The field is pre-filled with a `/24` around this machine's own address. For a network, the network and broadcast addresses are skipped. A scan covers at most 65,536 addresses (a `/16`).
+
+Hosts appear as they answer, sorted by address, with their open ports. Each host has one button per protocol found — **SSH**, **RDP**, **VNC**, **Telnet** — that adds a connection named after the address at the top level of the connection list; rename it and fill in the user name from there. **Stop** ends a running scan and keeps what was found.
+
+The scan is a plain TCP connection attempt, so it needs no special permission. A host counts as present when a scanned port accepts or actively refuses the connection; a host whose firewall silently drops all six ports is not listed.
 
 ### Connection History
 

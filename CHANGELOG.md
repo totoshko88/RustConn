@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Network Scan** — Tools → **Network Scan…** looks for the hosts of an IPv4 range that answer on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports. The range is a network with its mask (`192.168.1.0/24`, `192.168.1.0/255.255.255.0`) or a first and a last address (`192.168.1.10-192.168.1.50`), up to a `/16`, and is pre-filled with the local `/24`. Hosts are listed as they answer, and each can be added as a connection with one click per protocol found. It is a TCP connect scan, needing no privilege and no external tool. (`rustconn-core/src/network_scan.rs`, `rustconn/src/dialogs/network_scan.rs`)
+
 ## [0.25.0] - 2026-11-14
 
 ### Added

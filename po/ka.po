@@ -15777,3 +15777,101 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "კლასტერის შენახვა წარმატებულია."
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr "ქსელის სკანირება"
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr "სკანირება"
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr "მისამართები"
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr "ქსელი თავისი ნიღბით (192.168.1.0/24 ან 192.168.1.0/255.255.255.0), ან პირველი და ბოლო მისამართი (192.168.1.10-192.168.1.50)."
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr "ქსელი ან მისამართების დიაპაზონი"
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr "ეძებს ჰოსტებს, რომლებიც პასუხობენ SSH, RDP, VNC, Telnet, HTTP და HTTPS პორტებზე."
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr "სკანირების მიმდინარეობა"
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr "ნაპოვნი ჰოსტები"
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr "შეიყვანეთ ქსელი ან მისამართების დიაპაზონი."
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr "„{}“ არ არის IPv4 მისამართი."
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr "„{}“ არც პრეფიქსის სიგრძეა (0-დან 32-მდე) და არც ქსელის ნიღაბი."
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr "ბოლო მისამართი პირველზე ადრე არ უნდა იყოს."
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr "ეს დიაპაზონი მოიცავს {} მისამართს; სკანირება შეზღუდულია {}-ით."
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr "პასუხობს, მაგრამ სკანირებული პორტებიდან არცერთი არ არის ღია"
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr "მიმდინარეობს სკანირება {}-დან {}-მდე…"
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr "სკანირების დაწყება ვერ მოხერხდა."
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr "შეჩერდა {} მისამართის შემდეგ — ნაპოვნია {} ჰოსტი."
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr "{} მისამართს შორის არცერთმა ჰოსტმა არ უპასუხა. ჰოსტი, რომლის ბრანდმაუერიც ყველა სკანირებულ პორტს უგულებელყოფს, უხილავი რჩება."
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr "სკანირებულია {} მისამართი — ნაპოვნია {} ჰოსტი."
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
+msgstr "ამ ჰოსტთან {} კავშირის დამატება"
+
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr "კავშირი „{}“ დამატებულია"
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr "კავშირის დამატება ვერ მოხერხდა"
+
+#: rustconn/src/window/ui.rs:294
+msgid "Network Scan…"
+msgstr "ქსელის სკანირება…"
