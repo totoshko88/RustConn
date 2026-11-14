@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 15:45+0200\n"
+"POT-Creation-Date: 2026-11-14 16:54+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -23,7 +23,7 @@ msgid "OK"
 msgstr "OK"
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/ask_prompt.rs:141 rustconn/src/dialogs/cluster.rs:807
+#: rustconn/src/dialogs/ask_prompt.rs:141 rustconn/src/dialogs/cluster.rs:830
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:310
@@ -53,8 +53,8 @@ msgstr "OK"
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
 #: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
-#: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:355
-#: rustconn/src/window/clusters.rs:410
+#: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:379
+#: rustconn/src/window/clusters.rs:434
 #: rustconn/src/window/connection_dialogs.rs:982
 #: rustconn/src/window/edit_group.rs:2046
 #: rustconn/src/window/edit_group.rs:2095
@@ -208,47 +208,47 @@ msgstr "Bu qısayolu artıq başqa makro istifadə edir"
 msgid "Command macro “{}”: {}"
 msgstr "Əmr makrosu “{}”: {}"
 
-#: rustconn/src/detached_window.rs:61
+#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:66
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:156
+#: rustconn/src/detached_window.rs:157
 #: rustconn/src/embedded_rdp/connection.rs:1785
 #: rustconn/src/embedded_rdp/connection.rs:2762
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
-#: rustconn/src/embedded_vnc/ui.rs:146
+#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:346
 #: rustconn/src/terminal/session_lifecycle.rs:394
 msgid "Session disconnected"
 msgstr "Sessiyanın bağlantısı kəsildi"
 
-#: rustconn/src/detached_window.rs:459
+#: rustconn/src/detached_window.rs:460
 msgid "Move to Main Window"
 msgstr "Əsas pəncərəyə köçür"
 
-#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:340
+#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:340
 msgid "Settings…"
 msgstr "Tənzimləmələr…"
 
-#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:358
+#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:358
 msgid "Keyboard Shortcuts…"
 msgstr "Klaviatura qısayolları…"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/dialogs/shortcuts.rs:183
+#: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
 #: rustconn/src/window/ui.rs:359
 msgid "Help"
 msgstr "Kömək"
 
-#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:331
+#: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
 #: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
 msgid "About RustConn"
 msgstr "RustConn haqqında"
 
-#: rustconn/src/detached_window.rs:485 rustconn/src/window/ui.rs:82
+#: rustconn/src/detached_window.rs:486 rustconn/src/window/ui.rs:82
 msgid "Menu (F10)"
 msgstr "Menyu (F10)"
 
-#: rustconn/src/detached_window.rs:489
+#: rustconn/src/detached_window.rs:490
 #: rustconn/src/embedded_web/navigation.rs:152
 #: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
 msgid "Menu"
@@ -308,8 +308,8 @@ msgstr "Parolu əl ilə daxil edin"
 msgid "Open Settings"
 msgstr "Tənzimləmələri aç"
 
-#: rustconn/src/dialogs/cluster.rs:62 rustconn/src/dialogs/cluster.rs:562
-#: rustconn/src/dialogs/cluster.rs:563
+#: rustconn/src/dialogs/cluster.rs:62 rustconn/src/dialogs/cluster.rs:565
+#: rustconn/src/dialogs/cluster.rs:566
 msgid "New Cluster"
 msgstr "Yeni klaster"
 
@@ -410,11 +410,11 @@ msgstr "Seçimi ləğv et"
 msgid "Edit Cluster"
 msgstr "Klasterni redaktə et"
 
-#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1368
+#: rustconn/src/dialogs/cluster.rs:557 rustconn/src/sidebar_ui.rs:1368
 msgid "Manage Clusters"
 msgstr "Klastrləri idarə et"
 
-#: rustconn/src/dialogs/cluster.rs:588
+#: rustconn/src/dialogs/cluster.rs:591
 msgid ""
 "Clusters open multiple servers together. To mirror keystrokes across them, "
 "split the resulting tabs and use the Broadcast toggle in the header bar."
@@ -423,44 +423,48 @@ msgstr ""
 "əks etdirmək üçün yaranan tabları bölün və başlıq çubuğundakı Yayım "
 "açarından istifadə edin."
 
-#: rustconn/src/dialogs/cluster.rs:676
+#: rustconn/src/dialogs/cluster.rs:681
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:284
 msgid "{} connection"
 msgid_plural "{} connections"
 msgstr[0] "{} bağlantı"
 msgstr[1] "{} bağlantı"
 
-#: rustconn/src/dialogs/cluster.rs:692 rustconn/src/dialogs/cluster.rs:696
+#: rustconn/src/dialogs/cluster.rs:697 rustconn/src/dialogs/cluster.rs:701
 msgid "Connect to cluster"
 msgstr "Klasterə qoşul"
 
-#: rustconn/src/dialogs/cluster.rs:701 rustconn/src/dialogs/cluster.rs:705
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr "Klasterə yeni pəncərədə qoşul"
+
+#: rustconn/src/dialogs/cluster.rs:715 rustconn/src/dialogs/cluster.rs:719
 msgid "Disconnect all cluster sessions"
 msgstr "Bütün klaster sessiyalarının bağlantısını kəs"
 
-#: rustconn/src/dialogs/cluster.rs:710 rustconn/src/dialogs/cluster.rs:713
+#: rustconn/src/dialogs/cluster.rs:724 rustconn/src/dialogs/cluster.rs:727
 msgid "Edit cluster"
 msgstr "Klasterni redaktə et"
 
-#: rustconn/src/dialogs/cluster.rs:717 rustconn/src/dialogs/cluster.rs:721
+#: rustconn/src/dialogs/cluster.rs:731 rustconn/src/dialogs/cluster.rs:735
 msgid "Delete cluster"
 msgstr "Klasterni sil"
 
-#: rustconn/src/dialogs/cluster.rs:754
+#: rustconn/src/dialogs/cluster.rs:770
 msgid "No clusters defined. Click 'New Cluster' to create one."
 msgstr ""
 "Heç bir klaster təyin edilməyib. Yaratmaq üçün 'Yeni klaster' düyməsinə "
 "basın."
 
-#: rustconn/src/dialogs/cluster.rs:804 rustconn/src/window/clusters.rs:582
+#: rustconn/src/dialogs/cluster.rs:827 rustconn/src/window/clusters.rs:625
 msgid "Delete Cluster?"
 msgstr "Klaster silinsin?"
 
-#: rustconn/src/dialogs/cluster.rs:805
+#: rustconn/src/dialogs/cluster.rs:828
 msgid "This cluster will be permanently removed."
 msgstr "Bu klaster həmişəlik silinəcək."
 
-#: rustconn/src/dialogs/cluster.rs:808 rustconn/src/dialogs/recording.rs:600
+#: rustconn/src/dialogs/cluster.rs:831 rustconn/src/dialogs/recording.rs:600
 #: rustconn/src/dialogs/script.rs:175 rustconn/src/dialogs/script.rs:683
 #: rustconn/src/dialogs/template_manager.rs:114
 #: rustconn/src/dialogs/template_manager.rs:192
@@ -468,7 +472,7 @@ msgstr "Bu klaster həmişəlik silinəcək."
 #: rustconn/src/dialogs/workspace.rs:292
 #: rustconn/src/sidebar/saved_searches.rs:265 rustconn/src/sidebar_ui.rs:592
 #: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:459
-#: rustconn/src/window/clusters.rs:587 rustconn/src/window/edit_actions.rs:485
+#: rustconn/src/window/clusters.rs:630 rustconn/src/window/edit_actions.rs:485
 #: rustconn/src/window/key_setup.rs:1011 rustconn/src/window/operations.rs:173
 #: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
 #: rustconn/src/window/templates.rs:151
@@ -7072,7 +7076,7 @@ msgstr "İdxal uğursuz oldu"
 #: rustconn/src/dialogs/recording.rs:828 rustconn/src/dialogs/recording.rs:840
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:288 rustconn/src/toast.rs:110
 #: rustconn/src/toast.rs:325 rustconn/src/toast.rs:355
-#: rustconn/src/window/clusters.rs:553
+#: rustconn/src/window/clusters.rs:596
 #: rustconn/src/window/connection_dialogs.rs:928
 #: rustconn/src/window/edit_dialogs.rs:407
 #: rustconn/src/window/edit_dialogs.rs:511
@@ -9740,7 +9744,7 @@ msgstr "Növbəti tab"
 msgid "Previous Tab"
 msgstr "Əvvəlki tab"
 
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:558
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:565
 msgid "Tab Overview"
 msgstr "Tab icmalı"
 
@@ -11753,14 +11757,14 @@ msgstr "Uzaq buferdən faylları saxla"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1462
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1491
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
 msgstr "Yenidən qoşul"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1464
+#: rustconn/src/terminal/mod.rs:1493
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Bu sessiyaya yenidən qoşul"
@@ -12253,6 +12257,10 @@ msgstr "“{}” skriptini işə salmaq mümkün olmadı: {}"
 msgid "Auto-run script “{}” could not be loaded: {}"
 msgstr "“{}” avtomatik işə salınan skripti yükləmək mümkün olmadı: {}"
 
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr "Tabı əsas pəncərəyə köçür"
+
 #: rustconn/src/sidebar/mod.rs:162
 msgid "Search… (? for help)"
 msgstr "Axtar… (kömək üçün ?)"
@@ -12429,7 +12437,7 @@ msgstr "Sinxronizasiya xətası: {}"
 msgid "Connecting"
 msgstr "Qoşulur"
 
-#: rustconn/src/sidebar_ui.rs:352 rustconn/src/window/clusters.rs:356
+#: rustconn/src/sidebar_ui.rs:352 rustconn/src/window/clusters.rs:380
 msgid "Connect All"
 msgstr "Hamısına qoşul"
 
@@ -12856,32 +12864,32 @@ msgstr "Seçimi fraqment kimi saxla…"
 msgid "Execute Snippet…"
 msgstr "Fraqmenti icra et…"
 
-#: rustconn/src/terminal/mod.rs:554
+#: rustconn/src/terminal/mod.rs:561
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Tab icmalı (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:571 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:578 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Xoş gəldiniz"
 
-#: rustconn/src/terminal/mod.rs:1106
+#: rustconn/src/terminal/mod.rs:1135
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "Çıxış süzgəci '{}' quraşdırılmayıb; sessiya çıxışı süzgəcdən keçirilmir"
 
-#: rustconn/src/terminal/mod.rs:1456
+#: rustconn/src/terminal/mod.rs:1485
 msgid "Command not found: {}"
 msgstr "Əmr tapılmadı: {}"
 
-#: rustconn/src/terminal/mod.rs:1458
+#: rustconn/src/terminal/mod.rs:1487
 msgid "Failed to start '{}'"
 msgstr "'{}' başladıla bilmədi"
 
-#: rustconn/src/terminal/mod.rs:1480
+#: rustconn/src/terminal/mod.rs:1509
 msgid "'{}' is not installed"
 msgstr "'{}' quraşdırılmayıb"
 
-#: rustconn/src/terminal/mod.rs:1483
+#: rustconn/src/terminal/mod.rs:1512
 msgid "Failed to start '{}': {}"
 msgstr "'{}' başladıla bilmədi: {}"
 
@@ -13300,25 +13308,25 @@ msgstr "İkon (emoji və ya GTK ikon adı, boş buraxılsa silinir)"
 msgid "Updated {} connections"
 msgstr "{} bağlantı yeniləndi"
 
-#: rustconn/src/window/clusters.rs:197
+#: rustconn/src/window/clusters.rs:217
 msgid "Error Creating Cluster"
 msgstr "Klaster yaradılarkən xəta"
 
-#: rustconn/src/window/clusters.rs:198 rustconn/src/window/clusters.rs:546
+#: rustconn/src/window/clusters.rs:218 rustconn/src/window/clusters.rs:589
 msgid "Failed to save cluster: {}"
 msgstr "Klaster saxlanıla bilmədi: {}"
 
-#: rustconn/src/window/clusters.rs:256
+#: rustconn/src/window/clusters.rs:277
 msgid "Cluster has no connections"
 msgstr "Klasterdə bağlantı yoxdur"
 
-#: rustconn/src/window/clusters.rs:342
+#: rustconn/src/window/clusters.rs:366
 msgid "“{}” opens {} connection at once."
 msgid_plural "“{}” opens {} connections at once."
 msgstr[0] "“{}” bir anda {} bağlantı açır."
 msgstr[1] "“{}” bir anda {} bağlantı açır."
 
-#: rustconn/src/window/clusters.rs:350
+#: rustconn/src/window/clusters.rs:374
 msgid ""
 "Most of them may come from its auto-membership pattern. If that is more than "
 "you expected, cancel and narrow the pattern."
@@ -13326,11 +13334,11 @@ msgstr ""
 "Onların çoxu avtomatik üzvlük şablonundan gələ bilər. Bu gözlədiyinizdən "
 "çoxdursa, ləğv edin və şablonu daraldın."
 
-#: rustconn/src/window/clusters.rs:354
+#: rustconn/src/window/clusters.rs:378
 msgid "Open All Connections?"
 msgstr "Bütün bağlantılar açılsın?"
 
-#: rustconn/src/window/clusters.rs:399
+#: rustconn/src/window/clusters.rs:423
 msgid ""
 "{} cluster member has a jump host that no longer exists or points to itself: "
 "{}."
@@ -13342,7 +13350,7 @@ msgstr[0] ""
 msgstr[1] ""
 "{} klaster üzvünün jump host-u artıq mövcud deyil və ya özünə işarə edir: {}."
 
-#: rustconn/src/window/clusters.rs:405
+#: rustconn/src/window/clusters.rs:429
 msgid ""
 "Connecting now skips those jump hosts, so these members may reach their "
 "servers directly. Open a member on its own to see the details."
@@ -13350,24 +13358,24 @@ msgstr ""
 "Qoşulma indi həmin jump host-ları keçir, ona görə bu üzvlər serverlərinə "
 "birbaşa çata bilər. Təfərrüatları görmək üçün üzvü ayrıca açın."
 
-#: rustconn/src/window/clusters.rs:409
+#: rustconn/src/window/clusters.rs:433
 msgid "Jump Host Unavailable"
 msgstr "Jump host əlçatan deyil"
 
-#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3680
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3680
 #: rustconn/src/window/mod.rs:3746 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Buna baxmayaraq qoşul"
 
-#: rustconn/src/window/clusters.rs:545
+#: rustconn/src/window/clusters.rs:588
 msgid "Error Updating Cluster"
 msgstr "Klaster yenilənərkən xəta"
 
-#: rustconn/src/window/clusters.rs:554
+#: rustconn/src/window/clusters.rs:597
 msgid "Could not access application state"
 msgstr "Tətbiqin vəziyyətinə giriş mümkün olmadı"
 
-#: rustconn/src/window/clusters.rs:584
+#: rustconn/src/window/clusters.rs:627
 msgid ""
 "Are you sure you want to delete the cluster '{}'?\n"
 "This will not delete the connections in the cluster."
@@ -13375,11 +13383,11 @@ msgstr ""
 "'{}' klasterini silmək istədiyinizə əminsiniz?\n"
 "Bu, klasterdəki bağlantıları silməyəcək."
 
-#: rustconn/src/window/clusters.rs:607
+#: rustconn/src/window/clusters.rs:650
 msgid "Error Deleting Cluster"
 msgstr "Klaster silinərkən xəta"
 
-#: rustconn/src/window/clusters.rs:608
+#: rustconn/src/window/clusters.rs:651
 msgid "Failed to delete cluster: {}"
 msgstr "Klaster silinə bilmədi: {}"
 
@@ -13613,11 +13621,11 @@ msgstr "Anbar qeydi '{}' üçün tapılmadı. Sizdən parol tələb olunacaq."
 msgid "Connection failed. Host unreachable."
 msgstr "Qoşulma alınmadı. Host əlçatan deyil."
 
-#: rustconn/src/window/detach_actions.rs:77
+#: rustconn/src/window/detach_actions.rs:78
 msgid "This session already has its own window."
 msgstr "Bu sessiyanın artıq öz pəncərəsi var."
 
-#: rustconn/src/window/detach_actions.rs:79
+#: rustconn/src/window/detach_actions.rs:80
 msgid ""
 "This session is displayed by a separate viewer, which already runs in its "
 "own window."
@@ -13625,14 +13633,14 @@ msgstr ""
 "Bu sessiya ayrı bir görüntüləyici tərəfindən göstərilir və o, artıq öz "
 "pəncərəsində işləyir."
 
-#: rustconn/src/window/detach_actions.rs:82
+#: rustconn/src/window/detach_actions.rs:83
 msgid ""
 "Remove the split layout from this tab before moving the session to its own "
 "window."
 msgstr ""
 "Sessiyanı öz pəncərəsinə köçürməzdən əvvəl bu tabdan bölünmüş düzümü çıxarın."
 
-#: rustconn/src/window/detach_actions.rs:85
+#: rustconn/src/window/detach_actions.rs:86
 msgid ""
 "This session is displayed in a split layout. Return it to its own tab first."
 msgstr ""

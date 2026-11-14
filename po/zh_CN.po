@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 15:45+0200\n"
+"POT-Creation-Date: 2026-11-14 16:54+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -25,7 +25,7 @@ msgid "OK"
 msgstr "确定"
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/ask_prompt.rs:141 rustconn/src/dialogs/cluster.rs:807
+#: rustconn/src/dialogs/ask_prompt.rs:141 rustconn/src/dialogs/cluster.rs:830
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:310
@@ -55,8 +55,8 @@ msgstr "确定"
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
 #: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
-#: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:355
-#: rustconn/src/window/clusters.rs:410
+#: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:379
+#: rustconn/src/window/clusters.rs:434
 #: rustconn/src/window/connection_dialogs.rs:982
 #: rustconn/src/window/edit_group.rs:2046
 #: rustconn/src/window/edit_group.rs:2095
@@ -200,47 +200,47 @@ msgstr "另一个宏已使用该快捷键"
 msgid "Command macro “{}”: {}"
 msgstr "命令宏“{}”：{}"
 
-#: rustconn/src/detached_window.rs:61
+#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:66
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:156
+#: rustconn/src/detached_window.rs:157
 #: rustconn/src/embedded_rdp/connection.rs:1785
 #: rustconn/src/embedded_rdp/connection.rs:2762
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
-#: rustconn/src/embedded_vnc/ui.rs:146
+#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:346
 #: rustconn/src/terminal/session_lifecycle.rs:394
 msgid "Session disconnected"
 msgstr "会话已断开"
 
-#: rustconn/src/detached_window.rs:459
+#: rustconn/src/detached_window.rs:460
 msgid "Move to Main Window"
 msgstr "移动到主窗口"
 
-#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:340
+#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:340
 msgid "Settings…"
 msgstr "设置…"
 
-#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:358
+#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:358
 msgid "Keyboard Shortcuts…"
 msgstr "键盘快捷键…"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/dialogs/shortcuts.rs:183
+#: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
 #: rustconn/src/window/ui.rs:359
 msgid "Help"
 msgstr "帮助"
 
-#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:331
+#: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
 #: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
 msgid "About RustConn"
 msgstr "关于 RustConn"
 
-#: rustconn/src/detached_window.rs:485 rustconn/src/window/ui.rs:82
+#: rustconn/src/detached_window.rs:486 rustconn/src/window/ui.rs:82
 msgid "Menu (F10)"
 msgstr "菜单 (F10)"
 
-#: rustconn/src/detached_window.rs:489
+#: rustconn/src/detached_window.rs:490
 #: rustconn/src/embedded_web/navigation.rs:152
 #: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
 msgid "Menu"
@@ -299,8 +299,8 @@ msgstr "手动输入密码"
 msgid "Open Settings"
 msgstr "打开设置"
 
-#: rustconn/src/dialogs/cluster.rs:62 rustconn/src/dialogs/cluster.rs:562
-#: rustconn/src/dialogs/cluster.rs:563
+#: rustconn/src/dialogs/cluster.rs:62 rustconn/src/dialogs/cluster.rs:565
+#: rustconn/src/dialogs/cluster.rs:566
 msgid "New Cluster"
 msgstr "新建集群"
 
@@ -399,11 +399,11 @@ msgstr "取消全选"
 msgid "Edit Cluster"
 msgstr "编辑集群"
 
-#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1368
+#: rustconn/src/dialogs/cluster.rs:557 rustconn/src/sidebar_ui.rs:1368
 msgid "Manage Clusters"
 msgstr "管理集群"
 
-#: rustconn/src/dialogs/cluster.rs:588
+#: rustconn/src/dialogs/cluster.rs:591
 msgid ""
 "Clusters open multiple servers together. To mirror keystrokes across them, "
 "split the resulting tabs and use the Broadcast toggle in the header bar."
@@ -411,41 +411,45 @@ msgstr ""
 "集群同时打开多个服务器。要在它们之间镜像按键，请拆分标签页并使用标题栏中的"
 "\"广播\"切换按钮。"
 
-#: rustconn/src/dialogs/cluster.rs:676
+#: rustconn/src/dialogs/cluster.rs:681
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:284
 msgid "{} connection"
 msgid_plural "{} connections"
 msgstr[0] "{} 个连接"
 
-#: rustconn/src/dialogs/cluster.rs:692 rustconn/src/dialogs/cluster.rs:696
+#: rustconn/src/dialogs/cluster.rs:697 rustconn/src/dialogs/cluster.rs:701
 msgid "Connect to cluster"
 msgstr "连接到集群"
 
-#: rustconn/src/dialogs/cluster.rs:701 rustconn/src/dialogs/cluster.rs:705
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr "在新窗口中连接到集群"
+
+#: rustconn/src/dialogs/cluster.rs:715 rustconn/src/dialogs/cluster.rs:719
 msgid "Disconnect all cluster sessions"
 msgstr "断开所有集群会话"
 
-#: rustconn/src/dialogs/cluster.rs:710 rustconn/src/dialogs/cluster.rs:713
+#: rustconn/src/dialogs/cluster.rs:724 rustconn/src/dialogs/cluster.rs:727
 msgid "Edit cluster"
 msgstr "编辑集群"
 
-#: rustconn/src/dialogs/cluster.rs:717 rustconn/src/dialogs/cluster.rs:721
+#: rustconn/src/dialogs/cluster.rs:731 rustconn/src/dialogs/cluster.rs:735
 msgid "Delete cluster"
 msgstr "删除集群"
 
-#: rustconn/src/dialogs/cluster.rs:754
+#: rustconn/src/dialogs/cluster.rs:770
 msgid "No clusters defined. Click 'New Cluster' to create one."
 msgstr "未定义集群。点击'新建集群'创建一个。"
 
-#: rustconn/src/dialogs/cluster.rs:804 rustconn/src/window/clusters.rs:582
+#: rustconn/src/dialogs/cluster.rs:827 rustconn/src/window/clusters.rs:625
 msgid "Delete Cluster?"
 msgstr "删除集群？"
 
-#: rustconn/src/dialogs/cluster.rs:805
+#: rustconn/src/dialogs/cluster.rs:828
 msgid "This cluster will be permanently removed."
 msgstr "此集群将被永久删除。"
 
-#: rustconn/src/dialogs/cluster.rs:808 rustconn/src/dialogs/recording.rs:600
+#: rustconn/src/dialogs/cluster.rs:831 rustconn/src/dialogs/recording.rs:600
 #: rustconn/src/dialogs/script.rs:175 rustconn/src/dialogs/script.rs:683
 #: rustconn/src/dialogs/template_manager.rs:114
 #: rustconn/src/dialogs/template_manager.rs:192
@@ -453,7 +457,7 @@ msgstr "此集群将被永久删除。"
 #: rustconn/src/dialogs/workspace.rs:292
 #: rustconn/src/sidebar/saved_searches.rs:265 rustconn/src/sidebar_ui.rs:592
 #: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:459
-#: rustconn/src/window/clusters.rs:587 rustconn/src/window/edit_actions.rs:485
+#: rustconn/src/window/clusters.rs:630 rustconn/src/window/edit_actions.rs:485
 #: rustconn/src/window/key_setup.rs:1011 rustconn/src/window/operations.rs:173
 #: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
 #: rustconn/src/window/templates.rs:151
@@ -6892,7 +6896,7 @@ msgstr "导入失败"
 #: rustconn/src/dialogs/recording.rs:828 rustconn/src/dialogs/recording.rs:840
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:288 rustconn/src/toast.rs:110
 #: rustconn/src/toast.rs:325 rustconn/src/toast.rs:355
-#: rustconn/src/window/clusters.rs:553
+#: rustconn/src/window/clusters.rs:596
 #: rustconn/src/window/connection_dialogs.rs:928
 #: rustconn/src/window/edit_dialogs.rs:407
 #: rustconn/src/window/edit_dialogs.rs:511
@@ -9487,7 +9491,7 @@ msgstr "下一个标签页"
 msgid "Previous Tab"
 msgstr "上一个标签页"
 
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:558
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:565
 msgid "Tab Overview"
 msgstr "标签页概览"
 
@@ -11435,14 +11439,14 @@ msgstr "从远程剪贴板保存文件"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1462
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1491
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
 msgstr "重连"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1464
+#: rustconn/src/terminal/mod.rs:1493
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "重新连接到此会话"
@@ -11929,6 +11933,10 @@ msgstr "无法启动脚本“{}”：{}"
 msgid "Auto-run script “{}” could not be loaded: {}"
 msgstr "无法加载自动运行脚本“{}”：{}"
 
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr "将标签页移动到主窗口"
+
 #: rustconn/src/sidebar/mod.rs:162
 msgid "Search… (? for help)"
 msgstr "搜索…（? 获取帮助）"
@@ -12105,7 +12113,7 @@ msgstr "同步错误：{}"
 msgid "Connecting"
 msgstr "连接中"
 
-#: rustconn/src/sidebar_ui.rs:352 rustconn/src/window/clusters.rs:356
+#: rustconn/src/sidebar_ui.rs:352 rustconn/src/window/clusters.rs:380
 msgid "Connect All"
 msgstr "全部连接"
 
@@ -12532,31 +12540,31 @@ msgstr "将选中内容保存为代码片段…"
 msgid "Execute Snippet…"
 msgstr "执行代码片段…"
 
-#: rustconn/src/terminal/mod.rs:554
+#: rustconn/src/terminal/mod.rs:561
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "标签页概览 (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:571 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:578 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "欢迎"
 
-#: rustconn/src/terminal/mod.rs:1106
+#: rustconn/src/terminal/mod.rs:1135
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "输出过滤器 '{}' 未安装；会话输出未经过滤"
 
-#: rustconn/src/terminal/mod.rs:1456
+#: rustconn/src/terminal/mod.rs:1485
 msgid "Command not found: {}"
 msgstr "命令未找到：{}"
 
-#: rustconn/src/terminal/mod.rs:1458
+#: rustconn/src/terminal/mod.rs:1487
 msgid "Failed to start '{}'"
 msgstr "无法启动 '{}'"
 
-#: rustconn/src/terminal/mod.rs:1480
+#: rustconn/src/terminal/mod.rs:1509
 msgid "'{}' is not installed"
 msgstr "'{}' 未安装"
 
-#: rustconn/src/terminal/mod.rs:1483
+#: rustconn/src/terminal/mod.rs:1512
 msgid "Failed to start '{}': {}"
 msgstr "无法启动 '{}': {}"
 
@@ -12965,35 +12973,35 @@ msgstr "图标（表情符号或 GTK 图标名称，留空清除）"
 msgid "Updated {} connections"
 msgstr "已更新 {} 个连接"
 
-#: rustconn/src/window/clusters.rs:197
+#: rustconn/src/window/clusters.rs:217
 msgid "Error Creating Cluster"
 msgstr "创建集群错误"
 
-#: rustconn/src/window/clusters.rs:198 rustconn/src/window/clusters.rs:546
+#: rustconn/src/window/clusters.rs:218 rustconn/src/window/clusters.rs:589
 msgid "Failed to save cluster: {}"
 msgstr "保存集群失败：{}"
 
-#: rustconn/src/window/clusters.rs:256
+#: rustconn/src/window/clusters.rs:277
 msgid "Cluster has no connections"
 msgstr "集群没有连接"
 
-#: rustconn/src/window/clusters.rs:342
+#: rustconn/src/window/clusters.rs:366
 msgid "“{}” opens {} connection at once."
 msgid_plural "“{}” opens {} connections at once."
 msgstr[0] "“{}”将一次打开 {} 个连接。"
 
-#: rustconn/src/window/clusters.rs:350
+#: rustconn/src/window/clusters.rs:374
 msgid ""
 "Most of them may come from its auto-membership pattern. If that is more than "
 "you expected, cancel and narrow the pattern."
 msgstr ""
 "其中大多数可能来自其自动成员匹配模式。如果超出预期，请取消并缩小该模式。"
 
-#: rustconn/src/window/clusters.rs:354
+#: rustconn/src/window/clusters.rs:378
 msgid "Open All Connections?"
 msgstr "打开所有连接？"
 
-#: rustconn/src/window/clusters.rs:399
+#: rustconn/src/window/clusters.rs:423
 msgid ""
 "{} cluster member has a jump host that no longer exists or points to itself: "
 "{}."
@@ -13002,7 +13010,7 @@ msgid_plural ""
 "itself: {}."
 msgstr[0] "{} 个集群成员的跳板主机已不存在或指向自身：{}。"
 
-#: rustconn/src/window/clusters.rs:405
+#: rustconn/src/window/clusters.rs:429
 msgid ""
 "Connecting now skips those jump hosts, so these members may reach their "
 "servers directly. Open a member on its own to see the details."
@@ -13010,24 +13018,24 @@ msgstr ""
 "现在连接将跳过这些跳板主机，因此这些成员可能会直接连接到各自的服务器。请单独"
 "打开某个成员以查看详细信息。"
 
-#: rustconn/src/window/clusters.rs:409
+#: rustconn/src/window/clusters.rs:433
 msgid "Jump Host Unavailable"
 msgstr "跳板主机不可用"
 
-#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3680
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3680
 #: rustconn/src/window/mod.rs:3746 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "仍然连接"
 
-#: rustconn/src/window/clusters.rs:545
+#: rustconn/src/window/clusters.rs:588
 msgid "Error Updating Cluster"
 msgstr "更新集群错误"
 
-#: rustconn/src/window/clusters.rs:554
+#: rustconn/src/window/clusters.rs:597
 msgid "Could not access application state"
 msgstr "无法访问应用程序状态"
 
-#: rustconn/src/window/clusters.rs:584
+#: rustconn/src/window/clusters.rs:627
 msgid ""
 "Are you sure you want to delete the cluster '{}'?\n"
 "This will not delete the connections in the cluster."
@@ -13035,11 +13043,11 @@ msgstr ""
 "您确定要删除集群 '{}' 吗？\n"
 "这不会删除集群中的连接。"
 
-#: rustconn/src/window/clusters.rs:607
+#: rustconn/src/window/clusters.rs:650
 msgid "Error Deleting Cluster"
 msgstr "删除集群错误"
 
-#: rustconn/src/window/clusters.rs:608
+#: rustconn/src/window/clusters.rs:651
 msgid "Failed to delete cluster: {}"
 msgstr "删除集群失败：{}"
 
@@ -13271,23 +13279,23 @@ msgstr "未找到 '{}' 的密码库条目。系统将提示您输入密码。"
 msgid "Connection failed. Host unreachable."
 msgstr "连接失败。主机不可达。"
 
-#: rustconn/src/window/detach_actions.rs:77
+#: rustconn/src/window/detach_actions.rs:78
 msgid "This session already has its own window."
 msgstr "此会话已有自己的窗口。"
 
-#: rustconn/src/window/detach_actions.rs:79
+#: rustconn/src/window/detach_actions.rs:80
 msgid ""
 "This session is displayed by a separate viewer, which already runs in its "
 "own window."
 msgstr "此会话由外部查看器显示，该查看器已在自己的窗口中运行。"
 
-#: rustconn/src/window/detach_actions.rs:82
+#: rustconn/src/window/detach_actions.rs:83
 msgid ""
 "Remove the split layout from this tab before moving the session to its own "
 "window."
 msgstr "请先移除此标签页的拆分视图，然后再将会话移动到独立窗口。"
 
-#: rustconn/src/window/detach_actions.rs:85
+#: rustconn/src/window/detach_actions.rs:86
 msgid ""
 "This session is displayed in a split layout. Return it to its own tab first."
 msgstr "此会话显示在拆分视图中。请先将其恢复到自己的标签页。"

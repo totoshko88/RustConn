@@ -44,8 +44,11 @@ mod split_title;
 pub mod tab_container;
 mod tab_lifecycle;
 mod tab_menu;
+mod tab_transfer;
 pub mod termprops;
 mod types;
+
+pub(crate) use tab_transfer::return_transferred_tabs;
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -420,6 +423,10 @@ pub struct TerminalNotebook {
     /// session_id at launch time. Instead we record connection_id →
     /// [`PendingCluster`] here and resolve it the moment a tab is created.
     cluster_pending: Rc<RefCell<HashMap<Uuid, PendingCluster>>>,
+    /// Called with `(cluster_id, cluster_name, session_id)` when the tab of a
+    /// cluster member opened "in a new window" appears. The window layer moves
+    /// that tab into the cluster's own window.
+    on_cluster_window_tab: Rc<RefCell<Option<Box<dyn Fn(Uuid, &str, Uuid)>>>>,
     /// Active recording sessions (tracked by session_id)
     active_recordings: Rc<RefCell<HashSet<Uuid>>>,
     /// Recording paths and start times: session_id → (data_path, timing_path, connection_name, start_time)
@@ -622,6 +629,7 @@ impl TerminalNotebook {
             cluster_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_to_cluster: Rc::new(RefCell::new(HashMap::new())),
             cluster_pending: Rc::new(RefCell::new(HashMap::new())),
+            on_cluster_window_tab: Rc::new(RefCell::new(None)),
             recording_paths: RefCell::new(HashMap::new()),
             session_highlight_rules: Rc::new(RefCell::new(HashMap::new())),
             highlight_overlays: Rc::new(RefCell::new(HashMap::new())),
@@ -678,6 +686,8 @@ impl TerminalNotebook {
         let child_exited_on_close = Rc::clone(&self.child_exited_handlers);
         let show_welcome_on_close = self.show_welcome.clone();
         let disconnected_on_close = Rc::clone(&self.disconnected_sessions);
+        let reconnect_shown_on_close = Rc::clone(&self.reconnect_shown);
+        let poll_tokens_on_close = Rc::clone(&self.poll_cancel_tokens);
         let cursor_row_base_on_close = Rc::clone(&self.cursor_row_base);
         let mark_registries_on_close = Rc::clone(&self.mark_registries);
         let failed_markers_on_close = Rc::clone(&self.failed_markers);
@@ -699,6 +709,15 @@ impl TerminalNotebook {
             // Return None to cancel the operation
             // The CRITICAL warning from libadwaita is unavoidable
             None
+        });
+
+        // A cluster window has a tab view of its own, and libadwaita lets a tab
+        // be dragged between any two: hand back a session tab dragged out of here.
+        let sessions_home = self.sessions.clone();
+        return_transferred_tabs(&self.tab_view, move |page| {
+            sessions_home
+                .try_borrow()
+                .is_ok_and(|sessions| sessions.values().any(|p| p == page))
         });
 
         // Handle close-page signal
@@ -811,6 +830,16 @@ impl TerminalNotebook {
 
                 session_info.borrow_mut().remove(&session_id);
                 disconnected_on_close.borrow_mut().remove(&session_id);
+                // `close_tab` clears these two itself, but a tab closed from its
+                // own close button, or a session ended from a detached or
+                // cluster window through `close_session`, reaches only this
+                // handler: without it an auto-reconnect probe kept polling a
+                // session that no longer exists.
+                reconnect_shown_on_close.borrow_mut().remove(&session_id);
+                let poll_token = poll_tokens_on_close.borrow_mut().remove(&session_id);
+                if let Some(cancel) = poll_token {
+                    cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+                }
                 cursor_row_base_on_close.borrow_mut().remove(&session_id);
                 mark_registries_on_close.borrow_mut().remove(&session_id);
                 failed_markers_on_close.borrow_mut().remove(&session_id);
@@ -3817,15 +3846,46 @@ impl TerminalNotebook {
     ///
     /// When the tab for `connection_id` is eventually created — synchronously,
     /// or after an async port check — it is registered as part of `cluster_id`
-    /// and labelled with the cluster's `group` name.
-    pub fn mark_cluster_pending(&self, cluster_id: Uuid, group: &str, connection_id: Uuid) {
+    /// and labelled with the cluster's `group` name. With `in_window` the tab is
+    /// then handed to the callback set by [`Self::set_on_cluster_window_tab`].
+    pub fn mark_cluster_pending(
+        &self,
+        cluster_id: Uuid,
+        group: &str,
+        connection_id: Uuid,
+        in_window: bool,
+    ) {
         self.cluster_pending.borrow_mut().insert(
             connection_id,
             PendingCluster {
                 cluster_id,
                 group: group.to_owned(),
+                in_window,
             },
         );
+    }
+
+    /// Drops the pending cluster registration of a connection that failed to
+    /// start, so its next, unrelated connect does not join the cluster — or,
+    /// for a cluster opened in its own window, move into that window.
+    pub fn forget_cluster_pending(&self, connection_id: Uuid) {
+        let forgotten = self.cluster_pending.borrow_mut().remove(&connection_id);
+        if let Some(pending) = forgotten {
+            tracing::debug!(
+                connection = %connection_id,
+                cluster = %pending.cluster_id,
+                "cluster member failed to start; pending registration dropped"
+            );
+        }
+    }
+
+    /// Sets the callback that receives the tabs of a cluster opened in its own
+    /// window, as `(cluster_id, cluster_name, session_id)`.
+    pub fn set_on_cluster_window_tab<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, &str, Uuid) + 'static,
+    {
+        *self.on_cluster_window_tab.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Resolves a pending cluster registration for a freshly created tab.
@@ -3846,7 +3906,15 @@ impl TerminalNotebook {
             return;
         };
         self.register_cluster_terminal(pending.cluster_id, &pending.group, session_id);
-        self.set_tab_group(session_id, &pending.group);
+        if pending.in_window {
+            // No tab group: the cluster's own window is the grouping, and a
+            // `[cluster]` prefix on every tab of it would only repeat its title.
+            if let Some(ref callback) = *self.on_cluster_window_tab.borrow() {
+                callback(pending.cluster_id, &pending.group, session_id);
+            }
+        } else {
+            self.set_tab_group(session_id, &pending.group);
+        }
     }
 
     /// Gets all session IDs for a cluster

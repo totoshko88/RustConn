@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 15:45+0200\n"
+"POT-Creation-Date: 2026-11-14 16:54+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -24,7 +24,7 @@ msgid "OK"
 msgstr "OK"
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/ask_prompt.rs:141 rustconn/src/dialogs/cluster.rs:807
+#: rustconn/src/dialogs/ask_prompt.rs:141 rustconn/src/dialogs/cluster.rs:830
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:310
@@ -54,8 +54,8 @@ msgstr "OK"
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
 #: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
-#: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:355
-#: rustconn/src/window/clusters.rs:410
+#: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:379
+#: rustconn/src/window/clusters.rs:434
 #: rustconn/src/window/connection_dialogs.rs:982
 #: rustconn/src/window/edit_group.rs:2046
 #: rustconn/src/window/edit_group.rs:2095
@@ -209,47 +209,47 @@ msgstr "Een andere macro gebruikt deze sneltoets al"
 msgid "Command macro “{}”: {}"
 msgstr "Opdrachtmacro ‘{}’: {}"
 
-#: rustconn/src/detached_window.rs:61
+#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:66
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:156
+#: rustconn/src/detached_window.rs:157
 #: rustconn/src/embedded_rdp/connection.rs:1785
 #: rustconn/src/embedded_rdp/connection.rs:2762
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
-#: rustconn/src/embedded_vnc/ui.rs:146
+#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:346
 #: rustconn/src/terminal/session_lifecycle.rs:394
 msgid "Session disconnected"
 msgstr "Sessie verbroken"
 
-#: rustconn/src/detached_window.rs:459
+#: rustconn/src/detached_window.rs:460
 msgid "Move to Main Window"
 msgstr "Naar hoofdvenster verplaatsen"
 
-#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:340
+#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:340
 msgid "Settings…"
 msgstr "Instellingen…"
 
-#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:358
+#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:358
 msgid "Keyboard Shortcuts…"
 msgstr "Sneltoetsen…"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/dialogs/shortcuts.rs:183
+#: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
 #: rustconn/src/window/ui.rs:359
 msgid "Help"
 msgstr "Hulp"
 
-#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:331
+#: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
 #: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
 msgid "About RustConn"
 msgstr "Over RustConn"
 
-#: rustconn/src/detached_window.rs:485 rustconn/src/window/ui.rs:82
+#: rustconn/src/detached_window.rs:486 rustconn/src/window/ui.rs:82
 msgid "Menu (F10)"
 msgstr "Menu (F10)"
 
-#: rustconn/src/detached_window.rs:489
+#: rustconn/src/detached_window.rs:490
 #: rustconn/src/embedded_web/navigation.rs:152
 #: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
 msgid "Menu"
@@ -313,8 +313,8 @@ msgstr "Wachtwoord handmatig invoeren"
 msgid "Open Settings"
 msgstr "Instellingen openen"
 
-#: rustconn/src/dialogs/cluster.rs:62 rustconn/src/dialogs/cluster.rs:562
-#: rustconn/src/dialogs/cluster.rs:563
+#: rustconn/src/dialogs/cluster.rs:62 rustconn/src/dialogs/cluster.rs:565
+#: rustconn/src/dialogs/cluster.rs:566
 msgid "New Cluster"
 msgstr "Nieuw cluster"
 
@@ -416,11 +416,11 @@ msgstr "Alles deselecteren"
 msgid "Edit Cluster"
 msgstr "Cluster bewerken"
 
-#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1368
+#: rustconn/src/dialogs/cluster.rs:557 rustconn/src/sidebar_ui.rs:1368
 msgid "Manage Clusters"
 msgstr "Clusters beheren"
 
-#: rustconn/src/dialogs/cluster.rs:588
+#: rustconn/src/dialogs/cluster.rs:591
 msgid ""
 "Clusters open multiple servers together. To mirror keystrokes across them, "
 "split the resulting tabs and use the Broadcast toggle in the header bar."
@@ -428,45 +428,49 @@ msgstr ""
 "Clusters openen meerdere servers tegelijk. Om toetsaanslagen te spiegelen, "
 "splits de tabbladen en gebruik de Broadcast-schakelaar in de titelbalk."
 
-#: rustconn/src/dialogs/cluster.rs:676
+#: rustconn/src/dialogs/cluster.rs:681
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:284
 msgid "{} connection"
 msgid_plural "{} connections"
 msgstr[0] "{} verbinding"
 msgstr[1] "{} verbindingen"
 
-#: rustconn/src/dialogs/cluster.rs:692 rustconn/src/dialogs/cluster.rs:696
+#: rustconn/src/dialogs/cluster.rs:697 rustconn/src/dialogs/cluster.rs:701
 msgid "Connect to cluster"
 msgstr "Verbinden met cluster"
 
-#: rustconn/src/dialogs/cluster.rs:701 rustconn/src/dialogs/cluster.rs:705
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr "Met cluster verbinden in een nieuw venster"
+
+#: rustconn/src/dialogs/cluster.rs:715 rustconn/src/dialogs/cluster.rs:719
 msgid "Disconnect all cluster sessions"
 msgstr "Alle clustersessies verbreken"
 
-#: rustconn/src/dialogs/cluster.rs:710 rustconn/src/dialogs/cluster.rs:713
+#: rustconn/src/dialogs/cluster.rs:724 rustconn/src/dialogs/cluster.rs:727
 msgid "Edit cluster"
 msgstr "Cluster bewerken"
 
-#: rustconn/src/dialogs/cluster.rs:717 rustconn/src/dialogs/cluster.rs:721
+#: rustconn/src/dialogs/cluster.rs:731 rustconn/src/dialogs/cluster.rs:735
 msgid "Delete cluster"
 msgstr "Cluster verwijderen"
 
-#: rustconn/src/dialogs/cluster.rs:754
+#: rustconn/src/dialogs/cluster.rs:770
 msgid "No clusters defined. Click 'New Cluster' to create one."
 msgstr ""
 "Geen clusters gedefinieerd. Klik op 'Nieuw cluster' om er een te maken.Geen "
 "clusters gedefinieerd. Klik op 'Nieuw Cluster' om er een te maken.Geen "
 "clusters gedefinieerd. Klik op 'Nieuw cluster' om er een aan te maken."
 
-#: rustconn/src/dialogs/cluster.rs:804 rustconn/src/window/clusters.rs:582
+#: rustconn/src/dialogs/cluster.rs:827 rustconn/src/window/clusters.rs:625
 msgid "Delete Cluster?"
 msgstr "Cluster verwijderen?"
 
-#: rustconn/src/dialogs/cluster.rs:805
+#: rustconn/src/dialogs/cluster.rs:828
 msgid "This cluster will be permanently removed."
 msgstr "Dit cluster wordt permanent verwijderd."
 
-#: rustconn/src/dialogs/cluster.rs:808 rustconn/src/dialogs/recording.rs:600
+#: rustconn/src/dialogs/cluster.rs:831 rustconn/src/dialogs/recording.rs:600
 #: rustconn/src/dialogs/script.rs:175 rustconn/src/dialogs/script.rs:683
 #: rustconn/src/dialogs/template_manager.rs:114
 #: rustconn/src/dialogs/template_manager.rs:192
@@ -474,7 +478,7 @@ msgstr "Dit cluster wordt permanent verwijderd."
 #: rustconn/src/dialogs/workspace.rs:292
 #: rustconn/src/sidebar/saved_searches.rs:265 rustconn/src/sidebar_ui.rs:592
 #: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:459
-#: rustconn/src/window/clusters.rs:587 rustconn/src/window/edit_actions.rs:485
+#: rustconn/src/window/clusters.rs:630 rustconn/src/window/edit_actions.rs:485
 #: rustconn/src/window/key_setup.rs:1011 rustconn/src/window/operations.rs:173
 #: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
 #: rustconn/src/window/templates.rs:151
@@ -7133,7 +7137,7 @@ msgstr "Import mislukt"
 #: rustconn/src/dialogs/recording.rs:828 rustconn/src/dialogs/recording.rs:840
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:288 rustconn/src/toast.rs:110
 #: rustconn/src/toast.rs:325 rustconn/src/toast.rs:355
-#: rustconn/src/window/clusters.rs:553
+#: rustconn/src/window/clusters.rs:596
 #: rustconn/src/window/connection_dialogs.rs:928
 #: rustconn/src/window/edit_dialogs.rs:407
 #: rustconn/src/window/edit_dialogs.rs:511
@@ -9835,7 +9839,7 @@ msgstr "Volgend tabblad"
 msgid "Previous Tab"
 msgstr "Vorig tabblad"
 
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:558
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:565
 msgid "Tab Overview"
 msgstr "Tabbladoverzicht"
 
@@ -11862,14 +11866,14 @@ msgstr "Bestanden opslaan van extern klembord"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1462
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1491
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
 msgstr "Opnieuw verbinden"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1464
+#: rustconn/src/terminal/mod.rs:1493
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Opnieuw verbinden met deze sessie"
@@ -12365,6 +12369,10 @@ msgstr "Kan script ‘{}’ niet starten: {}"
 msgid "Auto-run script “{}” could not be loaded: {}"
 msgstr "Automatisch uitgevoerd script ‘{}’ kon niet worden geladen: {}"
 
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr "Tabblad naar hoofdvenster verplaatsen"
+
 #: rustconn/src/sidebar/mod.rs:162
 msgid "Search… (? for help)"
 msgstr "Zoeken… (? voor hulp)"
@@ -12541,7 +12549,7 @@ msgstr "Synchronisatiefout: {}"
 msgid "Connecting"
 msgstr "Verbinden"
 
-#: rustconn/src/sidebar_ui.rs:352 rustconn/src/window/clusters.rs:356
+#: rustconn/src/sidebar_ui.rs:352 rustconn/src/window/clusters.rs:380
 msgid "Connect All"
 msgstr "Alles verbinden"
 
@@ -12971,33 +12979,33 @@ msgstr "Selectie opslaan als fragment…"
 msgid "Execute Snippet…"
 msgstr "Fragment uitvoeren…"
 
-#: rustconn/src/terminal/mod.rs:554
+#: rustconn/src/terminal/mod.rs:561
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Tabbladoverzicht (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:571 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:578 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Welkom"
 
-#: rustconn/src/terminal/mod.rs:1106
+#: rustconn/src/terminal/mod.rs:1135
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "Uitvoerfilter “{}” is niet geïnstalleerd; de sessie-uitvoer wordt niet "
 "gefilterd"
 
-#: rustconn/src/terminal/mod.rs:1456
+#: rustconn/src/terminal/mod.rs:1485
 msgid "Command not found: {}"
 msgstr "Opdracht niet gevonden: {}"
 
-#: rustconn/src/terminal/mod.rs:1458
+#: rustconn/src/terminal/mod.rs:1487
 msgid "Failed to start '{}'"
 msgstr "Kan “{}” niet starten"
 
-#: rustconn/src/terminal/mod.rs:1480
+#: rustconn/src/terminal/mod.rs:1509
 msgid "'{}' is not installed"
 msgstr "“{}” is niet geïnstalleerd"
 
-#: rustconn/src/terminal/mod.rs:1483
+#: rustconn/src/terminal/mod.rs:1512
 msgid "Failed to start '{}': {}"
 msgstr "Kan “{}” niet starten: {}"
 
@@ -13417,25 +13425,25 @@ msgstr "Pictogram (emoji of GTK-pictogramnaam, leeg om te wissen)"
 msgid "Updated {} connections"
 msgstr "{} verbindingen bijgewerkt"
 
-#: rustconn/src/window/clusters.rs:197
+#: rustconn/src/window/clusters.rs:217
 msgid "Error Creating Cluster"
 msgstr "Fout bij aanmaken cluster"
 
-#: rustconn/src/window/clusters.rs:198 rustconn/src/window/clusters.rs:546
+#: rustconn/src/window/clusters.rs:218 rustconn/src/window/clusters.rs:589
 msgid "Failed to save cluster: {}"
 msgstr "Kan cluster niet opslaan: {}"
 
-#: rustconn/src/window/clusters.rs:256
+#: rustconn/src/window/clusters.rs:277
 msgid "Cluster has no connections"
 msgstr "Cluster heeft geen verbindingen"
 
-#: rustconn/src/window/clusters.rs:342
+#: rustconn/src/window/clusters.rs:366
 msgid "“{}” opens {} connection at once."
 msgid_plural "“{}” opens {} connections at once."
 msgstr[0] "‘{}’ opent {} verbinding tegelijk."
 msgstr[1] "‘{}’ opent {} verbindingen tegelijk."
 
-#: rustconn/src/window/clusters.rs:350
+#: rustconn/src/window/clusters.rs:374
 msgid ""
 "Most of them may come from its auto-membership pattern. If that is more than "
 "you expected, cancel and narrow the pattern."
@@ -13444,11 +13452,11 @@ msgstr ""
 "lidmaatschap. Als dat meer is dan verwacht, annuleer dan en versmal het "
 "patroon."
 
-#: rustconn/src/window/clusters.rs:354
+#: rustconn/src/window/clusters.rs:378
 msgid "Open All Connections?"
 msgstr "Alle verbindingen openen?"
 
-#: rustconn/src/window/clusters.rs:399
+#: rustconn/src/window/clusters.rs:423
 msgid ""
 "{} cluster member has a jump host that no longer exists or points to itself: "
 "{}."
@@ -13462,7 +13470,7 @@ msgstr[1] ""
 "{} clusterleden hebben een jump-host die niet meer bestaat of naar zichzelf "
 "verwijst: {}."
 
-#: rustconn/src/window/clusters.rs:405
+#: rustconn/src/window/clusters.rs:429
 msgid ""
 "Connecting now skips those jump hosts, so these members may reach their "
 "servers directly. Open a member on its own to see the details."
@@ -13471,24 +13479,24 @@ msgstr ""
 "mogelijk rechtstreeks bereiken. Open een lid afzonderlijk om de details te "
 "zien."
 
-#: rustconn/src/window/clusters.rs:409
+#: rustconn/src/window/clusters.rs:433
 msgid "Jump Host Unavailable"
 msgstr "Jump-host niet beschikbaar"
 
-#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3680
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3680
 #: rustconn/src/window/mod.rs:3746 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Toch verbinden"
 
-#: rustconn/src/window/clusters.rs:545
+#: rustconn/src/window/clusters.rs:588
 msgid "Error Updating Cluster"
 msgstr "Fout bij bijwerken cluster"
 
-#: rustconn/src/window/clusters.rs:554
+#: rustconn/src/window/clusters.rs:597
 msgid "Could not access application state"
 msgstr "Kan applicatiestatus niet openen"
 
-#: rustconn/src/window/clusters.rs:584
+#: rustconn/src/window/clusters.rs:627
 msgid ""
 "Are you sure you want to delete the cluster '{}'?\n"
 "This will not delete the connections in the cluster."
@@ -13496,11 +13504,11 @@ msgstr ""
 "Weet u zeker dat u cluster '{}' wilt verwijderen?\n"
 "De verbindingen in het cluster worden niet verwijderd."
 
-#: rustconn/src/window/clusters.rs:607
+#: rustconn/src/window/clusters.rs:650
 msgid "Error Deleting Cluster"
 msgstr "Fout bij verwijderen cluster"
 
-#: rustconn/src/window/clusters.rs:608
+#: rustconn/src/window/clusters.rs:651
 msgid "Failed to delete cluster: {}"
 msgstr "Kan cluster niet verwijderen: {}"
 
@@ -13740,11 +13748,11 @@ msgstr ""
 msgid "Connection failed. Host unreachable."
 msgstr "Verbinding mislukt. Host onbereikbaar."
 
-#: rustconn/src/window/detach_actions.rs:77
+#: rustconn/src/window/detach_actions.rs:78
 msgid "This session already has its own window."
 msgstr "Deze sessie heeft al een eigen venster."
 
-#: rustconn/src/window/detach_actions.rs:79
+#: rustconn/src/window/detach_actions.rs:80
 msgid ""
 "This session is displayed by a separate viewer, which already runs in its "
 "own window."
@@ -13752,7 +13760,7 @@ msgstr ""
 "Deze sessie wordt weergegeven door een externe viewer, die al in een eigen "
 "venster draait."
 
-#: rustconn/src/window/detach_actions.rs:82
+#: rustconn/src/window/detach_actions.rs:83
 msgid ""
 "Remove the split layout from this tab before moving the session to its own "
 "window."
@@ -13760,7 +13768,7 @@ msgstr ""
 "Verwijder de gesplitste weergave uit dit tabblad voordat u de sessie naar "
 "een eigen venster verplaatst."
 
-#: rustconn/src/window/detach_actions.rs:85
+#: rustconn/src/window/detach_actions.rs:86
 msgid ""
 "This session is displayed in a split layout. Return it to its own tab first."
 msgstr ""
