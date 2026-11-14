@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Dragging a connection or a folder drops it where the line shows** — the sidebar drew the drop line above or below the target row, but the drop itself always placed the dragged item *after* the target: an item could not be moved to the top of its folder, and to land in a given place it had to be dropped on the row above it. A drop on the upper half of a row now places the item before that row and a drop on the lower half after it, for connections and for folders. (`rustconn-core/src/connection/manager.rs`, `rustconn/src/window/sorting.rs`)
+
 ## [0.25.0] - 2026-11-14
 
 ### Added
