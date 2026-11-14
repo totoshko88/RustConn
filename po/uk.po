@@ -11882,7 +11882,7 @@ msgstr "Перепід'єднай"
 #: rustconn/src/terminal/mod.rs:1502
 #: rustconn/src/terminal/session_lifecycle.rs:761
 msgid "Reconnect to this session"
-msgstr "Перез'єднайся із цим сеансом"
+msgstr "Перепід'єднайся до цього сеансу"
 
 #: rustconn/src/embedded_rdp/mod.rs:956
 msgid "Enable clipboard sharing to send files to the remote session"
@@ -13227,7 +13227,7 @@ msgstr "Моніторинг"
 
 #: rustconn/src/terminal/tab_menu.rs:1256
 msgid "Split with Other Tabs…"
-msgstr "Розділити з іншими вкладками…"
+msgstr "Розділи з іншими вкладками…"
 
 #: rustconn/src/terminal/tab_menu.rs:1299
 msgid "Edit Connection…"
