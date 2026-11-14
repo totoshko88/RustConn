@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 18:02+0200\n"
+"POT-Creation-Date: 2026-11-14 18:26+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -50,7 +50,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:784
 #: rustconn/src/sidebar/saved_searches.rs:179
-#: rustconn/src/split_view/adapter.rs:1198
+#: rustconn/src/split_view/adapter.rs:1293
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
 #: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
@@ -107,7 +107,7 @@ msgstr ""
 "Instellingen"
 
 #: rustconn/src/app.rs:920 rustconn/src/dialogs/shortcuts.rs:204
-#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2213
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2269
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Instellingen"
@@ -1588,7 +1588,7 @@ msgstr "Verbinding testen"
 #: rustconn/src/dialogs/connection/general_tab.rs:144
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
 #: rustconn/src/dialogs/export.rs:402 rustconn/src/dialogs/template.rs:194
-#: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1785
+#: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1841
 #: rustconn/src/window/edit_dialogs.rs:834
 msgid "Protocol"
 msgstr "Protocol"
@@ -1610,7 +1610,7 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:777
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:783
 #: rustconn/src/dialogs/export.rs:390 rustconn/src/dialogs/template.rs:549
-#: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1792
+#: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1848
 #: rustconn/src/window/copy_field_actions.rs:79
 #: rustconn/src/window/edit_dialogs.rs:842
 msgid "Host"
@@ -2217,7 +2217,7 @@ msgstr "Authenticatie"
 #: rustconn/src/dialogs/connection/web.rs:148
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:408 rustconn/src/dialogs/template.rs:565
-#: rustconn/src/split_view/bridge.rs:1800
+#: rustconn/src/split_view/bridge.rs:1856
 #: rustconn/src/window/connection_dialogs.rs:498
 #: rustconn/src/window/copy_field_actions.rs:82
 #: rustconn/src/window/edit_dialogs.rs:862
@@ -2739,7 +2739,7 @@ msgstr "Ingebedde modus past automatisch aan venstergrootte aan"
 #: rustconn/src/dialogs/connection/spice.rs:158
 #: rustconn/src/dialogs/connection/vnc.rs:236
 #: rustconn/src/dialogs/template.rs:904 rustconn/src/dialogs/template.rs:1099
-#: rustconn/src/dialogs/template.rs:1234 rustconn/src/split_view/bridge.rs:2125
+#: rustconn/src/dialogs/template.rs:1234 rustconn/src/split_view/bridge.rs:2181
 msgid "Features"
 msgstr "Functies"
 
@@ -4804,7 +4804,7 @@ msgstr "Uw sjablonen"
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
 #: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:570
 #: rustconn/src/sidebar_ui.rs:650 rustconn/src/sidebar_ui.rs:1358
-#: rustconn/src/split_view/bridge.rs:2039 rustconn/src/window/ui.rs:271
+#: rustconn/src/split_view/bridge.rs:2095 rustconn/src/window/ui.rs:271
 msgid "New Connection"
 msgstr "Nieuwe verbinding"
 
@@ -4980,7 +4980,7 @@ msgstr "Kopiëren gestopt"
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/sidebar_ui.rs:506
-#: rustconn/src/split_view/adapter.rs:1199
+#: rustconn/src/split_view/adapter.rs:1294
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4796
 msgid "Close"
@@ -5506,7 +5506,7 @@ msgstr "Verbindingen importeren"
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
 #: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1058
-#: rustconn/src/split_view/bridge.rs:2053 rustconn/src/window/edit_group.rs:976
+#: rustconn/src/split_view/bridge.rs:2109 rustconn/src/window/edit_group.rs:976
 msgid "Import"
 msgstr "Importeren"
 
@@ -6585,7 +6585,7 @@ msgid "Log Content"
 msgstr "Logboekinhoud"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:1908
+#: rustconn/src/split_view/adapter.rs:2004
 msgid "Loading…"
 msgstr "Laden…"
 
@@ -7667,7 +7667,7 @@ msgstr "Sneltoetsen"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
 #: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
-#: rustconn/src/split_view/bridge.rs:2201
+#: rustconn/src/split_view/bridge.rs:2257
 msgid "Keyboard Shortcuts"
 msgstr "Sneltoetsen"
 
@@ -9330,7 +9330,7 @@ msgstr ""
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
 #: rustconn/src/dialogs/settings/ui_tab.rs:921
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:1934 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:280
 msgid "Local Shell"
 msgstr "Lokale shell"
@@ -9901,7 +9901,7 @@ msgid "New Group"
 msgstr "Nieuwe groep"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:649
-#: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2046
+#: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2102
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:279
 msgid "Quick Connect"
 msgstr "Snelverbinding"
@@ -9910,7 +9910,7 @@ msgstr "Snelverbinding"
 msgid "Move to Group"
 msgstr "Verplaatsen naar groep"
 
-#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2209
+#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2265
 msgid "Search"
 msgstr "Zoeken"
 
@@ -9982,15 +9982,15 @@ msgid "Close Pane"
 msgstr "Deelvenster sluiten"
 
 #: rustconn/src/dialogs/shortcuts.rs:221 rustconn/src/sidebar_ui.rs:497
-#: rustconn/src/split_view/adapter.rs:1129
-#: rustconn/src/split_view/adapter.rs:1671
-#: rustconn/src/split_view/adapter.rs:1740
+#: rustconn/src/split_view/adapter.rs:1224
+#: rustconn/src/split_view/adapter.rs:1767
+#: rustconn/src/split_view/adapter.rs:1836
 msgid "Remove from Split"
 msgstr "Uit gesplitste weergave verwijderen"
 
 #: rustconn/src/dialogs/shortcuts.rs:222
-#: rustconn/src/split_view/adapter.rs:1676
-#: rustconn/src/split_view/adapter.rs:1745
+#: rustconn/src/split_view/adapter.rs:1772
+#: rustconn/src/split_view/adapter.rs:1841
 #: rustconn/src/terminal/tab_menu.rs:1261 rustconn/src/window/ui.rs:125
 msgid "Remove Split"
 msgstr "Splitsing verwijderen"
@@ -11975,8 +11975,8 @@ msgid "Save files from remote clipboard"
 msgstr "Bestanden opslaan van extern klembord"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
-#: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1500
+#: rustconn/src/split_view/adapter.rs:1766
+#: rustconn/src/split_view/adapter.rs:1835 rustconn/src/terminal/mod.rs:1500
 #: rustconn/src/terminal/session_lifecycle.rs:759
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
@@ -12715,9 +12715,9 @@ msgstr "Dupliceren via wizard…"
 msgid "Open new session"
 msgstr "Nieuwe sessie openen"
 
-#: rustconn/src/sidebar_ui.rs:502 rustconn/src/split_view/adapter.rs:1149
-#: rustconn/src/split_view/adapter.rs:1673
-#: rustconn/src/split_view/adapter.rs:1742
+#: rustconn/src/sidebar_ui.rs:502 rustconn/src/split_view/adapter.rs:1244
+#: rustconn/src/split_view/adapter.rs:1769
+#: rustconn/src/split_view/adapter.rs:1838
 #: rustconn/src/terminal/tab_menu.rs:1269
 msgid "Move to New Window"
 msgstr "Naar nieuw venster verplaatsen"
@@ -12902,182 +12902,190 @@ msgstr "Geen slimme mappen"
 msgid "Drag to move this session to another panel or tab"
 msgstr "Sleep om deze sessie naar een ander paneel of tabblad te verplaatsen"
 
-#: rustconn/src/split_view/adapter.rs:1031
-#: rustconn/src/split_view/adapter.rs:1033
+#: rustconn/src/split_view/adapter.rs:947 rustconn/src/window/ui.rs:158
+msgid "Broadcast"
+msgstr "Uitzending"
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Vink uit om dit paneel buiten de toetsaanslaguitzending te houden"
+
+#: rustconn/src/split_view/adapter.rs:1126
+#: rustconn/src/split_view/adapter.rs:1128
 msgid "Show panel actions"
 msgstr "Paneelacties weergeven"
 
-#: rustconn/src/split_view/adapter.rs:1122
+#: rustconn/src/split_view/adapter.rs:1217
 msgid "Remove this session from the split and show it in its own tab"
 msgstr ""
 "Deze sessie uit de gesplitste weergave verwijderen en in een eigen tabblad "
 "weergeven"
 
-#: rustconn/src/split_view/adapter.rs:1142
+#: rustconn/src/split_view/adapter.rs:1237
 msgid "Move this session out of the split into its own window"
 msgstr ""
 "Deze sessie uit de gesplitste weergave naar een eigen venster verplaatsen"
 
-#: rustconn/src/split_view/adapter.rs:1161
-#: rustconn/src/split_view/adapter.rs:1166
+#: rustconn/src/split_view/adapter.rs:1256
+#: rustconn/src/split_view/adapter.rs:1261
 msgid "Close session"
 msgstr "Sessie sluiten"
 
-#: rustconn/src/split_view/adapter.rs:1193
+#: rustconn/src/split_view/adapter.rs:1288
 msgid "Close this pane?"
 msgstr "Dit paneel sluiten?"
 
-#: rustconn/src/split_view/adapter.rs:1195
+#: rustconn/src/split_view/adapter.rs:1290
 msgid "The session in this pane will be disconnected and closed."
 msgstr "De sessie in dit paneel wordt verbroken en gesloten."
 
-#: rustconn/src/split_view/adapter.rs:1418
+#: rustconn/src/split_view/adapter.rs:1514
 msgid "Terminal panel"
 msgstr "Terminalpaneel"
 
-#: rustconn/src/split_view/adapter.rs:1677
-#: rustconn/src/split_view/adapter.rs:1746
+#: rustconn/src/split_view/adapter.rs:1773
+#: rustconn/src/split_view/adapter.rs:1842
 msgid "Close Connection"
 msgstr "Verbinding sluiten"
 
-#: rustconn/src/split_view/adapter.rs:1797
+#: rustconn/src/split_view/adapter.rs:1893
 msgid "Empty Panel"
 msgstr "Leeg paneel"
 
-#: rustconn/src/split_view/adapter.rs:1798
+#: rustconn/src/split_view/adapter.rs:1894
 msgid "Select an existing tab to display in this panel"
 msgstr "Selecteer een bestaand tabblad om in dit paneel weer te geven"
 
-#: rustconn/src/split_view/adapter.rs:1808
+#: rustconn/src/split_view/adapter.rs:1904
 msgid "Select Tab…"
 msgstr "Tabblad selecteren…"
 
-#: rustconn/src/split_view/adapter.rs:1809
+#: rustconn/src/split_view/adapter.rs:1905
 msgid "Choose an open tab to display in this panel"
 msgstr "Kies een geopend tabblad om in dit paneel weer te geven"
 
-#: rustconn/src/split_view/adapter.rs:1839
+#: rustconn/src/split_view/adapter.rs:1935
 msgid "Open a new local shell in this panel"
 msgstr "Een nieuwe lokale shell in dit paneel openen"
 
-#: rustconn/src/split_view/adapter.rs:1866
+#: rustconn/src/split_view/adapter.rs:1962
 msgid "Close panel"
 msgstr "Paneel sluiten"
 
-#: rustconn/src/split_view/adapter.rs:1877
+#: rustconn/src/split_view/adapter.rs:1973
 msgid "Close split view panel"
 msgstr "Gesplitst paneel sluiten"
 
-#: rustconn/src/split_view/bridge.rs:1780
+#: rustconn/src/split_view/bridge.rs:1836
 msgid "Basic Information"
 msgstr "Basisinformatie"
 
-#: rustconn/src/split_view/bridge.rs:2012
+#: rustconn/src/split_view/bridge.rs:2068
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Manage remote connections easily"
 msgstr "Beheer externe verbindingen eenvoudig"
 
-#: rustconn/src/split_view/bridge.rs:2092
+#: rustconn/src/split_view/bridge.rs:2148
 msgid "Double-click a connection in the sidebar to get started"
 msgstr "Dubbelklik op een verbinding in de zijbalk om te beginnen"
 
-#: rustconn/src/split_view/bridge.rs:2106
+#: rustconn/src/split_view/bridge.rs:2162
 msgid "Don't show this page at startup"
 msgstr "Deze pagina niet weergeven bij het opstarten"
 
-#: rustconn/src/split_view/bridge.rs:2131
+#: rustconn/src/split_view/bridge.rs:2187
 msgid "Embedded SSH, RDP, VNC, SPICE"
 msgstr "Ingebouwde SSH, RDP, VNC, SPICE"
 
-#: rustconn/src/split_view/bridge.rs:2133
+#: rustconn/src/split_view/bridge.rs:2189
 msgid "Secure credential storage"
 msgstr "Veilige opslag van inloggegevens"
 
-#: rustconn/src/split_view/bridge.rs:2136
+#: rustconn/src/split_view/bridge.rs:2192
 msgid "Remote host monitoring"
 msgstr "Monitoring van externe hosts"
 
-#: rustconn/src/split_view/bridge.rs:2138
+#: rustconn/src/split_view/bridge.rs:2194
 msgid "Cloud Sync across devices"
 msgstr "Cloudsynchronisatie tussen apparaten"
 
-#: rustconn/src/split_view/bridge.rs:2139
+#: rustconn/src/split_view/bridge.rs:2195
 msgid "Expect automation & tasks"
 msgstr "Expect-automatisering en taken"
 
-#: rustconn/src/split_view/bridge.rs:2140
+#: rustconn/src/split_view/bridge.rs:2196
 msgid "Groups, tags, and templates"
 msgstr "Groepen, tags en sjablonen"
 
-#: rustconn/src/split_view/bridge.rs:2141
+#: rustconn/src/split_view/bridge.rs:2197
 msgid "Zero Trust tunnels"
 msgstr "Zero Trust-tunnels"
 
-#: rustconn/src/split_view/bridge.rs:2142
+#: rustconn/src/split_view/bridge.rs:2198
 msgid "Command snippets & clusters"
 msgstr "Opdrachtfragmenten en clusters"
 
-#: rustconn/src/split_view/bridge.rs:2145
+#: rustconn/src/split_view/bridge.rs:2201
 msgid "Drag & drop files to sessions"
 msgstr "Bestanden slepen en neerzetten naar sessies"
 
-#: rustconn/src/split_view/bridge.rs:2205
+#: rustconn/src/split_view/bridge.rs:2261
 msgid "New connection"
 msgstr "Nieuwe verbinding"
 
-#: rustconn/src/split_view/bridge.rs:2206
+#: rustconn/src/split_view/bridge.rs:2262
 msgid "Quick connect"
 msgstr "Snelverbinding"
 
-#: rustconn/src/split_view/bridge.rs:2207
+#: rustconn/src/split_view/bridge.rs:2263
 msgid "Command palette"
 msgstr "Opdrachtenpalet"
 
-#: rustconn/src/split_view/bridge.rs:2208
+#: rustconn/src/split_view/bridge.rs:2264
 msgid "Local shell"
 msgstr "Lokale shell"
 
-#: rustconn/src/split_view/bridge.rs:2210
+#: rustconn/src/split_view/bridge.rs:2266
 msgid "Split vertical / horizontal"
 msgstr "Verticaal/horizontaal splitsen"
 
-#: rustconn/src/split_view/bridge.rs:2211
+#: rustconn/src/split_view/bridge.rs:2267
 msgid "Disable shortcuts"
 msgstr "Sneltoetsen uitschakelen"
 
-#: rustconn/src/split_view/bridge.rs:2212
+#: rustconn/src/split_view/bridge.rs:2268
 msgid "Import connections"
 msgstr "Verbindingen importeren"
 
-#: rustconn/src/split_view/bridge.rs:2242
+#: rustconn/src/split_view/bridge.rs:2298
 msgid "Quick Access"
 msgstr "Snelle toegang"
 
-#: rustconn/src/split_view/bridge.rs:2246
+#: rustconn/src/split_view/bridge.rs:2302
 msgid "Fuzzy search & command palette"
 msgstr "Fuzzy zoeken en opdrachtenpalet"
 
-#: rustconn/src/split_view/bridge.rs:2247
+#: rustconn/src/split_view/bridge.rs:2303
 msgid "Pin favorites to sidebar"
 msgstr "Favorieten vastzetten in zijbalk"
 
-#: rustconn/src/split_view/bridge.rs:2248
+#: rustconn/src/split_view/bridge.rs:2304
 msgid "Split view for terminals"
 msgstr "Gesplitste weergave voor terminals"
 
-#: rustconn/src/split_view/bridge.rs:2251
+#: rustconn/src/split_view/bridge.rs:2307
 msgid "Tab Overview grid (Ctrl+Shift+O)"
 msgstr "Tabbladoverzichtsraster (Ctrl+Shift+O)"
 
-#: rustconn/src/split_view/bridge.rs:2271
+#: rustconn/src/split_view/bridge.rs:2327
 msgid "Import Formats"
 msgstr "Importformaten"
 
-#: rustconn/src/split_view/bridge.rs:2493
+#: rustconn/src/split_view/bridge.rs:2549
 msgid "All tabs are already displayed in this split view"
 msgstr "Alle tabbladen worden al weergegeven in deze gesplitste weergave"
 
-#: rustconn/src/split_view/bridge.rs:2540
+#: rustconn/src/split_view/bridge.rs:2596
 msgid "Select a tab to display"
 msgstr "Selecteer een tabblad om weer te geven"
 
@@ -14926,13 +14934,13 @@ msgstr "Toetsenborddoorvoer ingeschakeld — sneltoetsen uitgeschakeld"
 msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Toetsenborddoorvoer uitgeschakeld — sneltoetsen hersteld"
 
-#: rustconn/src/window/navigation_actions.rs:284
+#: rustconn/src/window/navigation_actions.rs:286
 msgid "Broadcast enabled — keystrokes mirrored to all split panels"
 msgstr ""
 "Broadcast ingeschakeld — toetsaanslagen worden gedupliceerd naar alle "
 "gesplitste panelen"
 
-#: rustconn/src/window/navigation_actions.rs:286
+#: rustconn/src/window/navigation_actions.rs:288
 msgid "Broadcast disabled — keystrokes go to focused panel only"
 msgstr ""
 "Broadcast uitgeschakeld — toetsaanslagen gaan alleen naar het actieve paneel"
@@ -15850,10 +15858,6 @@ msgstr "Lokale shell (Ctrl+Shift+T)"
 #: rustconn/src/window/ui.rs:149
 msgid "Open Local Shell"
 msgstr "Lokale shell openen"
-
-#: rustconn/src/window/ui.rs:158
-msgid "Broadcast"
-msgstr "Uitzending"
 
 #: rustconn/src/window/ui.rs:164
 msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 18:02+0200\n"
+"POT-Creation-Date: 2026-11-14 18:26+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -50,7 +50,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:784
 #: rustconn/src/sidebar/saved_searches.rs:179
-#: rustconn/src/split_view/adapter.rs:1198
+#: rustconn/src/split_view/adapter.rs:1293
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
 #: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
@@ -107,7 +107,7 @@ msgstr ""
 "Indstillinger"
 
 #: rustconn/src/app.rs:920 rustconn/src/dialogs/shortcuts.rs:204
-#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2213
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2269
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Indstillinger"
@@ -1577,7 +1577,7 @@ msgstr "Test forbindelse"
 #: rustconn/src/dialogs/connection/general_tab.rs:144
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
 #: rustconn/src/dialogs/export.rs:402 rustconn/src/dialogs/template.rs:194
-#: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1785
+#: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1841
 #: rustconn/src/window/edit_dialogs.rs:834
 msgid "Protocol"
 msgstr "Protokol"
@@ -1599,7 +1599,7 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:777
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:783
 #: rustconn/src/dialogs/export.rs:390 rustconn/src/dialogs/template.rs:549
-#: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1792
+#: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1848
 #: rustconn/src/window/copy_field_actions.rs:79
 #: rustconn/src/window/edit_dialogs.rs:842
 msgid "Host"
@@ -2202,7 +2202,7 @@ msgstr "Godkendelse"
 #: rustconn/src/dialogs/connection/web.rs:148
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:408 rustconn/src/dialogs/template.rs:565
-#: rustconn/src/split_view/bridge.rs:1800
+#: rustconn/src/split_view/bridge.rs:1856
 #: rustconn/src/window/connection_dialogs.rs:498
 #: rustconn/src/window/copy_field_actions.rs:82
 #: rustconn/src/window/edit_dialogs.rs:862
@@ -2727,7 +2727,7 @@ msgstr "Indlejret tilstand tilpasser automatisk vinduesstørrelse"
 #: rustconn/src/dialogs/connection/spice.rs:158
 #: rustconn/src/dialogs/connection/vnc.rs:236
 #: rustconn/src/dialogs/template.rs:904 rustconn/src/dialogs/template.rs:1099
-#: rustconn/src/dialogs/template.rs:1234 rustconn/src/split_view/bridge.rs:2125
+#: rustconn/src/dialogs/template.rs:1234 rustconn/src/split_view/bridge.rs:2181
 msgid "Features"
 msgstr "Funktioner"
 
@@ -4771,7 +4771,7 @@ msgstr "Dine skabeloner"
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
 #: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:570
 #: rustconn/src/sidebar_ui.rs:650 rustconn/src/sidebar_ui.rs:1358
-#: rustconn/src/split_view/bridge.rs:2039 rustconn/src/window/ui.rs:271
+#: rustconn/src/split_view/bridge.rs:2095 rustconn/src/window/ui.rs:271
 msgid "New Connection"
 msgstr "Ny forbindelse"
 
@@ -4945,7 +4945,7 @@ msgstr "Kopiering stoppet"
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/sidebar_ui.rs:506
-#: rustconn/src/split_view/adapter.rs:1199
+#: rustconn/src/split_view/adapter.rs:1294
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4796
 msgid "Close"
@@ -5471,7 +5471,7 @@ msgstr "Importér forbindelser"
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
 #: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1058
-#: rustconn/src/split_view/bridge.rs:2053 rustconn/src/window/edit_group.rs:976
+#: rustconn/src/split_view/bridge.rs:2109 rustconn/src/window/edit_group.rs:976
 msgid "Import"
 msgstr "Importér"
 
@@ -6531,7 +6531,7 @@ msgid "Log Content"
 msgstr "Logindhold"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:1908
+#: rustconn/src/split_view/adapter.rs:2004
 msgid "Loading…"
 msgstr "Indlæser…"
 
@@ -7604,7 +7604,7 @@ msgstr "Tastaturgenveje"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
 #: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
-#: rustconn/src/split_view/bridge.rs:2201
+#: rustconn/src/split_view/bridge.rs:2257
 msgid "Keyboard Shortcuts"
 msgstr "Tastaturgenveje"
 
@@ -9245,7 +9245,7 @@ msgstr "Send Escape-præfiks i stedet for sammensatte tegn (til vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
 #: rustconn/src/dialogs/settings/ui_tab.rs:921
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:1934 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:280
 msgid "Local Shell"
 msgstr "Lokal shell"
@@ -9812,7 +9812,7 @@ msgid "New Group"
 msgstr "Ny gruppe"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:649
-#: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2046
+#: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2102
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:279
 msgid "Quick Connect"
 msgstr "Hurtig forbindelse"
@@ -9821,7 +9821,7 @@ msgstr "Hurtig forbindelse"
 msgid "Move to Group"
 msgstr "Flyt til gruppe"
 
-#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2209
+#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2265
 msgid "Search"
 msgstr "Søg"
 
@@ -9893,15 +9893,15 @@ msgid "Close Pane"
 msgstr "Luk panelet"
 
 #: rustconn/src/dialogs/shortcuts.rs:221 rustconn/src/sidebar_ui.rs:497
-#: rustconn/src/split_view/adapter.rs:1129
-#: rustconn/src/split_view/adapter.rs:1671
-#: rustconn/src/split_view/adapter.rs:1740
+#: rustconn/src/split_view/adapter.rs:1224
+#: rustconn/src/split_view/adapter.rs:1767
+#: rustconn/src/split_view/adapter.rs:1836
 msgid "Remove from Split"
 msgstr "Fjern fra delt visning"
 
 #: rustconn/src/dialogs/shortcuts.rs:222
-#: rustconn/src/split_view/adapter.rs:1676
-#: rustconn/src/split_view/adapter.rs:1745
+#: rustconn/src/split_view/adapter.rs:1772
+#: rustconn/src/split_view/adapter.rs:1841
 #: rustconn/src/terminal/tab_menu.rs:1261 rustconn/src/window/ui.rs:125
 msgid "Remove Split"
 msgstr "Fjern opdeling"
@@ -11871,8 +11871,8 @@ msgid "Save files from remote clipboard"
 msgstr "Gem filer fra fjernudklipsholder"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
-#: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1500
+#: rustconn/src/split_view/adapter.rs:1766
+#: rustconn/src/split_view/adapter.rs:1835 rustconn/src/terminal/mod.rs:1500
 #: rustconn/src/terminal/session_lifecycle.rs:759
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
@@ -12609,9 +12609,9 @@ msgstr "Duplikér via guide…"
 msgid "Open new session"
 msgstr "Åbn ny session"
 
-#: rustconn/src/sidebar_ui.rs:502 rustconn/src/split_view/adapter.rs:1149
-#: rustconn/src/split_view/adapter.rs:1673
-#: rustconn/src/split_view/adapter.rs:1742
+#: rustconn/src/sidebar_ui.rs:502 rustconn/src/split_view/adapter.rs:1244
+#: rustconn/src/split_view/adapter.rs:1769
+#: rustconn/src/split_view/adapter.rs:1838
 #: rustconn/src/terminal/tab_menu.rs:1269
 msgid "Move to New Window"
 msgstr "Flyt til nyt vindue"
@@ -12796,179 +12796,187 @@ msgstr "Ingen smarte mapper"
 msgid "Drag to move this session to another panel or tab"
 msgstr "Træk for at flytte denne session til et andet panel eller fane"
 
-#: rustconn/src/split_view/adapter.rs:1031
-#: rustconn/src/split_view/adapter.rs:1033
+#: rustconn/src/split_view/adapter.rs:947 rustconn/src/window/ui.rs:158
+msgid "Broadcast"
+msgstr "Udsendelse"
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Fjern markeringen for at holde dette panel ude af tastaturudsendelsen"
+
+#: rustconn/src/split_view/adapter.rs:1126
+#: rustconn/src/split_view/adapter.rs:1128
 msgid "Show panel actions"
 msgstr "Vis panelhandlinger"
 
-#: rustconn/src/split_view/adapter.rs:1122
+#: rustconn/src/split_view/adapter.rs:1217
 msgid "Remove this session from the split and show it in its own tab"
 msgstr "Fjern denne session fra den delte visning og vis den i sin egen fane"
 
-#: rustconn/src/split_view/adapter.rs:1142
+#: rustconn/src/split_view/adapter.rs:1237
 msgid "Move this session out of the split into its own window"
 msgstr "Flyt denne session ud af den opdelte visning til sit eget vindue"
 
-#: rustconn/src/split_view/adapter.rs:1161
-#: rustconn/src/split_view/adapter.rs:1166
+#: rustconn/src/split_view/adapter.rs:1256
+#: rustconn/src/split_view/adapter.rs:1261
 msgid "Close session"
 msgstr "Luk session"
 
-#: rustconn/src/split_view/adapter.rs:1193
+#: rustconn/src/split_view/adapter.rs:1288
 msgid "Close this pane?"
 msgstr "Luk denne rude?"
 
-#: rustconn/src/split_view/adapter.rs:1195
+#: rustconn/src/split_view/adapter.rs:1290
 msgid "The session in this pane will be disconnected and closed."
 msgstr "Sessionen i denne rude afbrydes og lukkes."
 
-#: rustconn/src/split_view/adapter.rs:1418
+#: rustconn/src/split_view/adapter.rs:1514
 msgid "Terminal panel"
 msgstr "Terminalpanel"
 
-#: rustconn/src/split_view/adapter.rs:1677
-#: rustconn/src/split_view/adapter.rs:1746
+#: rustconn/src/split_view/adapter.rs:1773
+#: rustconn/src/split_view/adapter.rs:1842
 msgid "Close Connection"
 msgstr "Luk forbindelse"
 
-#: rustconn/src/split_view/adapter.rs:1797
+#: rustconn/src/split_view/adapter.rs:1893
 msgid "Empty Panel"
 msgstr "Tomt panel"
 
-#: rustconn/src/split_view/adapter.rs:1798
+#: rustconn/src/split_view/adapter.rs:1894
 msgid "Select an existing tab to display in this panel"
 msgstr "Vælg en eksisterende fane til visning i dette panel"
 
-#: rustconn/src/split_view/adapter.rs:1808
+#: rustconn/src/split_view/adapter.rs:1904
 msgid "Select Tab…"
 msgstr "Vælg fane…"
 
-#: rustconn/src/split_view/adapter.rs:1809
+#: rustconn/src/split_view/adapter.rs:1905
 msgid "Choose an open tab to display in this panel"
 msgstr "Vælg en åben fane til visning i dette panel"
 
-#: rustconn/src/split_view/adapter.rs:1839
+#: rustconn/src/split_view/adapter.rs:1935
 msgid "Open a new local shell in this panel"
 msgstr "Åbn en ny lokal shell i dette panel"
 
-#: rustconn/src/split_view/adapter.rs:1866
+#: rustconn/src/split_view/adapter.rs:1962
 msgid "Close panel"
 msgstr "Luk panel"
 
-#: rustconn/src/split_view/adapter.rs:1877
+#: rustconn/src/split_view/adapter.rs:1973
 msgid "Close split view panel"
 msgstr "Luk opdelt visningspanel"
 
-#: rustconn/src/split_view/bridge.rs:1780
+#: rustconn/src/split_view/bridge.rs:1836
 msgid "Basic Information"
 msgstr "Grundlæggende oplysninger"
 
-#: rustconn/src/split_view/bridge.rs:2012
+#: rustconn/src/split_view/bridge.rs:2068
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Manage remote connections easily"
 msgstr "Administrér fjernforbindelser nemt"
 
-#: rustconn/src/split_view/bridge.rs:2092
+#: rustconn/src/split_view/bridge.rs:2148
 msgid "Double-click a connection in the sidebar to get started"
 msgstr "Dobbeltklik på en forbindelse i sidebjælken for at komme i gang"
 
-#: rustconn/src/split_view/bridge.rs:2106
+#: rustconn/src/split_view/bridge.rs:2162
 msgid "Don't show this page at startup"
 msgstr "Vis ikke denne side ved opstart"
 
-#: rustconn/src/split_view/bridge.rs:2131
+#: rustconn/src/split_view/bridge.rs:2187
 msgid "Embedded SSH, RDP, VNC, SPICE"
 msgstr "Indbygget SSH, RDP, VNC, SPICE"
 
-#: rustconn/src/split_view/bridge.rs:2133
+#: rustconn/src/split_view/bridge.rs:2189
 msgid "Secure credential storage"
 msgstr "Sikker lagring af legitimationsoplysninger"
 
-#: rustconn/src/split_view/bridge.rs:2136
+#: rustconn/src/split_view/bridge.rs:2192
 msgid "Remote host monitoring"
 msgstr "Overvågning af fjernværter"
 
-#: rustconn/src/split_view/bridge.rs:2138
+#: rustconn/src/split_view/bridge.rs:2194
 msgid "Cloud Sync across devices"
 msgstr "Skysynkronisering på tværs af enheder"
 
-#: rustconn/src/split_view/bridge.rs:2139
+#: rustconn/src/split_view/bridge.rs:2195
 msgid "Expect automation & tasks"
 msgstr "Expect-automatisering og opgaver"
 
-#: rustconn/src/split_view/bridge.rs:2140
+#: rustconn/src/split_view/bridge.rs:2196
 msgid "Groups, tags, and templates"
 msgstr "Grupper, tags og skabeloner"
 
-#: rustconn/src/split_view/bridge.rs:2141
+#: rustconn/src/split_view/bridge.rs:2197
 msgid "Zero Trust tunnels"
 msgstr "Zero Trust-tunneler"
 
-#: rustconn/src/split_view/bridge.rs:2142
+#: rustconn/src/split_view/bridge.rs:2198
 msgid "Command snippets & clusters"
 msgstr "Kommandouddrag og klynger"
 
-#: rustconn/src/split_view/bridge.rs:2145
+#: rustconn/src/split_view/bridge.rs:2201
 msgid "Drag & drop files to sessions"
 msgstr "Træk og slip filer til sessioner"
 
-#: rustconn/src/split_view/bridge.rs:2205
+#: rustconn/src/split_view/bridge.rs:2261
 msgid "New connection"
 msgstr "Ny forbindelse"
 
-#: rustconn/src/split_view/bridge.rs:2206
+#: rustconn/src/split_view/bridge.rs:2262
 msgid "Quick connect"
 msgstr "Hurtig forbindelse"
 
-#: rustconn/src/split_view/bridge.rs:2207
+#: rustconn/src/split_view/bridge.rs:2263
 msgid "Command palette"
 msgstr "Kommandopalette"
 
-#: rustconn/src/split_view/bridge.rs:2208
+#: rustconn/src/split_view/bridge.rs:2264
 msgid "Local shell"
 msgstr "Lokal shell"
 
-#: rustconn/src/split_view/bridge.rs:2210
+#: rustconn/src/split_view/bridge.rs:2266
 msgid "Split vertical / horizontal"
 msgstr "Opdel lodret/vandret"
 
-#: rustconn/src/split_view/bridge.rs:2211
+#: rustconn/src/split_view/bridge.rs:2267
 msgid "Disable shortcuts"
 msgstr "Deaktiver genveje"
 
-#: rustconn/src/split_view/bridge.rs:2212
+#: rustconn/src/split_view/bridge.rs:2268
 msgid "Import connections"
 msgstr "Importér forbindelser"
 
-#: rustconn/src/split_view/bridge.rs:2242
+#: rustconn/src/split_view/bridge.rs:2298
 msgid "Quick Access"
 msgstr "Hurtig adgang"
 
-#: rustconn/src/split_view/bridge.rs:2246
+#: rustconn/src/split_view/bridge.rs:2302
 msgid "Fuzzy search & command palette"
 msgstr "Fuzzy-søgning og kommandopalette"
 
-#: rustconn/src/split_view/bridge.rs:2247
+#: rustconn/src/split_view/bridge.rs:2303
 msgid "Pin favorites to sidebar"
 msgstr "Fastgør favoritter til sidebjælken"
 
-#: rustconn/src/split_view/bridge.rs:2248
+#: rustconn/src/split_view/bridge.rs:2304
 msgid "Split view for terminals"
 msgstr "Delt visning for terminaler"
 
-#: rustconn/src/split_view/bridge.rs:2251
+#: rustconn/src/split_view/bridge.rs:2307
 msgid "Tab Overview grid (Ctrl+Shift+O)"
 msgstr "Faneoversigtsvisning (Ctrl+Shift+O)"
 
-#: rustconn/src/split_view/bridge.rs:2271
+#: rustconn/src/split_view/bridge.rs:2327
 msgid "Import Formats"
 msgstr "Importformater"
 
-#: rustconn/src/split_view/bridge.rs:2493
+#: rustconn/src/split_view/bridge.rs:2549
 msgid "All tabs are already displayed in this split view"
 msgstr "Alle faner vises allerede i denne opdelte visning"
 
-#: rustconn/src/split_view/bridge.rs:2540
+#: rustconn/src/split_view/bridge.rs:2596
 msgid "Select a tab to display"
 msgstr "Vælg en fane til visning"
 
@@ -14789,11 +14797,11 @@ msgstr "Tastaturgennemgang aktiveret — genveje deaktiveret"
 msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Tastaturgennemgang deaktiveret — genveje genoprettet"
 
-#: rustconn/src/window/navigation_actions.rs:284
+#: rustconn/src/window/navigation_actions.rs:286
 msgid "Broadcast enabled — keystrokes mirrored to all split panels"
 msgstr "Udsendelse aktiveret — tastetryk spejles til alle opdelte paneler"
 
-#: rustconn/src/window/navigation_actions.rs:286
+#: rustconn/src/window/navigation_actions.rs:288
 msgid "Broadcast disabled — keystrokes go to focused panel only"
 msgstr "Udsendelse deaktiveret — tastetryk går kun til det aktive panel"
 
@@ -15701,10 +15709,6 @@ msgstr "Lokal shell (Ctrl+Shift+T)"
 #: rustconn/src/window/ui.rs:149
 msgid "Open Local Shell"
 msgstr "Åbn lokal shell"
-
-#: rustconn/src/window/ui.rs:158
-msgid "Broadcast"
-msgstr "Udsendelse"
 
 #: rustconn/src/window/ui.rs:164
 msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"

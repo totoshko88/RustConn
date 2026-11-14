@@ -399,6 +399,10 @@ pub struct SplitViewBridge {
     /// fire and characters would be doubled. The shared cell is set to `true`
     /// while a broadcast pass is in progress and reset when the pass completes.
     pub broadcast_busy: Rc<std::cell::Cell<bool>>,
+    /// Sessions the user took out of the broadcast with their panel's check
+    /// box. Such a session stays visible in its pane; it neither receives the
+    /// keystrokes typed elsewhere nor sends its own to the other panes.
+    pub broadcast_excluded: Rc<RefCell<HashSet<Uuid>>>,
     /// The session whose tab hosts this layout.
     ///
     /// A layout is keyed in `session_split_bridges` under every session it
@@ -466,8 +470,35 @@ impl SplitViewBridge {
             None
         };
 
+        let adapter = Rc::new(RefCell::new(adapter));
+        let broadcast_excluded: Rc<RefCell<HashSet<Uuid>>> = Rc::new(RefCell::new(HashSet::new()));
+        // The check box names a panel; the exclusion is kept per session, so it
+        // follows the session and not whatever is placed in that panel later.
+        // Weak, because the adapter owns this callback.
+        {
+            let adapter_weak = Rc::downgrade(&adapter);
+            let excluded = Rc::clone(&broadcast_excluded);
+            adapter
+                .borrow()
+                .set_broadcast_toggled_callback(move |panel_id, included| {
+                    let session = adapter_weak
+                        .upgrade()
+                        .and_then(|adapter| adapter.try_borrow().ok()?.get_panel_session(panel_id));
+                    let Some(session) = session else {
+                        return;
+                    };
+                    let session_id = session.as_uuid();
+                    if included {
+                        excluded.borrow_mut().remove(&session_id);
+                    } else {
+                        excluded.borrow_mut().insert(session_id);
+                    }
+                    tracing::info!(%session_id, included, "split broadcast membership changed");
+                });
+        }
+
         Self {
-            adapter: Rc::new(RefCell::new(adapter)),
+            adapter,
             root,
             sessions: Rc::new(RefCell::new(HashMap::new())),
             terminals: Rc::new(RefCell::new(HashMap::new())),
@@ -483,6 +514,7 @@ impl SplitViewBridge {
             broadcast_active: Rc::new(std::cell::Cell::new(false)),
             broadcast_wired_sessions: Rc::new(RefCell::new(HashSet::new())),
             broadcast_busy: Rc::new(std::cell::Cell::new(false)),
+            broadcast_excluded,
             owner_session: Rc::new(std::cell::Cell::new(None)),
             label_cache: Rc::new(RefCell::new(HashMap::new())),
             title_listener: Rc::new(RefCell::new(None)),
@@ -1498,6 +1530,30 @@ impl SplitViewBridge {
                 tracing::debug!("restore_panel_contents: panel {} has no session", panel_id);
             }
         }
+        drop(adapter);
+        // The rebuild made new headers, with new Broadcast check boxes.
+        self.refresh_broadcast_controls();
+    }
+
+    /// Reports whether a session takes part in this split's broadcast.
+    #[must_use]
+    pub fn is_broadcast_member(&self, session_id: Uuid) -> bool {
+        !self.broadcast_excluded.borrow().contains(&session_id)
+    }
+
+    /// Brings the panels' Broadcast check boxes in line with the split's state.
+    ///
+    /// Call after broadcast is switched on or off and after the panes or their
+    /// contents change: the check boxes are rebuilt with the panes, and one is
+    /// only offered on a panel that holds a terminal.
+    pub fn refresh_broadcast_controls(&self) {
+        let active = self.broadcast_active.get();
+        let adapter = self.adapter.borrow();
+        adapter.set_broadcast_controls(active, |panel_id| {
+            let session_id = adapter.get_panel_session(panel_id)?.as_uuid();
+            self.get_terminal(session_id)?;
+            Some(self.is_broadcast_member(session_id))
+        });
     }
 
     /// Returns true if the split view has no active sessions in any pane
@@ -2850,6 +2906,8 @@ impl SplitViewBridge {
         );
 
         self.emit_title_source();
+        // The panel holds another session now; its check box must say so.
+        self.refresh_broadcast_controls();
         Ok(color_index)
     }
 

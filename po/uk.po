@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 18:02+0200\n"
+"POT-Creation-Date: 2026-11-14 18:26+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -56,7 +56,7 @@ msgstr "Гаразд"
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:784
 #: rustconn/src/sidebar/saved_searches.rs:179
-#: rustconn/src/split_view/adapter.rs:1198
+#: rustconn/src/split_view/adapter.rs:1293
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
 #: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
@@ -112,7 +112,7 @@ msgstr ""
 "Пароль KeePass не завантажено з в'язки ключів — введи його повторно в Уставах"
 
 #: rustconn/src/app.rs:920 rustconn/src/dialogs/shortcuts.rs:204
-#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2213
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2269
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Устави"
@@ -1586,7 +1586,7 @@ msgstr "Перевір з'єднок"
 #: rustconn/src/dialogs/connection/general_tab.rs:144
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
 #: rustconn/src/dialogs/export.rs:402 rustconn/src/dialogs/template.rs:194
-#: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1785
+#: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1841
 #: rustconn/src/window/edit_dialogs.rs:834
 msgid "Protocol"
 msgstr "Протокол"
@@ -1608,7 +1608,7 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:777
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:783
 #: rustconn/src/dialogs/export.rs:390 rustconn/src/dialogs/template.rs:549
-#: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1792
+#: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1848
 #: rustconn/src/window/copy_field_actions.rs:79
 #: rustconn/src/window/edit_dialogs.rs:842
 msgid "Host"
@@ -2207,7 +2207,7 @@ msgstr "Автентифікація"
 #: rustconn/src/dialogs/connection/web.rs:148
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:408 rustconn/src/dialogs/template.rs:565
-#: rustconn/src/split_view/bridge.rs:1800
+#: rustconn/src/split_view/bridge.rs:1856
 #: rustconn/src/window/connection_dialogs.rs:498
 #: rustconn/src/window/copy_field_actions.rs:82
 #: rustconn/src/window/edit_dialogs.rs:862
@@ -2731,7 +2731,7 @@ msgstr "Вбудований режим автоматично підлашто�
 #: rustconn/src/dialogs/connection/spice.rs:158
 #: rustconn/src/dialogs/connection/vnc.rs:236
 #: rustconn/src/dialogs/template.rs:904 rustconn/src/dialogs/template.rs:1099
-#: rustconn/src/dialogs/template.rs:1234 rustconn/src/split_view/bridge.rs:2125
+#: rustconn/src/dialogs/template.rs:1234 rustconn/src/split_view/bridge.rs:2181
 msgid "Features"
 msgstr "Можливости"
 
@@ -4775,7 +4775,7 @@ msgstr "Твої шаблони"
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
 #: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:570
 #: rustconn/src/sidebar_ui.rs:650 rustconn/src/sidebar_ui.rs:1358
-#: rustconn/src/split_view/bridge.rs:2039 rustconn/src/window/ui.rs:271
+#: rustconn/src/split_view/bridge.rs:2095 rustconn/src/window/ui.rs:271
 msgid "New Connection"
 msgstr "Новий з'єднок"
 
@@ -4949,7 +4949,7 @@ msgstr "Копіювання зупинено"
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/sidebar_ui.rs:506
-#: rustconn/src/split_view/adapter.rs:1199
+#: rustconn/src/split_view/adapter.rs:1294
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4796
 msgid "Close"
@@ -5473,7 +5473,7 @@ msgstr "Імпортування з'єднувань"
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
 #: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1058
-#: rustconn/src/split_view/bridge.rs:2053 rustconn/src/window/edit_group.rs:976
+#: rustconn/src/split_view/bridge.rs:2109 rustconn/src/window/edit_group.rs:976
 msgid "Import"
 msgstr "Імпорт"
 
@@ -6529,7 +6529,7 @@ msgid "Log Content"
 msgstr "Уміст журналу"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:1908
+#: rustconn/src/split_view/adapter.rs:2004
 msgid "Loading…"
 msgstr "Завантажування…"
 
@@ -7607,7 +7607,7 @@ msgstr "Скорочення клавіятури"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
 #: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
-#: rustconn/src/split_view/bridge.rs:2201
+#: rustconn/src/split_view/bridge.rs:2257
 msgid "Keyboard Shortcuts"
 msgstr "Клавіятурні скоротини"
 
@@ -9245,7 +9245,7 @@ msgstr "Відправляти Escape замість складених симв
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
 #: rustconn/src/dialogs/settings/ui_tab.rs:921
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:1934 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:280
 msgid "Local Shell"
 msgstr "Локальна оболонка"
@@ -9817,7 +9817,7 @@ msgid "New Group"
 msgstr "Нова група"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:649
-#: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2046
+#: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2102
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:279
 msgid "Quick Connect"
 msgstr "Швидке з'єднування"
@@ -9826,7 +9826,7 @@ msgstr "Швидке з'єднування"
 msgid "Move to Group"
 msgstr "Перемісти до групи"
 
-#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2209
+#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2265
 msgid "Search"
 msgstr "Пошук"
 
@@ -9898,15 +9898,15 @@ msgid "Close Pane"
 msgstr "Закрий панель"
 
 #: rustconn/src/dialogs/shortcuts.rs:221 rustconn/src/sidebar_ui.rs:497
-#: rustconn/src/split_view/adapter.rs:1129
-#: rustconn/src/split_view/adapter.rs:1671
-#: rustconn/src/split_view/adapter.rs:1740
+#: rustconn/src/split_view/adapter.rs:1224
+#: rustconn/src/split_view/adapter.rs:1767
+#: rustconn/src/split_view/adapter.rs:1836
 msgid "Remove from Split"
 msgstr "Вилучи з розділеного вигляду"
 
 #: rustconn/src/dialogs/shortcuts.rs:222
-#: rustconn/src/split_view/adapter.rs:1676
-#: rustconn/src/split_view/adapter.rs:1745
+#: rustconn/src/split_view/adapter.rs:1772
+#: rustconn/src/split_view/adapter.rs:1841
 #: rustconn/src/terminal/tab_menu.rs:1261 rustconn/src/window/ui.rs:125
 msgid "Remove Split"
 msgstr "Вилучи розділений вигляд"
@@ -11871,8 +11871,8 @@ msgid "Save files from remote clipboard"
 msgstr "Збережи файли з віддаленого буфера"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
-#: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1500
+#: rustconn/src/split_view/adapter.rs:1766
+#: rustconn/src/split_view/adapter.rs:1835 rustconn/src/terminal/mod.rs:1500
 #: rustconn/src/terminal/session_lifecycle.rs:759
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
@@ -12608,9 +12608,9 @@ msgstr "Дублюй через майстер…"
 msgid "Open new session"
 msgstr "Відкрий новий сеанс"
 
-#: rustconn/src/sidebar_ui.rs:502 rustconn/src/split_view/adapter.rs:1149
-#: rustconn/src/split_view/adapter.rs:1673
-#: rustconn/src/split_view/adapter.rs:1742
+#: rustconn/src/sidebar_ui.rs:502 rustconn/src/split_view/adapter.rs:1244
+#: rustconn/src/split_view/adapter.rs:1769
+#: rustconn/src/split_view/adapter.rs:1838
 #: rustconn/src/terminal/tab_menu.rs:1269
 msgid "Move to New Window"
 msgstr "Перемісти до нового вікна"
@@ -12795,181 +12795,189 @@ msgstr "Нема розумних тек"
 msgid "Drag to move this session to another panel or tab"
 msgstr "Перетягни, щоб перемістити цей сеанс на иншу панель або вкладку"
 
-#: rustconn/src/split_view/adapter.rs:1031
-#: rustconn/src/split_view/adapter.rs:1033
+#: rustconn/src/split_view/adapter.rs:947 rustconn/src/window/ui.rs:158
+msgid "Broadcast"
+msgstr "Трансляція"
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Зніми позначку, щоб вилучити цю панель із трансляції натискань клавіш"
+
+#: rustconn/src/split_view/adapter.rs:1126
+#: rustconn/src/split_view/adapter.rs:1128
 msgid "Show panel actions"
 msgstr "Покажи дії панелі"
 
-#: rustconn/src/split_view/adapter.rs:1122
+#: rustconn/src/split_view/adapter.rs:1217
 msgid "Remove this session from the split and show it in its own tab"
 msgstr ""
 "Вилучи цей сеанс із розділеного вигляду й покажи його у власній вкладці"
 
-#: rustconn/src/split_view/adapter.rs:1142
+#: rustconn/src/split_view/adapter.rs:1237
 msgid "Move this session out of the split into its own window"
 msgstr ""
 "Вилучи цей сеанс із розділеного вигляду й відкрий його у власному вікні"
 
-#: rustconn/src/split_view/adapter.rs:1161
-#: rustconn/src/split_view/adapter.rs:1166
+#: rustconn/src/split_view/adapter.rs:1256
+#: rustconn/src/split_view/adapter.rs:1261
 msgid "Close session"
 msgstr "Закрий сеанс"
 
-#: rustconn/src/split_view/adapter.rs:1193
+#: rustconn/src/split_view/adapter.rs:1288
 msgid "Close this pane?"
 msgstr "Закрити цю панель?"
 
-#: rustconn/src/split_view/adapter.rs:1195
+#: rustconn/src/split_view/adapter.rs:1290
 msgid "The session in this pane will be disconnected and closed."
 msgstr "Сеанс у цій панелі буде відключено та закрито."
 
-#: rustconn/src/split_view/adapter.rs:1418
+#: rustconn/src/split_view/adapter.rs:1514
 msgid "Terminal panel"
 msgstr "Панель термінала"
 
-#: rustconn/src/split_view/adapter.rs:1677
-#: rustconn/src/split_view/adapter.rs:1746
+#: rustconn/src/split_view/adapter.rs:1773
+#: rustconn/src/split_view/adapter.rs:1842
 msgid "Close Connection"
 msgstr "Закрий з'єднок"
 
-#: rustconn/src/split_view/adapter.rs:1797
+#: rustconn/src/split_view/adapter.rs:1893
 msgid "Empty Panel"
 msgstr "Порожня панель"
 
-#: rustconn/src/split_view/adapter.rs:1798
+#: rustconn/src/split_view/adapter.rs:1894
 msgid "Select an existing tab to display in this panel"
 msgstr "Обери робочу вкладку, щоб відобразити на цій панелі"
 
-#: rustconn/src/split_view/adapter.rs:1808
+#: rustconn/src/split_view/adapter.rs:1904
 msgid "Select Tab…"
 msgstr "Обери вкладку…"
 
-#: rustconn/src/split_view/adapter.rs:1809
+#: rustconn/src/split_view/adapter.rs:1905
 msgid "Choose an open tab to display in this panel"
 msgstr "Обери відкриту вкладку, щоб відобразити на цій панелі"
 
-#: rustconn/src/split_view/adapter.rs:1839
+#: rustconn/src/split_view/adapter.rs:1935
 msgid "Open a new local shell in this panel"
 msgstr "Відкрий нову локальну оболонку на цій панелі"
 
-#: rustconn/src/split_view/adapter.rs:1866
+#: rustconn/src/split_view/adapter.rs:1962
 msgid "Close panel"
 msgstr "Закрий панель"
 
-#: rustconn/src/split_view/adapter.rs:1877
+#: rustconn/src/split_view/adapter.rs:1973
 msgid "Close split view panel"
 msgstr "Закрий панель розділеного вигляду"
 
-#: rustconn/src/split_view/bridge.rs:1780
+#: rustconn/src/split_view/bridge.rs:1836
 msgid "Basic Information"
 msgstr "Основні відомости"
 
-#: rustconn/src/split_view/bridge.rs:2012
+#: rustconn/src/split_view/bridge.rs:2068
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Manage remote connections easily"
 msgstr "Зручне керування віддаленим з'єдноком"
 
-#: rustconn/src/split_view/bridge.rs:2092
+#: rustconn/src/split_view/bridge.rs:2148
 msgid "Double-click a connection in the sidebar to get started"
 msgstr "Двічі клацни з'єднок на бічній панелі, щоб розпочати"
 
-#: rustconn/src/split_view/bridge.rs:2106
+#: rustconn/src/split_view/bridge.rs:2162
 msgid "Don't show this page at startup"
 msgstr "Не показуй цю сторінку під час запуску"
 
-#: rustconn/src/split_view/bridge.rs:2131
+#: rustconn/src/split_view/bridge.rs:2187
 msgid "Embedded SSH, RDP, VNC, SPICE"
 msgstr "Вбудовані SSH, RDP, VNC, SPICE"
 
-#: rustconn/src/split_view/bridge.rs:2133
+#: rustconn/src/split_view/bridge.rs:2189
 msgid "Secure credential storage"
 msgstr "Безпечне зберігання облікових відомостей"
 
-#: rustconn/src/split_view/bridge.rs:2136
+#: rustconn/src/split_view/bridge.rs:2192
 msgid "Remote host monitoring"
 msgstr "Моніторинг віддалених гостів"
 
-#: rustconn/src/split_view/bridge.rs:2138
+#: rustconn/src/split_view/bridge.rs:2194
 msgid "Cloud Sync across devices"
 msgstr "Хмарна синхронізація між пристроями"
 
-#: rustconn/src/split_view/bridge.rs:2139
+#: rustconn/src/split_view/bridge.rs:2195
 msgid "Expect automation & tasks"
 msgstr "Автоматизація Expect і задачі"
 
-#: rustconn/src/split_view/bridge.rs:2140
+#: rustconn/src/split_view/bridge.rs:2196
 msgid "Groups, tags, and templates"
 msgstr "Групи, познаки та шаблони"
 
-#: rustconn/src/split_view/bridge.rs:2141
+#: rustconn/src/split_view/bridge.rs:2197
 msgid "Zero Trust tunnels"
 msgstr "Тунелі Zero Trust"
 
-#: rustconn/src/split_view/bridge.rs:2142
+#: rustconn/src/split_view/bridge.rs:2198
 msgid "Command snippets & clusters"
 msgstr "Фрагменти команд і кластери"
 
-#: rustconn/src/split_view/bridge.rs:2145
+#: rustconn/src/split_view/bridge.rs:2201
 msgid "Drag & drop files to sessions"
 msgstr "Перетягування файлів до сеансів"
 
-#: rustconn/src/split_view/bridge.rs:2205
+#: rustconn/src/split_view/bridge.rs:2261
 msgid "New connection"
 msgstr "Нове з'єднування"
 
-#: rustconn/src/split_view/bridge.rs:2206
+#: rustconn/src/split_view/bridge.rs:2262
 msgid "Quick connect"
 msgstr "Швидке з'єднування"
 
-#: rustconn/src/split_view/bridge.rs:2207
+#: rustconn/src/split_view/bridge.rs:2263
 msgid "Command palette"
 msgstr "Палітра команд"
 
-#: rustconn/src/split_view/bridge.rs:2208
+#: rustconn/src/split_view/bridge.rs:2264
 msgid "Local shell"
 msgstr "Локальна оболонка"
 
-#: rustconn/src/split_view/bridge.rs:2210
+#: rustconn/src/split_view/bridge.rs:2266
 msgid "Split vertical / horizontal"
 msgstr "Розділення вертикально / горизонтально"
 
-#: rustconn/src/split_view/bridge.rs:2211
+#: rustconn/src/split_view/bridge.rs:2267
 msgid "Disable shortcuts"
 msgstr "Вимкни скорочення"
 
-#: rustconn/src/split_view/bridge.rs:2212
+#: rustconn/src/split_view/bridge.rs:2268
 msgid "Import connections"
 msgstr "Імпорт з'єднків"
 
-#: rustconn/src/split_view/bridge.rs:2242
+#: rustconn/src/split_view/bridge.rs:2298
 msgid "Quick Access"
 msgstr "Швидкий доступ"
 
-#: rustconn/src/split_view/bridge.rs:2246
+#: rustconn/src/split_view/bridge.rs:2302
 msgid "Fuzzy search & command palette"
 msgstr "Нечіткий пошук і палітра команд"
 
-#: rustconn/src/split_view/bridge.rs:2247
+#: rustconn/src/split_view/bridge.rs:2303
 msgid "Pin favorites to sidebar"
 msgstr "Закріпи обрані на бічній панелі"
 
-#: rustconn/src/split_view/bridge.rs:2248
+#: rustconn/src/split_view/bridge.rs:2304
 msgid "Split view for terminals"
 msgstr "Розділений вигляд для терміналів"
 
-#: rustconn/src/split_view/bridge.rs:2251
+#: rustconn/src/split_view/bridge.rs:2307
 msgid "Tab Overview grid (Ctrl+Shift+O)"
 msgstr "Сітка огляду вкладок (Ctrl+Shift+O)"
 
-#: rustconn/src/split_view/bridge.rs:2271
+#: rustconn/src/split_view/bridge.rs:2327
 msgid "Import Formats"
 msgstr "Формати імпортування"
 
-#: rustconn/src/split_view/bridge.rs:2493
+#: rustconn/src/split_view/bridge.rs:2549
 msgid "All tabs are already displayed in this split view"
 msgstr "Усі вкладки вже відображено в цьому розділеному вигляді"
 
-#: rustconn/src/split_view/bridge.rs:2540
+#: rustconn/src/split_view/bridge.rs:2596
 msgid "Select a tab to display"
 msgstr "Обери вкладку, щоб відобразити"
 
@@ -14786,13 +14794,13 @@ msgstr "Прохідний режим клавіятури увімкнено �
 msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Прохідний режим клавіятури вимкнено — скорочення відновлено"
 
-#: rustconn/src/window/navigation_actions.rs:284
+#: rustconn/src/window/navigation_actions.rs:286
 msgid "Broadcast enabled — keystrokes mirrored to all split panels"
 msgstr ""
 "Трансляцію увімкнено — натискання клавіш надсилаються до всіх панелей "
 "розділеного вигляду"
 
-#: rustconn/src/window/navigation_actions.rs:286
+#: rustconn/src/window/navigation_actions.rs:288
 msgid "Broadcast disabled — keystrokes go to focused panel only"
 msgstr ""
 "Трансляцію вимкнено — натискання клавіш надходять лише до активної панелі"
@@ -15700,10 +15708,6 @@ msgstr "Локальна оболонка (Ctrl+Shift+T)"
 #: rustconn/src/window/ui.rs:149
 msgid "Open Local Shell"
 msgstr "Відкрий локальну оболонку"
-
-#: rustconn/src/window/ui.rs:158
-msgid "Broadcast"
-msgstr "Трансляція"
 
 #: rustconn/src/window/ui.rs:164
 msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 18:02+0200\n"
+"POT-Creation-Date: 2026-11-14 18:26+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -50,7 +50,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:784
 #: rustconn/src/sidebar/saved_searches.rs:179
-#: rustconn/src/split_view/adapter.rs:1198
+#: rustconn/src/split_view/adapter.rs:1293
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
 #: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
@@ -106,7 +106,7 @@ msgstr ""
 "Chưa tải được mật khẩu KeePass từ chùm khóa — hãy nhập lại trong Cài đặt"
 
 #: rustconn/src/app.rs:920 rustconn/src/dialogs/shortcuts.rs:204
-#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2213
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2269
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Cài đặt"
@@ -1571,7 +1571,7 @@ msgstr "Kiểm tra kết nối"
 #: rustconn/src/dialogs/connection/general_tab.rs:144
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
 #: rustconn/src/dialogs/export.rs:402 rustconn/src/dialogs/template.rs:194
-#: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1785
+#: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1841
 #: rustconn/src/window/edit_dialogs.rs:834
 msgid "Protocol"
 msgstr "Giao thức"
@@ -1593,7 +1593,7 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:777
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:783
 #: rustconn/src/dialogs/export.rs:390 rustconn/src/dialogs/template.rs:549
-#: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1792
+#: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1848
 #: rustconn/src/window/copy_field_actions.rs:79
 #: rustconn/src/window/edit_dialogs.rs:842
 msgid "Host"
@@ -2194,7 +2194,7 @@ msgstr "Xác thực"
 #: rustconn/src/dialogs/connection/web.rs:148
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:408 rustconn/src/dialogs/template.rs:565
-#: rustconn/src/split_view/bridge.rs:1800
+#: rustconn/src/split_view/bridge.rs:1856
 #: rustconn/src/window/connection_dialogs.rs:498
 #: rustconn/src/window/copy_field_actions.rs:82
 #: rustconn/src/window/edit_dialogs.rs:862
@@ -2715,7 +2715,7 @@ msgstr "Chế độ nhúng tự động khớp với kích thước cửa sổ"
 #: rustconn/src/dialogs/connection/spice.rs:158
 #: rustconn/src/dialogs/connection/vnc.rs:236
 #: rustconn/src/dialogs/template.rs:904 rustconn/src/dialogs/template.rs:1099
-#: rustconn/src/dialogs/template.rs:1234 rustconn/src/split_view/bridge.rs:2125
+#: rustconn/src/dialogs/template.rs:1234 rustconn/src/split_view/bridge.rs:2181
 msgid "Features"
 msgstr "Tính năng"
 
@@ -4755,7 +4755,7 @@ msgstr "Mẫu của bạn"
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
 #: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:570
 #: rustconn/src/sidebar_ui.rs:650 rustconn/src/sidebar_ui.rs:1358
-#: rustconn/src/split_view/bridge.rs:2039 rustconn/src/window/ui.rs:271
+#: rustconn/src/split_view/bridge.rs:2095 rustconn/src/window/ui.rs:271
 msgid "New Connection"
 msgstr "Kết nối mới"
 
@@ -4928,7 +4928,7 @@ msgstr "Đã dừng sao chép"
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/sidebar_ui.rs:506
-#: rustconn/src/split_view/adapter.rs:1199
+#: rustconn/src/split_view/adapter.rs:1294
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4796
 msgid "Close"
@@ -5451,7 +5451,7 @@ msgstr "Nhập kết nối"
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
 #: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1058
-#: rustconn/src/split_view/bridge.rs:2053 rustconn/src/window/edit_group.rs:976
+#: rustconn/src/split_view/bridge.rs:2109 rustconn/src/window/edit_group.rs:976
 msgid "Import"
 msgstr "Nhập"
 
@@ -6509,7 +6509,7 @@ msgid "Log Content"
 msgstr "Nội dung nhật ký"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:1908
+#: rustconn/src/split_view/adapter.rs:2004
 msgid "Loading…"
 msgstr "Đang tải…"
 
@@ -7576,7 +7576,7 @@ msgstr "Tổ hợp phím"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
 #: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
-#: rustconn/src/split_view/bridge.rs:2201
+#: rustconn/src/split_view/bridge.rs:2257
 msgid "Keyboard Shortcuts"
 msgstr "Phím tắt"
 
@@ -9213,7 +9213,7 @@ msgstr "Gửi tiền tố Escape thay vì ký tự ghép (cho vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
 #: rustconn/src/dialogs/settings/ui_tab.rs:921
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:1934 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:280
 msgid "Local Shell"
 msgstr "Shell cục bộ"
@@ -9778,7 +9778,7 @@ msgid "New Group"
 msgstr "Nhóm mới"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:649
-#: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2046
+#: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2102
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:279
 msgid "Quick Connect"
 msgstr "Kết nối nhanh"
@@ -9787,7 +9787,7 @@ msgstr "Kết nối nhanh"
 msgid "Move to Group"
 msgstr "Chuyển vào nhóm"
 
-#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2209
+#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2265
 msgid "Search"
 msgstr "Tìm kiếm"
 
@@ -9859,15 +9859,15 @@ msgid "Close Pane"
 msgstr "Đóng khung"
 
 #: rustconn/src/dialogs/shortcuts.rs:221 rustconn/src/sidebar_ui.rs:497
-#: rustconn/src/split_view/adapter.rs:1129
-#: rustconn/src/split_view/adapter.rs:1671
-#: rustconn/src/split_view/adapter.rs:1740
+#: rustconn/src/split_view/adapter.rs:1224
+#: rustconn/src/split_view/adapter.rs:1767
+#: rustconn/src/split_view/adapter.rs:1836
 msgid "Remove from Split"
 msgstr "Gỡ bỏ khỏi chế độ chia"
 
 #: rustconn/src/dialogs/shortcuts.rs:222
-#: rustconn/src/split_view/adapter.rs:1676
-#: rustconn/src/split_view/adapter.rs:1745
+#: rustconn/src/split_view/adapter.rs:1772
+#: rustconn/src/split_view/adapter.rs:1841
 #: rustconn/src/terminal/tab_menu.rs:1261 rustconn/src/window/ui.rs:125
 msgid "Remove Split"
 msgstr "Bỏ chia"
@@ -11822,8 +11822,8 @@ msgid "Save files from remote clipboard"
 msgstr "Lưu tệp từ bộ nhớ tạm từ xa"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
-#: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1500
+#: rustconn/src/split_view/adapter.rs:1766
+#: rustconn/src/split_view/adapter.rs:1835 rustconn/src/terminal/mod.rs:1500
 #: rustconn/src/terminal/session_lifecycle.rs:759
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
@@ -12557,9 +12557,9 @@ msgstr "Nhân bản qua trình hướng dẫn…"
 msgid "Open new session"
 msgstr "Mở phiên mới"
 
-#: rustconn/src/sidebar_ui.rs:502 rustconn/src/split_view/adapter.rs:1149
-#: rustconn/src/split_view/adapter.rs:1673
-#: rustconn/src/split_view/adapter.rs:1742
+#: rustconn/src/sidebar_ui.rs:502 rustconn/src/split_view/adapter.rs:1244
+#: rustconn/src/split_view/adapter.rs:1769
+#: rustconn/src/split_view/adapter.rs:1838
 #: rustconn/src/terminal/tab_menu.rs:1269
 msgid "Move to New Window"
 msgstr "Chuyển sang cửa sổ mới"
@@ -12744,179 +12744,187 @@ msgstr "Không có thư mục thông minh"
 msgid "Drag to move this session to another panel or tab"
 msgstr "Kéo để chuyển phiên này sang khung hoặc thẻ khác"
 
-#: rustconn/src/split_view/adapter.rs:1031
-#: rustconn/src/split_view/adapter.rs:1033
+#: rustconn/src/split_view/adapter.rs:947 rustconn/src/window/ui.rs:158
+msgid "Broadcast"
+msgstr "Phát đồng loạt"
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Bỏ chọn để loại ô này khỏi việc phát phím"
+
+#: rustconn/src/split_view/adapter.rs:1126
+#: rustconn/src/split_view/adapter.rs:1128
 msgid "Show panel actions"
 msgstr "Hiện hành động của khung"
 
-#: rustconn/src/split_view/adapter.rs:1122
+#: rustconn/src/split_view/adapter.rs:1217
 msgid "Remove this session from the split and show it in its own tab"
 msgstr "Gỡ phiên này khỏi chế độ chia và hiện nó trong thẻ riêng"
 
-#: rustconn/src/split_view/adapter.rs:1142
+#: rustconn/src/split_view/adapter.rs:1237
 msgid "Move this session out of the split into its own window"
 msgstr "Chuyển phiên này ra khỏi chế độ chia sang cửa sổ riêng"
 
-#: rustconn/src/split_view/adapter.rs:1161
-#: rustconn/src/split_view/adapter.rs:1166
+#: rustconn/src/split_view/adapter.rs:1256
+#: rustconn/src/split_view/adapter.rs:1261
 msgid "Close session"
 msgstr "Đóng phiên"
 
-#: rustconn/src/split_view/adapter.rs:1193
+#: rustconn/src/split_view/adapter.rs:1288
 msgid "Close this pane?"
 msgstr "Đóng khung này?"
 
-#: rustconn/src/split_view/adapter.rs:1195
+#: rustconn/src/split_view/adapter.rs:1290
 msgid "The session in this pane will be disconnected and closed."
 msgstr "Phiên trong khung này sẽ bị ngắt kết nối và đóng lại."
 
-#: rustconn/src/split_view/adapter.rs:1418
+#: rustconn/src/split_view/adapter.rs:1514
 msgid "Terminal panel"
 msgstr "Khung terminal"
 
-#: rustconn/src/split_view/adapter.rs:1677
-#: rustconn/src/split_view/adapter.rs:1746
+#: rustconn/src/split_view/adapter.rs:1773
+#: rustconn/src/split_view/adapter.rs:1842
 msgid "Close Connection"
 msgstr "Đóng kết nối"
 
-#: rustconn/src/split_view/adapter.rs:1797
+#: rustconn/src/split_view/adapter.rs:1893
 msgid "Empty Panel"
 msgstr "Khung trống"
 
-#: rustconn/src/split_view/adapter.rs:1798
+#: rustconn/src/split_view/adapter.rs:1894
 msgid "Select an existing tab to display in this panel"
 msgstr "Chọn một thẻ có sẵn để hiển thị trong khung này"
 
-#: rustconn/src/split_view/adapter.rs:1808
+#: rustconn/src/split_view/adapter.rs:1904
 msgid "Select Tab…"
 msgstr "Chọn thẻ…"
 
-#: rustconn/src/split_view/adapter.rs:1809
+#: rustconn/src/split_view/adapter.rs:1905
 msgid "Choose an open tab to display in this panel"
 msgstr "Chọn một thẻ đang mở để hiển thị trong khung này"
 
-#: rustconn/src/split_view/adapter.rs:1839
+#: rustconn/src/split_view/adapter.rs:1935
 msgid "Open a new local shell in this panel"
 msgstr "Mở shell cục bộ mới trong khung này"
 
-#: rustconn/src/split_view/adapter.rs:1866
+#: rustconn/src/split_view/adapter.rs:1962
 msgid "Close panel"
 msgstr "Đóng khung"
 
-#: rustconn/src/split_view/adapter.rs:1877
+#: rustconn/src/split_view/adapter.rs:1973
 msgid "Close split view panel"
 msgstr "Đóng khung chia màn hình"
 
-#: rustconn/src/split_view/bridge.rs:1780
+#: rustconn/src/split_view/bridge.rs:1836
 msgid "Basic Information"
 msgstr "Thông tin cơ bản"
 
-#: rustconn/src/split_view/bridge.rs:2012
+#: rustconn/src/split_view/bridge.rs:2068
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Manage remote connections easily"
 msgstr "Quản lý kết nối từ xa dễ dàng"
 
-#: rustconn/src/split_view/bridge.rs:2092
+#: rustconn/src/split_view/bridge.rs:2148
 msgid "Double-click a connection in the sidebar to get started"
 msgstr "Nhấp đúp vào một kết nối ở thanh bên để bắt đầu"
 
-#: rustconn/src/split_view/bridge.rs:2106
+#: rustconn/src/split_view/bridge.rs:2162
 msgid "Don't show this page at startup"
 msgstr "Không hiện trang này khi khởi động"
 
-#: rustconn/src/split_view/bridge.rs:2131
+#: rustconn/src/split_view/bridge.rs:2187
 msgid "Embedded SSH, RDP, VNC, SPICE"
 msgstr "SSH, RDP, VNC, SPICE nhúng"
 
-#: rustconn/src/split_view/bridge.rs:2133
+#: rustconn/src/split_view/bridge.rs:2189
 msgid "Secure credential storage"
 msgstr "Lưu trữ thông tin đăng nhập an toàn"
 
-#: rustconn/src/split_view/bridge.rs:2136
+#: rustconn/src/split_view/bridge.rs:2192
 msgid "Remote host monitoring"
 msgstr "Giám sát máy chủ từ xa"
 
-#: rustconn/src/split_view/bridge.rs:2138
+#: rustconn/src/split_view/bridge.rs:2194
 msgid "Cloud Sync across devices"
 msgstr "Đồng bộ đám mây giữa các thiết bị"
 
-#: rustconn/src/split_view/bridge.rs:2139
+#: rustconn/src/split_view/bridge.rs:2195
 msgid "Expect automation & tasks"
 msgstr "Tự động hóa expect và tác vụ"
 
-#: rustconn/src/split_view/bridge.rs:2140
+#: rustconn/src/split_view/bridge.rs:2196
 msgid "Groups, tags, and templates"
 msgstr "Nhóm, nhãn và mẫu"
 
-#: rustconn/src/split_view/bridge.rs:2141
+#: rustconn/src/split_view/bridge.rs:2197
 msgid "Zero Trust tunnels"
 msgstr "Đường hầm Zero Trust"
 
-#: rustconn/src/split_view/bridge.rs:2142
+#: rustconn/src/split_view/bridge.rs:2198
 msgid "Command snippets & clusters"
 msgstr "Đoạn lệnh và cụm"
 
-#: rustconn/src/split_view/bridge.rs:2145
+#: rustconn/src/split_view/bridge.rs:2201
 msgid "Drag & drop files to sessions"
 msgstr "Kéo thả tệp vào phiên"
 
-#: rustconn/src/split_view/bridge.rs:2205
+#: rustconn/src/split_view/bridge.rs:2261
 msgid "New connection"
 msgstr "Kết nối mới"
 
-#: rustconn/src/split_view/bridge.rs:2206
+#: rustconn/src/split_view/bridge.rs:2262
 msgid "Quick connect"
 msgstr "Kết nối nhanh"
 
-#: rustconn/src/split_view/bridge.rs:2207
+#: rustconn/src/split_view/bridge.rs:2263
 msgid "Command palette"
 msgstr "Bảng lệnh"
 
-#: rustconn/src/split_view/bridge.rs:2208
+#: rustconn/src/split_view/bridge.rs:2264
 msgid "Local shell"
 msgstr "Shell cục bộ"
 
-#: rustconn/src/split_view/bridge.rs:2210
+#: rustconn/src/split_view/bridge.rs:2266
 msgid "Split vertical / horizontal"
 msgstr "Chia dọc / ngang"
 
-#: rustconn/src/split_view/bridge.rs:2211
+#: rustconn/src/split_view/bridge.rs:2267
 msgid "Disable shortcuts"
 msgstr "Tắt phím tắt"
 
-#: rustconn/src/split_view/bridge.rs:2212
+#: rustconn/src/split_view/bridge.rs:2268
 msgid "Import connections"
 msgstr "Nhập kết nối"
 
-#: rustconn/src/split_view/bridge.rs:2242
+#: rustconn/src/split_view/bridge.rs:2298
 msgid "Quick Access"
 msgstr "Truy cập nhanh"
 
-#: rustconn/src/split_view/bridge.rs:2246
+#: rustconn/src/split_view/bridge.rs:2302
 msgid "Fuzzy search & command palette"
 msgstr "Tìm kiếm mờ và bảng lệnh"
 
-#: rustconn/src/split_view/bridge.rs:2247
+#: rustconn/src/split_view/bridge.rs:2303
 msgid "Pin favorites to sidebar"
 msgstr "Ghim mục yêu thích vào thanh bên"
 
-#: rustconn/src/split_view/bridge.rs:2248
+#: rustconn/src/split_view/bridge.rs:2304
 msgid "Split view for terminals"
 msgstr "Chia màn hình cho terminal"
 
-#: rustconn/src/split_view/bridge.rs:2251
+#: rustconn/src/split_view/bridge.rs:2307
 msgid "Tab Overview grid (Ctrl+Shift+O)"
 msgstr "Lưới tổng quan thẻ (Ctrl+Shift+O)"
 
-#: rustconn/src/split_view/bridge.rs:2271
+#: rustconn/src/split_view/bridge.rs:2327
 msgid "Import Formats"
 msgstr "Định dạng nhập"
 
-#: rustconn/src/split_view/bridge.rs:2493
+#: rustconn/src/split_view/bridge.rs:2549
 msgid "All tabs are already displayed in this split view"
 msgstr "Tất cả các thẻ đã được hiển thị trong chế độ chia này"
 
-#: rustconn/src/split_view/bridge.rs:2540
+#: rustconn/src/split_view/bridge.rs:2596
 msgid "Select a tab to display"
 msgstr "Chọn một thẻ để hiển thị"
 
@@ -14727,12 +14735,12 @@ msgstr "Đã bật chuyển thẳng bàn phím — phím tắt bị tắt"
 msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Đã tắt chuyển thẳng bàn phím — phím tắt được khôi phục"
 
-#: rustconn/src/window/navigation_actions.rs:284
+#: rustconn/src/window/navigation_actions.rs:286
 msgid "Broadcast enabled — keystrokes mirrored to all split panels"
 msgstr ""
 "Đã bật phát đồng loạt — thao tác gõ phím được sao chép tới mọi khung chia"
 
-#: rustconn/src/window/navigation_actions.rs:286
+#: rustconn/src/window/navigation_actions.rs:288
 msgid "Broadcast disabled — keystrokes go to focused panel only"
 msgstr "Đã tắt phát đồng loạt — thao tác gõ phím chỉ tới khung đang được chọn"
 
@@ -15632,10 +15640,6 @@ msgstr "Shell cục bộ (Ctrl+Shift+T)"
 #: rustconn/src/window/ui.rs:149
 msgid "Open Local Shell"
 msgstr "Mở shell cục bộ"
-
-#: rustconn/src/window/ui.rs:158
-msgid "Broadcast"
-msgstr "Phát đồng loạt"
 
 #: rustconn/src/window/ui.rs:164
 msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"

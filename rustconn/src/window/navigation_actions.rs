@@ -269,6 +269,8 @@ impl MainWindow {
             };
             let new_state = !bridge.broadcast_active.get();
             bridge.broadcast_active.set(new_state);
+            // Each terminal panel gets its Broadcast check box, or loses it.
+            bridge.refresh_broadcast_controls();
             action.set_state(&new_state.to_variant());
             broadcast_toggle_widget.set_active(new_state);
 
@@ -602,9 +604,14 @@ pub(super) fn wire_broadcast_for_session(
         if bridge_for_cb.broadcast_busy.get() {
             return;
         }
+        // A panel taken out of the broadcast is out both ways: what is typed
+        // in it stays in it, and it receives nothing typed elsewhere.
+        if !bridge_for_cb.is_broadcast_member(sid) {
+            return;
+        }
         bridge_for_cb.broadcast_busy.set(true);
         for target_id in bridge_for_cb.active_sessions() {
-            if target_id == sid {
+            if target_id == sid || !bridge_for_cb.is_broadcast_member(target_id) {
                 continue;
             }
             notebook_for_cb.send_text_to_session(target_id, text);
