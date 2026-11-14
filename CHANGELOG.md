@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Remove Split button in the header bar** — while the current tab is split, a button next to Split Right and Split Down returns every session of the split to its own tab in one click; it was reachable only through `Ctrl+Shift+J` and two context menus. The button, like the `win.unsplit` action it is bound to, is only there while there is a split to remove. Remove Split is also in the command palette now. (`rustconn/src/window/ui.rs`, `rustconn/src/window/split_view_actions.rs`)
+
 ## [0.25.0] - 2026-11-14
 
 ### Added
