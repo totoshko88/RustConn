@@ -2001,6 +2001,39 @@ impl MainWindow {
             let notebook_for_cleanup = Rc::downgrade(&terminal_notebook);
             let monitoring_for_cleanup = self.monitoring.clone();
             let split_container_for_cleanup = self.split_container.clone();
+
+            // Tells the notebook which sessions a tab's split shows, so a user
+            // closing that tab is asked first (item 11). Same owner test and
+            // pane walk as the cleanup hook below, which is what a confirmed
+            // close then runs. `try_borrow`: a close fired while this map is
+            // borrowed closes as before instead of panicking.
+            let session_bridges_for_members = self.session_split_bridges.clone();
+            terminal_notebook.set_split_members_provider(move |session_id| {
+                let Ok(bridges) = session_bridges_for_members.try_borrow() else {
+                    tracing::warn!(
+                        session = %session_id,
+                        "split members: bridge map busy; closing without asking"
+                    );
+                    return Vec::new();
+                };
+                let Some(bridge) = bridges
+                    .get(&session_id)
+                    .filter(|bridge| bridge.is_owned_by(session_id))
+                else {
+                    return Vec::new();
+                };
+                let mut members = vec![session_id];
+                for pane_id in bridge.pane_ids() {
+                    if let Some(sid) = bridge.get_pane_session(pane_id)
+                        && !sid.is_nil()
+                        && !members.contains(&sid)
+                    {
+                        members.push(sid);
+                    }
+                }
+                members
+            });
+
             terminal_notebook.set_on_split_cleanup(move |session_id| {
                 // If the closing tab OWNS a split bridge (key == owner session_id),
                 // its guest (Select-Tabbed) sessions live inside this tab's split

@@ -175,7 +175,15 @@ impl MainWindow {
             {
                 return;
             }
-            if let Some(session_id) = notebook_clone.get_active_session_id() {
+            if let Some(session_id) = notebook_clone.get_active_session_id()
+                && notebook_clone.split_members(session_id).len() >= 2
+            {
+                // The active tab hosts a split: close it the way its close
+                // button does, so the notebook asks what to do with the split
+                // before anything is torn down. A confirmed close runs the
+                // bridge cleanup and the sidebar count in `close-page`.
+                notebook_clone.request_close_tab(session_id);
+            } else if let Some(session_id) = notebook_clone.get_active_session_id() {
                 // Get connection ID before closing
                 let connection_id = notebook_clone
                     .get_session_info(session_id)

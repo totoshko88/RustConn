@@ -901,6 +901,9 @@ impl TerminalNotebook {
         self.restore_session_tab(session_id);
         let page = self.sessions.borrow().get(&session_id).cloned();
         if let Some(page) = page {
+            // A pane close, a detached window or a failed edit ends exactly
+            // this session: never hold it for the split close dialog.
+            self.mark_programmatic_close(session_id);
             self.tab_view.close_page(&page);
         }
     }

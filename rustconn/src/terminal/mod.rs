@@ -40,6 +40,7 @@ mod recording;
 pub mod safe_paste;
 mod selection_hold;
 mod session_lifecycle;
+mod split_close;
 mod split_title;
 pub mod tab_container;
 mod tab_lifecycle;
@@ -476,6 +477,14 @@ pub struct TerminalNotebook {
     /// therefore have no `TabPage`. Session data stays alive, exactly as for
     /// `parked_in_split`; the `close-page` handler skips teardown for them.
     detached: Rc<RefCell<HashSet<Uuid>>>,
+    /// Who asked for the next close of a session's tab. A missing entry means
+    /// the user did (tab close button, middle-click); programmatic callers
+    /// mark the session first. Consumed by the `close-page` handler.
+    close_intents: Rc<RefCell<HashMap<Uuid, detach::CloseIntent>>>,
+    /// Asks the window layer which sessions a tab's split shows, owner first.
+    split_members: split_close::SplitMembersProvider,
+    /// Split tabs whose close is waiting for the user's answer.
+    split_close_pending: Rc<RefCell<HashSet<Uuid>>>,
     /// Invoked by [`Self::switch_to_tab`] when the target session is detached,
     /// so the window layer can present its window instead of selecting a tab.
     on_focus_detached: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
@@ -652,6 +661,9 @@ impl TerminalNotebook {
             tab_containers: Rc::new(RefCell::new(HashMap::new())),
             parked_in_split: Rc::new(RefCell::new(HashSet::new())),
             detached: Rc::new(RefCell::new(HashSet::new())),
+            close_intents: Rc::new(RefCell::new(HashMap::new())),
+            split_members: Rc::new(RefCell::new(None)),
+            split_close_pending: Rc::new(RefCell::new(HashSet::new())),
             on_focus_detached: Rc::new(RefCell::new(None)),
             on_detach_request: Rc::new(RefCell::new(None)),
             on_session_ended: Rc::new(RefCell::new(None)),
@@ -707,6 +719,7 @@ impl TerminalNotebook {
         let output_filters_on_close = Rc::clone(&self.output_filters);
         let commit_forwarded_on_close = Rc::clone(&self.commit_forwarded);
         let pty_size_timers_on_close = Rc::clone(&self.pty_size_timers);
+        let split_close_on_close = self.split_close_hooks();
 
         // Handle create-window signal - we must connect this to prevent the default
         // behavior which causes CRITICAL warnings. Returning None cancels the tearoff.
@@ -745,6 +758,14 @@ impl TerminalNotebook {
                     .unwrap_or((Uuid::nil(), None))
             };
 
+            // Consume the close intent first, so no mark outlives this close
+            // whichever branch below handles it.
+            let intent = if session_id.is_nil() {
+                detach::CloseIntent::Programmatic
+            } else {
+                split_close_on_close.take_intent(session_id)
+            };
+
             // Parked (Option B): the tab is being removed because the session
             // moved into another tab's split or into a detached window, NOT
             // closed. Its live widget lives elsewhere and its session data must
@@ -766,6 +787,20 @@ impl TerminalNotebook {
                     Self::append_welcome_page(&tab_view);
                 }
                 return glib::Propagation::Stop;
+            }
+
+            // A user's close of a tab hosting a split of two or more sessions
+            // is held until the user answers (item 11). The members are asked
+            // for only on that path and outside every map borrow above, so a
+            // programmatic close never touches the window's bridge map.
+            if intent == detach::CloseIntent::User {
+                let members = split_close_on_close.members(session_id);
+                if detach::split_close_decision(!members.is_empty(), members.len(), intent)
+                    == detach::SplitCloseDecision::Ask
+                {
+                    split_close_on_close.present_single(page, session_id, &members);
+                    return glib::Propagation::Stop;
+                }
             }
 
             if !session_id.is_nil() {
@@ -2110,7 +2145,12 @@ impl TerminalNotebook {
         );
         match (route, page) {
             (detach::CloseRoute::Parked, _) => self.close_session(session_id),
-            (detach::CloseRoute::Page, Some(page)) => self.tab_view.close_page(&page),
+            (detach::CloseRoute::Page, Some(page)) => {
+                // Closed on the application's behalf (script, cluster, clean
+                // exit, reconnect, sidebar Disconnect): never ask.
+                self.mark_programmatic_close(session_id);
+                self.tab_view.close_page(&page);
+            }
             (detach::CloseRoute::Page | detach::CloseRoute::Unknown, _) => {
                 tracing::debug!(session = %session_id, "close_tab: no tab or parked session");
             }
