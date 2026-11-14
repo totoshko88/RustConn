@@ -33,10 +33,21 @@ fn refuses_split_placement(
 /// Both entry points need the same "focus this pane first, then let the window
 /// action work on it" behaviour, so they are wired together: `win.close-pane`
 /// for the × button and "Close Connection", `win.pop-pane-to-tab` for the
-/// "Remove from Split" button and menu item (issue #252). Focusing is what makes
+/// "Move to Own Tab" button and menu item (issue #252). Focusing is what makes
 /// an action target the panel the user pointed at — the panel's own focus
 /// gesture declines clicks that land on a button.
-pub(super) fn wire_panel_action_callbacks(bridge: &Rc<SplitViewBridge>) {
+///
+/// The pane menus also ask the notebook whether a pane's session has ended, so
+/// Reconnect is offered on an ended session only. The notebook is held weakly,
+/// so the bridge's menus never keep it alive.
+pub(super) fn wire_panel_action_callbacks(bridge: &Rc<SplitViewBridge>, notebook: &SharedNotebook) {
+    let notebook_weak = Rc::downgrade(notebook);
+    bridge.setup_pane_menu_state(move |session_id| {
+        notebook_weak
+            .upgrade()
+            .is_some_and(|notebook| notebook.is_session_disconnected(session_id))
+    });
+
     let focus_pane = {
         let bridge = Rc::clone(bridge);
         move |pane_uuid: Uuid| {
@@ -793,7 +804,7 @@ impl MainWindow {
                 wire_new_shell_button(placement_h, state_h.clone());
 
                 // Wire the panel buttons and panel context menu
-                wire_panel_action_callbacks(&split_view);
+                wire_panel_action_callbacks(&split_view, &notebook_for_split_h);
             }
 
             // Layout changed — refresh the broadcast toggle so it reflects the
@@ -1014,7 +1025,7 @@ impl MainWindow {
                 wire_new_shell_button(placement_v, state_v.clone());
 
                 // Wire the panel buttons and panel context menu
-                wire_panel_action_callbacks(&split_view);
+                wire_panel_action_callbacks(&split_view, &notebook_for_split_v);
             }
 
             // Layout changed — refresh broadcast toggle.
@@ -1136,7 +1147,7 @@ impl MainWindow {
         window.add_action(&pop_pane_action);
 
         // Move the focused pane's session out of the split and into its own
-        // detached window (issue #209/#236 reuse). This is "Remove from Split"
+        // detached window (issue #209/#236 reuse). This is "Move to Own Tab"
         // followed by "Move to New Window": the same pane teardown as
         // `win.pop-pane-to-tab` runs first — the session goes back to a real
         // tab with its widget, PTY and connection intact — and then

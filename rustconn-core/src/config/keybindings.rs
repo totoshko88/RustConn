@@ -364,7 +364,7 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
         KeybindingDef::new(
             "win.pop-pane-to-tab",
             "<Control><Shift>r",
-            "Remove from Split",
+            "Move to Own Tab",
             SplitView,
         ),
         // Removes the whole layout, returning every session to its own tab.

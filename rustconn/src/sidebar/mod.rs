@@ -118,8 +118,8 @@ pub struct ConnectionSidebar {
     recording_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     /// Callback to check whether a connection has MORE THAN ONE live session.
     /// Takes a connection ID string and returns true when ≥2 sessions are
-    /// open for it, so the per-session sidebar controls (Close / Remove from
-    /// Split / Move to New Window) can be hidden as ambiguous (issue #374).
+    /// open for it, so the per-session sidebar controls (Disconnect / Move to
+    /// Own Tab / Move to New Window) can be hidden as ambiguous (issue #374).
     multi_session_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     /// Smart Folders sidebar section (dynamic tag-based grouping)
     smart_folders_sidebar: SmartFoldersSidebar,

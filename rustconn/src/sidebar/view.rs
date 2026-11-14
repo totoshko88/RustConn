@@ -149,7 +149,7 @@ pub fn show_context_menu_for_connection_item(
     // Whether this connection has MORE THAN ONE live session (issue #374).
     // With several sessions open for one connection (common when "open a new
     // session on every double-click" is on), the per-session sidebar controls
-    // (Close / Remove from Split / Move to New Window) are ambiguous — they
+    // (Disconnect / Move to Own Tab / Move to New Window) are ambiguous — they
     // would act on an arbitrary one of the sessions — so they are hidden here
     // and remain available per-session in the tabs.
     let has_multi_session = if is_connected && !conn_id.is_empty() {

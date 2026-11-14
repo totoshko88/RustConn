@@ -18,7 +18,7 @@ use rustconn_core::split::{ColorPool, PanelId, SessionId};
 use uuid::Uuid;
 use vte4::Terminal;
 
-use super::adapter::SplitViewAdapter;
+use super::adapter::{PaneMenuState, SplitViewAdapter};
 use crate::i18n::i18n;
 use crate::terminal::TerminalSession;
 
@@ -2723,7 +2723,7 @@ impl SplitViewBridge {
         self.adapter.borrow().set_close_panel_callback(handler);
     }
 
-    /// Sets up the "Remove from Split" callback for panel buttons and menu items.
+    /// Sets up the "Move to Own Tab" callback for panel buttons and menu items.
     ///
     /// Same two steps as [`Self::setup_close_panel_callback`], but activates
     /// `win.pop-pane-to-tab`, which hands the panel's session back to its own
@@ -2755,6 +2755,33 @@ impl SplitViewBridge {
     {
         let handler = self.panel_action_handler("reconnect-pane", on_focus);
         self.adapter.borrow().set_reconnect_panel_callback(handler);
+    }
+
+    /// Tells the pane menus whether a pane's session owns this split and
+    /// whether it has ended, asked each time a menu opens.
+    ///
+    /// The owner's menu leaves out Move to Own Tab, which on the owner would
+    /// collapse the whole split like Remove Split; Reconnect is offered only
+    /// while `is_disconnected` holds for the pane's session.
+    ///
+    /// # Arguments
+    ///
+    /// * `is_disconnected` - Whether a session has ended and can be reconnected
+    pub fn setup_pane_menu_state<F>(&self, is_disconnected: F)
+    where
+        F: Fn(Uuid) -> bool + 'static,
+    {
+        let owner = Rc::clone(&self.owner_session);
+        self.adapter
+            .borrow()
+            .set_pane_menu_state_provider(move |session| {
+                let session = session.as_uuid();
+                PaneMenuState {
+                    is_owner: owner.get() == Some(session),
+                    is_disconnected: is_disconnected(session),
+                    shows_broadcast: false,
+                }
+            });
     }
 
     /// Sets up the "Move to New Window" callback for the panel button and menu.

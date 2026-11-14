@@ -96,7 +96,7 @@ pub struct SplitViewAdapter {
     /// This allows the bridge to focus the panel and trigger the close action
     /// when the user clicks the close button on an empty panel.
     close_panel_callback: Rc<RefCell<Option<PanelActionCallback>>>,
-    /// Callback for "Remove from Split" clicks on an occupied panel.
+    /// Callback for "Move to Own Tab" clicks on an occupied panel.
     ///
     /// Symmetric to `close_panel_callback`: the bridge focuses the panel and
     /// then activates the window action that returns the panel's session to its
@@ -113,6 +113,9 @@ pub struct SplitViewAdapter {
     /// activates the window action that removes the pane from the split and
     /// lifts its session into its own detached window.
     detach_panel_callback: Rc<RefCell<Option<PanelActionCallback>>>,
+    /// Answers, when a pane menu opens, whether the pane's session owns the
+    /// split and whether it has ended; see [`Self::set_pane_menu_state_provider`].
+    pane_menu_state_provider: Rc<RefCell<Option<PaneMenuStateProvider>>>,
     /// Header widgets for each panel (connection name labels, issue #277).
     ///
     /// These are prepended to the panel container (above session content) and
@@ -150,17 +153,50 @@ pub struct SplitViewAdapter {
 /// Callback for a panel's Broadcast check box: the panel and its new state.
 type BroadcastToggledCallback = Box<dyn Fn(PanelId, bool)>;
 
-/// Adds the pane menu's Broadcast item while the header's check box is shown.
+/// Answers, for a pane's session, what its menu should offer.
+type PaneMenuStateProvider = Rc<dyn Fn(SessionId) -> PaneMenuState>;
+
+/// What a pane's context menu depends on, read each time the menu opens.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) struct PaneMenuState {
+    /// The pane's session owns the split: its tab hosts the layout.
+    pub(super) is_owner: bool,
+    /// The pane's session has ended and can be reconnected.
+    pub(super) is_disconnected: bool,
+    /// The header's Broadcast check box is shown.
+    pub(super) shows_broadcast: bool,
+}
+
+/// Builds a split pane's context menu, shared by the pointer, long-press and
+/// keyboard routes so their items cannot drift apart.
 ///
-/// The item drives `panel.broadcast`, a property action on the check box, so
-/// the menu and the check box are one switch.
-fn append_broadcast_item(menu: &gio::Menu, check: Option<&glib::WeakRef<CheckButton>>) {
-    if check
-        .and_then(glib::WeakRef::upgrade)
-        .is_some_and(|check| check.is_visible())
-    {
+/// - **Reconnect** only for a session that has ended. A live session has
+///   nothing to reconnect, and `win.reconnect-pane` refuses it anyway.
+/// - **Broadcast** drives `panel.broadcast`, a property action on the header's
+///   check box, so it is offered only while that check box is shown.
+/// - **Move to Own Tab** only for a guest. On the owner, popping the pane
+///   collapses the whole split (`win.pop-pane-to-tab`), so the item would be
+///   **Remove Split** under a second name.
+///
+/// HIG order: the non-destructive actions first, Close Connection last.
+fn pane_menu_model(state: PaneMenuState) -> gio::Menu {
+    let menu = gio::Menu::new();
+    if state.is_disconnected {
+        menu.append(Some(&i18n("Reconnect")), Some("panel.reconnect"));
+    }
+    if state.shows_broadcast {
         menu.append(Some(&i18n("Broadcast")), Some("panel.broadcast"));
     }
+    if !state.is_owner {
+        menu.append(Some(&i18n("Move to Own Tab")), Some("panel.move-to-tab"));
+    }
+    menu.append(
+        Some(&i18n("Move to New Window")),
+        Some("panel.detach-to-window"),
+    );
+    menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
+    menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
+    menu
 }
 
 impl std::fmt::Debug for SplitViewAdapter {
@@ -178,6 +214,7 @@ impl std::fmt::Debug for SplitViewAdapter {
             .field("pop_panel_callback", &"<callback>")
             .field("reconnect_panel_callback", &"<callback>")
             .field("detach_panel_callback", &"<callback>")
+            .field("pane_menu_state_provider", &"<callback>")
             .field("panel_headers", &self.panel_headers)
             .field("show_labels", &self.show_labels)
             .field("panel_reveal_containers", &self.panel_reveal_containers)
@@ -211,6 +248,7 @@ impl SplitViewAdapter {
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             detach_panel_callback: Rc::new(RefCell::new(None)),
+            pane_menu_state_provider: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
             panel_reveal_containers: Rc::new(RefCell::new(HashMap::new())),
@@ -245,6 +283,7 @@ impl SplitViewAdapter {
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             detach_panel_callback: Rc::new(RefCell::new(None)),
+            pane_menu_state_provider: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
             panel_reveal_containers: Rc::new(RefCell::new(HashMap::new())),
@@ -355,7 +394,7 @@ impl SplitViewAdapter {
         *self.close_panel_callback.borrow_mut() = Some(Rc::new(callback));
     }
 
-    /// Sets a callback for "Remove from Split" clicks on an occupied panel.
+    /// Sets a callback for "Move to Own Tab" clicks on an occupied panel.
     ///
     /// Invoked with the panel ID when the user asks for the panel's session to
     /// leave the split without being closed. The callback should focus the panel
@@ -385,6 +424,20 @@ impl SplitViewAdapter {
         F: Fn(PanelId) + 'static,
     {
         *self.reconnect_panel_callback.borrow_mut() = Some(Rc::new(callback));
+    }
+
+    /// Sets the function a pane menu asks, each time it opens, whether the
+    /// pane's session owns the split and whether it has ended.
+    ///
+    /// Asked on open rather than at build time, so the menu follows the
+    /// session's state without a rebuild. Without a provider the menu treats
+    /// the session as a live guest: no Reconnect, Move to Own Tab offered.
+    /// `shows_broadcast` in the answer is ignored; the adapter fills it in.
+    pub(super) fn set_pane_menu_state_provider<F>(&self, provider: F)
+    where
+        F: Fn(SessionId) -> PaneMenuState + 'static,
+    {
+        *self.pane_menu_state_provider.borrow_mut() = Some(Rc::new(provider));
     }
 
     /// Sets the callback for the panel's "Move to New Window" action.
@@ -881,7 +934,7 @@ impl SplitViewAdapter {
             //
             // Unconditional, including for a connection that switched its own
             // session toolbar off (issue #260). These two buttons are the split
-            // view's, not the viewer's: Remove from Split and Close session are
+            // view's, not the viewer's: Move to Own Tab and Close session are
             // the only discoverable way to dismantle a pane, and #260 asked for
             // an unobstructed *session*, not a pane that cannot be closed. The
             // suppression that #260 introduced covered this overlay too, which
@@ -1227,7 +1280,7 @@ impl SplitViewAdapter {
     /// Builds the corner button strip overlaid on an occupied panel.
     ///
     /// Two actions, ordered least destructive first per the GNOME HIG:
-    /// "Remove from Split" hands the session back to its own tab with the
+    /// "Move to Own Tab" hands the session back to its own tab with the
     /// connection intact (issue #252), and the close (×) button terminates it.
     /// Both go through the bridge callbacks, which focus this panel before
     /// activating the matching window action — the actions operate on the
@@ -1237,7 +1290,7 @@ impl SplitViewAdapter {
         // Stacked vertically, one under another, now that these controls live
         // at the vertical centre of the right edge: a vertical strip hugs that
         // edge instead of reaching across the top of the pane. HIG order is kept
-        // — the non-destructive action (Remove from Split) on top, the
+        // — the non-destructive action (Move to Own Tab) on top, the
         // destructive Close at the bottom.
         let buttons = GtkBox::new(Orientation::Vertical, 0);
         buttons.set_halign(Align::End);
@@ -1252,9 +1305,7 @@ impl SplitViewAdapter {
         pop_button.add_css_class("flat");
         pop_button.add_css_class("circular");
         pop_button.add_css_class("panel-close-button");
-        pop_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Remove from Split",
-        ))]);
+        pop_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Move to Own Tab"))]);
         let pop_callback_ref = Rc::clone(&self.pop_panel_callback);
         pop_button.connect_clicked(move |_| {
             if let Some(ref callback) = *pop_callback_ref.borrow() {
@@ -1580,7 +1631,7 @@ impl SplitViewAdapter {
             // Set up context menu on the pane HEADER (issue #374). Attaching it
             // to the header rather than the container keeps VTE's own native
             // Copy/Paste right-click menu intact over the terminal content,
-            // while still giving the pane Reconnect / Remove from Split /
+            // while still giving the pane Reconnect / Move to Own Tab /
             // Remove Split / Close Connection.
             self.setup_panel_context_menu(panel_id, session_id, &header_for_drag, &container);
 
@@ -1681,8 +1732,9 @@ impl SplitViewAdapter {
     /// Sets up a right-click (and touch long-press) context menu on a split
     /// pane's **header**, not its content container.
     ///
-    /// The menu offers Reconnect / Remove from Split / Remove Split / Close
-    /// Connection. It is attached to the header widget rather than the panel
+    /// The menu is [`pane_menu_model`]: Reconnect (ended sessions only),
+    /// Broadcast, Move to Own Tab (guests only), Move to New Window, Remove
+    /// Split and Close Connection. It is attached to the header widget rather than the panel
     /// container because the session widget inside the container (a VTE
     /// terminal, or an RDP/VNC `DrawingArea`) claims button-press in the
     /// default bubble phase, so a secondary-click gesture on the container
@@ -1699,7 +1751,7 @@ impl SplitViewAdapter {
     /// and the Menu key), and the action group is inserted on the container as
     /// well as the header. This matters because the header is hidden
     /// (`set_visible(false)`) when connection-name labels are off: without a
-    /// container-level route the pane's Close / Remove-from-Split actions would
+    /// container-level route the pane's Close / Move to Own Tab actions would
     /// be reachable only through the hover reveal controls — a hover-only
     /// affordance with no keyboard or touch path (GNOME HIG violation, and
     /// unreachable entirely when hover controls are also hidden). The container
@@ -1739,7 +1791,7 @@ impl SplitViewAdapter {
         let pop_callback_ref = Rc::clone(&self.pop_panel_callback);
         pop_action.connect_activate(move |_, _| {
             tracing::debug!(
-                "Context menu: Remove from Split for panel {panel_id} with session {session_id}"
+                "Context menu: Move to Own Tab for panel {panel_id} with session {session_id}"
             );
             if let Some(ref callback) = *pop_callback_ref.borrow() {
                 callback(panel_id);
@@ -1793,27 +1845,40 @@ impl SplitViewAdapter {
         // Insert the action group into the widget
         widget.insert_action_group("panel", Some(&action_group));
 
+        // One menu model for every route, built on each open from the pane's
+        // current session, so Reconnect follows the session's state and the
+        // owner/guest split is never stale. The Reconnect action is enabled to
+        // match, so nothing can trigger it on a live session.
+        let model_for_menu = Rc::clone(&self.model);
+        let state_provider = Rc::clone(&self.pane_menu_state_provider);
+        let reconnect_for_menu = reconnect_action.clone();
+        let build_menu: Rc<dyn Fn() -> gio::Menu> = Rc::new(move || {
+            let session = model_for_menu
+                .borrow()
+                .get_panel_session(panel_id)
+                .unwrap_or(session_id);
+            let provider = state_provider.borrow().clone();
+            let mut state = provider
+                .map(|provider| provider(session))
+                .unwrap_or_default();
+            state.shows_broadcast = broadcast_check
+                .as_ref()
+                .and_then(glib::WeakRef::upgrade)
+                .is_some_and(|check| check.is_visible());
+            reconnect_for_menu.set_enabled(state.is_disconnected);
+            pane_menu_model(state)
+        });
+
         // Shared menu opener used by both the secondary-click gesture and the
         // touch long-press gesture. A popover is created fresh on each open to
         // avoid GTK popup-grab issues when reusing one across clicks.
         let widget_for_menu = widget.clone();
-        let check_for_menu = broadcast_check.clone();
+        let build_for_pointer = Rc::clone(&build_menu);
         let open_menu: Rc<dyn Fn(f64, f64)> = Rc::new(move |x: f64, y: f64| {
             // Close any previously open context menu (sidebar or split view)
             crate::sidebar_ui::close_active_popover();
 
-            // Create the context menu model. HIG order: the non-destructive
-            // action first, the destructive one last.
-            let menu = gio::Menu::new();
-            menu.append(Some(&i18n("Reconnect")), Some("panel.reconnect"));
-            append_broadcast_item(&menu, check_for_menu.as_ref());
-            menu.append(Some(&i18n("Remove from Split")), Some("panel.move-to-tab"));
-            menu.append(
-                Some(&i18n("Move to New Window")),
-                Some("panel.detach-to-window"),
-            );
-            menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
-            menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
+            let menu = build_for_pointer();
 
             // Create popover dynamically for this open
             let popover = gtk4::PopoverMenu::from_model(Some(&menu));
@@ -1874,16 +1939,7 @@ impl SplitViewAdapter {
         let open_from_keyboard: Rc<dyn Fn()> = Rc::new(move || {
             crate::sidebar_ui::close_active_popover();
 
-            let menu = gio::Menu::new();
-            menu.append(Some(&i18n("Reconnect")), Some("panel.reconnect"));
-            append_broadcast_item(&menu, broadcast_check.as_ref());
-            menu.append(Some(&i18n("Remove from Split")), Some("panel.move-to-tab"));
-            menu.append(
-                Some(&i18n("Move to New Window")),
-                Some("panel.detach-to-window"),
-            );
-            menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
-            menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
+            let menu = build_menu();
 
             let popover = gtk4::PopoverMenu::from_model(Some(&menu));
             popover.set_parent(&container_for_menu);
@@ -2142,5 +2198,87 @@ impl SplitViewAdapter {
 impl Default for SplitViewAdapter {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use gtk4::gio::prelude::*;
+
+    use super::{PaneMenuState, pane_menu_model};
+
+    /// The action name of every item, in order.
+    fn actions_for(state: PaneMenuState) -> Vec<String> {
+        let menu = pane_menu_model(state);
+        (0..menu.n_items())
+            .filter_map(|i| menu.item_attribute_value(i, "action", None))
+            .filter_map(|action| action.str().map(str::to_owned))
+            .collect()
+    }
+
+    #[test]
+    fn a_live_guest_gets_move_to_own_tab_and_no_reconnect() {
+        assert_eq!(
+            actions_for(PaneMenuState::default()),
+            [
+                "panel.move-to-tab",
+                "panel.detach-to-window",
+                "win.unsplit",
+                "panel.close"
+            ]
+        );
+    }
+
+    #[test]
+    fn the_owner_hides_move_to_own_tab_which_would_repeat_remove_split() {
+        let actions = actions_for(PaneMenuState {
+            is_owner: true,
+            ..Default::default()
+        });
+        assert!(!actions.iter().any(|a| a == "panel.move-to-tab"));
+        assert!(actions.iter().any(|a| a == "win.unsplit"));
+        // The menu-length floor of three items holds on the shortest menu.
+        assert_eq!(actions.len(), 3);
+    }
+
+    #[test]
+    fn reconnect_is_offered_only_for_an_ended_session() {
+        let ended = actions_for(PaneMenuState {
+            is_disconnected: true,
+            ..Default::default()
+        });
+        assert_eq!(ended.first().map(String::as_str), Some("panel.reconnect"));
+
+        let live_owner = actions_for(PaneMenuState {
+            is_owner: true,
+            shows_broadcast: true,
+            ..Default::default()
+        });
+        assert!(!live_owner.iter().any(|a| a == "panel.reconnect"));
+    }
+
+    #[test]
+    fn broadcast_follows_the_check_box_and_close_stays_last() {
+        let actions = actions_for(PaneMenuState {
+            is_disconnected: true,
+            shows_broadcast: true,
+            ..Default::default()
+        });
+        assert_eq!(
+            actions,
+            [
+                "panel.reconnect",
+                "panel.broadcast",
+                "panel.move-to-tab",
+                "panel.detach-to-window",
+                "win.unsplit",
+                "panel.close"
+            ]
+        );
+        assert!(
+            !actions_for(PaneMenuState::default())
+                .iter()
+                .any(|a| a == "panel.broadcast")
+        );
     }
 }

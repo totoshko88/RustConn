@@ -1722,7 +1722,7 @@ impl MainWindow {
 
         // Set up multi-session checker for the sidebar context menu (#374):
         // true when a connection has 2+ live sessions, so the ambiguous
-        // per-session controls (Close / Remove from Split / Move to New
+        // per-session controls (Disconnect / Move to Own Tab / Move to New
         // Window) are hidden — they target a single session, which is
         // undefined when several are open for one connection.
         {
@@ -1741,6 +1741,37 @@ impl MainWindow {
                         false
                     }
                 });
+        }
+
+        // Tells the sidebar menu whether a connection's session owns its split,
+        // so that row offers Remove Split instead of Move to Own Tab. Asked only
+        // when the row has one live session (the menu hides the split item
+        // otherwise), so the first session found is that session. Weak handles:
+        // the checker lives in a thread-local for the life of the process.
+        {
+            let notebook = Rc::downgrade(&main_window.terminal_notebook);
+            let bridges = Rc::downgrade(&main_window.session_split_bridges);
+            crate::sidebar_ui::set_split_owner_checker(move |conn_id_str| {
+                let (Some(notebook), Some(bridges), Ok(conn_id)) = (
+                    notebook.upgrade(),
+                    bridges.upgrade(),
+                    Uuid::parse_str(conn_id_str),
+                ) else {
+                    return false;
+                };
+                let Some(session_id) = notebook
+                    .get_all_sessions()
+                    .into_iter()
+                    .find(|s| s.connection_id == conn_id)
+                    .map(|s| s.id)
+                else {
+                    return false;
+                };
+                bridges
+                    .borrow()
+                    .get(&session_id)
+                    .is_some_and(|bridge| bridge.is_owned_by(session_id))
+            });
         }
 
         // Drive the sidebar recording indicator from recording start/stop.
@@ -2162,7 +2193,7 @@ impl MainWindow {
             );
 
             // Wire the panel buttons and panel context menu
-            split_view_actions::wire_panel_action_callbacks(&split_view);
+            split_view_actions::wire_panel_action_callbacks(&split_view, &terminal_notebook);
         }
 
         // Set up drag-and-drop for initial pane with notebook lookup
@@ -2777,12 +2808,19 @@ impl MainWindow {
         }
     }
 
-    /// Connects to the selected connection
+    /// Opens the selected connection: the sidebar menu's Connect / Show Session.
+    ///
+    /// A connection that already runs is shown, not duplicated: the newest live
+    /// embedded session is focused, the same way a double-click does it, and an
+    /// external-viewer session gets the "already running" hint. The menu labels
+    /// such a row **Show Session**, so the "new session on every double-click"
+    /// preference does not apply here; **Open new session** is the duplicate.
     fn connect_selected(
         state: &SharedAppState,
         sidebar: &SharedSidebar,
         notebook: &SharedNotebook,
         monitoring: &types::SharedMonitoring,
+        session_split_bridges: &SessionSplitBridges,
     ) {
         // Get selected item from sidebar using the sidebar's method
         let Some(conn_item) = sidebar.get_selected_item() else {
@@ -2796,7 +2834,55 @@ impl MainWindow {
 
         let id_str = conn_item.id();
         if let Ok(conn_id) = Uuid::parse_str(&id_str) {
+            if Self::show_running_session(notebook, session_split_bridges, conn_id) {
+                return;
+            }
             Self::start_connection(state, notebook, sidebar, monitoring, conn_id);
+        }
+    }
+
+    /// Shows a connection's running session instead of starting another.
+    ///
+    /// Focuses the most recently created *live* embedded session, or, when the
+    /// connection runs only in an external viewer, says so in a toast. Returns
+    /// `false` when there is nothing running to show (or the session vanished
+    /// before it could be focused, R7.6), so the caller launches a new session.
+    fn show_running_session(
+        notebook: &SharedNotebook,
+        session_split_bridges: &SessionSplitBridges,
+        conn_id: Uuid,
+    ) -> bool {
+        // `live_sessions` excludes tabs whose connection already ended — those
+        // keep their tab for the transcript and the Reconnect button, and
+        // focusing one instead of connecting is what made double-click look
+        // dead (issue #242). Collect first (an owned `Uuid`) so no notebook
+        // borrow is held across the focus call below.
+        let newest_live = notebook
+            .live_sessions()
+            .into_iter()
+            .filter(|s| s.connection_id == conn_id)
+            .max_by_key(|s| s.connected_at)
+            .map(|s| s.id);
+        // Only *owned* viewers count — a detaching viewer (remmina/krdc) is
+        // tracked without a child handle, so its entry never clears on its own
+        // and would block every later open (issue #242).
+        let external_running = || {
+            external_session_registry()
+                .is_some_and(|reg| reg.has_verifiable_active_session(conn_id))
+        };
+        match open_route(newest_live, external_running) {
+            OpenRoute::Focus(target_id) => {
+                Self::focus_embedded_session(notebook, session_split_bridges, target_id)
+            }
+            OpenRoute::AlreadyExternal => {
+                // R7 external-only: a foreign viewer window cannot be raised
+                // reliably, so inform rather than duplicate.
+                crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
+                    "Already running in an external window",
+                ));
+                true
+            }
+            OpenRoute::Launch => false,
         }
     }
 
@@ -2844,46 +2930,12 @@ impl MainWindow {
                     // held into the launch path below, which borrows again.
                     let always_new = state.borrow().settings().ui.double_click_opens_new_session;
 
-                    if !force_new && !always_new {
-                        // R7.1/7.4: focus the most recently created *live*
-                        // session. `live_sessions` excludes tabs whose
-                        // connection already ended — those keep their tab for
-                        // the transcript and the Reconnect button, and focusing
-                        // one instead of connecting is what made double-click
-                        // look dead (issue #242). Collect first (an owned
-                        // `Uuid`) so no notebook borrow is held across the focus
-                        // call below.
-                        let target = notebook
-                            .live_sessions()
-                            .into_iter()
-                            .filter(|s| s.connection_id == conn_id)
-                            .max_by_key(|s| s.connected_at)
-                            .map(|s| s.id);
-
-                        if let Some(target_id) = target {
-                            if Self::focus_embedded_session(
-                                notebook,
-                                session_split_bridges,
-                                target_id,
-                            ) {
-                                return;
-                            }
-                            // R7.6: the session vanished between resolution and
-                            // focus — fall through and launch a new one.
-                        } else if external_session_registry()
-                            .is_some_and(|reg| reg.has_verifiable_active_session(conn_id))
-                        {
-                            // R7 external-only: do not duplicate a session that
-                            // lives in a foreign viewer window; inform the user.
-                            // Only *owned* viewers count — a detaching viewer
-                            // (remmina/krdc) is tracked without a child handle,
-                            // so its entry never clears on its own and would
-                            // block every later double-click (issue #242).
-                            crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
-                                "Already running in an external window",
-                            ));
-                            return;
-                        }
+                    // R7.1/7.4/R7 external-only: show what already runs.
+                    if !force_new
+                        && !always_new
+                        && Self::show_running_session(notebook, session_split_bridges, conn_id)
+                    {
+                        return;
                     }
 
                     // force_new, zero live sessions, or the R7.6 race: launch new.
@@ -5934,9 +5986,42 @@ fn rdp_file_devices_dialog(file_name: &str, host: &str, devices: &[String]) -> a
     dialog
 }
 
+/// Where a request to open a connection goes when it may already be running.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OpenRoute {
+    /// Focus this live embedded session.
+    Focus(Uuid),
+    /// The connection runs only in an external viewer window.
+    AlreadyExternal,
+    /// Nothing runs: start a new session.
+    Launch,
+}
+
+/// Picks the route for opening a connection that may already be running.
+///
+/// A live embedded session wins over an external viewer, which can only be
+/// reported, not raised. `external_running` is asked only when no embedded
+/// session is live.
+fn open_route(newest_live: Option<Uuid>, external_running: impl FnOnce() -> bool) -> OpenRoute {
+    match newest_live {
+        Some(session_id) => OpenRoute::Focus(session_id),
+        None if external_running() => OpenRoute::AlreadyExternal,
+        None => OpenRoute::Launch,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{open_session_count, rdp_file_requested_devices};
+    use super::{OpenRoute, open_route, open_session_count, rdp_file_requested_devices};
+
+    #[test]
+    fn a_running_connection_is_shown_not_duplicated() {
+        let live = uuid::Uuid::new_v4();
+        assert_eq!(open_route(Some(live), || true), OpenRoute::Focus(live));
+        assert_eq!(open_route(Some(live), || false), OpenRoute::Focus(live));
+        assert_eq!(open_route(None, || true), OpenRoute::AlreadyExternal);
+        assert_eq!(open_route(None, || false), OpenRoute::Launch);
+    }
 
     #[test]
     fn an_rdp_file_without_device_redirection_needs_no_prompt() {

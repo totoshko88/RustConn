@@ -594,7 +594,8 @@ impl MainWindow {
             }
         };
 
-        // "Remove from Split" — pop the pane back to its own tab.
+        // "Move to Own Tab" (on the owner: "Remove Split") — pop the pane back
+        // to its own tab; on the owner `win.pop-pane-to-tab` collapses the split.
         let pop_action = gio::SimpleAction::new("split-pop-connection", None);
         let resolve_pop = resolve_session.clone();
         let focus_pop = focus_pane_for.clone();
@@ -611,7 +612,7 @@ impl MainWindow {
         });
         window.add_action(&pop_action);
 
-        // "Close" — terminate the connection's live session. Delegates to
+        // "Disconnect" — terminate the connection's live session. Delegates to
         // `close-tab-by-id`, which performs the full teardown (split-bridge
         // cleanup, tab close, sidebar count) for a session whether or not it is
         // in a split, so this one path serves both an ordinary connected tab
