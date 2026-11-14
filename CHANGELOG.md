@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Enter in the sidebar search opens the connection** — pressing Enter in the search field opens the selected result, or the first one when none is selected, so a connection can be found and opened without leaving the keyboard or moving focus into the list. Enter pressed right after typing, before the list has caught up, filters with the typed text first, so it opens what was typed and not a row of the previous list. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/window/mod.rs`)
+
 ## [0.25.0] - 2026-11-14
 
 ### Added
