@@ -3481,6 +3481,8 @@ Broadcast is a property of a **split layout**, not of a cluster: whichever termi
 4. Type — the keystrokes are mirrored into the other terminal panels of that split
 5. Press **Ctrl+Shift+B** again to stop
 
+**Leaving a panel out.** While broadcast is on, each terminal panel shows a **Broadcast** check box at the right of its header. Untick it to take that panel out of the broadcast: it stays on screen, receives nothing typed in the other panels, and what you type in it stays in it. Tick it again to bring the panel back. The choice belongs to the session, so it survives adding or closing other panels and switching broadcast off and on. If the connection-name headers are switched off in Settings, they are shown for as long as broadcast is on so that the check boxes are reachable.
+
 The toggle only becomes available when the active tab's split holds at least two terminal sessions and a terminal panel has focus. Mirroring never targets an embedded RDP, VNC or SPICE panel — those are not terminals and receive their own input only.
 
 Opening a [cluster](#clusters) is the quick way to get the members on screen; from there, split them and toggle broadcast. `Cluster` still carries a `broadcast_enabled` flag on disk for CLI compatibility; it does not affect the GUI.

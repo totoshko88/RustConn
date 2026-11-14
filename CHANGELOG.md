@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Leave a split panel out of the broadcast** — while split broadcast is on, each terminal panel has a **Broadcast** check box in its header. Unticking it keeps that panel on screen but out of the broadcast in both directions: it receives nothing typed in the other panels and what is typed in it stays in it. Ticking it again brings the panel back. The exclusion is kept per session, so it survives a pane being added or closed and broadcast being switched off and on; the headers are shown while broadcast is on even when the connection-name labels are switched off, so the check boxes are always reachable. (`rustconn/src/split_view/adapter.rs`, `rustconn/src/split_view/bridge.rs`, `rustconn/src/window/navigation_actions.rs`)
+
 ## [0.25.0] - 2026-11-14
 
 ### Added
