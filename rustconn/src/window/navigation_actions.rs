@@ -605,15 +605,14 @@ pub(super) fn wire_broadcast_for_session(
             return;
         }
         // A panel taken out of the broadcast is out both ways: what is typed
-        // in it stays in it, and it receives nothing typed elsewhere.
-        if !bridge_for_cb.is_broadcast_member(sid) {
+        // in it stays in it, and it receives nothing typed elsewhere. Typing
+        // and pasting both arrive here as `commit`.
+        let targets = bridge_for_cb.broadcast_targets(sid);
+        if targets.is_empty() {
             return;
         }
         bridge_for_cb.broadcast_busy.set(true);
-        for target_id in bridge_for_cb.active_sessions() {
-            if target_id == sid || !bridge_for_cb.is_broadcast_member(target_id) {
-                continue;
-            }
+        for target_id in targets {
             notebook_for_cb.send_text_to_session(target_id, text);
         }
         bridge_for_cb.broadcast_busy.set(false);
