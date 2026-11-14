@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 17:23+0200\n"
+"POT-Creation-Date: 2026-11-14 17:44+0200\n"
 "PO-Revision-Date: 2026-06-14 09:46+0000\n"
 "Last-Translator: Albano Battistella\n"
 "Language-Team: Italian\n"
@@ -61,8 +61,8 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2095
 #: rustconn/src/window/group_broadcast.rs:379
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:453
-#: rustconn/src/window/mod.rs:3679 rustconn/src/window/mod.rs:3743
-#: rustconn/src/window/mod.rs:4755 rustconn/src/window/mod.rs:5803
+#: rustconn/src/window/mod.rs:3696 rustconn/src/window/mod.rs:3760
+#: rustconn/src/window/mod.rs:4772 rustconn/src/window/mod.rs:5846
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
 #: rustconn/src/window/operations.rs:972 rustconn/src/window/operations.rs:1151
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -219,7 +219,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:346
-#: rustconn/src/terminal/session_lifecycle.rs:394
+#: rustconn/src/terminal/session_lifecycle.rs:397
 msgid "Session disconnected"
 msgstr "Sessione disconnessa"
 
@@ -267,7 +267,7 @@ msgstr "«{}» richiede quanto segue prima di potersi connettere."
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1060
 #: rustconn/src/sidebar_ui.rs:419 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5804
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5847
 msgid "Connect"
 msgstr "Connetti"
 
@@ -306,7 +306,7 @@ msgstr "Inserisci password manualmente"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1210
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1227
 msgid "Open Settings"
 msgstr "Apri impostazioni"
 
@@ -2782,7 +2782,7 @@ msgstr "Reindirizzamento stampante"
 msgid "Share your local printer with the remote session"
 msgstr "Condividi la stampante locale con la sessione remota"
 
-#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5777
+#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5820
 msgid "Microphone"
 msgstr "Microfono"
 
@@ -2790,7 +2790,7 @@ msgstr "Microfono"
 msgid "Send the local microphone to the remote session"
 msgstr "Invia il microfono locale alla sessione remota"
 
-#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5780
+#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5823
 msgid "Smart Cards"
 msgstr "Smart card"
 
@@ -3758,7 +3758,7 @@ msgstr "Agente SSH"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5783
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5826
 msgid "Security Key (FIDO2)"
 msgstr "Chiave di sicurezza (FIDO2)"
 
@@ -4862,7 +4862,7 @@ msgstr "Copia"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1339
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "Ferma"
@@ -4984,7 +4984,7 @@ msgstr "Copia interrotta"
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/sidebar_ui.rs:506
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4756
+#: rustconn/src/window/mod.rs:4773
 msgid "Close"
 msgstr "Chiudi"
 
@@ -11967,14 +11967,14 @@ msgstr "Salva file dagli appunti remoti"
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1491
-#: rustconn/src/terminal/session_lifecycle.rs:407
+#: rustconn/src/terminal/session_lifecycle.rs:422
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
 msgstr "Riconnetti"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
 #: rustconn/src/terminal/mod.rs:1493
-#: rustconn/src/terminal/session_lifecycle.rs:409
+#: rustconn/src/terminal/session_lifecycle.rs:424
 msgid "Reconnect to this session"
 msgstr "Riconnetti a questa sessione"
 
@@ -12096,7 +12096,7 @@ msgid "RDP session running in external window"
 msgstr "Sessione RDP nella finestra esterna"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3240
+#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3257
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Connessione fallita"
@@ -13165,29 +13165,34 @@ msgstr ""
 "Gli appunti contengono più di una riga. Ogni riga viene eseguita non appena "
 "incollata: controllala prima di continuare."
 
-#: rustconn/src/terminal/session_lifecycle.rs:179
+#: rustconn/src/terminal/session_lifecycle.rs:182
 msgid "Reconnected at {}"
 msgstr "Riconnesso alle {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:401
-#: rustconn/src/terminal/session_lifecycle.rs:456
+#: rustconn/src/terminal/session_lifecycle.rs:405
+#: rustconn/src/terminal/session_lifecycle.rs:411
+msgid "Press R to reconnect, Q to close"
+msgstr "Premere R per riconnettere, Q per chiudere"
+
+#: rustconn/src/terminal/session_lifecycle.rs:416
+#: rustconn/src/terminal/session_lifecycle.rs:557
 msgid "Auto-reconnecting…"
 msgstr "Riconnessione automatica…"
 
-#: rustconn/src/terminal/session_lifecycle.rs:496
-#: rustconn/src/terminal/session_lifecycle.rs:506
+#: rustconn/src/terminal/session_lifecycle.rs:597
+#: rustconn/src/terminal/session_lifecycle.rs:607
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "Riconnessione automatica (tentativo {}/{})"
 
-#: rustconn/src/terminal/session_lifecycle.rs:584
+#: rustconn/src/terminal/session_lifecycle.rs:688
 msgid "Sign-in expired"
 msgstr "Accesso scaduto"
 
-#: rustconn/src/terminal/session_lifecycle.rs:593
+#: rustconn/src/terminal/session_lifecycle.rs:697
 msgid "Log In to {}"
 msgstr "Accedi a {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:597
+#: rustconn/src/terminal/session_lifecycle.rs:701
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Esegui «{}» per accedere di nuovo nel browser"
 
@@ -13383,7 +13388,7 @@ msgstr "Connessione rapida…"
 msgid "{} Active Session(s)"
 msgstr "{} sessione/i attiva/e"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5760
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5803
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "La passphrase non apre il file portatile"
 
@@ -13582,8 +13587,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Host di salto non disponibile"
 
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3680
-#: rustconn/src/window/mod.rs:3746 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3697
+#: rustconn/src/window/mod.rs:3763 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Connetti comunque"
 
@@ -14670,15 +14675,15 @@ msgstr ""
 "La connessione a «{}» ora salta quell'host di salto e usa solo il resto del "
 "percorso configurato."
 
-#: rustconn/src/window/mod.rs:1186 rustconn/src/window/mod.rs:1197
+#: rustconn/src/window/mod.rs:1203 rustconn/src/window/mod.rs:1214
 msgid "Dismiss"
 msgstr "Ignora"
 
-#: rustconn/src/window/mod.rs:1229
+#: rustconn/src/window/mod.rs:1246
 msgid "Open Log"
 msgstr "Apri registro"
 
-#: rustconn/src/window/mod.rs:1232
+#: rustconn/src/window/mod.rs:1249
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
@@ -14686,39 +14691,39 @@ msgstr ""
 "L'ultima volta RustConn si è chiuso in modo imprevisto. Un registro "
 "dell'arresto anomalo è stato salvato in locale."
 
-#: rustconn/src/window/mod.rs:1257
+#: rustconn/src/window/mod.rs:1274
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Impossibile aprire il registro dell'arresto anomalo. È salvato in {}"
 
-#: rustconn/src/window/mod.rs:1286
+#: rustconn/src/window/mod.rs:1303
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Tocca la tua chiave hardware per sbloccare il database delle password"
 
-#: rustconn/src/window/mod.rs:2807
+#: rustconn/src/window/mod.rs:2824
 msgid "Already running in an external window"
 msgstr "Già in esecuzione in una finestra esterna"
 
-#: rustconn/src/window/mod.rs:3036
+#: rustconn/src/window/mod.rs:3053
 msgid "Connection to ‘{}’ failed"
 msgstr "Connessione a ‘{}’ non riuscita"
 
-#: rustconn/src/window/mod.rs:3384 rustconn/src/window/mod.rs:3398
+#: rustconn/src/window/mod.rs:3401 rustconn/src/window/mod.rs:3415
 msgid "Pre-connect task failed: {}"
 msgstr "Attività pre-connessione fallita: {}"
 
-#: rustconn/src/window/mod.rs:3432
+#: rustconn/src/window/mod.rs:3449
 msgid "Port knock failed: {}"
 msgstr "Port knock non riuscito: {}"
 
-#: rustconn/src/window/mod.rs:3481
+#: rustconn/src/window/mod.rs:3498
 msgid "SPA failed: {}"
 msgstr "SPA non riuscito: {}"
 
-#: rustconn/src/window/mod.rs:3665
+#: rustconn/src/window/mod.rs:3682
 msgid "{} (via {})"
 msgstr "{} (tramite {})"
 
-#: rustconn/src/window/mod.rs:3671
+#: rustconn/src/window/mod.rs:3688
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14742,35 +14747,35 @@ msgstr ""
 "Se non hai fatto questa modifica, annulla: connettersi potrebbe inviare le "
 "credenziali salvate a un’altra macchina."
 
-#: rustconn/src/window/mod.rs:3676
+#: rustconn/src/window/mod.rs:3693
 msgid "Routing changed for “{}”"
 msgstr "Il percorso è cambiato per «{}»"
 
-#: rustconn/src/window/mod.rs:3740
+#: rustconn/src/window/mod.rs:3757
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Host di salto non disponibile per «{}»"
 
-#: rustconn/src/window/mod.rs:3745
+#: rustconn/src/window/mod.rs:3762
 msgid "Connect Directly"
 msgstr "Connetti direttamente"
 
-#: rustconn/src/window/mod.rs:3834 rustconn/src/window/mod.rs:4009
+#: rustconn/src/window/mod.rs:3851 rustconn/src/window/mod.rs:4026
 msgid "Connection “{}” created"
 msgstr "Connessione “{}” creata"
 
-#: rustconn/src/window/mod.rs:4266
+#: rustconn/src/window/mod.rs:4283
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4478
+#: rustconn/src/window/mod.rs:4495
 msgid "Settings saved"
 msgstr "Impostazioni salvate"
 
-#: rustconn/src/window/mod.rs:4515
+#: rustconn/src/window/mod.rs:4532
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Passphrase non salvata su questo computer"
 
-#: rustconn/src/window/mod.rs:4517
+#: rustconn/src/window/mod.rs:4534
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14782,11 +14787,11 @@ msgstr ""
 "nuovo dopo un riavvio. Scegli invece «Portachiavi di sistema» oppure "
 "verifica che RustConn possa scrivere nella sua cartella dati."
 
-#: rustconn/src/window/mod.rs:4563
+#: rustconn/src/window/mod.rs:4580
 msgid "Credentials Not Saved to Keyring"
 msgstr "Credenziali non salvate nel portachiavi"
 
-#: rustconn/src/window/mod.rs:4565
+#: rustconn/src/window/mod.rs:4582
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14797,17 +14802,17 @@ msgstr ""
 "che il servizio del portachiavi sia in esecuzione e sbloccato, poi salva di "
 "nuovo le impostazioni."
 
-#: rustconn/src/window/mod.rs:4749
+#: rustconn/src/window/mod.rs:4766
 msgid "Close RustConn?"
 msgstr "Chiudere RustConn?"
 
-#: rustconn/src/window/mod.rs:4751
+#: rustconn/src/window/mod.rs:4768
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr ""
 "{} schede di sessione sono aperte. Le connessioni attive verranno "
 "disconnesse."
 
-#: rustconn/src/window/mod.rs:4788
+#: rustconn/src/window/mod.rs:4805
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14815,7 +14820,7 @@ msgstr ""
 "Impossibile leggere le impostazioni, quindi vengono usati i valori "
 "predefiniti. Il file illeggibile è stato conservato come {}."
 
-#: rustconn/src/window/mod.rs:4793
+#: rustconn/src/window/mod.rs:4810
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14823,35 +14828,35 @@ msgstr ""
 "Queste impostazioni sono state salvate da una versione più recente di "
 "RustConn ({}). Viene conservato un backup prima di modificarle."
 
-#: rustconn/src/window/mod.rs:4818
+#: rustconn/src/window/mod.rs:4835
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Sincronizzazione cloud non riuscita per «{}»: {}"
 
-#: rustconn/src/window/mod.rs:5001
+#: rustconn/src/window/mod.rs:5018
 msgid "Startup connection not found"
 msgstr "Connessione di avvio non trovata"
 
-#: rustconn/src/window/mod.rs:5074
+#: rustconn/src/window/mod.rs:5091
 msgid "Failed to open .rdp file"
 msgstr "Impossibile aprire il file .rdp"
 
-#: rustconn/src/window/mod.rs:5110
+#: rustconn/src/window/mod.rs:5127
 msgid "Failed to open .vv file"
 msgstr "Impossibile aprire il file .vv"
 
-#: rustconn/src/window/mod.rs:5147
+#: rustconn/src/window/mod.rs:5164
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Il tunnel “{}” si è fermato: {}"
 
-#: rustconn/src/window/mod.rs:5163
+#: rustconn/src/window/mod.rs:5180
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Riconnessione del tunnel “{}” abbandonata: {}"
 
-#: rustconn/src/window/mod.rs:5676
+#: rustconn/src/window/mod.rs:5719
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Esportate con successo {} connessione/i. {} saltate."
 
-#: rustconn/src/window/mod.rs:5762
+#: rustconn/src/window/mod.rs:5805
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14861,11 +14866,11 @@ msgstr ""
 "nessuna delle password al suo interno può essere letta. Apri Impostazioni ▸ "
 "Segreti e inserisci la passphrase con cui è stato creato il file."
 
-#: rustconn/src/window/mod.rs:5797
+#: rustconn/src/window/mod.rs:5840
 msgid "Share Local Devices?"
 msgstr "Condividere i dispositivi locali?"
 
-#: rustconn/src/window/mod.rs:5799
+#: rustconn/src/window/mod.rs:5842
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"

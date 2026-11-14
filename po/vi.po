@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 17:23+0200\n"
+"POT-Creation-Date: 2026-11-14 17:44+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -61,8 +61,8 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2095
 #: rustconn/src/window/group_broadcast.rs:379
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:453
-#: rustconn/src/window/mod.rs:3679 rustconn/src/window/mod.rs:3743
-#: rustconn/src/window/mod.rs:4755 rustconn/src/window/mod.rs:5803
+#: rustconn/src/window/mod.rs:3696 rustconn/src/window/mod.rs:3760
+#: rustconn/src/window/mod.rs:4772 rustconn/src/window/mod.rs:5846
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
 #: rustconn/src/window/operations.rs:972 rustconn/src/window/operations.rs:1151
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -217,7 +217,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:346
-#: rustconn/src/terminal/session_lifecycle.rs:394
+#: rustconn/src/terminal/session_lifecycle.rs:397
 msgid "Session disconnected"
 msgstr "Phiên đã ngắt kết nối"
 
@@ -265,7 +265,7 @@ msgstr "‘{}’ cần những thông tin sau trước khi có thể kết nối
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1060
 #: rustconn/src/sidebar_ui.rs:419 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5804
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5847
 msgid "Connect"
 msgstr "Kết nối"
 
@@ -303,7 +303,7 @@ msgstr "Nhập mật khẩu thủ công"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1210
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1227
 msgid "Open Settings"
 msgstr "Mở Cài đặt"
 
@@ -2749,7 +2749,7 @@ msgstr "Chuyển hướng máy in"
 msgid "Share your local printer with the remote session"
 msgstr "Chia sẻ máy in cục bộ với phiên từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5777
+#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5820
 msgid "Microphone"
 msgstr "Micrô"
 
@@ -2757,7 +2757,7 @@ msgstr "Micrô"
 msgid "Send the local microphone to the remote session"
 msgstr "Gửi micrô cục bộ tới phiên từ xa"
 
-#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5780
+#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5823
 msgid "Smart Cards"
 msgstr "Thẻ thông minh"
 
@@ -3713,7 +3713,7 @@ msgstr "SSH Agent"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5783
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5826
 msgid "Security Key (FIDO2)"
 msgstr "Khóa bảo mật (FIDO2)"
 
@@ -4810,7 +4810,7 @@ msgstr "Sao chép"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1339
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "Dừng"
@@ -4930,7 +4930,7 @@ msgstr "Đã dừng sao chép"
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/sidebar_ui.rs:506
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4756
+#: rustconn/src/window/mod.rs:4773
 msgid "Close"
 msgstr "Đóng"
 
@@ -11824,14 +11824,14 @@ msgstr "Lưu tệp từ bộ nhớ tạm từ xa"
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1491
-#: rustconn/src/terminal/session_lifecycle.rs:407
+#: rustconn/src/terminal/session_lifecycle.rs:422
 #: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
 msgstr "Kết nối lại"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
 #: rustconn/src/terminal/mod.rs:1493
-#: rustconn/src/terminal/session_lifecycle.rs:409
+#: rustconn/src/terminal/session_lifecycle.rs:424
 msgid "Reconnect to this session"
 msgstr "Kết nối lại phiên này"
 
@@ -11950,7 +11950,7 @@ msgid "RDP session running in external window"
 msgstr "Phiên RDP đang chạy trong cửa sổ bên ngoài"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3240
+#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3257
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Kết nối thất bại"
@@ -13012,29 +13012,34 @@ msgstr ""
 "Bộ nhớ tạm chứa nhiều hơn một dòng. Mỗi dòng sẽ chạy ngay khi được dán — hãy "
 "kiểm tra trước khi tiếp tục."
 
-#: rustconn/src/terminal/session_lifecycle.rs:179
+#: rustconn/src/terminal/session_lifecycle.rs:182
 msgid "Reconnected at {}"
 msgstr "Đã kết nối lại lúc {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:401
-#: rustconn/src/terminal/session_lifecycle.rs:456
+#: rustconn/src/terminal/session_lifecycle.rs:405
+#: rustconn/src/terminal/session_lifecycle.rs:411
+msgid "Press R to reconnect, Q to close"
+msgstr "Nhấn R để kết nối lại, Q để đóng"
+
+#: rustconn/src/terminal/session_lifecycle.rs:416
+#: rustconn/src/terminal/session_lifecycle.rs:557
 msgid "Auto-reconnecting…"
 msgstr "Đang tự động kết nối lại…"
 
-#: rustconn/src/terminal/session_lifecycle.rs:496
-#: rustconn/src/terminal/session_lifecycle.rs:506
+#: rustconn/src/terminal/session_lifecycle.rs:597
+#: rustconn/src/terminal/session_lifecycle.rs:607
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "Đang tự động kết nối lại (lần thử {}/{})"
 
-#: rustconn/src/terminal/session_lifecycle.rs:584
+#: rustconn/src/terminal/session_lifecycle.rs:688
 msgid "Sign-in expired"
 msgstr "Phiên đăng nhập đã hết hạn"
 
-#: rustconn/src/terminal/session_lifecycle.rs:593
+#: rustconn/src/terminal/session_lifecycle.rs:697
 msgid "Log In to {}"
 msgstr "Đăng nhập vào {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:597
+#: rustconn/src/terminal/session_lifecycle.rs:701
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Chạy “{}” để đăng nhập lại trong trình duyệt"
 
@@ -13228,7 +13233,7 @@ msgstr "Kết nối nhanh…"
 msgid "{} Active Session(s)"
 msgstr "{} phiên đang hoạt động"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5760
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5803
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Cụm mật khẩu không mở được tệp di động"
 
@@ -13422,8 +13427,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Máy chủ trung gian không khả dụng"
 
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3680
-#: rustconn/src/window/mod.rs:3746 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3697
+#: rustconn/src/window/mod.rs:3763 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Vẫn kết nối"
 
@@ -14494,54 +14499,54 @@ msgstr ""
 "Kết nối tới “{}” giờ sẽ bỏ qua máy chủ trung gian đó và chỉ dùng phần còn "
 "lại của tuyến đã cấu hình."
 
-#: rustconn/src/window/mod.rs:1186 rustconn/src/window/mod.rs:1197
+#: rustconn/src/window/mod.rs:1203 rustconn/src/window/mod.rs:1214
 msgid "Dismiss"
 msgstr "Bỏ qua"
 
-#: rustconn/src/window/mod.rs:1229
+#: rustconn/src/window/mod.rs:1246
 msgid "Open Log"
 msgstr "Mở nhật ký"
 
-#: rustconn/src/window/mod.rs:1232
+#: rustconn/src/window/mod.rs:1249
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
 msgstr ""
 "Lần chạy trước RustConn đã đóng bất ngờ. Nhật ký sự cố đã được lưu cục bộ."
 
-#: rustconn/src/window/mod.rs:1257
+#: rustconn/src/window/mod.rs:1274
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Không thể mở nhật ký sự cố. Tệp được lưu tại {}"
 
-#: rustconn/src/window/mod.rs:1286
+#: rustconn/src/window/mod.rs:1303
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Chạm vào khóa phần cứng để mở khóa cơ sở dữ liệu mật khẩu"
 
-#: rustconn/src/window/mod.rs:2807
+#: rustconn/src/window/mod.rs:2824
 msgid "Already running in an external window"
 msgstr "Đang chạy trong một cửa sổ bên ngoài"
 
-#: rustconn/src/window/mod.rs:3036
+#: rustconn/src/window/mod.rs:3053
 msgid "Connection to ‘{}’ failed"
 msgstr "Kết nối tới ‘{}’ thất bại"
 
-#: rustconn/src/window/mod.rs:3384 rustconn/src/window/mod.rs:3398
+#: rustconn/src/window/mod.rs:3401 rustconn/src/window/mod.rs:3415
 msgid "Pre-connect task failed: {}"
 msgstr "Tác vụ trước khi kết nối thất bại: {}"
 
-#: rustconn/src/window/mod.rs:3432
+#: rustconn/src/window/mod.rs:3449
 msgid "Port knock failed: {}"
 msgstr "Gõ cổng thất bại: {}"
 
-#: rustconn/src/window/mod.rs:3481
+#: rustconn/src/window/mod.rs:3498
 msgid "SPA failed: {}"
 msgstr "SPA thất bại: {}"
 
-#: rustconn/src/window/mod.rs:3665
+#: rustconn/src/window/mod.rs:3682
 msgid "{} (via {})"
 msgstr "{} (qua {})"
 
-#: rustconn/src/window/mod.rs:3671
+#: rustconn/src/window/mod.rs:3688
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14565,35 +14570,35 @@ msgstr ""
 "Nếu bạn không thực hiện thay đổi này, hãy hủy — kết nối có thể gửi thông tin "
 "đăng nhập đã lưu tới một máy khác."
 
-#: rustconn/src/window/mod.rs:3676
+#: rustconn/src/window/mod.rs:3693
 msgid "Routing changed for “{}”"
 msgstr "Định tuyến đã thay đổi cho “{}”"
 
-#: rustconn/src/window/mod.rs:3740
+#: rustconn/src/window/mod.rs:3757
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Máy chủ trung gian không khả dụng cho “{}”"
 
-#: rustconn/src/window/mod.rs:3745
+#: rustconn/src/window/mod.rs:3762
 msgid "Connect Directly"
 msgstr "Kết nối trực tiếp"
 
-#: rustconn/src/window/mod.rs:3834 rustconn/src/window/mod.rs:4009
+#: rustconn/src/window/mod.rs:3851 rustconn/src/window/mod.rs:4026
 msgid "Connection “{}” created"
 msgstr "Đã tạo kết nối “{}”"
 
-#: rustconn/src/window/mod.rs:4266
+#: rustconn/src/window/mod.rs:4283
 msgid "RustConn - {}"
 msgstr "RustConn - {}"
 
-#: rustconn/src/window/mod.rs:4478
+#: rustconn/src/window/mod.rs:4495
 msgid "Settings saved"
 msgstr "Đã lưu cài đặt"
 
-#: rustconn/src/window/mod.rs:4515
+#: rustconn/src/window/mod.rs:4532
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Chưa lưu cụm mật khẩu trên máy tính này"
 
-#: rustconn/src/window/mod.rs:4517
+#: rustconn/src/window/mod.rs:4534
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14605,11 +14610,11 @@ msgstr ""
 "thống”, hoặc kiểm tra xem RustConn có ghi được vào thư mục dữ liệu của nó "
 "không."
 
-#: rustconn/src/window/mod.rs:4563
+#: rustconn/src/window/mod.rs:4580
 msgid "Credentials Not Saved to Keyring"
 msgstr "Chưa lưu thông tin đăng nhập vào chùm khóa"
 
-#: rustconn/src/window/mod.rs:4565
+#: rustconn/src/window/mod.rs:4582
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14619,15 +14624,15 @@ msgstr ""
 "giữ cho phiên này và sẽ mất sau khi khởi động lại. Hãy kiểm tra dịch vụ chùm "
 "khóa có đang chạy và đã mở khóa không, rồi lưu lại cài đặt."
 
-#: rustconn/src/window/mod.rs:4749
+#: rustconn/src/window/mod.rs:4766
 msgid "Close RustConn?"
 msgstr "Đóng RustConn?"
 
-#: rustconn/src/window/mod.rs:4751
+#: rustconn/src/window/mod.rs:4768
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "Đang mở {} thẻ phiên. Các kết nối đang hoạt động sẽ bị ngắt."
 
-#: rustconn/src/window/mod.rs:4788
+#: rustconn/src/window/mod.rs:4805
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14635,7 +14640,7 @@ msgstr ""
 "Không thể đọc cài đặt, nên đang dùng giá trị mặc định. Tệp không đọc được đã "
 "được giữ lại dưới tên {}."
 
-#: rustconn/src/window/mod.rs:4793
+#: rustconn/src/window/mod.rs:4810
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14643,35 +14648,35 @@ msgstr ""
 "Các cài đặt này được lưu bởi RustConn phiên bản mới hơn ({}). Một bản sao "
 "lưu sẽ được giữ lại trước khi chúng bị thay đổi."
 
-#: rustconn/src/window/mod.rs:4818
+#: rustconn/src/window/mod.rs:4835
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Đồng bộ đám mây thất bại cho “{}”: {}"
 
-#: rustconn/src/window/mod.rs:5001
+#: rustconn/src/window/mod.rs:5018
 msgid "Startup connection not found"
 msgstr "Không tìm thấy kết nối khởi động"
 
-#: rustconn/src/window/mod.rs:5074
+#: rustconn/src/window/mod.rs:5091
 msgid "Failed to open .rdp file"
 msgstr "Mở tệp .rdp thất bại"
 
-#: rustconn/src/window/mod.rs:5110
+#: rustconn/src/window/mod.rs:5127
 msgid "Failed to open .vv file"
 msgstr "Mở tệp .vv thất bại"
 
-#: rustconn/src/window/mod.rs:5147
+#: rustconn/src/window/mod.rs:5164
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Đường hầm “{}” đã dừng: {}"
 
-#: rustconn/src/window/mod.rs:5163
+#: rustconn/src/window/mod.rs:5180
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Đã ngừng thử kết nối lại đường hầm “{}”: {}"
 
-#: rustconn/src/window/mod.rs:5676
+#: rustconn/src/window/mod.rs:5719
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Đã xuất thành công {} kết nối. Đã bỏ qua {}."
 
-#: rustconn/src/window/mod.rs:5762
+#: rustconn/src/window/mod.rs:5805
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14681,11 +14686,11 @@ msgstr ""
 "nên không đọc được mật khẩu nào trong đó. Hãy mở Cài đặt ▸ Bí mật và nhập "
 "cụm mật khẩu đã dùng khi tạo tệp."
 
-#: rustconn/src/window/mod.rs:5797
+#: rustconn/src/window/mod.rs:5840
 msgid "Share Local Devices?"
 msgstr "Chia sẻ thiết bị cục bộ?"
 
-#: rustconn/src/window/mod.rs:5799
+#: rustconn/src/window/mod.rs:5842
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
