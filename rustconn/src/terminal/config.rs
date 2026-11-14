@@ -241,11 +241,17 @@ fn setup_keyboard_shortcuts(terminal: &Terminal) {
 /// mutually exclusive by construction, so they never fight over the popover —
 /// which is what regressed Copy/Paste in #84. Copy and Select All remain
 /// reachable through Ctrl+Shift+C and the existing key bindings.
-pub fn setup_context_menu(
+///
+/// `reconnect` runs when the menu's **Reconnect** entry is chosen. The entry
+/// heads the menu, and is offered only while the session has ended: the
+/// returned [`VteReconnectItem`] is how the notebook offers and withdraws it.
+/// `None` in right-click-pastes mode, which has no menu.
+pub(crate) fn setup_context_menu(
     terminal: &Terminal,
     snippet_section: &Rc<gtk4::gio::Menu>,
     right_click_pastes: bool,
-) {
+    reconnect: Rc<dyn Fn()>,
+) -> Option<VteReconnectItem> {
     use std::cell::RefCell;
 
     use gtk4::gio;
@@ -262,7 +268,7 @@ pub fn setup_context_menu(
             super::safe_paste::paste_into_terminal(&term_paste);
         });
         terminal.add_controller(gesture);
-        return;
+        return None;
     }
 
     // Cache the last selection so Copy still works after VTE clears it
@@ -283,8 +289,12 @@ pub fn setup_context_menu(
         // value so the Copy action can still use it.
     });
 
-    // Build the menu model (shared across all right-click invocations)
+    // Build the menu model (shared across all right-click invocations).
+    // The recovery action comes first; its section is empty, and renders
+    // nothing, while the session is live.
     let menu = gio::Menu::new();
+    let reconnect_item = VteReconnectItem::new(reconnect);
+    menu.append_section(None, &reconnect_item.section);
     let clipboard_section = gio::Menu::new();
     clipboard_section.append(Some(&crate::i18n::i18n("Copy")), Some("terminal.copy"));
     clipboard_section.append(Some(&crate::i18n::i18n("Paste")), Some("terminal.paste"));
@@ -363,6 +373,7 @@ pub fn setup_context_menu(
         request_save_selection_snippet(&term_save, &text.unwrap_or_default());
     });
     action_group.add_action(&action_save);
+    action_group.add_action(&reconnect_item.action);
 
     // Install on the terminal itself so the action group follows the
     // widget when it is reparented between TabView and split view panels.
@@ -370,6 +381,50 @@ pub fn setup_context_menu(
 
     // Let VTE handle the right-click popover natively.
     terminal.set_context_menu_model(Some(&menu));
+    Some(reconnect_item)
+}
+
+/// The **Reconnect** entry at the head of a terminal's right-click menu.
+///
+/// Offered only while the session has ended, so a live session's menu is the
+/// clipboard and snippet sections alone. The action calls a closure rather
+/// than a `win.*` action, so it reconnects the right-clicked session in a
+/// tab, a split pane, a detached window and a cluster window alike.
+pub(crate) struct VteReconnectItem {
+    section: gtk4::gio::Menu,
+    action: gtk4::gio::SimpleAction,
+}
+
+impl VteReconnectItem {
+    /// Builds the entry, withdrawn, with `reconnect` behind its action.
+    fn new(reconnect: Rc<dyn Fn()>) -> Self {
+        let action = gtk4::gio::SimpleAction::new("reconnect", None);
+        action.set_enabled(false);
+        action.connect_activate(move |_, _| {
+            // The popover is still closing on this terminal: reconnect after.
+            let reconnect = Rc::clone(&reconnect);
+            glib::idle_add_local_once(move || reconnect());
+        });
+        Self {
+            section: gtk4::gio::Menu::new(),
+            action,
+        }
+    }
+
+    /// Offers the entry (`true`) or withdraws it (`false`). Idempotent.
+    pub(crate) fn set_offered(&self, offered: bool) {
+        if offered {
+            if self.section.n_items() == 0 {
+                self.section.append(
+                    Some(&crate::i18n::i18n("Reconnect")),
+                    Some("terminal.reconnect"),
+                );
+            }
+        } else {
+            self.section.remove_all();
+        }
+        self.action.set_enabled(offered);
+    }
 }
 
 /// Maximum number of snippets to show inline in the context menu.
@@ -731,5 +786,52 @@ mod erase_binding_tests {
         assert_eq!(control_h, EraseBinding::AsciiBackspace);
         let (_, del) = erase_bindings_for(BackspaceSends::Automatic, DeleteSends::Delete);
         assert_eq!(del, EraseBinding::AsciiDelete);
+    }
+}
+
+#[cfg(test)]
+mod vte_reconnect_item_tests {
+    use std::rc::Rc;
+
+    use gtk4::gio;
+    use gtk4::prelude::*;
+
+    use super::VteReconnectItem;
+
+    /// The action each item in the entry's section activates.
+    fn items(item: &VteReconnectItem) -> Vec<Option<String>> {
+        (0..item.section.n_items())
+            .map(|i| {
+                item.section
+                    .item_attribute_value(i, gio::MENU_ATTRIBUTE_ACTION, None)
+                    .and_then(|v| v.get::<String>())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn vte_reconnect_is_withdrawn_until_offered() {
+        let item = VteReconnectItem::new(Rc::new(|| {}));
+        assert!(items(&item).is_empty());
+        assert!(!item.action.is_enabled());
+    }
+
+    #[test]
+    fn vte_reconnect_offered_twice_shows_one_entry() {
+        let item = VteReconnectItem::new(Rc::new(|| {}));
+        item.set_offered(true);
+        item.set_offered(true);
+        assert_eq!(items(&item), vec![Some("terminal.reconnect".to_string())]);
+        assert!(item.action.is_enabled());
+        assert_eq!(item.action.name(), "reconnect");
+    }
+
+    #[test]
+    fn vte_reconnect_withdrawn_leaves_nothing() {
+        let item = VteReconnectItem::new(Rc::new(|| {}));
+        item.set_offered(true);
+        item.set_offered(false);
+        assert!(items(&item).is_empty());
+        assert!(!item.action.is_enabled());
     }
 }

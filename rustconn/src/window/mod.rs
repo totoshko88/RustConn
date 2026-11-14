@@ -971,6 +971,18 @@ impl MainWindow {
             });
         }
 
+        // Put a disconnected session's reconnect banner back after a move
+        // between a tab, a split pane and a window dropped it. Weak: every
+        // terminal holds this hook.
+        {
+            let notebook_for_mapped = Rc::downgrade(&terminal_notebook);
+            terminal_notebook.set_on_terminal_mapped(move |session_id| {
+                if let Some(notebook) = notebook_for_mapped.upgrade() {
+                    notebook.reconcile_reconnect_banner(session_id);
+                }
+            });
+        }
+
         // Focus the pane that shows a session, so Q on an ended session closes
         // that pane through `win.close-pane` rather than the pane last clicked:
         // the bridge follows clicks, not keyboard focus.

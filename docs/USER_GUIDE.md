@@ -2451,6 +2451,8 @@ When a terminal session disconnects (SSH, Telnet, Serial, Kubernetes, Zero Trust
   | **Enter**, then **Enter** again | The first Enter highlights the banner's suggested button and the hint reads *Press Enter again to reconnect*; the second Enter clicks it. When the banner offers **Log In to …** for expired cloud credentials, that is the suggested button and Enter twice signs in. Any other key cancels the first Enter, and holding Enter down does not count as a second press |
 
 - A **Local Shell** whose shell exits gets the same banner: **R** (or **Reconnect**) starts a new shell in the same tab. With **Close tab on clean exit** on (Settings → Terminal), a shell that exits cleanly (`exit`, Ctrl+D) closes its tab instead
+- Right-click in the terminal of an ended session: **Reconnect** heads the menu. It is offered only while the session has ended, never on a live one or while a cloud login runs in the terminal, and works in a tab, a split pane, a detached window and a cluster window. With **Right-click pastes** on, right-click pastes and there is no menu
+- The banner stays in the session's own pane in a split, for the pane that hosts the split too, and comes back when panes are added or closed or when the session moves between a tab, a split and a window, with its **Log In to …** button if it had one
 
 **Automatic reconnect.** Beyond the manual banner, RustConn reconnects on its own
 after a transient drop — the common cases being the machine waking from sleep and
@@ -2462,7 +2464,11 @@ is stale — retrying only risks a lockout), a session that crashed within a few
 seconds of starting (a reconnect loop), a Zero Trust session whose cloud sign-in
 expired (see [Signing In Again When Cloud Credentials Expire](#signing-in-again-when-cloud-credentials-expire)),
 or a tab you closed yourself. In those cases the manual banner is shown instead, so
-the decision stays yours.
+the decision stays yours. OpenSSH exits with status 255 both for refused credentials
+and for a lost connection, so such an exit counts as an authentication failure only
+when ssh's last message says so (`Permission denied`, `Authentication failed`), or
+when it came within 60 seconds of the start with no message; a keepalive timeout, a
+connection reset or a broken pipe is reconnected.
 
 ### Session Logging
 

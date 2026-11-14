@@ -2083,3 +2083,45 @@ proptest! {
         );
     }
 }
+// ============================================================================
+// SSH exit 255: authentication failure or dropped connection
+// ============================================================================
+proptest! {
+    /// Only an ssh exit 255 can be read as an authentication failure.
+    #[test]
+    fn prop_only_ssh_255_can_be_an_auth_failure(
+        exit_code in any::<i32>(),
+        protocol in prop_oneof![
+            Just("ssh".to_owned()),
+            Just("zerotrust".to_owned()),
+            Just("telnet".to_owned()),
+            "[a-z]{0,8}",
+        ],
+        lifetime_secs in any::<i64>(),
+        screen_text in ".{0,200}",
+    ) {
+        prop_assume!(exit_code != 255 || protocol != "ssh");
+        prop_assert!(!rustconn_core::protocol::ssh_exit_is_auth_failure(
+            exit_code, &protocol, lifetime_secs, &screen_text
+        ));
+    }
+
+    /// A screen whose last line is a network error is never an authentication
+    /// failure, however short the session and whatever came before.
+    #[test]
+    fn prop_a_final_network_message_is_never_an_auth_failure(
+        lifetime_secs in any::<i64>(),
+        earlier in "[a-zA-Z :.\n]{0,200}",
+        last in prop_oneof![
+            Just("Timeout, server host not responding."),
+            Just("ssh: connect to host h port 22: Connection timed out"),
+            Just("read: Connection reset by peer"),
+            Just("client_loop: send disconnect: Broken pipe"),
+        ],
+    ) {
+        let text = format!("{earlier}\nPermission denied\n{last}\n");
+        prop_assert!(!rustconn_core::protocol::ssh_exit_is_auth_failure(
+            255, "ssh", lifetime_secs, &text
+        ));
+    }
+}

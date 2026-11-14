@@ -10,19 +10,6 @@
 use crate::models::{ZeroTrustConfig, ZeroTrustProviderConfig};
 use crate::ssh_tunnel::format_argv_for_display;
 
-/// Longest a Zero Trust session may have run, in seconds, for its failure to
-/// be read as an expired sign-in.
-///
-/// A CLI refusing an expired token does so while it starts — before any remote
-/// shell exists. A session that fails later ends with the remote host's output
-/// on screen, and ordinary remote text (`docker push` saying "not logged in", a
-/// gRPC `Unauthenticated`, a log line about an expired JWT) would otherwise
-/// turn a dropped network into "Sign-in expired" and switch off automatic
-/// reconnection. Sixty seconds leaves room for a slow token refresh and an
-/// MFA prompt. If credentials do expire mid-session, the automatic reconnect
-/// then fails at start-up and is recognised there.
-pub const LOGIN_FAILURE_WINDOW_SECS: i64 = 60;
-
 /// Number of trailing terminal lines inspected for an expiry message.
 ///
 /// The CLI prints the error as its last words before exiting, so a short tail
@@ -245,7 +232,7 @@ fn login(provider_name: &'static str, program: &'static str, args: Vec<String>) 
 }
 
 /// Lowercased last [`TAIL_LINES`] non-empty lines of `output`.
-fn output_tail(output: &str) -> String {
+pub(super) fn output_tail(output: &str) -> String {
     let lines: Vec<&str> = output
         .lines()
         .map(str::trim_end)

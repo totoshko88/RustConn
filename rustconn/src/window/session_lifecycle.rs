@@ -976,6 +976,41 @@ impl MainWindow {
             };
             let is_expired_credentials = cloud_login.is_some();
 
+            // Skip auto-reconnect for SSH authentication failures: the host is
+            // reachable but the credentials are wrong, so polling would
+            // reconnect at once and loop. OpenSSH exits 255 both for a refused
+            // key and for a lost connection (a `ServerAliveInterval` timeout,
+            // a reset, a broken pipe, #217), so the verdict also reads ssh's
+            // last message and the session's lifetime. Like the cloud login,
+            // it reads the screen before `mark_tab_disconnected` resets it.
+            let is_ssh_auth_failure = notebook_clone
+                .get_session_info(session_id)
+                .filter(|info| exit_code == 255 && info.protocol == "ssh")
+                .is_some_and(|info| {
+                    let lifetime_secs = chrono::Utc::now()
+                        .signed_duration_since(info.started_at())
+                        .num_seconds();
+                    // The screen can hold whatever the session printed, so the
+                    // copy is scrubbed when it goes out of scope.
+                    let screen = Zeroizing::new(
+                        notebook_clone.get_terminal_text(session_id).unwrap_or_default(),
+                    );
+                    let auth_failure = rustconn_core::protocol::ssh_exit_is_auth_failure(
+                        exit_code,
+                        &info.protocol,
+                        lifetime_secs,
+                        &screen,
+                    );
+                    tracing::debug!(
+                        %session_id,
+                        exit_code,
+                        lifetime_secs,
+                        auth_failure,
+                        "ssh exit verdict"
+                    );
+                    auth_failure
+                });
+
             // Mark tab as disconnected and show reconnect overlay
             notebook_clone.mark_tab_disconnected(session_id);
             notebook_clone.show_reconnect_overlay(session_id);
@@ -983,20 +1018,10 @@ impl MainWindow {
                 notebook_clone.offer_cloud_login(session_id, login);
             }
 
-            // Auto-reconnect: poll host and reconnect when it comes back online
-            // Only for non-intentional disconnects (failures, not user-initiated)
-            // Skip auto-reconnect for SSH authentication failures (exit code 255)
-            // because the host is reachable but credentials are wrong — polling
-            // would instantly trigger reconnect creating an infinite loop.
-            let is_ssh_auth_failure = exit_code == 255
-                && notebook_clone
-                    .get_session_info(session_id)
-                    .is_some_and(|info| info.protocol == "ssh");
-
             // A refused password must not be served again from the session
             // cache for the next five minutes: the retry reads the vault again
-            // (issue #351). OpenSSH also exits 255 for a lost connection (#217),
-            // which then costs one extra vault lookup and no wrong credential.
+            // (issue #351). A keepalive timeout or a reset no longer counts as
+            // a refusal, so it keeps the cached credential.
             // ponytail: only the target's entry. A refused jump-host password
             // stays cached until it expires, because the exit status does not
             // say which hop failed; parse ssh's stderr if that ever matters.
@@ -1032,14 +1057,14 @@ impl MainWindow {
             // Without this, `exit` re-enters the host by itself on the next
             // Wi-Fi roam.
             //
-            // The `is_ssh_auth_failure` term deliberately does *not* apply here.
-            // OpenSSH exits 255 for a connection it lost just as it does for a
-            // password it was refused, so carrying that term over would make the
-            // sweep skip precisely the sessions it exists to recover (#217). The
-            // poll below can afford the heuristic because it retries every few
-            // seconds and would spin forever on bad credentials; a sweep fires
-            // once, on a discrete external event, and one re-prompt is a far
-            // smaller price than never recovering a dropped SSH session.
+            // The `is_ssh_auth_failure` term deliberately does *not* apply here,
+            // so `reconnect_sessions_after_outage` (network_monitor.rs) and the
+            // resume sweep, which read only this flag, need no verdict of their
+            // own. The verdict is a heuristic over ssh's last message: a sweep
+            // fires once, on a discrete external event, and one re-prompt is a
+            // far smaller price than never recovering a dropped SSH session
+            // (#217). The poll below needs it because it retries every few
+            // seconds and would spin forever on bad credentials.
             //
             // Expired cloud credentials are excluded from both: the host is
             // reachable, so every reconnect would fail the same way until the
@@ -1181,7 +1206,7 @@ impl MainWindow {
     /// Reads the session's visible terminal text, so it must run before
     /// `mark_tab_disconnected` resets the VTE state. `None` for any other
     /// protocol, for a session that ran longer than
-    /// [`rustconn_core::protocol::LOGIN_FAILURE_WINDOW_SECS`] (its screen is
+    /// [`rustconn_core::protocol::STARTUP_FAILURE_WINDOW_SECS`] (its screen is
     /// the remote host's output, not the CLI's), for an unrecognised failure,
     /// and while the state is borrowed.
     fn expired_cloud_login(
@@ -1197,7 +1222,7 @@ impl MainWindow {
         let age_secs = chrono::Utc::now()
             .signed_duration_since(info.started_at())
             .num_seconds();
-        if age_secs > rustconn_core::protocol::LOGIN_FAILURE_WINDOW_SECS {
+        if age_secs > rustconn_core::protocol::STARTUP_FAILURE_WINDOW_SECS {
             return None;
         }
         // The screen can hold whatever the session printed, so the copy is

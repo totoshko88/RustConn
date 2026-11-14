@@ -175,6 +175,36 @@ fn ended_session_key_action(
     }
 }
 
+/// Whether R, Q, Enter and the terminal menu's Reconnect act on a session.
+///
+/// They do only while the session is `disconnected` and `marked` as having a
+/// reconnect banner. The mark is cleared while a cloud login runs in the
+/// terminal, so `aws login` gets every key and no Reconnect entry.
+pub(super) const fn ended_session_actions_available(marked: bool, disconnected: bool) -> bool {
+    marked && disconnected
+}
+
+/// What to do with a session's reconnect banner when its terminal is mapped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BannerReconcile {
+    /// Nothing to do.
+    Keep,
+    /// The banner was dropped with the box around the terminal: show it again.
+    Reshow,
+    /// The session is live again: the mark is stale.
+    ForgetMark,
+}
+
+/// Decides [`BannerReconcile`] from whether the session is `marked` as having a
+/// banner, is `disconnected`, and has a banner `present` in its own box.
+fn reconnect_banner_reconcile(marked: bool, disconnected: bool, present: bool) -> BannerReconcile {
+    match (marked, disconnected, present) {
+        (true, true, false) => BannerReconcile::Reshow,
+        (true, false, _) => BannerReconcile::ForgetMark,
+        _ => BannerReconcile::Keep,
+    }
+}
+
 /// Carries out the ended-session key actions for one session's banner.
 ///
 /// Holds everything weakly or through the notebook's shared cells, so the
@@ -575,6 +605,7 @@ impl TerminalNotebook {
     /// signal at all otherwise (issue #236).
     pub fn mark_tab_disconnected(&self, session_id: Uuid) {
         self.disconnected_sessions.borrow_mut().insert(session_id);
+        self.sync_vte_reconnect_item(session_id);
         if self.is_detached(session_id) {
             Self::mark_detached_window_disconnected(session_id, true);
         }
@@ -604,6 +635,7 @@ impl TerminalNotebook {
     /// would wipe the split-color indicator.
     pub fn mark_tab_connected(&self, session_id: Uuid) {
         self.disconnected_sessions.borrow_mut().remove(&session_id);
+        self.sync_vte_reconnect_item(session_id);
         if self.is_detached(session_id) {
             Self::mark_detached_window_disconnected(session_id, false);
         }
@@ -700,9 +732,9 @@ impl TerminalNotebook {
             return;
         }
 
-        // Resolves the tab's content box, or the detached window's one for a
-        // session that currently lives outside the main window.
-        let Some(container) = self.session_content_box(session_id) else {
+        // The session's own split pane, else its tab's content box, else the
+        // detached window's one.
+        let Some(container) = self.reconnect_banner_box(session_id) else {
             return;
         };
         self.reconnect_shown.borrow_mut().insert(session_id);
@@ -773,6 +805,7 @@ impl TerminalNotebook {
         });
 
         self.install_ended_session_keys(session_id, connection_id, &banner);
+        self.sync_vte_reconnect_item(session_id);
 
         tracing::info!(
             %session_id,
@@ -829,8 +862,10 @@ impl TerminalNotebook {
             let reconnect_shown = Rc::clone(&self.reconnect_shown);
             let disconnected = Rc::clone(&self.disconnected_sessions);
             move || {
-                reconnect_shown.borrow().contains(&session_id)
-                    && disconnected.borrow().contains(&session_id)
+                ended_session_actions_available(
+                    reconnect_shown.borrow().contains(&session_id),
+                    disconnected.borrow().contains(&session_id),
+                )
             }
         };
 
@@ -878,7 +913,7 @@ impl TerminalNotebook {
 
     /// Updates the auto-reconnect status label in an existing reconnect banner
     pub fn update_reconnect_banner_status(&self, session_id: Uuid, active: bool) {
-        let Some(container) = self.session_content_box(session_id) else {
+        let Some(container) = self.reconnect_banner_box(session_id) else {
             return;
         };
 
@@ -927,7 +962,7 @@ impl TerminalNotebook {
         attempt: u32,
         max_attempts: u32,
     ) {
-        let Some(container) = self.session_content_box(session_id) else {
+        let Some(container) = self.reconnect_banner_box(session_id) else {
             return;
         };
 
@@ -969,9 +1004,29 @@ impl TerminalNotebook {
         }
     }
 
+    /// Returns the box a session's reconnect banner belongs in.
+    ///
+    /// A session shown in a split pane, owner or guest, gets the banner in its
+    /// own pane: for the owner, [`Self::session_content_box`] is the tab's
+    /// box around the whole split, which would put the banner below every
+    /// pane. Any other session uses [`Self::session_content_box`].
+    fn reconnect_banner_box(&self, session_id: Uuid) -> Option<GtkBox> {
+        let provider = self
+            .split_pane_box_provider
+            .borrow()
+            .as_ref()
+            .map(Rc::clone);
+        if let Some(provider) = provider
+            && let Some(pane_box) = provider(session_id)
+        {
+            return Some(pane_box);
+        }
+        self.session_content_box(session_id)
+    }
+
     /// Returns the session's reconnect banner, if one is shown.
     fn reconnect_banner(&self, session_id: Uuid) -> Option<GtkBox> {
-        let container = self.session_content_box(session_id)?;
+        let container = self.reconnect_banner_box(session_id)?;
         let mut child = container.first_child();
         while let Some(widget) = child {
             if widget.widget_name() == "reconnect-banner" {
@@ -982,9 +1037,16 @@ impl TerminalNotebook {
         None
     }
 
-    /// Removes the reconnect banner and allows a later one to be shown.
-    pub fn remove_reconnect_banner(&self, session_id: Uuid) {
-        if let Some(container) = self.session_content_box(session_id) {
+    /// Takes the session's reconnect banner widgets down, leaving its mark.
+    ///
+    /// Looks in the session's own pane and in its tab's content box, where an
+    /// owner's banner sat before it moved into a split.
+    fn remove_reconnect_banner_widgets(&self, session_id: Uuid) {
+        let boxes = [
+            self.reconnect_banner_box(session_id),
+            self.session_content_box(session_id),
+        ];
+        for container in boxes.iter().flatten() {
             let mut child = container.first_child();
             while let Some(widget) = child {
                 let next = widget.next_sibling();
@@ -994,9 +1056,69 @@ impl TerminalNotebook {
                 child = next;
             }
         }
+    }
+
+    /// Removes the reconnect banner and allows a later one to be shown.
+    pub fn remove_reconnect_banner(&self, session_id: Uuid) {
+        self.remove_reconnect_banner_widgets(session_id);
         self.reconnect_shown.borrow_mut().remove(&session_id);
+        self.cloud_login_offers.borrow_mut().remove(&session_id);
         if let Some(terminal) = self.terminals.borrow().get(&session_id) {
             Self::remove_ended_session_keys(terminal);
+        }
+        self.sync_vte_reconnect_item(session_id);
+    }
+
+    /// Offers or withdraws the terminal menu's Reconnect entry to match the
+    /// session's state (see [`ended_session_actions_available`]).
+    fn sync_vte_reconnect_item(&self, session_id: Uuid) {
+        let offered = ended_session_actions_available(
+            self.reconnect_shown.borrow().contains(&session_id),
+            self.disconnected_sessions.borrow().contains(&session_id),
+        );
+        if let Some(item) = self.vte_reconnect_items.borrow().get(&session_id) {
+            item.set_offered(offered);
+        }
+    }
+
+    /// Puts a session's reconnect banner back if a move dropped it.
+    ///
+    /// Runs when the session's terminal is mapped. Moving a session between a
+    /// tab, a split pane and a window rebuilds the box around its terminal,
+    /// and the banner goes with the old box while the session stays marked.
+    /// A marked, disconnected session with no banner in its own box gets one
+    /// again, with its "Log In to …" button if it had one. A mark left on a
+    /// live session is dropped.
+    pub fn reconcile_reconnect_banner(&self, session_id: Uuid) {
+        let marked = self.reconnect_shown.borrow().contains(&session_id);
+        if !marked {
+            return;
+        }
+        let disconnected = self.disconnected_sessions.borrow().contains(&session_id);
+        let present = self.reconnect_banner(session_id).is_some();
+        let action = reconnect_banner_reconcile(marked, disconnected, present);
+        tracing::debug!(
+            %session_id,
+            branch = ?action,
+            marked,
+            disconnected,
+            present,
+            "reconnect banner reconcile"
+        );
+        match action {
+            BannerReconcile::Keep => {}
+            BannerReconcile::Reshow => {
+                // A banner left in the tab's box would be a second one.
+                self.remove_reconnect_banner_widgets(session_id);
+                self.reconnect_shown.borrow_mut().remove(&session_id);
+                let polling = self.poll_cancel_tokens.borrow().contains_key(&session_id);
+                self.show_reconnect_overlay_with_status(session_id, polling);
+                let login = self.cloud_login_offers.borrow().get(&session_id).cloned();
+                if let Some(login) = login {
+                    self.offer_cloud_login(session_id, login);
+                }
+            }
+            BannerReconcile::ForgetMark => self.remove_reconnect_banner(session_id),
         }
     }
 
@@ -1061,6 +1183,11 @@ impl TerminalNotebook {
             "Offering cloud login for expired credentials"
         );
 
+        // Kept so a banner shown again after a move gets this button back.
+        self.cloud_login_offers
+            .borrow_mut()
+            .insert(session_id, login.clone());
+
         let on_cloud_login = self.on_cloud_login.clone();
         button.connect_clicked(move |_| {
             if let Some(ref callback) = *on_cloud_login.borrow() {
@@ -1103,6 +1230,17 @@ impl TerminalNotebook {
         F: Fn(Uuid) -> Option<GtkBox> + 'static,
     {
         *self.split_pane_box_provider.borrow_mut() = Some(Rc::new(provider));
+    }
+
+    /// Sets the hook run, on idle, each time a session's terminal is mapped.
+    ///
+    /// The window wires it to [`Self::reconcile_reconnect_banner`], holding
+    /// the notebook weakly: the hook is reachable from every terminal.
+    pub fn set_on_terminal_mapped<F>(&self, hook: F)
+    where
+        F: Fn(Uuid) + 'static,
+    {
+        *self.on_terminal_mapped.borrow_mut() = Some(Rc::new(hook));
     }
 
     /// Sets the hook that focuses the split pane showing a session.
@@ -1206,13 +1344,62 @@ impl TerminalNotebook {
 #[cfg(test)]
 mod tests {
     use super::{
-        EndedSessionKey as Key, EndedSessionKeyAction as Action, EnterState,
-        ended_session_key_action, has_shortcut_modifier, session_has_home,
+        BannerReconcile, EndedSessionKey as Key, EndedSessionKeyAction as Action, EnterState,
+        ended_session_actions_available, ended_session_key_action, has_shortcut_modifier,
+        reconnect_banner_reconcile, session_has_home,
     };
     use gtk4::gdk;
 
     fn decide(key: Key, enter: EnterState) -> Action {
         ended_session_key_action(key, false, true, enter)
+    }
+
+    // Only a marked, disconnected session offers the ended-session actions;
+    // a cloud login clears the mark, so it never does mid-login.
+    #[test]
+    fn ended_session_actions_need_mark_and_disconnect() {
+        assert!(ended_session_actions_available(true, true));
+        assert!(!ended_session_actions_available(true, false));
+        assert!(!ended_session_actions_available(false, true));
+        assert!(!ended_session_actions_available(false, false));
+    }
+
+    #[test]
+    fn reconnect_banner_reconcile_reshows_a_dropped_banner() {
+        assert_eq!(
+            reconnect_banner_reconcile(true, true, false),
+            BannerReconcile::Reshow
+        );
+        assert_eq!(
+            reconnect_banner_reconcile(true, true, true),
+            BannerReconcile::Keep
+        );
+    }
+
+    #[test]
+    fn reconnect_banner_reconcile_forgets_a_live_sessions_mark() {
+        assert_eq!(
+            reconnect_banner_reconcile(true, false, false),
+            BannerReconcile::ForgetMark
+        );
+        assert_eq!(
+            reconnect_banner_reconcile(true, false, true),
+            BannerReconcile::ForgetMark
+        );
+    }
+
+    // An unmarked session (a live one, or one running `aws login` after its
+    // banner was taken down) never gets a banner back.
+    #[test]
+    fn reconnect_banner_reconcile_leaves_unmarked_sessions_alone() {
+        for disconnected in [false, true] {
+            for present in [false, true] {
+                assert_eq!(
+                    reconnect_banner_reconcile(false, disconnected, present),
+                    BannerReconcile::Keep
+                );
+            }
+        }
     }
 
     // R and Q act at once, whatever Enter was doing.

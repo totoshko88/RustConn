@@ -314,8 +314,24 @@ pub struct TerminalNotebook {
     /// Callback fired when terminal focus changes (`true` = focus entered the
     /// VTE, `false` = focus left). Drives focus-based accelerator suspend (#197).
     on_terminal_focus: Rc<RefCell<Option<Box<dyn Fn(bool)>>>>,
-    /// Sessions that already have a reconnect banner (prevents duplicates)
+    /// Sessions that should have a reconnect banner (prevents duplicates).
+    ///
+    /// The mark outlives the banner widget: moving a session between a tab, a
+    /// split pane and a window rebuilds the box around its terminal and drops
+    /// the banner with it. [`Self::reconcile_reconnect_banner`] runs whenever
+    /// the terminal is mapped again and puts the banner back for a marked,
+    /// disconnected session.
     reconnect_shown: Rc<RefCell<HashSet<Uuid>>>,
+    /// The cloud login offered on a session's banner, kept so a banner shown
+    /// again after a move gets its "Log In to …" button back.
+    cloud_login_offers: Rc<RefCell<HashMap<Uuid, rustconn_core::protocol::CloudLogin>>>,
+    /// Each terminal's Reconnect entry in its right-click menu, offered only
+    /// while the session has ended. Absent in right-click-pastes mode.
+    vte_reconnect_items: Rc<RefCell<HashMap<Uuid, config::VteReconnectItem>>>,
+    /// Runs when a session's terminal is mapped, which every move between a
+    /// tab, a split pane and a window does. Wired by the window to
+    /// [`Self::reconcile_reconnect_banner`] through a `Weak` notebook handle.
+    on_terminal_mapped: Rc<RefCell<Option<Rc<dyn Fn(Uuid)>>>>,
     /// Sessions whose connection has ended while their tab is still open.
     ///
     /// A tab is kept after the child exits (unless `close_on_clean_exit`) so the
@@ -629,6 +645,9 @@ impl TerminalNotebook {
             focused_hook: Rc::new(std::cell::Cell::new(None)),
             on_terminal_focus: Rc::new(RefCell::new(None)),
             reconnect_shown: Rc::new(RefCell::new(HashSet::new())),
+            cloud_login_offers: Rc::new(RefCell::new(HashMap::new())),
+            vte_reconnect_items: Rc::new(RefCell::new(HashMap::new())),
+            on_terminal_mapped: Rc::new(RefCell::new(None)),
             disconnected_sessions: Rc::new(RefCell::new(HashSet::new())),
             keep_history_on_reconnect: Rc::new(std::cell::Cell::new(true)),
             max_scrollback_on_reconnect: Rc::new(std::cell::Cell::new(None)),
@@ -708,6 +727,8 @@ impl TerminalNotebook {
         let show_welcome_on_close = self.show_welcome.clone();
         let disconnected_on_close = Rc::clone(&self.disconnected_sessions);
         let reconnect_shown_on_close = Rc::clone(&self.reconnect_shown);
+        let cloud_login_offers_on_close = Rc::clone(&self.cloud_login_offers);
+        let vte_reconnect_items_on_close = Rc::clone(&self.vte_reconnect_items);
         let poll_tokens_on_close = Rc::clone(&self.poll_cancel_tokens);
         let cursor_row_base_on_close = Rc::clone(&self.cursor_row_base);
         let mark_registries_on_close = Rc::clone(&self.mark_registries);
@@ -880,6 +901,10 @@ impl TerminalNotebook {
                 // handler: without it an auto-reconnect probe kept polling a
                 // session that no longer exists.
                 reconnect_shown_on_close.borrow_mut().remove(&session_id);
+                cloud_login_offers_on_close.borrow_mut().remove(&session_id);
+                vte_reconnect_items_on_close
+                    .borrow_mut()
+                    .remove(&session_id);
                 let poll_token = poll_tokens_on_close.borrow_mut().remove(&session_id);
                 if let Some(cancel) = poll_token {
                     cancel.store(true, std::sync::atomic::Ordering::Relaxed);
@@ -2128,6 +2153,7 @@ impl TerminalNotebook {
     /// Closes a terminal tab by session ID
     pub fn close_tab(&self, session_id: Uuid) {
         self.reconnect_shown.borrow_mut().remove(&session_id);
+        self.cloud_login_offers.borrow_mut().remove(&session_id);
         self.disconnected_sessions.borrow_mut().remove(&session_id);
         // Cancel any background polling (auto-reconnect, host check) for this session
         self.cancel_poll(session_id);
@@ -2560,7 +2586,9 @@ impl TerminalNotebook {
     /// no page either; it resolves through the wired split-pane box provider to
     /// its own pane container, so a reconnect banner attaches to that pane
     /// rather than to the split owner's (issue #328). Only a session displayed
-    /// nowhere resolves to `None`.
+    /// nowhere resolves to `None`. A split owner resolves to its tab's box,
+    /// which holds the whole split; the reconnect banner looks up the owner's
+    /// own pane first instead (`reconnect_banner_box`).
     ///
     /// Used by everything that decorates a session in place (reconnect banner,
     /// monitoring bar) so the decoration follows the session between windows

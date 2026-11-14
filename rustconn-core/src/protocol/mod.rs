@@ -7,6 +7,7 @@
 mod cli;
 mod cloud_login;
 mod detection;
+mod exit_cause;
 pub mod freerdp;
 mod freerdp_version;
 pub mod icons;
@@ -25,7 +26,7 @@ mod winrm;
 mod zerotrust;
 
 pub use cli::{format_command_message, format_connection_message};
-pub use cloud_login::{CloudLogin, LOGIN_FAILURE_WINDOW_SECS, expired_credentials_login};
+pub use cloud_login::{CloudLogin, expired_credentials_login};
 pub use detection::{
     ClientDetectionResult, ClientInfo, FREERDP_WAYLAND_FIRST, FREERDP_X11_FIRST,
     ZeroTrustDetectionResult, available_vnc_viewers, detect_aws_cli, detect_azure_cli,
@@ -36,6 +37,7 @@ pub use detection::{
     detect_waypipe, freerdp_launch_order, is_wayland_session, resolve_freerdp_client,
     resolve_vnc_viewer,
 };
+pub use exit_cause::{STARTUP_FAILURE_WINDOW_SECS, ssh_exit_is_auth_failure};
 pub use freerdp::{
     FreeRdpConfig, FreeRdpSizing, build_freerdp_args, contains_freerdp_secret_field,
     extract_geometry_from_args, filter_extra_args, freerdp_kerberos_arg,
