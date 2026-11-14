@@ -6,6 +6,9 @@
 
 use super::*;
 
+/// Name of the key controller that gives R and Q a meaning on an ended session.
+const ENDED_SESSION_KEYS: &str = "ended-session-keys";
+
 /// Decides whether a disconnected session still has a widget home to reconnect
 /// into, given the three placements it can occupy one at a time.
 ///
@@ -396,6 +399,18 @@ impl TerminalNotebook {
 
         banner.append(&label);
 
+        // The keys below only work while this banner is up, so it names them.
+        // Placed before the status label and the button: the status label is
+        // inserted relative to the button, which has to stay the last child.
+        let keys_hint = gtk4::Label::new(Some(&i18n("Press R to reconnect, Q to close")));
+        keys_hint.add_css_class("dim-label");
+        keys_hint.add_css_class("caption");
+        // In a narrow split pane the hint gives way first, so the banner never
+        // forces the pane wider than its share and the button stays in view.
+        keys_hint.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+        keys_hint.set_tooltip_text(Some(&i18n("Press R to reconnect, Q to close")));
+        banner.append(&keys_hint);
+
         // Auto-reconnect status indicator
         if auto_reconnect_active {
             let status_label = gtk4::Label::new(Some(&i18n("Auto-reconnecting…")));
@@ -420,11 +435,97 @@ impl TerminalNotebook {
             }
         });
 
+        self.install_ended_session_keys(session_id, connection_id);
+
         tracing::info!(
             %session_id,
             protocol = %info.protocol,
             "Reconnect overlay shown for disconnected session"
         );
+    }
+
+    /// Lets R reconnect and Q close a session whose connection has ended.
+    ///
+    /// A terminal whose child has exited takes no input, so the two keys are
+    /// free: R does what the banner's Reconnect button does, Q closes the tab,
+    /// the split pane or the detached window the session is shown in. The
+    /// controller lives on the terminal, so it follows the session wherever its
+    /// widget is moved, and exists only while the reconnect banner does:
+    /// [`Self::remove_reconnect_banner`] takes it away again, which is what
+    /// hands the keys back to a session that reconnected in place.
+    ///
+    /// Keys are read through [`crate::utils::latin_keyval`], so they work under
+    /// a non-Latin layout, and only without Ctrl, Alt or Super, so no shortcut
+    /// is shadowed.
+    fn install_ended_session_keys(&self, session_id: Uuid, connection_id: Uuid) {
+        let Some(terminal) = self.terminals.borrow().get(&session_id).cloned() else {
+            return;
+        };
+        Self::remove_ended_session_keys(&terminal);
+
+        let controller = gtk4::EventControllerKey::new();
+        controller.set_name(Some(ENDED_SESSION_KEYS));
+        // Capture phase: VTE would otherwise consume the key press itself.
+        controller.set_propagation_phase(gtk4::PropagationPhase::Capture);
+
+        let on_reconnect = self.on_reconnect.clone();
+        let reconnect_shown = Rc::clone(&self.reconnect_shown);
+        let split_colors = Rc::clone(&self.split_session_colors);
+        let terminal_weak = terminal.downgrade();
+        controller.connect_key_pressed(move |_, keyval, keycode, modifiers| {
+            let shortcut_modifiers = gtk4::gdk::ModifierType::CONTROL_MASK
+                | gtk4::gdk::ModifierType::ALT_MASK
+                | gtk4::gdk::ModifierType::SUPER_MASK
+                | gtk4::gdk::ModifierType::META_MASK;
+            if modifiers.intersects(shortcut_modifiers)
+                || !reconnect_shown.borrow().contains(&session_id)
+            {
+                return glib::Propagation::Proceed;
+            }
+            match crate::utils::latin_keyval(keyval, keycode).to_lower() {
+                gtk4::gdk::Key::r => {
+                    tracing::info!(%session_id, "ended session: reconnect requested with R");
+                    if let Some(ref callback) = *on_reconnect.borrow() {
+                        callback(session_id, connection_id);
+                    }
+                    glib::Propagation::Stop
+                }
+                gtk4::gdk::Key::q => {
+                    // A session shown in a split pane has no tab of its own to
+                    // close; the pane action ends it and tidies the layout. In
+                    // every other place `win.close-tab` is the window's own
+                    // "close this session".
+                    let action = if split_colors.borrow().contains_key(&session_id) {
+                        "win.close-pane"
+                    } else {
+                        "win.close-tab"
+                    };
+                    tracing::info!(%session_id, action, "ended session: close requested with Q");
+                    if let Some(terminal) = terminal_weak.upgrade()
+                        && let Err(error) = terminal.activate_action(action, None)
+                    {
+                        tracing::warn!(%session_id, action, %error, "could not close the ended session");
+                    }
+                    glib::Propagation::Stop
+                }
+                _ => glib::Propagation::Proceed,
+            }
+        });
+        terminal.add_controller(controller);
+    }
+
+    /// Takes the R / Q controller off a terminal, if it has one.
+    fn remove_ended_session_keys(terminal: &Terminal) {
+        let controllers = terminal.observe_controllers();
+        let stale: Vec<gtk4::EventController> = (0..controllers.n_items())
+            .filter_map(|position| controllers.item(position).and_downcast())
+            .filter(|controller: &gtk4::EventController| {
+                controller.name().as_deref() == Some(ENDED_SESSION_KEYS)
+            })
+            .collect();
+        for controller in &stale {
+            terminal.remove_controller(controller);
+        }
     }
 
     /// Updates the auto-reconnect status label in an existing reconnect banner
@@ -546,6 +647,9 @@ impl TerminalNotebook {
             }
         }
         self.reconnect_shown.borrow_mut().remove(&session_id);
+        if let Some(terminal) = self.terminals.borrow().get(&session_id) {
+            Self::remove_ended_session_keys(terminal);
+        }
     }
 
     /// Adds a "Log In to `<provider>`" button to the session's reconnect banner.

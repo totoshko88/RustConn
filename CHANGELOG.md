@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **R reconnects and Q closes a session that has ended** — when a terminal session ends (the connection drops, the remote shell exits), the **Session disconnected** banner now says so and the two keys work while it is shown: **R** does what the Reconnect button does, **Q** closes the tab, the split pane or the detached window the session is in. An ended terminal takes no input, so no keystroke is taken from a live session; the keys work under a non-Latin layout and are ignored with Ctrl, Alt or Super held. A **Local Shell** whose shell exits used to leave a dead tab with no banner; it now gets the same banner, and R or Reconnect starts a new shell in the same tab. (`rustconn/src/terminal/session_lifecycle.rs`, `rustconn/src/window/mod.rs`)
+
 ## [0.25.0] - 2026-11-14
 
 ### Added
