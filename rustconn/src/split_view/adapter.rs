@@ -10,8 +10,8 @@ use std::rc::Rc;
 
 use gtk4::prelude::*;
 use gtk4::{
-    Align, Box as GtkBox, Button, DropTarget, EventControllerMotion, Label, Orientation, Overlay,
-    Paned, Revealer, gdk, gio, glib,
+    Align, Box as GtkBox, Button, CheckButton, DropTarget, EventControllerMotion, Label,
+    Orientation, Overlay, Paned, Revealer, gdk, gio, glib,
 };
 use libadwaita as adw;
 use libadwaita::prelude::*;
@@ -132,7 +132,26 @@ pub struct SplitViewAdapter {
     /// `false` (default) shows them; toggled via
     /// [`Self::set_hover_controls_hidden`].
     hide_hover_controls: Rc<Cell<bool>>,
+    /// The "Broadcast" check box in each panel's header.
+    ///
+    /// Ticked means the panel takes part in the split's keystroke broadcast.
+    /// Shown only while broadcast is on, and only on a panel that holds a
+    /// terminal; see [`Self::set_broadcast_controls`]. Cleared on rebuild and
+    /// repopulated by [`Self::create_panel_widget`].
+    broadcast_checks: Rc<RefCell<HashMap<PanelId, CheckButton>>>,
+    /// Whether the broadcast check boxes are in use. While they are, the pane
+    /// headers that carry them stay visible even with labels switched off.
+    broadcast_controls_active: Rc<Cell<bool>>,
+    /// Set while the check boxes are being synchronised from the outside, so
+    /// that those programmatic changes are not reported back as user toggles.
+    syncing_broadcast_checks: Rc<Cell<bool>>,
+    /// Called with `(panel, included)` when the user ticks or unticks a
+    /// panel's Broadcast check box.
+    broadcast_toggled_callback: Rc<RefCell<Option<BroadcastToggledCallback>>>,
 }
+
+/// Callback for a panel's Broadcast check box: the panel and its new state.
+type BroadcastToggledCallback = Box<dyn Fn(PanelId, bool)>;
 
 impl std::fmt::Debug for SplitViewAdapter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -153,6 +172,10 @@ impl std::fmt::Debug for SplitViewAdapter {
             .field("show_labels", &self.show_labels)
             .field("panel_reveal_containers", &self.panel_reveal_containers)
             .field("hide_hover_controls", &self.hide_hover_controls)
+            .field("broadcast_checks", &self.broadcast_checks)
+            .field("broadcast_controls_active", &self.broadcast_controls_active)
+            .field("syncing_broadcast_checks", &self.syncing_broadcast_checks)
+            .field("broadcast_toggled_callback", &"<callback>")
             .finish()
     }
 }
@@ -183,6 +206,10 @@ impl SplitViewAdapter {
             show_labels: Rc::new(Cell::new(false)),
             panel_reveal_containers: Rc::new(RefCell::new(HashMap::new())),
             hide_hover_controls: Rc::new(Cell::new(false)),
+            broadcast_checks: Rc::new(RefCell::new(HashMap::new())),
+            broadcast_controls_active: Rc::new(Cell::new(false)),
+            syncing_broadcast_checks: Rc::new(Cell::new(false)),
+            broadcast_toggled_callback: Rc::new(RefCell::new(None)),
         };
 
         adapter.rebuild_widgets();
@@ -214,6 +241,10 @@ impl SplitViewAdapter {
             show_labels: Rc::new(Cell::new(false)),
             panel_reveal_containers: Rc::new(RefCell::new(HashMap::new())),
             hide_hover_controls: Rc::new(Cell::new(false)),
+            broadcast_checks: Rc::new(RefCell::new(HashMap::new())),
+            broadcast_controls_active: Rc::new(Cell::new(false)),
+            syncing_broadcast_checks: Rc::new(Cell::new(false)),
+            broadcast_toggled_callback: Rc::new(RefCell::new(None)),
         };
 
         adapter.rebuild_widgets();
@@ -891,10 +922,10 @@ impl SplitViewAdapter {
     /// the panel's color. Its visibility follows "Show connection name in split
     /// panes" in settings (on by default since #355), and on an occupied panel
     /// it is also the drag handle.
-    fn create_pane_header(&self) -> GtkBox {
+    fn create_pane_header(&self, panel_id: PanelId) -> GtkBox {
         let header = GtkBox::new(Orientation::Horizontal, 4);
         header.add_css_class("split-pane-header");
-        header.set_visible(self.show_labels.get());
+        header.set_visible(self.headers_wanted());
 
         let name_label = Label::new(None);
         name_label.set_hexpand(true);
@@ -911,7 +942,69 @@ impl SplitViewAdapter {
         protocol_label.set_widget_name("pane-header-protocol");
         header.append(&protocol_label);
 
+        // Takes this panel out of the keystroke broadcast, and back in. Hidden
+        // until broadcast is switched on (`set_broadcast_controls`).
+        let broadcast_check = CheckButton::with_label(&i18n("Broadcast"));
+        broadcast_check.set_active(true);
+        broadcast_check.set_visible(false);
+        broadcast_check.set_halign(Align::End);
+        broadcast_check.set_tooltip_text(Some(&i18n(
+            "Untick to keep this panel out of the keystroke broadcast",
+        )));
+        let syncing = Rc::clone(&self.syncing_broadcast_checks);
+        let callback = Rc::clone(&self.broadcast_toggled_callback);
+        broadcast_check.connect_toggled(move |check| {
+            if syncing.get() {
+                return;
+            }
+            if let Some(ref callback) = *callback.borrow() {
+                callback(panel_id, check.is_active());
+            }
+        });
+        header.append(&broadcast_check);
+        self.broadcast_checks
+            .borrow_mut()
+            .insert(panel_id, broadcast_check);
+
         header
+    }
+
+    /// Whether pane headers should be shown at all: when labels are enabled,
+    /// and also while the broadcast check boxes they carry are in use.
+    fn headers_wanted(&self) -> bool {
+        self.show_labels.get() || self.broadcast_controls_active.get()
+    }
+
+    /// Sets the callback for a panel's Broadcast check box.
+    pub fn set_broadcast_toggled_callback<F>(&self, callback: F)
+    where
+        F: Fn(PanelId, bool) + 'static,
+    {
+        *self.broadcast_toggled_callback.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Shows or hides the Broadcast check boxes and sets their state.
+    ///
+    /// `included` answers, for a panel, whether it takes part in the broadcast;
+    /// `None` means the panel cannot (it is empty, or holds an embedded viewer)
+    /// and gets no check box. With `active` false every check box is hidden and
+    /// the headers go back to following the labels setting alone.
+    pub fn set_broadcast_controls(&self, active: bool, included: impl Fn(PanelId) -> Option<bool>) {
+        self.broadcast_controls_active.set(active);
+        self.syncing_broadcast_checks.set(true);
+        for (panel_id, check) in self.broadcast_checks.borrow().iter() {
+            match included(*panel_id).filter(|_| active) {
+                Some(included) => {
+                    check.set_active(included);
+                    check.set_visible(true);
+                }
+                None => check.set_visible(false),
+            }
+        }
+        self.syncing_broadcast_checks.set(false);
+        // Headers that were hidden by the labels setting have to appear now,
+        // and disappear again afterwards.
+        self.set_labels_visible(self.show_labels.get());
     }
 
     /// Sets the text content of a panel's header label.
@@ -945,8 +1038,9 @@ impl SplitViewAdapter {
                     name.to_owned()
                 };
                 header.set_tooltip_text(Some(&tooltip));
-                // Show header only if labels are globally enabled
-                header.set_visible(self.show_labels.get());
+                // Show header only if labels are globally enabled, or while
+                // it carries a broadcast check box
+                header.set_visible(self.headers_wanted());
             } else {
                 // No session — hide the header regardless of global flag
                 header.set_visible(false);
@@ -960,6 +1054,7 @@ impl SplitViewAdapter {
     /// setting. Only headers with a label text set are shown.
     pub fn set_labels_visible(&self, visible: bool) {
         self.show_labels.set(visible);
+        let visible = self.headers_wanted();
         for header in self.panel_headers.borrow().values() {
             // Only show if the header has text (i.e. a session is placed)
             if visible {
@@ -1250,6 +1345,7 @@ impl SplitViewAdapter {
         }
         self.panel_widgets.borrow_mut().clear();
         self.panel_headers.borrow_mut().clear();
+        self.broadcast_checks.borrow_mut().clear();
         self.panel_reveal_containers.borrow_mut().clear();
         self.paned_widgets.clear();
 
@@ -1426,7 +1522,7 @@ impl SplitViewAdapter {
 
         // Prepend a compact connection name header (issue #277).
         // Visibility follows the show_labels flag (set_labels_visible).
-        let header = self.create_pane_header();
+        let header = self.create_pane_header(panel_id);
         container.append(&header);
         // Keep a clone to use as the drag handle below before the header is
         // moved into panel_headers (issue #355).

@@ -15942,3 +15942,7 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connexion;terminal;distant;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Le cluster a été enregistré avec succès."
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Décochez pour exclure ce volet de la diffusion des frappes"

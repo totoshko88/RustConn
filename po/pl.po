@@ -15787,3 +15787,7 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;połączenie;terminal;zdalny;kub
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klaster został zapisany."
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Odznacz, aby wyłączyć ten panel z rozsyłania naciśnięć klawiszy"

@@ -15830,3 +15830,7 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ulanish;terminal;masofaviy;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klaster muvaffaqiyatli saqlandi."
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Bu panelni klavishlar uzatishidan chiqarish uchun belgini olib tashlang"
