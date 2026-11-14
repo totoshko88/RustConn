@@ -1,4 +1,34 @@
 -------------------------------------------------------------------
+Sun Nov 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.1
+- Version bump to 0.25.1
+- Added: closing a tab that shows a split asks whether to remove the
+  split, close all its sessions or cancel
+- Added: per-panel Broadcast check box in a split (PR #432, roms2000)
+- Added: R reconnects, Q closes and Enter twice runs the banner's action
+  on an ended session (PR #431, roms2000); Local Shell gets the banner
+- Added: Reconnect in the context menu of an ended terminal
+- Added: Network Scan of an IPv4 range (PR #427, roms2000)
+- Added: open a cluster in a window of its own (PR #428, roms2000)
+- Added: Remove Split in the command palette (PR #426, roms2000)
+- Added: Enter in the sidebar search opens the connection (PR #425,
+  roms2000)
+- Fixed: the Session disconnected banner stays in a split pane
+- Fixed: SSH sessions dropped by a keepalive timeout reconnect on their
+  own instead of being treated as an authentication failure
+- Fixed: command palette entries that name a window action run again
+- Fixed: a dragged sidebar item drops where the line shows (PR #424,
+  roms2000)
+- Fixed: closing a disconnected session stops its auto-reconnect probe
+- Fixed: closing a session in another tab's split closes it
+- Fixed: Move to Own Tab and Remove Split in the sidebar act again
+- Changed: Close Tab... on a split tab; Remove from Split is now Move to
+  Own Tab, Connect on a connected row is Show Session, Close is
+  Disconnect; a pane's Reconnect only once its session has ended
+- Documentation: closing a split tab in the User Guide
+- Dependencies: glib, gio, cairo-rs, pango-sys, gdk-pixbuf 0.22.11,
+  bumpalo 3.20.4
+
+-------------------------------------------------------------------
 Sat Nov 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.0
 - Version bump to 0.25.0
 - Added: Split with Other Tabs splits several tabs at once (#423), also
