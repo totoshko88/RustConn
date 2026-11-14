@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Remove Split button in the header bar (PR #426)** — while the current tab is split, a button next to Split Right and Split Down returns every session of the split to its own tab in one click; it was reachable only through `Ctrl+Shift+J` and two context menus. The button, like the `win.unsplit` action it is bound to, is only there while there is a split to remove. Remove Split is also in the command palette now. (`rustconn/src/window/ui.rs`, `rustconn/src/window/split_view_actions.rs`)
 - **Enter in the sidebar search opens the connection (PR #425)** — pressing Enter in the search field opens the connection that was selected, when the results still hold it, or else the first result, so a connection can be found and opened without leaving the keyboard or moving focus into the list. This changes what Enter does: until now it only saved the query to the search history, which it still does. Enter with no match, or in an empty field, opens nothing. Enter pressed right after typing, before the list has caught up, filters with the typed text first, so it opens what was typed and not a row of the previous list. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/sidebar/search.rs`, `rustconn/src/window/mod.rs`, `docs/USER_GUIDE.md`)
 
 ### Fixed

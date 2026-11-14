@@ -187,6 +187,13 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
         .with_description("Ctrl+Shift+S")
         .with_priority(30),
         PaletteItem::new(
+            "Remove Split",
+            CommandPaletteAction::GtkAction("win.unsplit".into()),
+        )
+        .with_icon("view-restore-symbolic")
+        .with_description("Ctrl+Shift+J")
+        .with_priority(28),
+        PaletteItem::new(
             "Keyboard Shortcuts",
             CommandPaletteAction::GtkAction("app.shortcuts".into()),
         )

@@ -116,7 +116,19 @@ pub fn create_header_bar() -> (
         .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Right"))]);
     header_bar.pack_end(&split_vertical_button);
 
-    // Shell button — prominent, icon + label, accent color, leftmost in right group
+    // Remove Split — the quick way back from a split to ordinary tabs. Shown
+    // only while the active tab is split: `win.unsplit` is enabled exactly then,
+    // a button follows its action's sensitivity, and visibility follows that.
+    let unsplit_button = Button::from_icon_name("view-restore-symbolic");
+    unsplit_button.set_tooltip_text(Some(&i18n("Remove Split (Ctrl+Shift+J)")));
+    unsplit_button.set_action_name(Some("win.unsplit"));
+    unsplit_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Remove Split"))]);
+    unsplit_button
+        .bind_property("sensitive", &unsplit_button, "visible")
+        .sync_create()
+        .build();
+    header_bar.pack_end(&unsplit_button);
+
     let shell_button = Button::new();
     let shell_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
     let shell_icon = gtk4::Image::from_icon_name("utilities-terminal-symbolic");

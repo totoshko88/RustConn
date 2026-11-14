@@ -266,6 +266,30 @@ impl PanelPlacement {
     }
 }
 
+/// Enables `win.unsplit` only while the active tab holds a split layout.
+///
+/// The header bar's Remove Split button follows the action: it is shown while
+/// the action is enabled, so it appears with the first split and goes away with
+/// the last pane. Called whenever a layout changes and whenever another tab is
+/// selected.
+fn refresh_unsplit_action(
+    window: &adw::ApplicationWindow,
+    notebook: &SharedNotebook,
+    bridges: &SessionSplitBridges,
+) {
+    let Some(action) = window
+        .lookup_action("unsplit")
+        .and_downcast::<gio::SimpleAction>()
+    else {
+        return;
+    };
+    let is_split = notebook
+        .get_active_session_id()
+        .and_then(|session_id| bridges.borrow().get(&session_id).cloned())
+        .is_some_and(|bridge| bridge.pane_count() > 1);
+    action.set_enabled(is_split);
+}
+
 /// The window handles needed to take a split layout apart.
 ///
 /// Grouped into one struct because three actions dismantle splits —
@@ -493,6 +517,7 @@ impl MainWindow {
                     super::navigation_actions::refresh_broadcast_toggle(
                         &win, &notebook, &bridges, &toggle,
                     );
+                    refresh_unsplit_action(&win, &notebook, &bridges);
 
                     // First-time hint: only when the toggle just became
                     // visible (i.e. a split with ≥2 active panels exists)
@@ -1148,7 +1173,22 @@ impl MainWindow {
             tracing::info!(owner = %owner, "split layout removed, sessions returned to tabs");
             refresh_broadcast_unsplit();
         });
+        // Disabled until a tab is split: the header bar button bound to this
+        // action is shown only while it is enabled.
+        unsplit_action.set_enabled(false);
         window.add_action(&unsplit_action);
+        {
+            let window_weak = window.downgrade();
+            let notebook = self.terminal_notebook.clone();
+            let bridges = self.session_split_bridges.clone();
+            self.terminal_notebook
+                .tab_view()
+                .connect_selected_page_notify(move |_| {
+                    if let Some(win) = window_weak.upgrade() {
+                        refresh_unsplit_action(&win, &notebook, &bridges);
+                    }
+                });
+        }
 
         // Focus next pane action
         let focus_next_pane_action = gio::SimpleAction::new("focus-next-pane", None);
