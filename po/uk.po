@@ -15720,3 +15720,7 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;з'єднок;термінал;�
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Кластер успішно збережено."
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Зніми позначку, щоб вилучити цю панель із трансляції натискань клавіш"

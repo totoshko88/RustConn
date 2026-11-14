@@ -15665,3 +15665,7 @@ msgstr ""
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Đã lưu cụm thành công."
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Bỏ chọn để loại ô này khỏi việc phát phím"

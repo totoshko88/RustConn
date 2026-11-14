@@ -15724,3 +15724,7 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klyngen er gemt."
+
+#: rustconn/src/split_view/adapter.rs:952
+msgid "Untick to keep this panel out of the keystroke broadcast"
+msgstr "Fjern markeringen for at holde dette panel ude af tastaturudsendelsen"
