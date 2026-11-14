@@ -25,6 +25,7 @@ use libadwaita::prelude::*;
 use uuid::Uuid;
 
 use crate::i18n::{i18n, i18n_f};
+use crate::session_group_window::SessionGroupWindow;
 use crate::terminal::{DetachMonitor, DetachPresentation};
 
 /// Default window width, matching a comfortable 80-column terminal plus chrome.
@@ -498,6 +499,10 @@ fn build_menu_button() -> MenuButton {
 #[derive(Default)]
 pub struct DetachedWindowRegistry {
     windows: RefCell<HashMap<Uuid, DetachedSessionWindow>>,
+    /// Tabbed windows hosting several detached sessions, keyed by the group
+    /// they were opened for (a cluster id). A session lives in `windows` or in
+    /// one of these, never both.
+    groups: RefCell<HashMap<Uuid, Rc<SessionGroupWindow>>>,
 }
 
 impl DetachedWindowRegistry {
@@ -505,6 +510,68 @@ impl DetachedWindowRegistry {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Returns the tabbed window of a group, unless it is already closing.
+    #[must_use]
+    pub fn group(&self, group_id: Uuid) -> Option<Rc<SessionGroupWindow>> {
+        self.groups
+            .borrow()
+            .get(&group_id)
+            .filter(|group| !group.is_closing())
+            .cloned()
+    }
+
+    /// Registers the tabbed window of a group, replacing a closing one.
+    pub fn insert_group(&self, group_id: Uuid, group: Rc<SessionGroupWindow>) {
+        // The replaced entry is dropped only after the borrow is released:
+        // dropping the last reference to a window finalizes it, and GTK then
+        // emits signals whose handlers may reach back into this registry.
+        let replaced = self.groups.borrow_mut().insert(group_id, group);
+        drop(replaced);
+    }
+
+    /// Forgets a group's tabbed window once it has closed.
+    ///
+    /// `window` guards against forgetting a newer window opened for the same
+    /// group while the old one was still closing.
+    pub fn forget_group(&self, group_id: Uuid, window: &adw::ApplicationWindow) {
+        // Dropped after the borrow is released, for the reason given in
+        // `insert_group`.
+        let forgotten = {
+            let mut groups = self.groups.borrow_mut();
+            if groups
+                .get(&group_id)
+                .is_some_and(|group| group.window() == window)
+            {
+                groups.remove(&group_id)
+            } else {
+                None
+            }
+        };
+        drop(forgotten);
+    }
+
+    /// Returns the tabbed window currently showing a session, if any.
+    ///
+    /// Cloned out so no borrow is held while the caller drives GTK.
+    #[must_use]
+    pub fn group_of(&self, session_id: Uuid) -> Option<Rc<SessionGroupWindow>> {
+        self.groups
+            .borrow()
+            .values()
+            .find(|group| group.contains(session_id))
+            .cloned()
+    }
+
+    /// Returns the window a detached session is shown in, single or tabbed.
+    #[must_use]
+    pub fn host_window(&self, session_id: Uuid) -> Option<adw::ApplicationWindow> {
+        self.with_window(session_id, |window| window.window().clone())
+            .or_else(|| {
+                self.group_of(session_id)
+                    .map(|group| group.window().clone())
+            })
     }
 
     /// Registers a window under its own session id.
@@ -536,7 +603,9 @@ impl DetachedWindowRegistry {
                 window.present();
                 true
             }
-            None => false,
+            None => self
+                .group_of(session_id)
+                .is_some_and(|group| group.present_session(session_id)),
         }
     }
 
@@ -571,7 +640,12 @@ impl DetachedWindowRegistry {
         for handles in &affected {
             handles.apply(new_name);
         }
-        affected.len()
+        let groups: Vec<Rc<SessionGroupWindow>> = self.groups.borrow().values().cloned().collect();
+        let tabs: usize = groups
+            .iter()
+            .map(|group| group.rename_connection(connection_id, new_name))
+            .sum();
+        affected.len() + tabs
     }
 
     /// Marks (or unmarks) a session's window as disconnected.
@@ -590,7 +664,9 @@ impl DetachedWindowRegistry {
                 banner.set_revealed(disconnected);
                 true
             }
-            None => false,
+            None => self
+                .group_of(session_id)
+                .is_some_and(|group| group.set_session_disconnected(session_id, disconnected)),
         }
     }
 
@@ -604,6 +680,11 @@ impl DetachedWindowRegistry {
         tracing::info!(count = windows.len(), "closing all detached windows");
         for window in &windows {
             window.close();
+        }
+        let groups: Vec<Rc<SessionGroupWindow>> =
+            self.groups.borrow_mut().drain().map(|(_, g)| g).collect();
+        for group in &groups {
+            group.close();
         }
     }
 

@@ -88,6 +88,8 @@ pub struct PendingCluster {
     pub cluster_id: Uuid,
     /// The cluster's name, used verbatim as the tab group name.
     pub group: String,
+    /// Whether the tab moves to the cluster's own window once it exists.
+    pub in_window: bool,
 }
 
 /// The open tabs of one cluster, and the tab group they were labelled with.

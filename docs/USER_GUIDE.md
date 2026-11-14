@@ -3377,6 +3377,8 @@ You can also select several connections in the sidebar and use **Create Cluster*
 - **Close All Ungrouped** closes everything *except* your open clusters
 - The tab switcher (**Ctrl+%**) shows the cluster name beside each member
 
+**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping.
+
 **Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters… (**Disconnect all cluster sessions**).
 
 Notes on the automatic group:

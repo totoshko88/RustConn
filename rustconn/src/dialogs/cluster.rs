@@ -504,6 +504,7 @@ pub struct ClusterListDialog {
     clusters_list: ListBox,
     cluster_rows: Rc<RefCell<Vec<ClusterListRow>>>,
     on_connect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
+    on_connect_window: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     on_disconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     on_edit: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     on_delete: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
@@ -538,6 +539,8 @@ struct ClusterListRow {
     count_label: Label,
     /// Connect button
     connect_button: Button,
+    /// Connect-in-new-window button
+    connect_window_button: Button,
     /// Disconnect button
     disconnect_button: Button,
     /// Edit button
@@ -609,6 +612,7 @@ impl ClusterListDialog {
         content.append(&scrolled);
 
         let on_connect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
+        let on_connect_window: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
         let on_disconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
         let on_edit: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
         let on_delete: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
@@ -632,6 +636,7 @@ impl ClusterListDialog {
             clusters_list,
             cluster_rows,
             on_connect,
+            on_connect_window,
             on_disconnect,
             on_edit,
             on_delete,
@@ -696,6 +701,15 @@ impl ClusterListDialog {
             "Connect to cluster",
         ))]);
 
+        let connect_window_button = Button::builder()
+            .icon_name("window-new-symbolic")
+            .tooltip_text(i18n("Connect to cluster in a new window"))
+            .css_classes(["flat"])
+            .build();
+        connect_window_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            "Connect to cluster in a new window",
+        ))]);
+
         let disconnect_button = Button::builder()
             .icon_name("media-playback-stop-symbolic")
             .tooltip_text(i18n("Disconnect all cluster sessions"))
@@ -721,6 +735,7 @@ impl ClusterListDialog {
             .update_property(&[gtk4::accessible::Property::Label(&i18n("Delete cluster"))]);
 
         hbox.append(&connect_button);
+        hbox.append(&connect_window_button);
         hbox.append(&disconnect_button);
         hbox.append(&edit_button);
         hbox.append(&delete_button);
@@ -733,6 +748,7 @@ impl ClusterListDialog {
             name_label,
             count_label,
             connect_button,
+            connect_window_button,
             disconnect_button,
             edit_button,
             delete_button,
@@ -776,6 +792,13 @@ impl ClusterListDialog {
             let on_connect_clone = self.on_connect.clone();
             cluster_row.connect_button.connect_clicked(move |_| {
                 if let Some(ref cb) = *on_connect_clone.borrow() {
+                    cb(cluster_id);
+                }
+            });
+
+            let on_connect_window_clone = self.on_connect_window.clone();
+            cluster_row.connect_window_button.connect_clicked(move |_| {
+                if let Some(ref cb) = *on_connect_window_clone.borrow() {
                     cb(cluster_id);
                 }
             });
@@ -828,6 +851,11 @@ impl ClusterListDialog {
     /// Sets the callback for connecting to a cluster
     pub fn set_on_connect<F: Fn(Uuid) + 'static>(&self, cb: F) {
         *self.on_connect.borrow_mut() = Some(Box::new(cb));
+    }
+
+    /// Sets the callback for connecting to a cluster in a window of its own
+    pub fn set_on_connect_window<F: Fn(Uuid) + 'static>(&self, cb: F) {
+        *self.on_connect_window.borrow_mut() = Some(Box::new(cb));
     }
 
     /// Sets the callback for disconnecting all sessions in a cluster
