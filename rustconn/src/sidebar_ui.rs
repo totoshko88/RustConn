@@ -249,6 +249,49 @@ pub fn set_copy_items_provider(provider: impl Fn(&str) -> Vec<ContextMenuItem> +
     COPY_ITEMS_PROVIDER.with(|cell| *cell.borrow_mut() = Some(Box::new(provider)));
 }
 
+/// Tells whether a connection's live session owns a split.
+type SplitOwnerChecker = Box<dyn Fn(&str) -> bool>;
+
+thread_local! {
+    /// Answers whether the connection's session hosts its split rather than
+    /// being a guest in one. Set once by the main window, which holds the split
+    /// bridges; a sidebar row only knows that the connection is in *a* split.
+    static SPLIT_OWNER_CHECKER: RefCell<Option<SplitOwnerChecker>> =
+        const { RefCell::new(None) };
+}
+
+/// Installs the function that tells whether a connection's session owns a split.
+pub fn set_split_owner_checker(checker: impl Fn(&str) -> bool + 'static) {
+    SPLIT_OWNER_CHECKER.with(|cell| *cell.borrow_mut() = Some(Box::new(checker)));
+}
+
+/// Whether the connection `conn_id`'s session hosts its split.
+fn owns_split(conn_id: &str) -> bool {
+    SPLIT_OWNER_CHECKER.with(|cell| cell.borrow().as_ref().is_some_and(|check| check(conn_id)))
+}
+
+/// The split item of a connected row, by the session's role in the split.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SplitRowItem {
+    /// A guest: return the session to its own tab.
+    MoveToOwnTab,
+    /// The owner: popping its pane collapses the whole split, so the item says
+    /// what it does.
+    RemoveSplit,
+}
+
+/// Picks the split item for a connected row, or `None` outside a split.
+///
+/// Both items run `split-pop-connection`; on the owner that action collapses
+/// the split (`win.pop-pane-to-tab`), so only the label differs.
+fn split_row_item(in_split: bool, owns_split: bool) -> Option<SplitRowItem> {
+    match (in_split, owns_split) {
+        (false, _) => None,
+        (true, false) => Some(SplitRowItem::MoveToOwnTab),
+        (true, true) => Some(SplitRowItem::RemoveSplit),
+    }
+}
+
 /// The "Copy ▸" submenu for the connection `conn_id`, or `None` when it has
 /// nothing to copy (or no provider is installed).
 #[must_use]
@@ -416,7 +459,15 @@ pub fn show_context_menu_for_item(
                 "external-disconnect",
             ));
         }
-        items.push(ContextMenuItem::action(&i18n("Connect"), "connect"));
+        // The same `connect` action either way: on a running connection it shows
+        // the newest live session (or says it runs in an external window)
+        // instead of opening another; "Open new session" below is the duplicate.
+        let connect_label = if is_connected {
+            i18n("Show Session")
+        } else {
+            i18n("Connect")
+        };
+        items.push(ContextMenuItem::action(&connect_label, "connect"));
         // Favorite toggle. The label names the resulting state so the user knows
         // what the click does; the action itself (`toggle-pin`) is unchanged.
         let favorite_label = if is_pinned {
@@ -475,37 +526,47 @@ pub fn show_context_menu_for_item(
         // detaches directly. Offered only when the connection actually has a
         // live session to move.
         //
-        // "Remove from Split" is split-only. "Close" is offered for ANY live
-        // session (split or an ordinary connected tab) — the sidebar's
-        // counterpart to closing the tab, which was previously missing for a
-        // plain connected connection. It is NOT destructive-styled: ending a
-        // session is recoverable by reconnecting, so per the GNOME HIG only
-        // Delete (which removes the connection permanently) stays red, keeping
-        // a single destructive action in the menu.
+        // The split item is split-only: "Move to Own Tab" on a guest, "Remove
+        // Split" on the owner, where the same action collapses the split (see
+        // `split_row_item`). "Disconnect" is offered for ANY live session
+        // (split or an ordinary connected tab) — the sidebar's counterpart to
+        // closing the tab. It is NOT destructive-styled: ending a session is
+        // recoverable by reconnecting, so per the GNOME HIG only Delete (which
+        // removes the connection permanently) stays red, keeping a single
+        // destructive action in the menu. An external-viewer session already
+        // has Disconnect at the top (`external-disconnect`) and no tab for this
+        // one to close, so the second item of the same name is left out.
         //
         // Suppressed entirely when the connection has MORE THAN ONE live
         // session (issue #374): the sidebar row stands for the connection, not
-        // a single session, so "which session?" is ambiguous — Close / Remove
-        // from Split / Move to New Window would act on an arbitrary one. With
+        // a single session, so "which session?" is ambiguous — Disconnect / Move
+        // to Own Tab / Move to New Window would act on an arbitrary one. With
         // several sessions these controls live in the tabs, where each targets
         // its own session unambiguously. (Common when "open a new session on
         // every double-click" is enabled.)
         if is_connected && !has_multi_session {
             items.push(ContextMenuItem::Separator);
-            if in_split {
-                items.push(ContextMenuItem::action(
-                    &i18n("Remove from Split"),
+            match split_row_item(in_split, in_split && owns_split(conn_id)) {
+                Some(SplitRowItem::MoveToOwnTab) => items.push(ContextMenuItem::action(
+                    &i18n("Move to Own Tab"),
                     "split-pop-connection",
-                ));
+                )),
+                Some(SplitRowItem::RemoveSplit) => items.push(ContextMenuItem::action(
+                    &i18n("Remove Split"),
+                    "split-pop-connection",
+                )),
+                None => {}
             }
             items.push(ContextMenuItem::action(
                 &i18n("Move to New Window"),
                 "connection-detach",
             ));
-            items.push(ContextMenuItem::action(
-                &i18n("Close"),
-                "split-close-connection",
-            ));
+            if !has_external_session {
+                items.push(ContextMenuItem::action(
+                    &i18n("Disconnect"),
+                    "split-close-connection",
+                ));
+            }
         }
         // § Utilities (copy, tools, network)
         items.push(ContextMenuItem::Separator);
@@ -1410,7 +1471,19 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
 
 #[cfg(test)]
 mod tests {
-    use super::offers_key_setup;
+    use super::{SplitRowItem, offers_key_setup, split_row_item};
+
+    #[test]
+    fn a_split_row_names_what_the_pop_action_does_for_its_role() {
+        assert_eq!(split_row_item(false, false), None);
+        // Ownership outside a split means nothing.
+        assert_eq!(split_row_item(false, true), None);
+        assert_eq!(
+            split_row_item(true, false),
+            Some(SplitRowItem::MoveToOwnTab)
+        );
+        assert_eq!(split_row_item(true, true), Some(SplitRowItem::RemoveSplit));
+    }
 
     #[test]
     fn key_setup_is_offered_for_ssh_only() {

@@ -116,6 +116,25 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.25.1" date="2026-11-15">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.1</url>
+      <description>
+        <p>Version 0.25.1 - keyboard reconnect, a network scan, cluster windows and split view fixes, with contributions from roms2000 (#424, #425, #426, #427, #428, #431, #432):</p>
+        <ul>
+          <li>Closing a tab that shows a split asks whether to remove the split, close all its sessions or cancel.</li>
+          <li>On a session that has ended, R reconnects, Q closes it and Enter pressed twice runs the banner's action; the terminal's context menu offers Reconnect, and an exited Local Shell gets the same banner.</li>
+          <li>Each terminal panel of a split can be left out of the broadcast.</li>
+          <li>Tools has a Network Scan that finds SSH, RDP, VNC, Telnet and web hosts in an IPv4 range and adds them as connections.</li>
+          <li>A cluster can open in a window of its own.</li>
+          <li>Enter in the sidebar search opens the connection, and the command palette offers Remove Split.</li>
+          <li>Dragging a sidebar item drops it where the line shows.</li>
+          <li>SSH sessions dropped by a keepalive timeout reconnect on their own.</li>
+          <li>The disconnected banner stays in a split pane, and the sidebar's split actions and Disconnect work on sessions in a split again.</li>
+          <li>Menu items say what they do: Move to Own Tab, Show Session and Disconnect.</li>
+          <li>Updated dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.25.0" date="2026-11-14">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.0</url>
       <description>

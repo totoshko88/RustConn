@@ -175,7 +175,15 @@ impl MainWindow {
             {
                 return;
             }
-            if let Some(session_id) = notebook_clone.get_active_session_id() {
+            if let Some(session_id) = notebook_clone.get_active_session_id()
+                && notebook_clone.split_members(session_id).len() >= 2
+            {
+                // The active tab hosts a split: close it the way its close
+                // button does, so the notebook asks what to do with the split
+                // before anything is torn down. A confirmed close runs the
+                // bridge cleanup and the sidebar count in `close-page`.
+                notebook_clone.request_close_tab(session_id);
+            } else if let Some(session_id) = notebook_clone.get_active_session_id() {
                 // Get connection ID before closing
                 let connection_id = notebook_clone
                     .get_session_info(session_id)
@@ -232,7 +240,6 @@ impl MainWindow {
         let notebook_clone = terminal_notebook.clone();
         let split_view_clone = self.split_view.clone();
         let sidebar_clone = self.sidebar.clone();
-        let session_bridges_close = self.session_split_bridges.clone();
         let split_container_close = self.split_container.clone();
         close_tab_by_id_action.connect_activate(move |_, param| {
             if let Some(param) = param
@@ -252,20 +259,11 @@ impl MainWindow {
                 // Clear tab color indicator
                 notebook_clone.clear_tab_split_color(session_id);
 
-                // Clear session from ALL per-session split bridges
-                // This ensures the panel shows "Empty Panel" placeholder
-                {
-                    let bridges = session_bridges_close.borrow();
-                    for bridge in bridges.values() {
-                        if bridge.is_session_displayed(session_id) {
-                            tracing::debug!(
-                                "close-tab-by-id: clearing session {} from per-session bridge",
-                                session_id
-                            );
-                            bridge.clear_session_from_panes(session_id);
-                        }
-                    }
-                }
+                // The per-session split bridges are not touched here: the
+                // close runs `on_split_cleanup`, which removes a split guest's
+                // pane (collapsing a layout left with one session) and clears
+                // an owner's. Emptying the pane here first left a guest's pane
+                // as an empty slot that the hook could no longer find.
 
                 // Close session from global split view with auto-cleanup
                 // Returns true if split view should be hidden
@@ -569,59 +567,72 @@ impl MainWindow {
         //
         // Resolution shared by all three: selected sidebar connection → its
         // live session → the split bridge it participates in (if any).
+        //
+        // Every early return logs its reason: a menu item that silently does
+        // nothing cannot be told apart from one that was never wired.
         let resolve_session = {
             let sidebar = self.sidebar.clone();
             let notebook = terminal_notebook.clone();
-            move || -> Option<Uuid> {
-                let item = sidebar.get_selected_item()?;
-                let conn_id = Uuid::parse_str(&item.id()).ok()?;
-                notebook
+            move |action: &'static str| -> Option<Uuid> {
+                let Some(item) = sidebar.get_selected_item() else {
+                    tracing::warn!(action, "sidebar action: no connection selected");
+                    return None;
+                };
+                let Ok(conn_id) = Uuid::parse_str(&item.id()) else {
+                    tracing::warn!(action, id = %item.id(), "sidebar action: row is not a connection");
+                    return None;
+                };
+                let session = notebook
                     .get_all_sessions()
                     .into_iter()
                     .find(|s| s.connection_id == conn_id)
-                    .map(|s| s.id)
+                    .map(|s| s.id);
+                match session {
+                    Some(session_id) => {
+                        tracing::debug!(action, %conn_id, session = %session_id, "sidebar action");
+                    }
+                    None => {
+                        tracing::warn!(action, %conn_id, "sidebar action: connection has no session");
+                    }
+                }
+                session
             }
         };
 
-        // Focuses the pane holding `session_id` in its split, switching to the
-        // owner tab first; returns the owning bridge so the caller can activate
-        // the pane action. `None` when the session is not in a split.
-        let focus_pane_for = {
-            let notebook = terminal_notebook.clone();
-            let bridges = self.session_split_bridges.clone();
-            move |session_id: Uuid| -> bool {
-                let Some(bridge) = bridges.borrow().get(&session_id).cloned() else {
-                    return false;
-                };
-                if let Some(owner) = bridge.owner_session() {
-                    notebook.switch_to_tab(owner);
+        // Window actions are activated on this window, not on whatever window
+        // GTK last saw focused (a detached session or a cluster window).
+        let activate_on_window = {
+            let window_weak = window.downgrade();
+            move |name: &str, target: Option<&glib::Variant>| {
+                if let Some(window) = window_weak.upgrade() {
+                    gtk4::prelude::ActionGroupExt::activate_action(&window, name, target);
+                } else {
+                    tracing::warn!(action = name, "sidebar action: main window is gone");
                 }
-                bridge.set_focused_pane(Some(session_id));
-                if let Some(panel_id) = bridge.get_panel_id_for_uuid(session_id) {
-                    let _ = bridge.adapter_set_focus(panel_id);
-                }
-                true
             }
         };
 
-        // "Remove from Split" — pop the pane back to its own tab.
+        // "Move to Own Tab" (on the owner: "Remove Split") — pop the pane back
+        // to its own tab; on the owner `win.pop-pane-to-tab` collapses the split.
         let pop_action = gio::SimpleAction::new("split-pop-connection", None);
         let resolve_pop = resolve_session.clone();
-        let focus_pop = focus_pane_for.clone();
+        let notebook_pop = terminal_notebook.clone();
+        let bridges_pop = self.session_split_bridges.clone();
+        let activate_pop = activate_on_window.clone();
         pop_action.connect_activate(move |_, _| {
-            let Some(session_id) = resolve_pop() else {
+            let Some(session_id) = resolve_pop("split-pop-connection") else {
                 return;
             };
-            if !focus_pop(session_id) {
+            if super::split_view_actions::focus_split_pane(&notebook_pop, &bridges_pop, session_id)
+                .is_none()
+            {
                 return;
             }
-            if let Some(window) = active_window() {
-                gtk4::prelude::ActionGroupExt::activate_action(&window, "pop-pane-to-tab", None);
-            }
+            activate_pop("pop-pane-to-tab", None);
         });
         window.add_action(&pop_action);
 
-        // "Close" — terminate the connection's live session. Delegates to
+        // "Disconnect" — terminate the connection's live session. Delegates to
         // `close-tab-by-id`, which performs the full teardown (split-bridge
         // cleanup, tab close, sidebar count) for a session whether or not it is
         // in a split, so this one path serves both an ordinary connected tab
@@ -630,18 +641,15 @@ impl MainWindow {
         // reconnecting — only Delete (removing the connection) is red.
         let close_action = gio::SimpleAction::new("split-close-connection", None);
         let resolve_close = resolve_session.clone();
+        let activate_close = activate_on_window.clone();
         close_action.connect_activate(move |_, _| {
-            let Some(session_id) = resolve_close() else {
+            let Some(session_id) = resolve_close("split-close-connection") else {
                 return;
             };
-            if let Some(window) = active_window() {
-                let sid = session_id.to_string();
-                gtk4::prelude::ActionGroupExt::activate_action(
-                    &window,
-                    "close-tab-by-id",
-                    Some(&sid.to_variant()),
-                );
-            }
+            activate_close(
+                "close-tab-by-id",
+                Some(&session_id.to_string().to_variant()),
+            );
         });
         window.add_action(&close_action);
 
@@ -651,31 +659,34 @@ impl MainWindow {
         // standalone window in one click; an ordinary/background tab detaches
         // directly.
         let detach_action = gio::SimpleAction::new("connection-detach", None);
-        let resolve_detach = resolve_session.clone();
-        let focus_detach = focus_pane_for.clone();
+        let resolve_detach = resolve_session;
         let notebook_detach = terminal_notebook.clone();
+        let bridges_detach = self.session_split_bridges.clone();
+        let activate_detach = activate_on_window;
         detach_action.connect_activate(move |_, _| {
-            let Some(session_id) = resolve_detach() else {
+            let Some(session_id) = resolve_detach("connection-detach") else {
                 return;
             };
             // Pop out of the split first if needed so the detach verdict
-            // becomes Allowed.
-            if focus_detach(session_id)
-                && let Some(window) = active_window()
-            {
-                gtk4::prelude::ActionGroupExt::activate_action(&window, "pop-pane-to-tab", None);
+            // becomes Allowed. A session outside any split detaches directly.
+            if bridges_detach.borrow().contains_key(&session_id) {
+                if super::split_view_actions::focus_split_pane(
+                    &notebook_detach,
+                    &bridges_detach,
+                    session_id,
+                )
+                .is_none()
+                {
+                    return;
+                }
+                activate_detach("pop-pane-to-tab", None);
             }
-            let _ = notebook_detach
-                .request_detach(session_id, crate::terminal::DetachPresentation::default());
+            if !notebook_detach
+                .request_detach(session_id, crate::terminal::DetachPresentation::default())
+            {
+                tracing::warn!(session = %session_id, "connection-detach: no detach handler");
+            }
         });
         window.add_action(&detach_action);
     }
-}
-
-/// Returns the application's active window for activating window actions.
-fn active_window() -> Option<gtk4::ApplicationWindow> {
-    gtk4::gio::Application::default()
-        .and_downcast::<gtk4::Application>()
-        .and_then(|app| app.active_window())
-        .and_downcast::<gtk4::ApplicationWindow>()
 }

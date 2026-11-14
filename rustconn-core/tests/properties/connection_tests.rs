@@ -3001,6 +3001,89 @@ fn reorder_then_sort_all_reapplies_alphabetical() {
     );
 }
 
+/// A drop on the upper half of a row places the dragged connection *before*
+/// the target; a drop on the lower half places it *after*.
+///
+/// Before the fix the drop position was discarded and every drop landed after
+/// the target, so a connection could never be moved to the top of its group and
+/// had to be dropped one row above where it was wanted.
+#[test]
+fn reorder_connection_honours_before_and_after() {
+    let (mut manager, _temp, _runtime) = create_test_manager();
+
+    let mut create = |name: &str| {
+        manager
+            .create_connection(
+                name.to_string(),
+                "host.example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .expect("Should create connection")
+    };
+    let alpha = create("alpha");
+    let mike = create("mike");
+    let zebra = create("zebra");
+    manager.sort_all().expect("Should sort all");
+
+    let order_by_sort = |manager: &ConnectionManager| -> Vec<String> {
+        let mut conns = manager.list_connections();
+        conns.sort_by_key(|c| c.sort_order);
+        conns.into_iter().map(|c| c.name.clone()).collect()
+    };
+
+    // Before the first row: the only way to reach the top of a group.
+    manager
+        .reorder_connection_before(zebra, alpha)
+        .expect("Should reorder zebra before alpha");
+    assert_eq!(order_by_sort(&manager), ["zebra", "alpha", "mike"]);
+
+    // Before a middle row.
+    manager
+        .reorder_connection_before(zebra, mike)
+        .expect("Should reorder zebra before mike");
+    assert_eq!(order_by_sort(&manager), ["alpha", "zebra", "mike"]);
+
+    // After the same row: the two placements differ by exactly one slot.
+    manager
+        .reorder_connection(zebra, mike)
+        .expect("Should reorder zebra after mike");
+    assert_eq!(order_by_sort(&manager), ["alpha", "mike", "zebra"]);
+}
+
+/// The same before/after distinction for folders.
+#[test]
+fn reorder_group_honours_before_and_after() {
+    let (mut manager, _temp, _runtime) = create_test_manager();
+
+    let alpha = manager
+        .create_group("alpha".to_string())
+        .expect("Should create alpha group");
+    let mike = manager
+        .create_group("mike".to_string())
+        .expect("Should create mike group");
+    let zebra = manager
+        .create_group("zebra".to_string())
+        .expect("Should create zebra group");
+    manager.sort_all().expect("Should sort all");
+
+    let order_by_sort = |manager: &ConnectionManager| -> Vec<String> {
+        let mut groups: Vec<_> = manager.list_groups();
+        groups.sort_by_key(|g| g.sort_order);
+        groups.into_iter().map(|g| g.name.clone()).collect()
+    };
+
+    manager
+        .reorder_group_before(zebra, alpha)
+        .expect("Should reorder zebra before alpha");
+    assert_eq!(order_by_sort(&manager), ["zebra", "alpha", "mike"]);
+
+    manager
+        .reorder_group(zebra, mike)
+        .expect("Should reorder zebra after mike");
+    assert_eq!(order_by_sort(&manager), ["alpha", "mike", "zebra"]);
+}
+
 /// Regression test: a manual `reorder_group()` must not leave the sidebar stuck.
 /// After reordering groups, `sort_all()` has to re-alphabetise them.
 ///

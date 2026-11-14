@@ -136,6 +136,97 @@ pub(super) fn take_park_mark(
     }
 }
 
+/// How [`TerminalNotebook::close_tab`](super::TerminalNotebook::close_tab)
+/// ends a session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum CloseRoute {
+    /// The session is parked (a split guest or a detached window) and so has
+    /// no tab page: `close_session` gives it one back and closes that.
+    Parked,
+    /// The session has a registered tab page of its own: close the page.
+    Page,
+    /// The notebook knows nothing to close for this id.
+    Unknown,
+}
+
+/// Picks how to close a session from its placement marks (pure).
+///
+/// A parked session wins over a registered page: parking removes the page from
+/// the session map, so a page found for a parked id would be stale. Before
+/// this decision existed, only a detached session took the tabless route, and
+/// closing a split guest by id did nothing while its caller had already
+/// emptied the pane and lowered the sidebar count.
+#[must_use]
+pub(super) const fn close_route(
+    is_parked_in_split: bool,
+    is_detached: bool,
+    has_page: bool,
+) -> CloseRoute {
+    if is_parked_in_split || is_detached {
+        CloseRoute::Parked
+    } else if has_page {
+        CloseRoute::Page
+    } else {
+        CloseRoute::Unknown
+    }
+}
+
+/// Who asked for a tab page to close, recorded per session before the close.
+///
+/// The tab's close button, a middle-click and the Tab Overview close button
+/// reach `AdwTabView::close_page` with no code of ours in the path, so an
+/// unmarked close is the user's. Code that closes a tab on its own behalf
+/// (scripts, clusters, a clean exit, a pane close) marks the session first,
+/// one entry per close, consumed by the `close-page` handler.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum CloseIntent {
+    /// The user closed this tab directly; a split host is confirmed first.
+    User,
+    /// The application closed the tab; never ask.
+    Programmatic,
+    /// The user already confirmed a bulk close that includes this tab.
+    BatchConfirmed,
+}
+
+/// What the `close-page` handler does with a close request.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum SplitCloseDecision {
+    /// Close the tab now, as before.
+    Close,
+    /// Hold the close and ask what to do with the split.
+    Ask,
+}
+
+/// Decides whether closing a tab must be confirmed first (pure).
+///
+/// Only a user's close of a tab that hosts a split with two or more sessions
+/// asks: closing such a tab silently ended the owner, which the tab title does
+/// not even name when another pane is focused. A programmatic close or a bulk
+/// close the user already confirmed never asks again.
+#[must_use]
+pub(super) const fn split_close_decision(
+    hosts_split: bool,
+    session_count: usize,
+    intent: CloseIntent,
+) -> SplitCloseDecision {
+    if hosts_split && session_count >= 2 && matches!(intent, CloseIntent::User) {
+        SplitCloseDecision::Ask
+    } else {
+        SplitCloseDecision::Close
+    }
+}
+
+/// Removes and returns the recorded close intent of a session (pure).
+///
+/// A session with no entry was closed by the user. The entry is consumed so it
+/// can never apply to a later close of the same session.
+pub(super) fn take_intent(
+    intents: &mut HashMap<Uuid, CloseIntent>,
+    session_id: Uuid,
+) -> CloseIntent {
+    intents.remove(&session_id).unwrap_or(CloseIntent::User)
+}
+
 /// Builds the placement context from observed notebook facts (pure, GTK-free).
 #[must_use]
 const fn detach_context_from(
@@ -672,6 +763,152 @@ mod park_mark_tests {
         assert_eq!(take_park_mark(&mut in_split, &mut detached, id), None);
         assert!(in_split.contains(&other), "unrelated marks are untouched");
         assert!(detached.contains(&other));
+    }
+}
+
+#[cfg(test)]
+mod close_route_tests {
+    use super::{CloseRoute, close_route};
+
+    /// Every combination of `(parked_in_split, detached, has_page)`.
+    #[test]
+    fn route_table() {
+        let table = [
+            ((false, false, false), CloseRoute::Unknown),
+            ((false, false, true), CloseRoute::Page),
+            ((false, true, false), CloseRoute::Parked),
+            ((false, true, true), CloseRoute::Parked),
+            ((true, false, false), CloseRoute::Parked),
+            ((true, false, true), CloseRoute::Parked),
+            ((true, true, false), CloseRoute::Parked),
+            ((true, true, true), CloseRoute::Parked),
+        ];
+        for ((in_split, detached, has_page), expected) in table {
+            assert_eq!(
+                close_route(in_split, detached, has_page),
+                expected,
+                "in_split={in_split} detached={detached} has_page={has_page}"
+            );
+        }
+    }
+
+    /// Regression: a split guest has no page (parking removed it from the
+    /// session map) and is not detached. `close_tab` used to check only the
+    /// detached mark, find no page and do nothing, so the sidebar's Close left
+    /// the guest running with no pane and no tab.
+    #[test]
+    fn split_guest_without_page_is_closed_not_ignored() {
+        assert_eq!(close_route(true, false, false), CloseRoute::Parked);
+    }
+
+    /// A detached session keeps its route (issue #236).
+    #[test]
+    fn detached_session_without_page_is_closed() {
+        assert_eq!(close_route(false, true, false), CloseRoute::Parked);
+    }
+}
+
+#[cfg(test)]
+mod split_close_decision_tests {
+    use std::collections::HashMap;
+
+    use uuid::Uuid;
+
+    use super::{CloseIntent, SplitCloseDecision, split_close_decision, take_intent};
+
+    const INTENTS: [CloseIntent; 3] = [
+        CloseIntent::User,
+        CloseIntent::Programmatic,
+        CloseIntent::BatchConfirmed,
+    ];
+    const COUNTS: [usize; 4] = [0, 1, 2, 5];
+
+    /// The whole table of `(hosts_split, session_count, intent)`.
+    #[test]
+    fn ask_only_for_user_close_of_split_host_with_two_or_more_sessions() {
+        for hosts_split in [false, true] {
+            for count in COUNTS {
+                for intent in INTENTS {
+                    let expected = if hosts_split && count >= 2 && intent == CloseIntent::User {
+                        SplitCloseDecision::Ask
+                    } else {
+                        SplitCloseDecision::Close
+                    };
+                    assert_eq!(
+                        split_close_decision(hosts_split, count, intent),
+                        expected,
+                        "hosts_split={hosts_split} count={count} intent={intent:?}"
+                    );
+                }
+            }
+        }
+        assert_eq!(
+            split_close_decision(true, 2, CloseIntent::User),
+            SplitCloseDecision::Ask
+        );
+    }
+
+    #[test]
+    fn programmatic_close_never_asks() {
+        for hosts_split in [false, true] {
+            for count in COUNTS {
+                assert_eq!(
+                    split_close_decision(hosts_split, count, CloseIntent::Programmatic),
+                    SplitCloseDecision::Close
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn batch_confirmed_close_never_asks() {
+        for count in COUNTS {
+            assert_eq!(
+                split_close_decision(true, count, CloseIntent::BatchConfirmed),
+                SplitCloseDecision::Close
+            );
+        }
+    }
+
+    /// A split whose other panes are gone (one session) or a tab that hosts
+    /// no split closes as before.
+    #[test]
+    fn single_session_or_non_host_never_asks() {
+        for count in [0, 1] {
+            assert_eq!(
+                split_close_decision(true, count, CloseIntent::User),
+                SplitCloseDecision::Close
+            );
+        }
+        assert_eq!(
+            split_close_decision(false, 5, CloseIntent::User),
+            SplitCloseDecision::Close
+        );
+    }
+
+    #[test]
+    fn take_intent_defaults_to_user_and_is_consumed_once() {
+        let mut intents = HashMap::new();
+        let id = Uuid::new_v4();
+        assert_eq!(take_intent(&mut intents, id), CloseIntent::User);
+        assert!(intents.is_empty());
+    }
+
+    #[test]
+    fn take_intent_returns_stored_intent_then_user() {
+        let id = Uuid::new_v4();
+        let other = Uuid::new_v4();
+        let mut intents = HashMap::from([
+            (id, CloseIntent::Programmatic),
+            (other, CloseIntent::BatchConfirmed),
+        ]);
+        assert_eq!(take_intent(&mut intents, id), CloseIntent::Programmatic);
+        assert_eq!(take_intent(&mut intents, id), CloseIntent::User);
+        assert_eq!(
+            intents.get(&other),
+            Some(&CloseIntent::BatchConfirmed),
+            "another session's mark is untouched"
+        );
     }
 }
 

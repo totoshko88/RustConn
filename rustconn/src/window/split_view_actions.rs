@@ -33,10 +33,21 @@ fn refuses_split_placement(
 /// Both entry points need the same "focus this pane first, then let the window
 /// action work on it" behaviour, so they are wired together: `win.close-pane`
 /// for the × button and "Close Connection", `win.pop-pane-to-tab` for the
-/// "Remove from Split" button and menu item (issue #252). Focusing is what makes
+/// "Move to Own Tab" button and menu item (issue #252). Focusing is what makes
 /// an action target the panel the user pointed at — the panel's own focus
 /// gesture declines clicks that land on a button.
-pub(super) fn wire_panel_action_callbacks(bridge: &Rc<SplitViewBridge>) {
+///
+/// The pane menus also ask the notebook whether a pane's session has ended, so
+/// Reconnect is offered on an ended session only. The notebook is held weakly,
+/// so the bridge's menus never keep it alive.
+pub(super) fn wire_panel_action_callbacks(bridge: &Rc<SplitViewBridge>, notebook: &SharedNotebook) {
+    let notebook_weak = Rc::downgrade(notebook);
+    bridge.setup_pane_menu_state(move |session_id| {
+        notebook_weak
+            .upgrade()
+            .is_some_and(|notebook| notebook.is_session_disconnected(session_id))
+    });
+
     let focus_pane = {
         let bridge = Rc::clone(bridge);
         move |pane_uuid: Uuid| {
@@ -266,12 +277,38 @@ impl PanelPlacement {
     }
 }
 
+/// Enables `win.unsplit` only while the active tab holds a split layout.
+///
+/// Everything that reaches `win.unsplit` follows this state: `Ctrl+Shift+J`,
+/// the "Remove Split" entries of the tab menu (`tab.unsplit` selects its page,
+/// then activates this action) and the pane menu (bound to it directly), the
+/// command palette and scripts. A disabled
+/// action ignores activation, so none of them can act on a tab without a split.
+/// Called whenever a layout changes and whenever another tab is selected.
+fn refresh_unsplit_action(
+    window: &adw::ApplicationWindow,
+    notebook: &SharedNotebook,
+    bridges: &SessionSplitBridges,
+) {
+    let Some(action) = window
+        .lookup_action("unsplit")
+        .and_downcast::<gio::SimpleAction>()
+    else {
+        return;
+    };
+    let is_split = notebook
+        .get_active_session_id()
+        .and_then(|session_id| bridges.borrow().get(&session_id).cloned())
+        .is_some_and(|bridge| bridge.pane_count() > 1);
+    action.set_enabled(is_split);
+}
+
 /// The window handles needed to take a split layout apart.
 ///
 /// Grouped into one struct because three actions dismantle splits —
 /// `win.unsplit`, `win.pop-pane-to-tab` and `win.close-pane` — and each would
 /// otherwise capture the same five clones individually in its `'static` closure.
-struct SplitTeardown {
+pub(super) struct SplitTeardown {
     notebook: SharedNotebook,
     bridges: SessionSplitBridges,
     monitoring: Rc<MonitoringCoordinator>,
@@ -282,6 +319,46 @@ struct SplitTeardown {
 }
 
 impl SplitTeardown {
+    /// Bundles the handles for a teardown run outside the split actions.
+    ///
+    /// The `on_split_cleanup` hook is stored inside the notebook, so it holds
+    /// the notebook weakly and builds this per call from the upgraded handle.
+    pub(super) fn new(
+        notebook: SharedNotebook,
+        bridges: SessionSplitBridges,
+        monitoring: Rc<MonitoringCoordinator>,
+        global_split_view: SharedSplitView,
+        split_container: gtk4::Box,
+    ) -> Self {
+        Self {
+            notebook,
+            bridges,
+            monitoring,
+            global_split_view,
+            split_container,
+        }
+    }
+
+    /// Takes down the pane of a split guest whose session is closing.
+    ///
+    /// Same layout result as `win.close-pane`, for a guest closed by id from
+    /// anywhere (the sidebar's Close, the session manager, a script, a cluster
+    /// disconnect, a clean exit): the pane goes away instead of staying as an
+    /// empty slot, and a layout left with one session collapses back into an
+    /// ordinary tab. The session itself is torn down by the caller's
+    /// `close-page`.
+    pub(super) fn remove_guest_pane(&self, bridge: &Rc<SplitViewBridge>, guest: Uuid) {
+        let removed_all = bridge.close_session_from_panes(guest);
+        match bridge.owner_session() {
+            Some(owner) if Self::is_spent(bridge, removed_all) => {
+                self.collapse(owner, bridge, Some(guest));
+            }
+            // Removing a panel rebuilds the layout's widget tree empty, so put
+            // the surviving sessions' widgets back.
+            _ => bridge.restore_panel_contents(),
+        }
+    }
+
     /// Looks up the split layout of the active tab, if it has one.
     ///
     /// Returns the owning session id together with a *cloned* `Rc` so no borrow
@@ -472,10 +549,14 @@ impl MainWindow {
             }
         }
 
-        // Helper closure that refreshes the broadcast toggle button state.
-        // Cloned into every callback that may change a split's session count
-        // (split, unsplit, close pane, move to panel) so the toggle accurately
-        // reflects the active tab's split layout.
+        // Helper closure that refreshes the broadcast toggle button state and
+        // whether `win.unsplit` (Ctrl+Shift+J, the menus' and the command
+        // palette's Remove Split) is enabled. Cloned into every callback that may change a split's
+        // session count (split, unsplit, close pane, move to panel) so both
+        // reflect the active tab's split layout. Workspace restore and "Split
+        // with Other Tabs…" split through `win.split-*`, so they land here too;
+        // closing or moving a tab changes the selected page, which the
+        // `selected_page_notify` handler next to `win.unsplit` covers.
         //
         // It also drives a one-shot discoverability toast: the very first
         // time a split has ≥2 active panels in this app session we tell the
@@ -493,6 +574,7 @@ impl MainWindow {
                     super::navigation_actions::refresh_broadcast_toggle(
                         &win, &notebook, &bridges, &toggle,
                     );
+                    refresh_unsplit_action(&win, &notebook, &bridges);
 
                     // First-time hint: only when the toggle just became
                     // visible (i.e. a split with ≥2 active panels exists)
@@ -722,7 +804,7 @@ impl MainWindow {
                 wire_new_shell_button(placement_h, state_h.clone());
 
                 // Wire the panel buttons and panel context menu
-                wire_panel_action_callbacks(&split_view);
+                wire_panel_action_callbacks(&split_view, &notebook_for_split_h);
             }
 
             // Layout changed — refresh the broadcast toggle so it reflects the
@@ -943,7 +1025,7 @@ impl MainWindow {
                 wire_new_shell_button(placement_v, state_v.clone());
 
                 // Wire the panel buttons and panel context menu
-                wire_panel_action_callbacks(&split_view);
+                wire_panel_action_callbacks(&split_view, &notebook_for_split_v);
             }
 
             // Layout changed — refresh broadcast toggle.
@@ -1065,7 +1147,7 @@ impl MainWindow {
         window.add_action(&pop_pane_action);
 
         // Move the focused pane's session out of the split and into its own
-        // detached window (issue #209/#236 reuse). This is "Remove from Split"
+        // detached window (issue #209/#236 reuse). This is "Move to Own Tab"
         // followed by "Move to New Window": the same pane teardown as
         // `win.pop-pane-to-tab` runs first — the session goes back to a real
         // tab with its widget, PTY and connection intact — and then
@@ -1148,7 +1230,36 @@ impl MainWindow {
             tracing::info!(owner = %owner, "split layout removed, sessions returned to tabs");
             refresh_broadcast_unsplit();
         });
+        // Disabled until a tab is split, so Ctrl+Shift+J and the command
+        // palette do nothing on a tab without one.
+        unsplit_action.set_enabled(false);
         window.add_action(&unsplit_action);
+        {
+            let window_weak = window.downgrade();
+            let notebook = self.terminal_notebook.clone();
+            let bridges = self.session_split_bridges.clone();
+            self.terminal_notebook
+                .tab_view()
+                .connect_selected_page_notify(move |_| {
+                    if let Some(win) = window_weak.upgrade() {
+                        refresh_unsplit_action(&win, &notebook, &bridges);
+                    }
+                });
+        }
+        {
+            // Closing a split guest by id closes a page that was never selected
+            // (`close_session` restores it unselected), so the selection does
+            // not change while the guest's pane goes away and the layout may
+            // collapse. Every page close detaches its page, so refresh there,
+            // after the `close-page` handler has finished.
+            let refresh_broadcast_detached = refresh_broadcast.clone();
+            self.terminal_notebook
+                .tab_view()
+                .connect_page_detached(move |_, _, _| {
+                    let refresh = Rc::clone(&refresh_broadcast_detached);
+                    glib::idle_add_local_once(move || refresh());
+                });
+        }
 
         // Focus next pane action
         let focus_next_pane_action = gio::SimpleAction::new("focus-next-pane", None);
@@ -1388,4 +1499,161 @@ fn create_split_from_tabs(
             widget.grab_focus();
         }
     });
+}
+
+/// Where a session shown in a split lives on screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct SplitPaneLocation {
+    /// The session whose tab hosts the layout; selecting it shows the split.
+    pub host_tab: Uuid,
+    /// The pane showing the session. A pane id, never a session id: the
+    /// bridge's focus methods look panes up by this id only.
+    pub pane: Uuid,
+}
+
+/// Why a session in the split map could not be located in its layout.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum SplitPaneMiss {
+    /// The layout records no owner, so there is no tab to select.
+    NoOwner,
+    /// No pane of the layout shows the session: a stale map entry.
+    NotDisplayed,
+}
+
+/// Finds the tab and the pane showing `session_id` in one split layout.
+///
+/// `panes` lists the layout's panes as `(pane id, session shown)`. Terminals and
+/// embedded RDP/VNC/SPICE viewers sit in panes the same way, so the protocol
+/// plays no part. The owner is located like any guest: its pane is the one
+/// the split actions must focus before collapsing the layout.
+pub(super) fn locate_split_pane(
+    session_id: Uuid,
+    owner: Option<Uuid>,
+    panes: &[(Uuid, Option<Uuid>)],
+) -> Result<SplitPaneLocation, SplitPaneMiss> {
+    let host_tab = owner.ok_or(SplitPaneMiss::NoOwner)?;
+    let pane = panes
+        .iter()
+        .find(|(_, shown)| *shown == Some(session_id))
+        .map(|(pane, _)| *pane)
+        .ok_or(SplitPaneMiss::NotDisplayed)?;
+    Ok(SplitPaneLocation { host_tab, pane })
+}
+
+/// Shows the split pane holding `session_id` and makes it the focused pane.
+///
+/// Selects the layout's host tab, then focuses the session's pane, so the
+/// active-tab actions that work on the focused pane (`win.pop-pane-to-tab`,
+/// `win.detach-pane-to-window`) act on this session. Shared by the sidebar's
+/// Move to Own Tab / Remove Split / Move to New Window and by Show Session.
+///
+/// Returns the layout, or `None` (logged) when the session is not in a split
+/// or cannot be found in the layout its map entry names.
+pub(super) fn focus_split_pane(
+    notebook: &SharedNotebook,
+    bridges: &SessionSplitBridges,
+    session_id: Uuid,
+) -> Option<Rc<SplitViewBridge>> {
+    // Clone the `Rc` out: switching tabs and focusing re-enter code that
+    // borrows the same map.
+    let Some(bridge) = bridges.borrow().get(&session_id).cloned() else {
+        tracing::debug!(session = %session_id, "split pane focus: session is not in a split");
+        return None;
+    };
+    let panes: Vec<(Uuid, Option<Uuid>)> = bridge
+        .pane_ids()
+        .into_iter()
+        .map(|pane| (pane, bridge.get_pane_session(pane)))
+        .collect();
+    let location = match locate_split_pane(session_id, bridge.owner_session(), &panes) {
+        Ok(location) => location,
+        Err(miss) => {
+            tracing::warn!(
+                session = %session_id,
+                ?miss,
+                panes = panes.len(),
+                "split pane focus: session not found in its split"
+            );
+            return None;
+        }
+    };
+    notebook.switch_to_tab(location.host_tab);
+    notebook.show_tab_view_content();
+    if let Err(e) = bridge.focus_pane(location.pane) {
+        tracing::warn!(session = %session_id, pane = %location.pane, "split pane focus: {e}");
+        return None;
+    }
+    tracing::debug!(
+        session = %session_id,
+        host_tab = %location.host_tab,
+        pane = %location.pane,
+        "split pane focus: pane focused"
+    );
+    Some(bridge)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SplitPaneLocation, SplitPaneMiss, locate_split_pane};
+    use uuid::Uuid;
+
+    #[test]
+    fn a_guest_is_found_by_its_pane_not_its_session_id() {
+        let owner = Uuid::new_v4();
+        let guest = Uuid::new_v4();
+        let (owner_pane, guest_pane, empty_pane) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let panes = [
+            (owner_pane, Some(owner)),
+            (empty_pane, None),
+            (guest_pane, Some(guest)),
+        ];
+        let location = locate_split_pane(guest, Some(owner), &panes);
+        assert_eq!(
+            location,
+            Ok(SplitPaneLocation {
+                host_tab: owner,
+                pane: guest_pane
+            })
+        );
+        // The bug: the session id was handed to the pane focus as a pane id.
+        assert_ne!(location.map(|l| l.pane), Ok(guest));
+    }
+
+    #[test]
+    fn the_owner_is_located_in_its_own_pane() {
+        let owner = Uuid::new_v4();
+        let owner_pane = Uuid::new_v4();
+        let panes = [
+            (Uuid::new_v4(), Some(Uuid::new_v4())),
+            (owner_pane, Some(owner)),
+        ];
+        assert_eq!(
+            locate_split_pane(owner, Some(owner), &panes),
+            Ok(SplitPaneLocation {
+                host_tab: owner,
+                pane: owner_pane
+            })
+        );
+    }
+
+    #[test]
+    fn a_stale_entry_is_reported_not_focused() {
+        let owner = Uuid::new_v4();
+        let gone = Uuid::new_v4();
+        let panes = [(Uuid::new_v4(), Some(owner)), (Uuid::new_v4(), None)];
+        assert_eq!(
+            locate_split_pane(gone, Some(owner), &panes),
+            Err(SplitPaneMiss::NotDisplayed)
+        );
+    }
+
+    #[test]
+    fn a_layout_without_owner_has_no_tab_to_show() {
+        let guest = Uuid::new_v4();
+        let panes = [(Uuid::new_v4(), Some(guest))];
+        assert_eq!(
+            locate_split_pane(guest, None, &panes),
+            Err(SplitPaneMiss::NoOwner)
+        );
+    }
 }

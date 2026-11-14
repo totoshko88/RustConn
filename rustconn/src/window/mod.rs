@@ -971,6 +971,41 @@ impl MainWindow {
             });
         }
 
+        // Put a disconnected session's reconnect banner back after a move
+        // between a tab, a split pane and a window dropped it. Weak: every
+        // terminal holds this hook.
+        {
+            let notebook_for_mapped = Rc::downgrade(&terminal_notebook);
+            terminal_notebook.set_on_terminal_mapped(move |session_id| {
+                if let Some(notebook) = notebook_for_mapped.upgrade() {
+                    notebook.reconcile_reconnect_banner(session_id);
+                }
+            });
+        }
+
+        // Focus the pane that shows a session, so Q on an ended session closes
+        // that pane through `win.close-pane` rather than the pane last clicked:
+        // the bridge follows clicks, not keyboard focus.
+        {
+            let bridges_for_focuser = session_split_bridges.clone();
+            terminal_notebook.set_split_pane_focuser(move |session_id| {
+                // Resolved under the borrow, focused after it: focusing notifies
+                // the title source, which reads the bridges map again.
+                let target = bridges_for_focuser.borrow().values().find_map(|bridge| {
+                    bridge
+                        .pane_ids()
+                        .into_iter()
+                        .find(|&pane| bridge.get_pane_session(pane) == Some(session_id))
+                        .map(|pane| (Rc::clone(bridge), pane))
+                });
+                let Some((bridge, pane)) = target else {
+                    return false;
+                };
+                bridge.set_focused_pane(Some(pane));
+                true
+            });
+        }
+
         // Resolve the focused pane's session for a split tab, so "Save Output"
         // saves the pane the user is looking at rather than the tab owner
         // (issue #371). Keyed by the owner session id — the tab's bridge is the
@@ -1011,6 +1046,23 @@ impl MainWindow {
                 let protocol = notebook_for_reconnect
                     .get_session_info(session_id)
                     .map(|info| info.protocol.clone());
+
+                // A local shell has no saved connection to dial again: start a
+                // new shell in the same terminal.
+                if protocol.as_deref() == Some(LOCAL_SHELL_PROTOCOL) {
+                    if notebook_for_reconnect.prepare_for_reconnect(session_id) {
+                        let terminal_settings = state_for_reconnect
+                            .try_borrow()
+                            .map(|s| s.settings().terminal.clone())
+                            .unwrap_or_default();
+                        Self::start_local_shell_process(
+                            &notebook_for_reconnect,
+                            session_id,
+                            &terminal_settings,
+                        );
+                    }
+                    return;
+                }
 
                 // For VTE-based sessions, reconnect in-place (reuse existing tab)
                 let is_vte_protocol = protocol.as_deref().is_some_and(|p| {
@@ -1682,7 +1734,7 @@ impl MainWindow {
 
         // Set up multi-session checker for the sidebar context menu (#374):
         // true when a connection has 2+ live sessions, so the ambiguous
-        // per-session controls (Close / Remove from Split / Move to New
+        // per-session controls (Disconnect / Move to Own Tab / Move to New
         // Window) are hidden — they target a single session, which is
         // undefined when several are open for one connection.
         {
@@ -1701,6 +1753,37 @@ impl MainWindow {
                         false
                     }
                 });
+        }
+
+        // Tells the sidebar menu whether a connection's session owns its split,
+        // so that row offers Remove Split instead of Move to Own Tab. Asked only
+        // when the row has one live session (the menu hides the split item
+        // otherwise), so the first session found is that session. Weak handles:
+        // the checker lives in a thread-local for the life of the process.
+        {
+            let notebook = Rc::downgrade(&main_window.terminal_notebook);
+            let bridges = Rc::downgrade(&main_window.session_split_bridges);
+            crate::sidebar_ui::set_split_owner_checker(move |conn_id_str| {
+                let (Some(notebook), Some(bridges), Ok(conn_id)) = (
+                    notebook.upgrade(),
+                    bridges.upgrade(),
+                    Uuid::parse_str(conn_id_str),
+                ) else {
+                    return false;
+                };
+                let Some(session_id) = notebook
+                    .get_all_sessions()
+                    .into_iter()
+                    .find(|s| s.connection_id == conn_id)
+                    .map(|s| s.id)
+                else {
+                    return false;
+                };
+                bridges
+                    .borrow()
+                    .get(&session_id)
+                    .is_some_and(|bridge| bridge.is_owned_by(session_id))
+            });
         }
 
         // Drive the sidebar recording indicator from recording start/stop.
@@ -1929,6 +2012,40 @@ impl MainWindow {
             // notebook) and leak the whole notebook.
             let notebook_for_cleanup = Rc::downgrade(&terminal_notebook);
             let monitoring_for_cleanup = self.monitoring.clone();
+            let split_container_for_cleanup = self.split_container.clone();
+
+            // Tells the notebook which sessions a tab's split shows, so a user
+            // closing that tab is asked first (item 11). Same owner test and
+            // pane walk as the cleanup hook below, which is what a confirmed
+            // close then runs. `try_borrow`: a close fired while this map is
+            // borrowed closes as before instead of panicking.
+            let session_bridges_for_members = self.session_split_bridges.clone();
+            terminal_notebook.set_split_members_provider(move |session_id| {
+                let Ok(bridges) = session_bridges_for_members.try_borrow() else {
+                    tracing::warn!(
+                        session = %session_id,
+                        "split members: bridge map busy; closing without asking"
+                    );
+                    return Vec::new();
+                };
+                let Some(bridge) = bridges
+                    .get(&session_id)
+                    .filter(|bridge| bridge.is_owned_by(session_id))
+                else {
+                    return Vec::new();
+                };
+                let mut members = vec![session_id];
+                for pane_id in bridge.pane_ids() {
+                    if let Some(sid) = bridge.get_pane_session(pane_id)
+                        && !sid.is_nil()
+                        && !members.contains(&sid)
+                    {
+                        members.push(sid);
+                    }
+                }
+                members
+            });
+
             terminal_notebook.set_on_split_cleanup(move |session_id| {
                 // If the closing tab OWNS a split bridge (key == owner session_id),
                 // its guest (Select-Tabbed) sessions live inside this tab's split
@@ -1986,17 +2103,52 @@ impl MainWindow {
                     }
                 }
 
-                // Clear session from ALL per-session split bridges
-                {
+                // Take the session out of every per-session split bridge. The map
+                // holds one entry per displayed session, so the same layout shows
+                // up under several keys; collect each one once, and drop the
+                // borrow before a guest's layout collapses (that takes
+                // `borrow_mut` on the same map).
+                let displaying: Vec<Rc<SplitViewBridge>> = {
                     let bridges = session_bridges_for_cleanup.borrow();
+                    let mut unique: Vec<Rc<SplitViewBridge>> = Vec::new();
                     for bridge in bridges.values() {
-                        if bridge.is_session_displayed(session_id) {
-                            tracing::debug!(
-                                "on_split_cleanup: clearing session {} from per-session bridge",
-                                session_id
-                            );
-                            bridge.clear_session_from_panes(session_id);
+                        if bridge.is_session_displayed(session_id)
+                            && !unique.iter().any(|seen| Rc::ptr_eq(seen, bridge))
+                        {
+                            unique.push(Rc::clone(bridge));
                         }
+                    }
+                    unique
+                };
+                for bridge in displaying {
+                    // A guest's pane goes away, as `win.close-pane` does; leaving
+                    // an empty slot behind made a guest closed by id (sidebar
+                    // Close, session manager, script, clean exit) look like a
+                    // pane still waiting for a session.
+                    let teardown = (!bridge.is_owned_by(session_id))
+                        .then(|| notebook_for_cleanup.upgrade())
+                        .flatten()
+                        .map(|notebook| {
+                            split_view_actions::SplitTeardown::new(
+                                notebook,
+                                session_bridges_for_cleanup.clone(),
+                                Rc::clone(&monitoring_for_cleanup),
+                                split_view_for_cleanup.clone(),
+                                split_container_for_cleanup.clone(),
+                            )
+                        });
+                    if let Some(teardown) = teardown {
+                        tracing::debug!(
+                            session = %session_id,
+                            "on_split_cleanup: removing the closing guest's pane"
+                        );
+                        teardown.remove_guest_pane(&bridge, session_id);
+                    } else {
+                        tracing::debug!(
+                            "on_split_cleanup: clearing session {} from per-session bridge",
+                            session_id
+                        );
+                        bridge.clear_session_from_panes(session_id);
                     }
                 }
                 // Drop the owner's now-emptied bridge so its stale entry does not
@@ -2086,7 +2238,7 @@ impl MainWindow {
             );
 
             // Wire the panel buttons and panel context menu
-            split_view_actions::wire_panel_action_callbacks(&split_view);
+            split_view_actions::wire_panel_action_callbacks(&split_view, &terminal_notebook);
         }
 
         // Set up drag-and-drop for initial pane with notebook lookup
@@ -2191,21 +2343,40 @@ impl MainWindow {
             }
         });
 
-        // Add to search history when user presses Enter or stops searching
+        // Enter in the search entry records the query in the history and opens
+        // the connection the results point at: the selected one, or the first.
         let sidebar_for_history = sidebar.clone();
         let state_for_history = state.clone();
         sidebar.search_entry().connect_activate(move |entry| {
             let query = entry.text().to_string();
-            if !query.is_empty() {
-                sidebar_for_history.add_to_search_history(&query);
-                // Persist to settings
-                if let Ok(mut state_mut) = state_for_history.try_borrow_mut() {
-                    state_mut.settings_mut().ui.add_search_history(&query);
-                    if let Err(e) = state_mut.save_settings() {
-                        tracing::warn!(?e, "Failed to save settings");
-                    }
+            if query.is_empty() {
+                return;
+            }
+            sidebar_for_history.add_to_search_history(&query);
+            // Persist to settings
+            if let Ok(mut state_mut) = state_for_history.try_borrow_mut() {
+                state_mut.settings_mut().ui.add_search_history(&query);
+                if let Err(e) = state_mut.save_settings() {
+                    tracing::warn!(?e, "Failed to save settings");
                 }
             }
+
+            // A fast typist presses Enter before the list has caught up with the
+            // text: `search-changed` is itself delayed by GtkSearchEntry, and
+            // the debounce above adds to that. Filter with what the entry holds
+            // right now so Enter opens what was typed, not a row of the
+            // previous list; clearing the pending query turns the scheduled
+            // debounce timeout into a no-op. Rebuilding the list resets the
+            // selection to its first row, so the connection selected before is
+            // taken first and opened if the new results still hold it.
+            let preferred_id = sidebar_for_history
+                .get_selected_item()
+                .filter(|item| !item.is_group())
+                .map(|item| item.id());
+            sidebar_for_history.hide_search_pending();
+            sidebar_for_history.set_pending_search_query(None);
+            Self::filter_connections(&state_for_history, &sidebar_for_history, &query);
+            sidebar_for_history.activate_search_result(preferred_id.as_deref());
         });
 
         // Also add to history when search entry loses focus with non-empty query
@@ -2682,12 +2853,19 @@ impl MainWindow {
         }
     }
 
-    /// Connects to the selected connection
+    /// Opens the selected connection: the sidebar menu's Connect / Show Session.
+    ///
+    /// A connection that already runs is shown, not duplicated: the newest live
+    /// embedded session is focused, the same way a double-click does it, and an
+    /// external-viewer session gets the "already running" hint. The menu labels
+    /// such a row **Show Session**, so the "new session on every double-click"
+    /// preference does not apply here; **Open new session** is the duplicate.
     fn connect_selected(
         state: &SharedAppState,
         sidebar: &SharedSidebar,
         notebook: &SharedNotebook,
         monitoring: &types::SharedMonitoring,
+        session_split_bridges: &SessionSplitBridges,
     ) {
         // Get selected item from sidebar using the sidebar's method
         let Some(conn_item) = sidebar.get_selected_item() else {
@@ -2701,7 +2879,55 @@ impl MainWindow {
 
         let id_str = conn_item.id();
         if let Ok(conn_id) = Uuid::parse_str(&id_str) {
+            if Self::show_running_session(notebook, session_split_bridges, conn_id) {
+                return;
+            }
             Self::start_connection(state, notebook, sidebar, monitoring, conn_id);
+        }
+    }
+
+    /// Shows a connection's running session instead of starting another.
+    ///
+    /// Focuses the most recently created *live* embedded session, or, when the
+    /// connection runs only in an external viewer, says so in a toast. Returns
+    /// `false` when there is nothing running to show (or the session vanished
+    /// before it could be focused, R7.6), so the caller launches a new session.
+    fn show_running_session(
+        notebook: &SharedNotebook,
+        session_split_bridges: &SessionSplitBridges,
+        conn_id: Uuid,
+    ) -> bool {
+        // `live_sessions` excludes tabs whose connection already ended — those
+        // keep their tab for the transcript and the Reconnect button, and
+        // focusing one instead of connecting is what made double-click look
+        // dead (issue #242). Collect first (an owned `Uuid`) so no notebook
+        // borrow is held across the focus call below.
+        let newest_live = notebook
+            .live_sessions()
+            .into_iter()
+            .filter(|s| s.connection_id == conn_id)
+            .max_by_key(|s| s.connected_at)
+            .map(|s| s.id);
+        // Only *owned* viewers count — a detaching viewer (remmina/krdc) is
+        // tracked without a child handle, so its entry never clears on its own
+        // and would block every later open (issue #242).
+        let external_running = || {
+            external_session_registry()
+                .is_some_and(|reg| reg.has_verifiable_active_session(conn_id))
+        };
+        match open_route(newest_live, external_running) {
+            OpenRoute::Focus(target_id) => {
+                Self::focus_embedded_session(notebook, session_split_bridges, target_id)
+            }
+            OpenRoute::AlreadyExternal => {
+                // R7 external-only: a foreign viewer window cannot be raised
+                // reliably, so inform rather than duplicate.
+                crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
+                    "Already running in an external window",
+                ));
+                true
+            }
+            OpenRoute::Launch => false,
         }
     }
 
@@ -2749,46 +2975,12 @@ impl MainWindow {
                     // held into the launch path below, which borrows again.
                     let always_new = state.borrow().settings().ui.double_click_opens_new_session;
 
-                    if !force_new && !always_new {
-                        // R7.1/7.4: focus the most recently created *live*
-                        // session. `live_sessions` excludes tabs whose
-                        // connection already ended — those keep their tab for
-                        // the transcript and the Reconnect button, and focusing
-                        // one instead of connecting is what made double-click
-                        // look dead (issue #242). Collect first (an owned
-                        // `Uuid`) so no notebook borrow is held across the focus
-                        // call below.
-                        let target = notebook
-                            .live_sessions()
-                            .into_iter()
-                            .filter(|s| s.connection_id == conn_id)
-                            .max_by_key(|s| s.connected_at)
-                            .map(|s| s.id);
-
-                        if let Some(target_id) = target {
-                            if Self::focus_embedded_session(
-                                notebook,
-                                session_split_bridges,
-                                target_id,
-                            ) {
-                                return;
-                            }
-                            // R7.6: the session vanished between resolution and
-                            // focus — fall through and launch a new one.
-                        } else if external_session_registry()
-                            .is_some_and(|reg| reg.has_verifiable_active_session(conn_id))
-                        {
-                            // R7 external-only: do not duplicate a session that
-                            // lives in a foreign viewer window; inform the user.
-                            // Only *owned* viewers count — a detaching viewer
-                            // (remmina/krdc) is tracked without a child handle,
-                            // so its entry never clears on its own and would
-                            // block every later double-click (issue #242).
-                            crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
-                                "Already running in an external window",
-                            ));
-                            return;
-                        }
+                    // R7.1/7.4/R7 external-only: show what already runs.
+                    if !force_new
+                        && !always_new
+                        && Self::show_running_session(notebook, session_split_bridges, conn_id)
+                    {
+                        return;
                     }
 
                     // force_new, zero live sessions, or the R7.6 race: launch new.
@@ -2818,40 +3010,23 @@ impl MainWindow {
         session_split_bridges: &SessionSplitBridges,
         target_id: Uuid,
     ) -> bool {
-        // Resolve the owner tab and (if split) the pane holding the session up
-        // front, then release the bridges borrow before any tab switch / focus
-        // call — those re-enter the notebook/bridge and would risk a
-        // BorrowMutError if a borrow were still held.
-        let mut owner_tab = target_id;
-        let mut bridge_pane: Option<(Rc<SplitViewBridge>, Uuid)> = None;
-        {
-            let bridges = session_split_bridges.borrow();
-            for (owner_id, bridge) in bridges.iter() {
-                if bridge.active_sessions().contains(&target_id) {
-                    owner_tab = *owner_id;
-                    bridge_pane = bridge
-                        .pane_ids()
-                        .into_iter()
-                        .find(|pane| bridge.get_pane_session(*pane) == Some(target_id))
-                        .map(|pane| (Rc::clone(bridge), pane));
-                    break;
-                }
-            }
-        }
-
         // R7.6: bail if the session vanished between resolution and focus.
         if notebook.get_session_info(target_id).is_none() {
+            tracing::debug!(session = %target_id, "show session: session vanished");
             return false;
         }
 
-        notebook.switch_to_tab(owner_tab);
-        notebook.show_tab_view_content();
-
-        if let Some((bridge, pane_uuid)) = bridge_pane
-            && let Err(e) = bridge.focus_pane(pane_uuid)
+        // A split pane is shown through the layout's host tab. The bridge map
+        // is keyed by every session a layout shows, so the tab to select is
+        // the bridge's owner, never the map key: a guest's own key names a
+        // parked session with no tab, and selecting it did nothing.
+        if split_view_actions::focus_split_pane(notebook, session_split_bridges, target_id)
+            .is_none()
         {
-            tracing::debug!(error = %e, %target_id, "focus_pane failed for smart double-click");
+            notebook.switch_to_tab(target_id);
+            notebook.show_tab_view_content();
         }
+        tracing::debug!(session = %target_id, "show session: focused");
 
         // Set input focus on the session widget where one exists (terminals);
         // embedded viewers have no VTE widget, so selecting the tab is enough.
@@ -4164,12 +4339,16 @@ impl MainWindow {
                 }
             }
             rustconn_core::search::command_palette::CommandPaletteAction::GtkAction(name) => {
-                if let Some(win) = window_weak.upgrade() {
-                    gio::ActionGroup::activate_action(
-                        win.upcast_ref::<gio::ActionGroup>(),
-                        &name,
-                        None,
-                    );
+                // The palette names actions with their prefix (`win.unsplit`,
+                // `app.shortcuts`). Only the widget lookup resolves a prefix;
+                // the window's own `gio::ActionGroup` knows bare names, so a
+                // prefixed name sent there found no action and did nothing. A
+                // disabled action (Remove Split on a tab without a split) is
+                // found and ignored.
+                if let Some(win) = window_weak.upgrade()
+                    && let Err(err) = gtk4::prelude::WidgetExt::activate_action(&win, &name, None)
+                {
+                    tracing::warn!(action = %name, %err, "command palette: no such action");
                 }
             }
             other => {
@@ -5356,6 +5535,55 @@ impl MainWindow {
             &[],
         );
 
+        Self::start_local_shell_process(notebook, session_id, &terminal_settings);
+
+        // A shell that exits leaves a tab that takes no input. Mark it ended
+        // and show the banner every other terminal session gets, so the tab
+        // can be closed with Q or the shell started again with R (or the
+        // Reconnect button) instead of sitting there dead. With "Close tab on
+        // clean exit" on, a clean exit (`exit`, Ctrl+D) closes the tab instead,
+        // exactly as it does for a connection.
+        let close_on_clean_exit = terminal_settings.close_on_clean_exit;
+        let notebook_weak = Rc::downgrade(notebook);
+        notebook.connect_child_exited(session_id, ChildExitHook::Disconnect, move |exit_status| {
+            let Some(notebook) = notebook_weak.upgrade() else {
+                return;
+            };
+            let is_failure = session_lifecycle::child_exit_is_failure(exit_status);
+            tracing::info!(%session_id, exit_status, is_failure, "local shell exited");
+            // Deferred like the connection disconnect path: resetting VTE or
+            // changing the widget tree inside `child-exited` can race the
+            // pending GTK snapshot (#171).
+            glib::idle_add_local_once(move || {
+                // Closed by the user, or ended by the quit path.
+                if crate::app::is_shutting_down() || notebook.get_session_info(session_id).is_none()
+                {
+                    return;
+                }
+                // `close_tab` closes a tab, a detached window or a split
+                // guest (whose pane goes with it), exactly as a connection's
+                // clean exit does.
+                if close_on_clean_exit && !is_failure {
+                    notebook.close_tab(session_id);
+                    return;
+                }
+                notebook.mark_tab_disconnected(session_id);
+                notebook.show_reconnect_overlay(session_id);
+            });
+        });
+
+        session_id
+    }
+
+    /// Starts the shell process of a local shell session in its terminal.
+    ///
+    /// Used when the session is created and again when an ended one is
+    /// restarted in place, so both run exactly the same command.
+    fn start_local_shell_process(
+        notebook: &SharedNotebook,
+        session_id: Uuid,
+        terminal_settings: &rustconn_core::config::TerminalSettings,
+    ) {
         // Get user's default shell
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
 
@@ -5455,8 +5683,6 @@ impl MainWindow {
             #[cfg(not(target_os = "macos"))]
             notebook.spawn_command(session_id, &[&shell], None, None, None);
         }
-
-        session_id
     }
 
     /// Starts the Flatpak host shell once its terminal widget has a size.
@@ -5788,9 +6014,42 @@ fn rdp_file_devices_dialog(file_name: &str, host: &str, devices: &[String]) -> a
     dialog
 }
 
+/// Where a request to open a connection goes when it may already be running.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OpenRoute {
+    /// Focus this live embedded session.
+    Focus(Uuid),
+    /// The connection runs only in an external viewer window.
+    AlreadyExternal,
+    /// Nothing runs: start a new session.
+    Launch,
+}
+
+/// Picks the route for opening a connection that may already be running.
+///
+/// A live embedded session wins over an external viewer, which can only be
+/// reported, not raised. `external_running` is asked only when no embedded
+/// session is live.
+fn open_route(newest_live: Option<Uuid>, external_running: impl FnOnce() -> bool) -> OpenRoute {
+    match newest_live {
+        Some(session_id) => OpenRoute::Focus(session_id),
+        None if external_running() => OpenRoute::AlreadyExternal,
+        None => OpenRoute::Launch,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{open_session_count, rdp_file_requested_devices};
+    use super::{OpenRoute, open_route, open_session_count, rdp_file_requested_devices};
+
+    #[test]
+    fn a_running_connection_is_shown_not_duplicated() {
+        let live = uuid::Uuid::new_v4();
+        assert_eq!(open_route(Some(live), || true), OpenRoute::Focus(live));
+        assert_eq!(open_route(Some(live), || false), OpenRoute::Focus(live));
+        assert_eq!(open_route(None, || true), OpenRoute::AlreadyExternal);
+        assert_eq!(open_route(None, || false), OpenRoute::Launch);
+    }
 
     #[test]
     fn an_rdp_file_without_device_redirection_needs_no_prompt() {

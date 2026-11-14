@@ -10,8 +10,8 @@ use std::rc::Rc;
 
 use gtk4::prelude::*;
 use gtk4::{
-    Align, Box as GtkBox, Button, DropTarget, EventControllerMotion, Label, Orientation, Overlay,
-    Paned, Revealer, gdk, gio, glib,
+    Align, Box as GtkBox, Button, CheckButton, DropTarget, EventControllerMotion, Label,
+    Orientation, Overlay, Paned, Revealer, gdk, gio, glib,
 };
 use libadwaita as adw;
 use libadwaita::prelude::*;
@@ -21,7 +21,7 @@ use rustconn_core::split::{
 };
 
 use super::types::{DropOutcome, DropSource, EvictionAction, SourceCleanup};
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Callback type for "Select Tab" button clicks in empty panels.
 ///
@@ -96,7 +96,7 @@ pub struct SplitViewAdapter {
     /// This allows the bridge to focus the panel and trigger the close action
     /// when the user clicks the close button on an empty panel.
     close_panel_callback: Rc<RefCell<Option<PanelActionCallback>>>,
-    /// Callback for "Remove from Split" clicks on an occupied panel.
+    /// Callback for "Move to Own Tab" clicks on an occupied panel.
     ///
     /// Symmetric to `close_panel_callback`: the bridge focuses the panel and
     /// then activates the window action that returns the panel's session to its
@@ -113,6 +113,9 @@ pub struct SplitViewAdapter {
     /// activates the window action that removes the pane from the split and
     /// lifts its session into its own detached window.
     detach_panel_callback: Rc<RefCell<Option<PanelActionCallback>>>,
+    /// Answers, when a pane menu opens, whether the pane's session owns the
+    /// split and whether it has ended; see [`Self::set_pane_menu_state_provider`].
+    pane_menu_state_provider: Rc<RefCell<Option<PaneMenuStateProvider>>>,
     /// Header widgets for each panel (connection name labels, issue #277).
     ///
     /// These are prepended to the panel container (above session content) and
@@ -132,6 +135,68 @@ pub struct SplitViewAdapter {
     /// `false` (default) shows them; toggled via
     /// [`Self::set_hover_controls_hidden`].
     hide_hover_controls: Rc<Cell<bool>>,
+    /// The "Broadcast" check box in each panel's header.
+    ///
+    /// Ticked means the panel takes part in the split's keystroke broadcast.
+    /// Shown only while broadcast is on, and only on a panel that holds a
+    /// terminal; see [`Self::set_broadcast_controls`]. Cleared on rebuild and
+    /// repopulated by [`Self::create_panel_widget`].
+    broadcast_checks: Rc<RefCell<HashMap<PanelId, CheckButton>>>,
+    /// Set while the check boxes are being synchronised from the outside, so
+    /// that those programmatic changes are not reported back as user toggles.
+    syncing_broadcast_checks: Rc<Cell<bool>>,
+    /// Called with `(panel, included)` when the user ticks or unticks a
+    /// panel's Broadcast check box.
+    broadcast_toggled_callback: Rc<RefCell<Option<BroadcastToggledCallback>>>,
+}
+
+/// Callback for a panel's Broadcast check box: the panel and its new state.
+type BroadcastToggledCallback = Box<dyn Fn(PanelId, bool)>;
+
+/// Answers, for a pane's session, what its menu should offer.
+type PaneMenuStateProvider = Rc<dyn Fn(SessionId) -> PaneMenuState>;
+
+/// What a pane's context menu depends on, read each time the menu opens.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) struct PaneMenuState {
+    /// The pane's session owns the split: its tab hosts the layout.
+    pub(super) is_owner: bool,
+    /// The pane's session has ended and can be reconnected.
+    pub(super) is_disconnected: bool,
+    /// The header's Broadcast check box is shown.
+    pub(super) shows_broadcast: bool,
+}
+
+/// Builds a split pane's context menu, shared by the pointer, long-press and
+/// keyboard routes so their items cannot drift apart.
+///
+/// - **Reconnect** only for a session that has ended. A live session has
+///   nothing to reconnect, and `win.reconnect-pane` refuses it anyway.
+/// - **Broadcast** drives `panel.broadcast`, a property action on the header's
+///   check box, so it is offered only while that check box is shown.
+/// - **Move to Own Tab** only for a guest. On the owner, popping the pane
+///   collapses the whole split (`win.pop-pane-to-tab`), so the item would be
+///   **Remove Split** under a second name.
+///
+/// HIG order: the non-destructive actions first, Close Connection last.
+fn pane_menu_model(state: PaneMenuState) -> gio::Menu {
+    let menu = gio::Menu::new();
+    if state.is_disconnected {
+        menu.append(Some(&i18n("Reconnect")), Some("panel.reconnect"));
+    }
+    if state.shows_broadcast {
+        menu.append(Some(&i18n("Broadcast")), Some("panel.broadcast"));
+    }
+    if !state.is_owner {
+        menu.append(Some(&i18n("Move to Own Tab")), Some("panel.move-to-tab"));
+    }
+    menu.append(
+        Some(&i18n("Move to New Window")),
+        Some("panel.detach-to-window"),
+    );
+    menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
+    menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
+    menu
 }
 
 impl std::fmt::Debug for SplitViewAdapter {
@@ -149,10 +214,14 @@ impl std::fmt::Debug for SplitViewAdapter {
             .field("pop_panel_callback", &"<callback>")
             .field("reconnect_panel_callback", &"<callback>")
             .field("detach_panel_callback", &"<callback>")
+            .field("pane_menu_state_provider", &"<callback>")
             .field("panel_headers", &self.panel_headers)
             .field("show_labels", &self.show_labels)
             .field("panel_reveal_containers", &self.panel_reveal_containers)
             .field("hide_hover_controls", &self.hide_hover_controls)
+            .field("broadcast_checks", &self.broadcast_checks)
+            .field("syncing_broadcast_checks", &self.syncing_broadcast_checks)
+            .field("broadcast_toggled_callback", &"<callback>")
             .finish()
     }
 }
@@ -179,10 +248,14 @@ impl SplitViewAdapter {
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             detach_panel_callback: Rc::new(RefCell::new(None)),
+            pane_menu_state_provider: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
             panel_reveal_containers: Rc::new(RefCell::new(HashMap::new())),
             hide_hover_controls: Rc::new(Cell::new(false)),
+            broadcast_checks: Rc::new(RefCell::new(HashMap::new())),
+            syncing_broadcast_checks: Rc::new(Cell::new(false)),
+            broadcast_toggled_callback: Rc::new(RefCell::new(None)),
         };
 
         adapter.rebuild_widgets();
@@ -210,10 +283,14 @@ impl SplitViewAdapter {
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             detach_panel_callback: Rc::new(RefCell::new(None)),
+            pane_menu_state_provider: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
             panel_reveal_containers: Rc::new(RefCell::new(HashMap::new())),
             hide_hover_controls: Rc::new(Cell::new(false)),
+            broadcast_checks: Rc::new(RefCell::new(HashMap::new())),
+            syncing_broadcast_checks: Rc::new(Cell::new(false)),
+            broadcast_toggled_callback: Rc::new(RefCell::new(None)),
         };
 
         adapter.rebuild_widgets();
@@ -317,7 +394,7 @@ impl SplitViewAdapter {
         *self.close_panel_callback.borrow_mut() = Some(Rc::new(callback));
     }
 
-    /// Sets a callback for "Remove from Split" clicks on an occupied panel.
+    /// Sets a callback for "Move to Own Tab" clicks on an occupied panel.
     ///
     /// Invoked with the panel ID when the user asks for the panel's session to
     /// leave the split without being closed. The callback should focus the panel
@@ -347,6 +424,20 @@ impl SplitViewAdapter {
         F: Fn(PanelId) + 'static,
     {
         *self.reconnect_panel_callback.borrow_mut() = Some(Rc::new(callback));
+    }
+
+    /// Sets the function a pane menu asks, each time it opens, whether the
+    /// pane's session owns the split and whether it has ended.
+    ///
+    /// Asked on open rather than at build time, so the menu follows the
+    /// session's state without a rebuild. Without a provider the menu treats
+    /// the session as a live guest: no Reconnect, Move to Own Tab offered.
+    /// `shows_broadcast` in the answer is ignored; the adapter fills it in.
+    pub(super) fn set_pane_menu_state_provider<F>(&self, provider: F)
+    where
+        F: Fn(SessionId) -> PaneMenuState + 'static,
+    {
+        *self.pane_menu_state_provider.borrow_mut() = Some(Rc::new(provider));
     }
 
     /// Sets the callback for the panel's "Move to New Window" action.
@@ -843,7 +934,7 @@ impl SplitViewAdapter {
             //
             // Unconditional, including for a connection that switched its own
             // session toolbar off (issue #260). These two buttons are the split
-            // view's, not the viewer's: Remove from Split and Close session are
+            // view's, not the viewer's: Move to Own Tab and Close session are
             // the only discoverable way to dismantle a pane, and #260 asked for
             // an unobstructed *session*, not a pane that cannot be closed. The
             // suppression that #260 introduced covered this overlay too, which
@@ -891,9 +982,11 @@ impl SplitViewAdapter {
     /// the panel's color. Its visibility follows "Show connection name in split
     /// panes" in settings (on by default since #355), and on an occupied panel
     /// it is also the drag handle.
-    fn create_pane_header(&self) -> GtkBox {
+    fn create_pane_header(&self, panel_id: PanelId) -> GtkBox {
         let header = GtkBox::new(Orientation::Horizontal, 4);
         header.add_css_class("split-pane-header");
+        // The Broadcast check box starts hidden, so only the labels setting
+        // counts here.
         header.set_visible(self.show_labels.get());
 
         let name_label = Label::new(None);
@@ -911,7 +1004,78 @@ impl SplitViewAdapter {
         protocol_label.set_widget_name("pane-header-protocol");
         header.append(&protocol_label);
 
+        // Takes this panel out of the keystroke broadcast, and back in. Hidden
+        // until broadcast is switched on (`set_broadcast_controls`).
+        let broadcast_check = CheckButton::with_label(&i18n("Broadcast"));
+        broadcast_check.set_active(true);
+        broadcast_check.set_visible(false);
+        broadcast_check.set_halign(Align::End);
+        // A click leaves the keyboard focus in the terminal, so typing goes on
+        // where it was. From the keyboard the pane menu (Shift+F10, Menu key)
+        // carries the same switch, see `setup_panel_context_menu`.
+        broadcast_check.set_focus_on_click(false);
+        broadcast_check.set_tooltip_text(Some(&i18n(
+            "Untick to keep this panel out of the keystroke broadcast",
+        )));
+        let syncing = Rc::clone(&self.syncing_broadcast_checks);
+        let callback = Rc::clone(&self.broadcast_toggled_callback);
+        broadcast_check.connect_toggled(move |check| {
+            if syncing.get() {
+                return;
+            }
+            if let Some(ref callback) = *callback.borrow() {
+                callback(panel_id, check.is_active());
+            }
+        });
+        header.append(&broadcast_check);
+        self.broadcast_checks
+            .borrow_mut()
+            .insert(panel_id, broadcast_check);
+
         header
+    }
+
+    /// Whether a panel's header should be shown: when labels are enabled, and
+    /// also while it carries a visible Broadcast check box. A panel without
+    /// one (empty, or an embedded viewer) keeps following the labels setting.
+    fn header_wanted(&self, panel_id: PanelId) -> bool {
+        self.show_labels.get()
+            || self
+                .broadcast_checks
+                .borrow()
+                .get(&panel_id)
+                .is_some_and(WidgetExt::is_visible)
+    }
+
+    /// Sets the callback for a panel's Broadcast check box.
+    pub fn set_broadcast_toggled_callback<F>(&self, callback: F)
+    where
+        F: Fn(PanelId, bool) + 'static,
+    {
+        *self.broadcast_toggled_callback.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Shows or hides the Broadcast check boxes and sets their state.
+    ///
+    /// `included` answers, for a panel, whether it takes part in the broadcast;
+    /// `None` means the panel cannot (it is empty, or holds an embedded viewer)
+    /// and gets no check box. With `active` false every check box is hidden and
+    /// the headers go back to following the labels setting alone.
+    pub fn set_broadcast_controls(&self, active: bool, included: impl Fn(PanelId) -> Option<bool>) {
+        self.syncing_broadcast_checks.set(true);
+        for (panel_id, check) in self.broadcast_checks.borrow().iter() {
+            match included(*panel_id).filter(|_| active) {
+                Some(included) => {
+                    check.set_active(included);
+                    check.set_visible(true);
+                }
+                None => check.set_visible(false),
+            }
+        }
+        self.syncing_broadcast_checks.set(false);
+        // Headers that were hidden by the labels setting have to appear now,
+        // and disappear again afterwards.
+        self.set_labels_visible(self.show_labels.get());
     }
 
     /// Sets the text content of a panel's header label.
@@ -945,10 +1109,26 @@ impl SplitViewAdapter {
                     name.to_owned()
                 };
                 header.set_tooltip_text(Some(&tooltip));
-                // Show header only if labels are globally enabled
-                header.set_visible(self.show_labels.get());
+                // A screen reader hears which session the check box is for;
+                // the visible "Broadcast" stays part of the name.
+                if let Some(check) = self.broadcast_checks.borrow().get(&panel_id) {
+                    check.update_property(&[gtk4::accessible::Property::Label(&i18n_f(
+                        "Broadcast: {}",
+                        &[name],
+                    ))]);
+                }
+                // Show header only if labels are globally enabled, or while
+                // it carries a broadcast check box
+                header.set_visible(self.header_wanted(panel_id));
             } else {
-                // No session — hide the header regardless of global flag
+                // No session — hide the header regardless of global flag, and
+                // drop the old name: `set_labels_visible` shows any header
+                // whose name is set, and an empty panel must stay without one.
+                if let Some(name_widget) = header.first_child()
+                    && let Some(name_label) = name_widget.downcast_ref::<Label>()
+                {
+                    name_label.set_label("");
+                }
                 header.set_visible(false);
             }
         }
@@ -960,9 +1140,9 @@ impl SplitViewAdapter {
     /// setting. Only headers with a label text set are shown.
     pub fn set_labels_visible(&self, visible: bool) {
         self.show_labels.set(visible);
-        for header in self.panel_headers.borrow().values() {
+        for (panel_id, header) in self.panel_headers.borrow().iter() {
             // Only show if the header has text (i.e. a session is placed)
-            if visible {
+            if self.header_wanted(*panel_id) {
                 if let Some(name_widget) = header.first_child()
                     && let Some(name_label) = name_widget.downcast_ref::<Label>()
                 {
@@ -1100,7 +1280,7 @@ impl SplitViewAdapter {
     /// Builds the corner button strip overlaid on an occupied panel.
     ///
     /// Two actions, ordered least destructive first per the GNOME HIG:
-    /// "Remove from Split" hands the session back to its own tab with the
+    /// "Move to Own Tab" hands the session back to its own tab with the
     /// connection intact (issue #252), and the close (×) button terminates it.
     /// Both go through the bridge callbacks, which focus this panel before
     /// activating the matching window action — the actions operate on the
@@ -1110,7 +1290,7 @@ impl SplitViewAdapter {
         // Stacked vertically, one under another, now that these controls live
         // at the vertical centre of the right edge: a vertical strip hugs that
         // edge instead of reaching across the top of the pane. HIG order is kept
-        // — the non-destructive action (Remove from Split) on top, the
+        // — the non-destructive action (Move to Own Tab) on top, the
         // destructive Close at the bottom.
         let buttons = GtkBox::new(Orientation::Vertical, 0);
         buttons.set_halign(Align::End);
@@ -1125,9 +1305,7 @@ impl SplitViewAdapter {
         pop_button.add_css_class("flat");
         pop_button.add_css_class("circular");
         pop_button.add_css_class("panel-close-button");
-        pop_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Remove from Split",
-        ))]);
+        pop_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Move to Own Tab"))]);
         let pop_callback_ref = Rc::clone(&self.pop_panel_callback);
         pop_button.connect_clicked(move |_| {
             if let Some(ref callback) = *pop_callback_ref.borrow() {
@@ -1250,6 +1428,7 @@ impl SplitViewAdapter {
         }
         self.panel_widgets.borrow_mut().clear();
         self.panel_headers.borrow_mut().clear();
+        self.broadcast_checks.borrow_mut().clear();
         self.panel_reveal_containers.borrow_mut().clear();
         self.paned_widgets.clear();
 
@@ -1426,7 +1605,7 @@ impl SplitViewAdapter {
 
         // Prepend a compact connection name header (issue #277).
         // Visibility follows the show_labels flag (set_labels_visible).
-        let header = self.create_pane_header();
+        let header = self.create_pane_header(panel_id);
         container.append(&header);
         // Keep a clone to use as the drag handle below before the header is
         // moved into panel_headers (issue #355).
@@ -1452,7 +1631,7 @@ impl SplitViewAdapter {
             // Set up context menu on the pane HEADER (issue #374). Attaching it
             // to the header rather than the container keeps VTE's own native
             // Copy/Paste right-click menu intact over the terminal content,
-            // while still giving the pane Reconnect / Remove from Split /
+            // while still giving the pane Reconnect / Move to Own Tab /
             // Remove Split / Close Connection.
             self.setup_panel_context_menu(panel_id, session_id, &header_for_drag, &container);
 
@@ -1553,8 +1732,9 @@ impl SplitViewAdapter {
     /// Sets up a right-click (and touch long-press) context menu on a split
     /// pane's **header**, not its content container.
     ///
-    /// The menu offers Reconnect / Remove from Split / Remove Split / Close
-    /// Connection. It is attached to the header widget rather than the panel
+    /// The menu is [`pane_menu_model`]: Reconnect (ended sessions only),
+    /// Broadcast, Move to Own Tab (guests only), Move to New Window, Remove
+    /// Split and Close Connection. It is attached to the header widget rather than the panel
     /// container because the session widget inside the container (a VTE
     /// terminal, or an RDP/VNC `DrawingArea`) claims button-press in the
     /// default bubble phase, so a secondary-click gesture on the container
@@ -1571,7 +1751,7 @@ impl SplitViewAdapter {
     /// and the Menu key), and the action group is inserted on the container as
     /// well as the header. This matters because the header is hidden
     /// (`set_visible(false)`) when connection-name labels are off: without a
-    /// container-level route the pane's Close / Remove-from-Split actions would
+    /// container-level route the pane's Close / Move to Own Tab actions would
     /// be reachable only through the hover reveal controls — a hover-only
     /// affordance with no keyboard or touch path (GNOME HIG violation, and
     /// unreachable entirely when hover controls are also hidden). The container
@@ -1611,7 +1791,7 @@ impl SplitViewAdapter {
         let pop_callback_ref = Rc::clone(&self.pop_panel_callback);
         pop_action.connect_activate(move |_, _| {
             tracing::debug!(
-                "Context menu: Remove from Split for panel {panel_id} with session {session_id}"
+                "Context menu: Move to Own Tab for panel {panel_id} with session {session_id}"
             );
             if let Some(ref callback) = *pop_callback_ref.borrow() {
                 callback(panel_id);
@@ -1653,28 +1833,52 @@ impl SplitViewAdapter {
         });
         action_group.add_action(&close_action);
 
+        // The header's Broadcast check box as a menu item. A terminal keeps Tab
+        // for itself, so this is the keyboard route to the check box; it is
+        // offered only while the check box is shown.
+        let broadcast_check = self.broadcast_checks.borrow().get(&panel_id).cloned();
+        if let Some(ref check) = broadcast_check {
+            action_group.add_action(&gio::PropertyAction::new("broadcast", check, "active"));
+        }
+        let broadcast_check = broadcast_check.map(|check| check.downgrade());
+
         // Insert the action group into the widget
         widget.insert_action_group("panel", Some(&action_group));
+
+        // One menu model for every route, built on each open from the pane's
+        // current session, so Reconnect follows the session's state and the
+        // owner/guest split is never stale. The Reconnect action is enabled to
+        // match, so nothing can trigger it on a live session.
+        let model_for_menu = Rc::clone(&self.model);
+        let state_provider = Rc::clone(&self.pane_menu_state_provider);
+        let reconnect_for_menu = reconnect_action.clone();
+        let build_menu: Rc<dyn Fn() -> gio::Menu> = Rc::new(move || {
+            let session = model_for_menu
+                .borrow()
+                .get_panel_session(panel_id)
+                .unwrap_or(session_id);
+            let provider = state_provider.borrow().clone();
+            let mut state = provider
+                .map(|provider| provider(session))
+                .unwrap_or_default();
+            state.shows_broadcast = broadcast_check
+                .as_ref()
+                .and_then(glib::WeakRef::upgrade)
+                .is_some_and(|check| check.is_visible());
+            reconnect_for_menu.set_enabled(state.is_disconnected);
+            pane_menu_model(state)
+        });
 
         // Shared menu opener used by both the secondary-click gesture and the
         // touch long-press gesture. A popover is created fresh on each open to
         // avoid GTK popup-grab issues when reusing one across clicks.
         let widget_for_menu = widget.clone();
+        let build_for_pointer = Rc::clone(&build_menu);
         let open_menu: Rc<dyn Fn(f64, f64)> = Rc::new(move |x: f64, y: f64| {
             // Close any previously open context menu (sidebar or split view)
             crate::sidebar_ui::close_active_popover();
 
-            // Create the context menu model. HIG order: the non-destructive
-            // action first, the destructive one last.
-            let menu = gio::Menu::new();
-            menu.append(Some(&i18n("Reconnect")), Some("panel.reconnect"));
-            menu.append(Some(&i18n("Remove from Split")), Some("panel.move-to-tab"));
-            menu.append(
-                Some(&i18n("Move to New Window")),
-                Some("panel.detach-to-window"),
-            );
-            menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
-            menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
+            let menu = build_for_pointer();
 
             // Create popover dynamically for this open
             let popover = gtk4::PopoverMenu::from_model(Some(&menu));
@@ -1735,15 +1939,7 @@ impl SplitViewAdapter {
         let open_from_keyboard: Rc<dyn Fn()> = Rc::new(move || {
             crate::sidebar_ui::close_active_popover();
 
-            let menu = gio::Menu::new();
-            menu.append(Some(&i18n("Reconnect")), Some("panel.reconnect"));
-            menu.append(Some(&i18n("Remove from Split")), Some("panel.move-to-tab"));
-            menu.append(
-                Some(&i18n("Move to New Window")),
-                Some("panel.detach-to-window"),
-            );
-            menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
-            menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
+            let menu = build_menu();
 
             let popover = gtk4::PopoverMenu::from_model(Some(&menu));
             popover.set_parent(&container_for_menu);
@@ -2002,5 +2198,87 @@ impl SplitViewAdapter {
 impl Default for SplitViewAdapter {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use gtk4::gio::prelude::*;
+
+    use super::{PaneMenuState, pane_menu_model};
+
+    /// The action name of every item, in order.
+    fn actions_for(state: PaneMenuState) -> Vec<String> {
+        let menu = pane_menu_model(state);
+        (0..menu.n_items())
+            .filter_map(|i| menu.item_attribute_value(i, "action", None))
+            .filter_map(|action| action.str().map(str::to_owned))
+            .collect()
+    }
+
+    #[test]
+    fn a_live_guest_gets_move_to_own_tab_and_no_reconnect() {
+        assert_eq!(
+            actions_for(PaneMenuState::default()),
+            [
+                "panel.move-to-tab",
+                "panel.detach-to-window",
+                "win.unsplit",
+                "panel.close"
+            ]
+        );
+    }
+
+    #[test]
+    fn the_owner_hides_move_to_own_tab_which_would_repeat_remove_split() {
+        let actions = actions_for(PaneMenuState {
+            is_owner: true,
+            ..Default::default()
+        });
+        assert!(!actions.iter().any(|a| a == "panel.move-to-tab"));
+        assert!(actions.iter().any(|a| a == "win.unsplit"));
+        // The menu-length floor of three items holds on the shortest menu.
+        assert_eq!(actions.len(), 3);
+    }
+
+    #[test]
+    fn reconnect_is_offered_only_for_an_ended_session() {
+        let ended = actions_for(PaneMenuState {
+            is_disconnected: true,
+            ..Default::default()
+        });
+        assert_eq!(ended.first().map(String::as_str), Some("panel.reconnect"));
+
+        let live_owner = actions_for(PaneMenuState {
+            is_owner: true,
+            shows_broadcast: true,
+            ..Default::default()
+        });
+        assert!(!live_owner.iter().any(|a| a == "panel.reconnect"));
+    }
+
+    #[test]
+    fn broadcast_follows_the_check_box_and_close_stays_last() {
+        let actions = actions_for(PaneMenuState {
+            is_disconnected: true,
+            shows_broadcast: true,
+            ..Default::default()
+        });
+        assert_eq!(
+            actions,
+            [
+                "panel.reconnect",
+                "panel.broadcast",
+                "panel.move-to-tab",
+                "panel.detach-to-window",
+                "win.unsplit",
+                "panel.close"
+            ]
+        );
+        assert!(
+            !actions_for(PaneMenuState::default())
+                .iter()
+                .any(|a| a == "panel.broadcast")
+        );
     }
 }

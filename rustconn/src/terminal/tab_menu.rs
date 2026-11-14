@@ -74,6 +74,18 @@ const fn offers_detach(verdict: DetachVerdict) -> bool {
     matches!(verdict, DetachVerdict::Allowed)
 }
 
+/// The label of the tab menu's close item.
+///
+/// A tab that hosts a split asks what to do with the split before it closes,
+/// so its item carries the ellipsis GNOME uses for an item that opens a dialog.
+fn close_tab_label(hosts_split: bool) -> String {
+    if hosts_split {
+        i18n("Close Tab…")
+    } else {
+        i18n("Close Tab")
+    }
+}
+
 /// A filesystem-safe default file name for a session's saved output (#371).
 ///
 /// Built from the session's display name so the save dialog opens with a
@@ -667,7 +679,7 @@ impl TerminalNotebook {
         let context_page_close_group = context_page.clone();
         let sessions_for_close_group = self.sessions.clone();
         let session_info_for_close_group = self.session_info.clone();
-        let tab_view_for_close_group = self.tab_view.clone();
+        let split_close_group = self.split_close_hooks();
 
         close_all_group_action.connect_activate(move |_, _| {
             let target_page = context_page_close_group.borrow().clone();
@@ -710,12 +722,22 @@ impl TerminalNotebook {
                 return;
             }
 
+            // A split tab in the group is covered by this one confirmation:
+            // the body says so, and the confirmed close ends its guests too.
+            let split_hosts = Rc::new(split_close_group.split_hosts(&sessions_to_close));
+            let mut body = i18n_f(
+                "Close {} tabs in group '{}'?",
+                &[&count.to_string(), &group_name],
+            );
+            if !split_hosts.is_empty() {
+                body = format!(
+                    "{body}\n\n{}",
+                    split_close_group.batch_split_note(&split_hosts)
+                );
+            }
             let confirm = adw::AlertDialog::builder()
                 .heading(i18n("Close All in Group"))
-                .body(i18n_f(
-                    "Close {} tabs in group '{}'?",
-                    &[&count.to_string(), &group_name],
-                ))
+                .body(body)
                 .build();
             confirm.add_response("cancel", &i18n("Cancel"));
             confirm.add_response("close", &i18n("Close"));
@@ -724,7 +746,7 @@ impl TerminalNotebook {
             confirm.set_close_response("cancel");
 
             let sessions_for_confirm = sessions_for_close_group.clone();
-            let tab_view_for_confirm = tab_view_for_close_group.clone();
+            let split_close_confirm = split_close_group.clone();
             confirm.connect_response(None, move |_dialog, response| {
                 if response != "close" {
                     return;
@@ -738,9 +760,7 @@ impl TerminalNotebook {
                         .filter_map(|sid| sessions_ref.get(sid).cloned())
                         .collect()
                 };
-                for page in &pages {
-                    tab_view_for_confirm.close_page(page);
-                }
+                split_close_confirm.close_confirmed(&pages, &split_hosts);
                 tracing::debug!(
                     group = group_name,
                     count,
@@ -757,45 +777,44 @@ impl TerminalNotebook {
         action_group.add_action(&close_all_group_action);
 
         // "Close All Tabs" action
+        // The bulk closes below hand their page list to `close_pages`, which
+        // asks once for the whole batch when it includes a split tab (item 11).
         let close_all_action = gio::SimpleAction::new("close-all", None);
         let tab_view_for_close_all = self.tab_view.clone();
+        let split_close_all = self.split_close_hooks();
         close_all_action.connect_activate(move |_, _| {
             let pages: Vec<_> = (0..tab_view_for_close_all.n_pages())
                 .map(|i| tab_view_for_close_all.nth_page(i))
                 .collect();
-            for page in pages {
-                tab_view_for_close_all.close_page(&page);
-            }
+            split_close_all.close_pages(pages);
         });
         action_group.add_action(&close_all_action);
 
         // "Close Others" action — close all except selected
         let close_others_action = gio::SimpleAction::new("close-others", None);
         let tab_view_for_close_others = self.tab_view.clone();
+        let split_close_others = self.split_close_hooks();
         close_others_action.connect_activate(move |_, _| {
             let selected = tab_view_for_close_others.selected_page();
             let pages: Vec<_> = (0..tab_view_for_close_others.n_pages())
                 .map(|i| tab_view_for_close_others.nth_page(i))
                 .filter(|p| selected.as_ref() != Some(p))
                 .collect();
-            for page in pages {
-                tab_view_for_close_others.close_page(&page);
-            }
+            split_close_others.close_pages(pages);
         });
         action_group.add_action(&close_others_action);
 
         // "Close to the Left" action
         let close_left_action = gio::SimpleAction::new("close-left", None);
         let tab_view_for_close_left = self.tab_view.clone();
+        let split_close_left = self.split_close_hooks();
         close_left_action.connect_activate(move |_, _| {
             if let Some(selected) = tab_view_for_close_left.selected_page() {
                 let pos = tab_view_for_close_left.page_position(&selected);
                 let pages: Vec<_> = (0..pos)
                     .map(|i| tab_view_for_close_left.nth_page(i))
                     .collect();
-                for page in pages {
-                    tab_view_for_close_left.close_page(&page);
-                }
+                split_close_left.close_pages(pages);
             }
         });
         action_group.add_action(&close_left_action);
@@ -803,22 +822,21 @@ impl TerminalNotebook {
         // "Close to the Right" action
         let close_right_action = gio::SimpleAction::new("close-right", None);
         let tab_view_for_close_right = self.tab_view.clone();
+        let split_close_right = self.split_close_hooks();
         close_right_action.connect_activate(move |_, _| {
             if let Some(selected) = tab_view_for_close_right.selected_page() {
                 let pos = tab_view_for_close_right.page_position(&selected);
                 let pages: Vec<_> = ((pos + 1)..tab_view_for_close_right.n_pages())
                     .map(|i| tab_view_for_close_right.nth_page(i))
                     .collect();
-                for page in pages {
-                    tab_view_for_close_right.close_page(&page);
-                }
+                split_close_right.close_pages(pages);
             }
         });
         action_group.add_action(&close_right_action);
 
         // "Close All Ungrouped" action — close tabs without a tab group
         let close_ungrouped_action = gio::SimpleAction::new("close-ungrouped", None);
-        let tab_view_for_close_ungrouped = self.tab_view.clone();
+        let split_close_ungrouped = self.split_close_hooks();
         let sessions_for_close_ungrouped = self.sessions.clone();
         let session_info_for_close_ungrouped = self.session_info.clone();
         close_ungrouped_action.connect_activate(move |_, _| {
@@ -831,9 +849,7 @@ impl TerminalNotebook {
                 .collect();
             drop(info);
             drop(sessions_ref);
-            for page in ungrouped_pages {
-                tab_view_for_close_ungrouped.close_page(&page);
-            }
+            split_close_ungrouped.close_pages(ungrouped_pages);
         });
         action_group.add_action(&close_ungrouped_action);
 
@@ -1318,7 +1334,7 @@ impl TerminalNotebook {
 
         // Close section — minimal by default, expanded when groups exist
         let close_section = gio::Menu::new();
-        close_section.append(Some(&i18n("Close Tab")), Some("tab.close"));
+        close_section.append(Some(&close_tab_label(state.hosts_split)), Some("tab.close"));
         close_section.append(Some(&i18n("Close Others")), Some("tab.close-others"));
         // The directional closes are opt-in (Settings → Interface): a narrower
         // workflow that lengthens the menu for everyone when always shown, so
@@ -1342,7 +1358,13 @@ impl TerminalNotebook {
 mod tests {
     use rustconn_core::DetachVerdict;
 
-    use super::{offers_detach, session_output_filename};
+    use super::{close_tab_label, offers_detach, session_output_filename};
+
+    #[test]
+    fn close_tab_label_has_ellipsis_only_for_split_host() {
+        assert!(close_tab_label(true).ends_with('…'));
+        assert!(!close_tab_label(false).ends_with('…'));
+    }
 
     /// Every action name in a menu model, sections and submenus included.
     fn menu_actions(model: &gtk4::gio::MenuModel) -> Vec<String> {

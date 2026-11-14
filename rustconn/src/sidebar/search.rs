@@ -345,9 +345,44 @@ pub fn highlight_match(text: &str, regex: Option<&regex::Regex>) -> String {
     result
 }
 
+/// Picks the row that Enter in the search entry opens.
+///
+/// `rows` holds each row's connection id in list order, `None` for a group
+/// row. The connection with `preferred_id` wins when the results still hold
+/// it, otherwise the first connection does. Returns `None` when the results
+/// hold no connection, so nothing is opened.
+#[must_use]
+pub fn pick_search_result(rows: &[Option<String>], preferred_id: Option<&str>) -> Option<u32> {
+    let preferred =
+        preferred_id.and_then(|wanted| rows.iter().position(|row| row.as_deref() == Some(wanted)));
+    preferred
+        .or_else(|| rows.iter().position(Option::is_some))
+        .and_then(|index| u32::try_from(index).ok())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pick_search_result_prefers_the_chosen_connection() {
+        let rows = vec![None, Some("a".to_owned()), Some("b".to_owned())];
+        assert_eq!(pick_search_result(&rows, Some("b")), Some(2));
+    }
+
+    #[test]
+    fn pick_search_result_falls_back_to_the_first_connection() {
+        let rows = vec![None, Some("a".to_owned()), Some("b".to_owned())];
+        // No choice, or a choice the results no longer hold: first connection.
+        assert_eq!(pick_search_result(&rows, None), Some(1));
+        assert_eq!(pick_search_result(&rows, Some("gone")), Some(1));
+    }
+
+    #[test]
+    fn pick_search_result_opens_nothing_without_a_connection() {
+        assert_eq!(pick_search_result(&[], None), None);
+        assert_eq!(pick_search_result(&[None, None], Some("a")), None);
+    }
 
     #[test]
     fn test_highlight_match() {

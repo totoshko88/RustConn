@@ -6,6 +6,361 @@
 
 use super::*;
 
+/// Name of the key controller that gives R, Q and Enter a meaning on an ended
+/// session.
+const ENDED_SESSION_KEYS: &str = "ended-session-keys";
+
+/// Widget name of the reconnect banner's key hint label.
+const KEYS_HINT: &str = "reconnect-keys-hint";
+
+/// Widget name of the banner's "Log In to …" button (see `offer_cloud_login`).
+const CLOUD_LOGIN_BUTTON: &str = "cloud-login";
+
+/// Sets the banner's key hint, with the same text as its tooltip: the label
+/// ellipsizes in a narrow pane, and the tooltip is where the rest is read.
+fn set_keys_hint(label: &gtk4::Label, text: &str) {
+    label.set_label(text);
+    label.set_tooltip_text(Some(text));
+}
+
+/// A key pressed on an ended session, as far as the banner cares.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum EndedSessionKey {
+    /// R: reconnect.
+    Reconnect,
+    /// Q: close the session.
+    Close,
+    /// Return, keypad Enter.
+    Enter,
+    /// A modifier on its own (Shift before R, say): neither an action nor
+    /// "another key".
+    Modifier,
+    /// Anything else.
+    Other,
+}
+
+impl EndedSessionKey {
+    /// Classifies a key, given its Latin keyval (see [`crate::utils::latin_keyval`]).
+    fn from_keyval(keyval: gtk4::gdk::Key) -> Self {
+        use gtk4::gdk::Key;
+        match keyval.to_lower() {
+            Key::r => Self::Reconnect,
+            Key::q => Self::Close,
+            Key::Return | Key::KP_Enter | Key::ISO_Enter => Self::Enter,
+            Key::Shift_L
+            | Key::Shift_R
+            | Key::Control_L
+            | Key::Control_R
+            | Key::Alt_L
+            | Key::Alt_R
+            | Key::Super_L
+            | Key::Super_R
+            | Key::Meta_L
+            | Key::Meta_R
+            | Key::Hyper_L
+            | Key::Hyper_R
+            | Key::ISO_Level3_Shift
+            | Key::Caps_Lock
+            | Key::Num_Lock => Self::Modifier,
+            _ => Self::Other,
+        }
+    }
+}
+
+/// Whether a modifier that makes a key a shortcut is held (Ctrl, Alt, Super,
+/// Meta). Shift is not one: Shift+R is still R.
+fn has_shortcut_modifier(modifiers: gtk4::gdk::ModifierType) -> bool {
+    use gtk4::gdk::ModifierType;
+    modifiers.intersects(
+        ModifierType::CONTROL_MASK
+            | ModifierType::ALT_MASK
+            | ModifierType::SUPER_MASK
+            | ModifierType::META_MASK,
+    )
+}
+
+/// Where the banner's two-step Enter stands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum EnterState {
+    /// No Enter pressed yet, or the last one was cancelled.
+    Idle,
+    /// The first Enter is down and not yet released; its key repeat must not
+    /// count as the second press.
+    Held,
+    /// The first Enter was pressed and released: the next Enter runs the
+    /// banner's suggested action.
+    Armed,
+}
+
+/// What the ended-session key controller does with a key press.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum EndedSessionKeyAction {
+    /// Not ours: let the terminal have the key.
+    Pass,
+    /// Another key after a first Enter: drop the highlight, let the key through.
+    Disarm,
+    /// Reconnect, as the Reconnect button does.
+    Reconnect,
+    /// Close the session where it is shown.
+    Close,
+    /// First Enter: highlight the suggested button and say what Enter does next.
+    Arm,
+    /// The first Enter's key repeat: swallow it, change nothing.
+    Hold,
+    /// Second Enter: click the suggested button.
+    RunSuggested,
+}
+
+impl EndedSessionKeyAction {
+    /// Whether the key goes on to the terminal.
+    fn propagation(self) -> glib::Propagation {
+        match self {
+            Self::Pass | Self::Disarm => glib::Propagation::Proceed,
+            Self::Reconnect | Self::Close | Self::Arm | Self::Hold | Self::RunSuggested => {
+                glib::Propagation::Stop
+            }
+        }
+    }
+
+    /// The Enter state after this action, or `None` to keep it.
+    fn next_enter_state(self) -> Option<EnterState> {
+        match self {
+            Self::Pass | Self::Hold => None,
+            Self::Arm => Some(EnterState::Held),
+            Self::Disarm | Self::Reconnect | Self::Close | Self::RunSuggested => {
+                Some(EnterState::Idle)
+            }
+        }
+    }
+}
+
+/// Decides what a key press on an ended session does.
+///
+/// `banner_shown` is whether the session is disconnected and its reconnect
+/// banner is up; the keys mean nothing otherwise, so a live session never
+/// loses a keystroke. Kept free of GTK so it can be tested without a display.
+fn ended_session_key_action(
+    key: EndedSessionKey,
+    shortcut_modifier: bool,
+    banner_shown: bool,
+    enter: EnterState,
+) -> EndedSessionKeyAction {
+    use EndedSessionKeyAction as Action;
+    let pending = enter != EnterState::Idle;
+    if !banner_shown || key == EndedSessionKey::Modifier {
+        return Action::Pass;
+    }
+    if shortcut_modifier {
+        return if pending {
+            Action::Disarm
+        } else {
+            Action::Pass
+        };
+    }
+    match key {
+        EndedSessionKey::Reconnect => Action::Reconnect,
+        EndedSessionKey::Close => Action::Close,
+        EndedSessionKey::Enter => match enter {
+            EnterState::Idle => Action::Arm,
+            EnterState::Held => Action::Hold,
+            EnterState::Armed => Action::RunSuggested,
+        },
+        EndedSessionKey::Modifier | EndedSessionKey::Other => {
+            if pending {
+                Action::Disarm
+            } else {
+                Action::Pass
+            }
+        }
+    }
+}
+
+/// Whether R, Q, Enter and the terminal menu's Reconnect act on a session.
+///
+/// They do only while the session is `disconnected` and `marked` as having a
+/// reconnect banner. The mark is cleared while a cloud login runs in the
+/// terminal, so `aws login` gets every key and no Reconnect entry.
+pub(super) const fn ended_session_actions_available(marked: bool, disconnected: bool) -> bool {
+    marked && disconnected
+}
+
+/// What to do with a session's reconnect banner when its terminal is mapped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BannerReconcile {
+    /// Nothing to do.
+    Keep,
+    /// The banner was dropped with the box around the terminal: show it again.
+    Reshow,
+    /// The session is live again: the mark is stale.
+    ForgetMark,
+}
+
+/// Decides [`BannerReconcile`] from whether the session is `marked` as having a
+/// banner, is `disconnected`, and has a banner `present` in its own box.
+fn reconnect_banner_reconcile(marked: bool, disconnected: bool, present: bool) -> BannerReconcile {
+    match (marked, disconnected, present) {
+        (true, true, false) => BannerReconcile::Reshow,
+        (true, false, _) => BannerReconcile::ForgetMark,
+        _ => BannerReconcile::Keep,
+    }
+}
+
+/// Carries out the ended-session key actions for one session's banner.
+///
+/// Holds everything weakly or through the notebook's shared cells, so the
+/// controller that owns it keeps neither the terminal nor the banner alive.
+#[derive(Clone)]
+struct EndedSessionKeyActions {
+    session_id: Uuid,
+    connection_id: Uuid,
+    on_reconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
+    reconnect_shown: Rc<RefCell<std::collections::HashSet<Uuid>>>,
+    split_pane_focuser: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> bool>>>>,
+    terminal: glib::WeakRef<Terminal>,
+    banner: glib::WeakRef<GtkBox>,
+}
+
+impl EndedSessionKeyActions {
+    fn run(&self, action: EndedSessionKeyAction) {
+        use EndedSessionKeyAction as Action;
+        match action {
+            Action::Pass | Action::Hold => {}
+            Action::Disarm => self.show_armed(false),
+            Action::Arm => self.show_armed(true),
+            // Reconnecting or closing resets the terminal or destroys it, and
+            // removes this very controller; done on idle, outside the key
+            // event's dispatch. The banner may be gone by then (a click on its
+            // button, a second queued key), which the guard checks.
+            Action::Reconnect | Action::Close | Action::RunSuggested => {
+                if action == Action::RunSuggested {
+                    self.show_armed(false);
+                }
+                let this = self.clone();
+                glib::idle_add_local_once(move || {
+                    if !this.reconnect_shown.borrow().contains(&this.session_id) {
+                        return;
+                    }
+                    match action {
+                        Action::Reconnect => this.reconnect(),
+                        Action::Close => this.close(),
+                        _ => this.run_suggested(),
+                    }
+                });
+            }
+        }
+    }
+
+    fn reconnect(&self) {
+        tracing::info!(session_id = %self.session_id, "ended session: reconnect requested with R");
+        if let Some(ref callback) = *self.on_reconnect.borrow() {
+            callback(self.session_id, self.connection_id);
+        }
+    }
+
+    /// Closes the session through the close path of the place it is shown in.
+    ///
+    /// A pane of a split has no tab of its own: `win.close-pane` ends it and
+    /// tidies the layout, but closes the split's *focused* pane, so that pane
+    /// is made the focused one first. Everywhere else `win.close-tab` resolves
+    /// to the action of the window the terminal sits in: the main window's
+    /// closes its selected tab, which is the one holding the focused terminal;
+    /// a detached window's ends its own session; a cluster window's closes its
+    /// selected tab, again the one holding the focused terminal.
+    fn close(&self) {
+        let focuser = self.split_pane_focuser.borrow().as_ref().map(Rc::clone);
+        let in_split = focuser.is_some_and(|focus| focus(self.session_id));
+        let action = if in_split {
+            "win.close-pane"
+        } else {
+            "win.close-tab"
+        };
+        tracing::info!(session_id = %self.session_id, action, "ended session: close requested with Q");
+        let Some(terminal) = self.terminal.upgrade() else {
+            return;
+        };
+        if let Err(error) = terminal.activate_action(action, None) {
+            tracing::warn!(session_id = %self.session_id, action, %error, "could not close the ended session");
+        }
+    }
+
+    /// Clicks the banner's suggested button: what the banner itself offers as
+    /// the next step, so Enter and a click can never disagree.
+    fn run_suggested(&self) {
+        if let Some(button) = self.banner.upgrade().as_ref().and_then(suggested_button) {
+            tracing::info!(
+                session_id = %self.session_id,
+                cloud_login = button.widget_name() == CLOUD_LOGIN_BUTTON,
+                "ended session: suggested action requested with Enter"
+            );
+            button.emit_clicked();
+        } else {
+            self.reconnect();
+        }
+    }
+
+    /// Highlights the suggested button and changes the hint for the second
+    /// Enter, or puts both back.
+    fn show_armed(&self, armed: bool) {
+        let Some(banner) = self.banner.upgrade() else {
+            return;
+        };
+        let button = suggested_button(&banner);
+        let hint = banner_child_named(&banner, KEYS_HINT).and_downcast::<gtk4::Label>();
+        if armed {
+            if let Some(ref button) = button {
+                button.set_state_flags(gtk4::StateFlags::PRELIGHT, false);
+            }
+            let text = if button
+                .as_ref()
+                .is_some_and(|b| b.widget_name() == CLOUD_LOGIN_BUTTON)
+            {
+                i18n("Press Enter again to log in")
+            } else {
+                i18n("Press Enter again to reconnect")
+            };
+            if let Some(hint) = hint {
+                set_keys_hint(&hint, &text);
+                // Focus stays in the terminal, so the change is said out loud.
+                hint.announce(&text, gtk4::AccessibleAnnouncementPriority::Medium);
+            }
+        } else {
+            if let Some(ref button) = button {
+                button.unset_state_flags(gtk4::StateFlags::PRELIGHT);
+            }
+            if let Some(hint) = hint {
+                set_keys_hint(&hint, &i18n("Press R to reconnect, Q to close"));
+            }
+        }
+    }
+}
+
+/// The banner's direct child with the given widget name.
+fn banner_child_named(banner: &GtkBox, name: &str) -> Option<Widget> {
+    let mut child = banner.first_child();
+    while let Some(widget) = child {
+        if widget.widget_name() == name {
+            return Some(widget);
+        }
+        child = widget.next_sibling();
+    }
+    None
+}
+
+/// The banner's suggested-action button: Reconnect, or "Log In to …" once
+/// [`TerminalNotebook::offer_cloud_login`] has moved the style there.
+fn suggested_button(banner: &GtkBox) -> Option<gtk4::Button> {
+    let mut child = banner.first_child();
+    while let Some(widget) = child {
+        if widget.has_css_class("suggested-action")
+            && let Ok(button) = widget.clone().downcast::<gtk4::Button>()
+        {
+            return Some(button);
+        }
+        child = widget.next_sibling();
+    }
+    None
+}
+
 /// Decides whether a disconnected session still has a widget home to reconnect
 /// into, given the three placements it can occupy one at a time.
 ///
@@ -250,6 +605,7 @@ impl TerminalNotebook {
     /// signal at all otherwise (issue #236).
     pub fn mark_tab_disconnected(&self, session_id: Uuid) {
         self.disconnected_sessions.borrow_mut().insert(session_id);
+        self.sync_vte_reconnect_item(session_id);
         if self.is_detached(session_id) {
             Self::mark_detached_window_disconnected(session_id, true);
         }
@@ -279,6 +635,7 @@ impl TerminalNotebook {
     /// would wipe the split-color indicator.
     pub fn mark_tab_connected(&self, session_id: Uuid) {
         self.disconnected_sessions.borrow_mut().remove(&session_id);
+        self.sync_vte_reconnect_item(session_id);
         if self.is_detached(session_id) {
             Self::mark_detached_window_disconnected(session_id, false);
         }
@@ -375,15 +732,20 @@ impl TerminalNotebook {
             return;
         }
 
-        // Resolves the tab's content box, or the detached window's one for a
-        // session that currently lives outside the main window.
-        let Some(container) = self.session_content_box(session_id) else {
+        // The session's own split pane, else its tab's content box, else the
+        // detached window's one.
+        let Some(container) = self.reconnect_banner_box(session_id) else {
             return;
         };
         self.reconnect_shown.borrow_mut().insert(session_id);
 
-        // Build the reconnect banner
-        let banner = GtkBox::new(Orientation::Horizontal, 6);
+        // Build the reconnect banner. A group, so a screen reader presents the
+        // label, the key hint and the buttons as one thing.
+        let banner = GtkBox::builder()
+            .orientation(Orientation::Horizontal)
+            .spacing(6)
+            .accessible_role(gtk4::AccessibleRole::Group)
+            .build();
         banner.set_margin_start(12);
         banner.set_margin_end(12);
         banner.set_margin_top(6);
@@ -395,6 +757,28 @@ impl TerminalNotebook {
         label.add_css_class("dim-label");
 
         banner.append(&label);
+        banner.update_relation(&[gtk4::accessible::Relation::LabelledBy(
+            &[label.upcast_ref()],
+        )]);
+        // The visible hint names R and Q only, to stay short in a narrow pane;
+        // the description names Enter too.
+        banner.update_property(&[gtk4::accessible::Property::Description(&i18n(
+            "Press R to reconnect, Q to close, or Enter twice for the suggested action",
+        ))]);
+
+        // The keys below only work while this banner is up, so it names them.
+        // Placed before the status label and the button: the status label is
+        // inserted relative to the button, which has to stay the last child.
+        let keys_hint = gtk4::Label::new(None);
+        keys_hint.set_widget_name(KEYS_HINT);
+        keys_hint.add_css_class("dim-label");
+        keys_hint.add_css_class("caption");
+        // In a narrow split pane the hint gives way first, so the banner never
+        // forces the pane wider than its share and the button stays in view.
+        // The tooltip carries the full text the ellipsis may cut.
+        keys_hint.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+        set_keys_hint(&keys_hint, &i18n("Press R to reconnect, Q to close"));
+        banner.append(&keys_hint);
 
         // Auto-reconnect status indicator
         if auto_reconnect_active {
@@ -420,6 +804,9 @@ impl TerminalNotebook {
             }
         });
 
+        self.install_ended_session_keys(session_id, connection_id, &banner);
+        self.sync_vte_reconnect_item(session_id);
+
         tracing::info!(
             %session_id,
             protocol = %info.protocol,
@@ -427,9 +814,106 @@ impl TerminalNotebook {
         );
     }
 
+    /// Gives R, Q and Enter a meaning on a session whose connection has ended.
+    ///
+    /// A terminal whose child has exited takes no input, so the keys are free:
+    /// R does what the banner's Reconnect button does, Q closes the tab, the
+    /// split pane or the window tab the session is shown in, and Enter pressed
+    /// twice clicks the banner's suggested button — Reconnect, or "Log In to
+    /// …" once [`Self::offer_cloud_login`] has moved the suggestion there. The
+    /// first Enter only highlights that button and says what the second will
+    /// do. What a key means is [`ended_session_key_action`]; this method only
+    /// feeds it and carries the answer out.
+    ///
+    /// The controller lives on the terminal, so it follows the session wherever
+    /// its widget is moved, and exists only while the reconnect banner does:
+    /// [`Self::remove_reconnect_banner`] takes it away again, which is what
+    /// hands the keys back to a session that reconnected in place, and drops
+    /// a pending first Enter with it.
+    ///
+    /// Keys are read through [`crate::utils::latin_keyval`], so they work under
+    /// a non-Latin layout, and only without Ctrl, Alt or Super, so no shortcut
+    /// is shadowed. A handled key is stopped in the capture phase, before VTE
+    /// sees it, so it is never committed and never reaches a broadcast.
+    fn install_ended_session_keys(&self, session_id: Uuid, connection_id: Uuid, banner: &GtkBox) {
+        let Some(terminal) = self.terminals.borrow().get(&session_id).cloned() else {
+            return;
+        };
+        Self::remove_ended_session_keys(&terminal);
+
+        let controller = gtk4::EventControllerKey::new();
+        controller.set_name(Some(ENDED_SESSION_KEYS));
+        // Capture phase: VTE would otherwise consume the key press itself.
+        controller.set_propagation_phase(gtk4::PropagationPhase::Capture);
+
+        // Per banner: a new banner gets a new controller and a fresh state.
+        let enter = Rc::new(std::cell::Cell::new(EnterState::Idle));
+
+        let actions = EndedSessionKeyActions {
+            session_id,
+            connection_id,
+            on_reconnect: self.on_reconnect.clone(),
+            reconnect_shown: Rc::clone(&self.reconnect_shown),
+            split_pane_focuser: Rc::clone(&self.split_pane_focuser),
+            terminal: terminal.downgrade(),
+            banner: banner.downgrade(),
+        };
+        let banner_shown = {
+            let reconnect_shown = Rc::clone(&self.reconnect_shown);
+            let disconnected = Rc::clone(&self.disconnected_sessions);
+            move || {
+                ended_session_actions_available(
+                    reconnect_shown.borrow().contains(&session_id),
+                    disconnected.borrow().contains(&session_id),
+                )
+            }
+        };
+
+        let enter_pressed = Rc::clone(&enter);
+        controller.connect_key_pressed(move |_, keyval, keycode, modifiers| {
+            let key = EndedSessionKey::from_keyval(crate::utils::latin_keyval(keyval, keycode));
+            let action = ended_session_key_action(
+                key,
+                has_shortcut_modifier(modifiers),
+                banner_shown(),
+                enter_pressed.get(),
+            );
+            if let Some(next) = action.next_enter_state() {
+                enter_pressed.set(next);
+            }
+            actions.run(action);
+            action.propagation()
+        });
+
+        // The second Enter counts only after the first was let go, so holding
+        // Enter down (key repeat) never runs the action on its own.
+        let enter_released = Rc::clone(&enter);
+        controller.connect_key_released(move |_, keyval, keycode, _| {
+            let key = EndedSessionKey::from_keyval(crate::utils::latin_keyval(keyval, keycode));
+            if key == EndedSessionKey::Enter && enter_released.get() == EnterState::Held {
+                enter_released.set(EnterState::Armed);
+            }
+        });
+        terminal.add_controller(controller);
+    }
+
+    /// Takes the R / Q / Enter controller off a terminal, if it has one.
+    fn remove_ended_session_keys(terminal: &Terminal) {
+        let controllers = terminal.observe_controllers();
+        let stale: Vec<gtk4::EventController> = (0..controllers.n_items())
+            .filter_map(|position| controllers.item(position).and_downcast())
+            .filter(|controller: &gtk4::EventController| {
+                controller.name().as_deref() == Some(ENDED_SESSION_KEYS)
+            })
+            .collect();
+        for controller in &stale {
+            terminal.remove_controller(controller);
+        }
+    }
+
     /// Updates the auto-reconnect status label in an existing reconnect banner
     pub fn update_reconnect_banner_status(&self, session_id: Uuid, active: bool) {
-        let Some(container) = self.session_content_box(session_id) else {
+        let Some(container) = self.reconnect_banner_box(session_id) else {
             return;
         };
 
@@ -478,7 +962,7 @@ impl TerminalNotebook {
         attempt: u32,
         max_attempts: u32,
     ) {
-        let Some(container) = self.session_content_box(session_id) else {
+        let Some(container) = self.reconnect_banner_box(session_id) else {
             return;
         };
 
@@ -520,9 +1004,29 @@ impl TerminalNotebook {
         }
     }
 
+    /// Returns the box a session's reconnect banner belongs in.
+    ///
+    /// A session shown in a split pane, owner or guest, gets the banner in its
+    /// own pane: for the owner, [`Self::session_content_box`] is the tab's
+    /// box around the whole split, which would put the banner below every
+    /// pane. Any other session uses [`Self::session_content_box`].
+    fn reconnect_banner_box(&self, session_id: Uuid) -> Option<GtkBox> {
+        let provider = self
+            .split_pane_box_provider
+            .borrow()
+            .as_ref()
+            .map(Rc::clone);
+        if let Some(provider) = provider
+            && let Some(pane_box) = provider(session_id)
+        {
+            return Some(pane_box);
+        }
+        self.session_content_box(session_id)
+    }
+
     /// Returns the session's reconnect banner, if one is shown.
     fn reconnect_banner(&self, session_id: Uuid) -> Option<GtkBox> {
-        let container = self.session_content_box(session_id)?;
+        let container = self.reconnect_banner_box(session_id)?;
         let mut child = container.first_child();
         while let Some(widget) = child {
             if widget.widget_name() == "reconnect-banner" {
@@ -533,9 +1037,16 @@ impl TerminalNotebook {
         None
     }
 
-    /// Removes the reconnect banner and allows a later one to be shown.
-    pub fn remove_reconnect_banner(&self, session_id: Uuid) {
-        if let Some(container) = self.session_content_box(session_id) {
+    /// Takes the session's reconnect banner widgets down, leaving its mark.
+    ///
+    /// Looks in the session's own pane and in its tab's content box, where an
+    /// owner's banner sat before it moved into a split.
+    fn remove_reconnect_banner_widgets(&self, session_id: Uuid) {
+        let boxes = [
+            self.reconnect_banner_box(session_id),
+            self.session_content_box(session_id),
+        ];
+        for container in boxes.iter().flatten() {
             let mut child = container.first_child();
             while let Some(widget) = child {
                 let next = widget.next_sibling();
@@ -545,7 +1056,70 @@ impl TerminalNotebook {
                 child = next;
             }
         }
+    }
+
+    /// Removes the reconnect banner and allows a later one to be shown.
+    pub fn remove_reconnect_banner(&self, session_id: Uuid) {
+        self.remove_reconnect_banner_widgets(session_id);
         self.reconnect_shown.borrow_mut().remove(&session_id);
+        self.cloud_login_offers.borrow_mut().remove(&session_id);
+        if let Some(terminal) = self.terminals.borrow().get(&session_id) {
+            Self::remove_ended_session_keys(terminal);
+        }
+        self.sync_vte_reconnect_item(session_id);
+    }
+
+    /// Offers or withdraws the terminal menu's Reconnect entry to match the
+    /// session's state (see [`ended_session_actions_available`]).
+    fn sync_vte_reconnect_item(&self, session_id: Uuid) {
+        let offered = ended_session_actions_available(
+            self.reconnect_shown.borrow().contains(&session_id),
+            self.disconnected_sessions.borrow().contains(&session_id),
+        );
+        if let Some(item) = self.vte_reconnect_items.borrow().get(&session_id) {
+            item.set_offered(offered);
+        }
+    }
+
+    /// Puts a session's reconnect banner back if a move dropped it.
+    ///
+    /// Runs when the session's terminal is mapped. Moving a session between a
+    /// tab, a split pane and a window rebuilds the box around its terminal,
+    /// and the banner goes with the old box while the session stays marked.
+    /// A marked, disconnected session with no banner in its own box gets one
+    /// again, with its "Log In to …" button if it had one. A mark left on a
+    /// live session is dropped.
+    pub fn reconcile_reconnect_banner(&self, session_id: Uuid) {
+        let marked = self.reconnect_shown.borrow().contains(&session_id);
+        if !marked {
+            return;
+        }
+        let disconnected = self.disconnected_sessions.borrow().contains(&session_id);
+        let present = self.reconnect_banner(session_id).is_some();
+        let action = reconnect_banner_reconcile(marked, disconnected, present);
+        tracing::debug!(
+            %session_id,
+            branch = ?action,
+            marked,
+            disconnected,
+            present,
+            "reconnect banner reconcile"
+        );
+        match action {
+            BannerReconcile::Keep => {}
+            BannerReconcile::Reshow => {
+                // A banner left in the tab's box would be a second one.
+                self.remove_reconnect_banner_widgets(session_id);
+                self.reconnect_shown.borrow_mut().remove(&session_id);
+                let polling = self.poll_cancel_tokens.borrow().contains_key(&session_id);
+                self.show_reconnect_overlay_with_status(session_id, polling);
+                let login = self.cloud_login_offers.borrow().get(&session_id).cloned();
+                if let Some(login) = login {
+                    self.offer_cloud_login(session_id, login);
+                }
+            }
+            BannerReconcile::ForgetMark => self.remove_reconnect_banner(session_id),
+        }
     }
 
     /// Adds a "Log In to `<provider>`" button to the session's reconnect banner.
@@ -562,7 +1136,7 @@ impl TerminalNotebook {
         // A doubled `child-exited` reaches here twice for one banner.
         let mut child = banner.first_child();
         while let Some(widget) = child {
-            if widget.widget_name() == "cloud-login" {
+            if widget.widget_name() == CLOUD_LOGIN_BUTTON {
                 return;
             }
             child = widget.next_sibling();
@@ -592,7 +1166,7 @@ impl TerminalNotebook {
         // Provider names are brand names and stay untranslated.
         let button = gtk4::Button::with_label(&i18n_f("Log In to {}", &[login.provider_name()]));
         button.add_css_class("suggested-action");
-        button.set_widget_name("cloud-login");
+        button.set_widget_name(CLOUD_LOGIN_BUTTON);
         button.set_tooltip_text(Some(&i18n_f(
             "Run “{}” to sign in again in the browser",
             &[&login.command_line()],
@@ -608,6 +1182,11 @@ impl TerminalNotebook {
             command = %login.command_line(),
             "Offering cloud login for expired credentials"
         );
+
+        // Kept so a banner shown again after a move gets this button back.
+        self.cloud_login_offers
+            .borrow_mut()
+            .insert(session_id, login.clone());
 
         let on_cloud_login = self.on_cloud_login.clone();
         button.connect_clicked(move |_| {
@@ -651,6 +1230,29 @@ impl TerminalNotebook {
         F: Fn(Uuid) -> Option<GtkBox> + 'static,
     {
         *self.split_pane_box_provider.borrow_mut() = Some(Rc::new(provider));
+    }
+
+    /// Sets the hook run, on idle, each time a session's terminal is mapped.
+    ///
+    /// The window wires it to [`Self::reconcile_reconnect_banner`], holding
+    /// the notebook weakly: the hook is reachable from every terminal.
+    pub fn set_on_terminal_mapped<F>(&self, hook: F)
+    where
+        F: Fn(Uuid) + 'static,
+    {
+        *self.on_terminal_mapped.borrow_mut() = Some(Rc::new(hook));
+    }
+
+    /// Sets the hook that focuses the split pane showing a session.
+    ///
+    /// Returns whether the session is shown in a pane. Used by Q on an ended
+    /// session so `win.close-pane` closes the pane that got the key, not
+    /// whichever pane was last clicked.
+    pub fn set_split_pane_focuser<F>(&self, focuser: F)
+    where
+        F: Fn(Uuid) -> bool + 'static,
+    {
+        *self.split_pane_focuser.borrow_mut() = Some(Rc::new(focuser));
     }
 
     /// Sets the resolver for the focused pane's session in a split tab (#371).
@@ -741,7 +1343,163 @@ impl TerminalNotebook {
 
 #[cfg(test)]
 mod tests {
-    use super::session_has_home;
+    use super::{
+        BannerReconcile, EndedSessionKey as Key, EndedSessionKeyAction as Action, EnterState,
+        ended_session_actions_available, ended_session_key_action, has_shortcut_modifier,
+        reconnect_banner_reconcile, session_has_home,
+    };
+    use gtk4::gdk;
+
+    fn decide(key: Key, enter: EnterState) -> Action {
+        ended_session_key_action(key, false, true, enter)
+    }
+
+    // Only a marked, disconnected session offers the ended-session actions;
+    // a cloud login clears the mark, so it never does mid-login.
+    #[test]
+    fn ended_session_actions_need_mark_and_disconnect() {
+        assert!(ended_session_actions_available(true, true));
+        assert!(!ended_session_actions_available(true, false));
+        assert!(!ended_session_actions_available(false, true));
+        assert!(!ended_session_actions_available(false, false));
+    }
+
+    #[test]
+    fn reconnect_banner_reconcile_reshows_a_dropped_banner() {
+        assert_eq!(
+            reconnect_banner_reconcile(true, true, false),
+            BannerReconcile::Reshow
+        );
+        assert_eq!(
+            reconnect_banner_reconcile(true, true, true),
+            BannerReconcile::Keep
+        );
+    }
+
+    #[test]
+    fn reconnect_banner_reconcile_forgets_a_live_sessions_mark() {
+        assert_eq!(
+            reconnect_banner_reconcile(true, false, false),
+            BannerReconcile::ForgetMark
+        );
+        assert_eq!(
+            reconnect_banner_reconcile(true, false, true),
+            BannerReconcile::ForgetMark
+        );
+    }
+
+    // An unmarked session (a live one, or one running `aws login` after its
+    // banner was taken down) never gets a banner back.
+    #[test]
+    fn reconnect_banner_reconcile_leaves_unmarked_sessions_alone() {
+        for disconnected in [false, true] {
+            for present in [false, true] {
+                assert_eq!(
+                    reconnect_banner_reconcile(false, disconnected, present),
+                    BannerReconcile::Keep
+                );
+            }
+        }
+    }
+
+    // R and Q act at once, whatever Enter was doing.
+    #[test]
+    fn r_reconnects_and_q_closes() {
+        for enter in [EnterState::Idle, EnterState::Held, EnterState::Armed] {
+            assert_eq!(decide(Key::Reconnect, enter), Action::Reconnect);
+            assert_eq!(decide(Key::Close, enter), Action::Close);
+        }
+    }
+
+    // Enter is two-step: the first arms, its key repeat changes nothing, and
+    // only an Enter after release runs the suggested action.
+    #[test]
+    fn enter_needs_two_separate_presses() {
+        assert_eq!(decide(Key::Enter, EnterState::Idle), Action::Arm);
+        assert_eq!(Action::Arm.next_enter_state(), Some(EnterState::Held));
+        assert_eq!(decide(Key::Enter, EnterState::Held), Action::Hold);
+        assert_eq!(Action::Hold.next_enter_state(), None);
+        assert_eq!(decide(Key::Enter, EnterState::Armed), Action::RunSuggested);
+        assert_eq!(
+            Action::RunSuggested.next_enter_state(),
+            Some(EnterState::Idle)
+        );
+    }
+
+    // Another key after the first Enter cancels it and still reaches the
+    // terminal; a lone modifier (Shift before R) does not cancel.
+    #[test]
+    fn another_key_cancels_a_first_enter() {
+        assert_eq!(decide(Key::Other, EnterState::Armed), Action::Disarm);
+        assert_eq!(decide(Key::Other, EnterState::Held), Action::Disarm);
+        assert_eq!(Action::Disarm.next_enter_state(), Some(EnterState::Idle));
+        assert_eq!(
+            Action::Disarm.propagation(),
+            gtk4::glib::Propagation::Proceed
+        );
+        assert_eq!(decide(Key::Modifier, EnterState::Armed), Action::Pass);
+        assert_eq!(decide(Key::Other, EnterState::Idle), Action::Pass);
+    }
+
+    // With Ctrl, Alt or Super held a key is a shortcut and is never taken; it
+    // still cancels a pending Enter.
+    #[test]
+    fn shortcuts_pass_through() {
+        for key in [Key::Reconnect, Key::Close, Key::Enter] {
+            assert_eq!(
+                ended_session_key_action(key, true, true, EnterState::Idle),
+                Action::Pass
+            );
+        }
+        assert_eq!(
+            ended_session_key_action(Key::Enter, true, true, EnterState::Armed),
+            Action::Disarm
+        );
+        assert!(has_shortcut_modifier(gdk::ModifierType::CONTROL_MASK));
+        assert!(has_shortcut_modifier(gdk::ModifierType::ALT_MASK));
+        assert!(has_shortcut_modifier(gdk::ModifierType::SUPER_MASK));
+        assert!(!has_shortcut_modifier(gdk::ModifierType::SHIFT_MASK));
+    }
+
+    // Without a banner (a live session) no key is ever taken.
+    #[test]
+    fn a_live_session_keeps_every_key() {
+        for key in [Key::Reconnect, Key::Close, Key::Enter, Key::Other] {
+            for enter in [EnterState::Idle, EnterState::Armed] {
+                let action = ended_session_key_action(key, false, false, enter);
+                assert_eq!(action, Action::Pass);
+                assert_eq!(action.propagation(), gtk4::glib::Propagation::Proceed);
+            }
+        }
+    }
+
+    // Every handled key is stopped before VTE, so it is never committed and
+    // never broadcast to other panes.
+    #[test]
+    fn handled_keys_stop_before_the_terminal() {
+        for action in [
+            Action::Reconnect,
+            Action::Close,
+            Action::Arm,
+            Action::Hold,
+            Action::RunSuggested,
+        ] {
+            assert_eq!(action.propagation(), gtk4::glib::Propagation::Stop);
+        }
+    }
+
+    // Upper and lower case, the keypad Enter and the modifiers are classified.
+    #[test]
+    fn keys_are_classified() {
+        assert_eq!(Key::from_keyval(gdk::Key::r), Key::Reconnect);
+        assert_eq!(Key::from_keyval(gdk::Key::R), Key::Reconnect);
+        assert_eq!(Key::from_keyval(gdk::Key::Q), Key::Close);
+        assert_eq!(Key::from_keyval(gdk::Key::Return), Key::Enter);
+        assert_eq!(Key::from_keyval(gdk::Key::KP_Enter), Key::Enter);
+        assert_eq!(Key::from_keyval(gdk::Key::Shift_L), Key::Modifier);
+        assert_eq!(Key::from_keyval(gdk::Key::a), Key::Other);
+        assert_eq!(Key::from_keyval(gdk::Key::space), Key::Other);
+    }
 
     // A session with its own tab page is reconnectable — the ordinary case.
     #[test]

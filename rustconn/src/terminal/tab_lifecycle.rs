@@ -354,11 +354,50 @@ impl TerminalNotebook {
         // so they follow it when reparented between TabView and split view.
         // When `right_click_pastes` is enabled (#349) this installs a paste
         // gesture instead of the native menu.
-        config::setup_context_menu(
+        //
+        // Its Reconnect entry re-checks the ended-session state on activation,
+        // as R does, and then does what the banner's button does.
+        let reconnect: Rc<dyn Fn()> = {
+            let on_reconnect = Rc::clone(&self.on_reconnect);
+            let reconnect_shown = Rc::clone(&self.reconnect_shown);
+            let disconnected = Rc::clone(&self.disconnected_sessions);
+            Rc::new(move || {
+                let available = session_lifecycle::ended_session_actions_available(
+                    reconnect_shown.borrow().contains(&session_id),
+                    disconnected.borrow().contains(&session_id),
+                );
+                if !available {
+                    return;
+                }
+                if let Some(ref callback) = *on_reconnect.borrow() {
+                    callback(session_id, connection_id);
+                }
+            })
+        };
+        if let Some(item) = config::setup_context_menu(
             &terminal,
             &self.snippet_menu_section,
             settings.right_click_pastes,
-        );
+            reconnect,
+        ) {
+            self.vte_reconnect_items
+                .borrow_mut()
+                .insert(session_id, item);
+        }
+
+        // Every move between a tab, a split pane and a window rebuilds the
+        // box around this terminal, dropping a reconnect banner with it, and
+        // maps the terminal again. Deferred, because `map` fires while the
+        // split adapter is borrowed, and the hook reads it again.
+        {
+            let hook = Rc::clone(&self.on_terminal_mapped);
+            terminal.connect_map(move |_| {
+                let Some(hook) = hook.borrow().as_ref().map(Rc::clone) else {
+                    return;
+                };
+                glib::idle_add_local_once(move || hook(session_id));
+            });
+        }
 
         // Drag-and-drop: insert shell-escaped file paths when files are
         // dragged from a file manager onto the terminal (GNOME Terminal behavior).
@@ -901,6 +940,9 @@ impl TerminalNotebook {
         self.restore_session_tab(session_id);
         let page = self.sessions.borrow().get(&session_id).cloned();
         if let Some(page) = page {
+            // A pane close, a detached window or a failed edit ends exactly
+            // this session: never hold it for the split close dialog.
+            self.mark_programmatic_close(session_id);
             self.tab_view.close_page(&page);
         }
     }

@@ -18,7 +18,7 @@ use rustconn_core::split::{ColorPool, PanelId, SessionId};
 use uuid::Uuid;
 use vte4::Terminal;
 
-use super::adapter::SplitViewAdapter;
+use super::adapter::{PaneMenuState, SplitViewAdapter};
 use crate::i18n::i18n;
 use crate::terminal::TerminalSession;
 
@@ -399,6 +399,10 @@ pub struct SplitViewBridge {
     /// fire and characters would be doubled. The shared cell is set to `true`
     /// while a broadcast pass is in progress and reset when the pass completes.
     pub broadcast_busy: Rc<std::cell::Cell<bool>>,
+    /// Sessions the user took out of the broadcast with their panel's check
+    /// box. Such a session stays visible in its pane; it neither receives the
+    /// keystrokes typed elsewhere nor sends its own to the other panes.
+    pub broadcast_excluded: Rc<RefCell<HashSet<Uuid>>>,
     /// The session whose tab hosts this layout.
     ///
     /// A layout is keyed in `session_split_bridges` under every session it
@@ -466,8 +470,35 @@ impl SplitViewBridge {
             None
         };
 
+        let adapter = Rc::new(RefCell::new(adapter));
+        let broadcast_excluded: Rc<RefCell<HashSet<Uuid>>> = Rc::new(RefCell::new(HashSet::new()));
+        // The check box names a panel; the exclusion is kept per session, so it
+        // follows the session and not whatever is placed in that panel later.
+        // Weak, because the adapter owns this callback.
+        {
+            let adapter_weak = Rc::downgrade(&adapter);
+            let excluded = Rc::clone(&broadcast_excluded);
+            adapter
+                .borrow()
+                .set_broadcast_toggled_callback(move |panel_id, included| {
+                    let session = adapter_weak
+                        .upgrade()
+                        .and_then(|adapter| adapter.try_borrow().ok()?.get_panel_session(panel_id));
+                    let Some(session) = session else {
+                        return;
+                    };
+                    let session_id = session.as_uuid();
+                    if included {
+                        excluded.borrow_mut().remove(&session_id);
+                    } else {
+                        excluded.borrow_mut().insert(session_id);
+                    }
+                    tracing::info!(%session_id, included, "split broadcast membership changed");
+                });
+        }
+
         Self {
-            adapter: Rc::new(RefCell::new(adapter)),
+            adapter,
             root,
             sessions: Rc::new(RefCell::new(HashMap::new())),
             terminals: Rc::new(RefCell::new(HashMap::new())),
@@ -483,6 +514,7 @@ impl SplitViewBridge {
             broadcast_active: Rc::new(std::cell::Cell::new(false)),
             broadcast_wired_sessions: Rc::new(RefCell::new(HashSet::new())),
             broadcast_busy: Rc::new(std::cell::Cell::new(false)),
+            broadcast_excluded,
             owner_session: Rc::new(std::cell::Cell::new(None)),
             label_cache: Rc::new(RefCell::new(HashMap::new())),
             title_listener: Rc::new(RefCell::new(None)),
@@ -1297,6 +1329,7 @@ impl SplitViewBridge {
 
         self.clear_session_color(session_id);
         self.remove_session(session_id);
+        self.forget_broadcast_exclusion(session_id);
         self.emit_title_source();
     }
 
@@ -1317,16 +1350,27 @@ impl SplitViewBridge {
 
         self.clear_session_color(session_id);
         self.remove_session(session_id);
+        self.forget_broadcast_exclusion(session_id);
 
         if let Some(panel_id) = panel_to_remove {
             // Try to remove the panel
             let _ = adapter.remove_panel(panel_id);
 
             // Remove from UUID maps
-            if let Some(uuid) = self.panel_uuid_map.borrow_mut().remove(&panel_id) {
+            let removed_uuid = self.panel_uuid_map.borrow_mut().remove(&panel_id);
+            if let Some(uuid) = removed_uuid {
                 self.uuid_panel_map.borrow_mut().remove(&uuid);
                 // Remove from panes list
                 self.panes.borrow_mut().retain(|p| p.id() != uuid);
+                // A focused pane that is gone would make the next
+                // `close_pane` fail with "Panel not found"; move the focus to
+                // the first remaining pane, as `close_pane` does.
+                if *self.focused_pane_uuid.borrow() == Some(uuid) {
+                    let next = adapter.panel_ids().first().and_then(|next_panel| {
+                        self.panel_uuid_map.borrow().get(next_panel).copied()
+                    });
+                    *self.focused_pane_uuid.borrow_mut() = next;
+                }
             }
         }
 
@@ -1376,6 +1420,7 @@ impl SplitViewBridge {
         // Clear session color if there was a session
         if let Some(session_id) = session_in_pane {
             self.clear_session_color(session_id);
+            self.forget_broadcast_exclusion(session_id);
         }
 
         let mut adapter = self.adapter.borrow_mut();
@@ -1498,6 +1543,62 @@ impl SplitViewBridge {
                 tracing::debug!("restore_panel_contents: panel {} has no session", panel_id);
             }
         }
+        drop(adapter);
+        // The rebuild made new headers, with new Broadcast check boxes.
+        self.refresh_broadcast_controls();
+    }
+
+    /// Reports whether a session takes part in this split's broadcast.
+    #[must_use]
+    pub fn is_broadcast_member(&self, session_id: Uuid) -> bool {
+        !self.broadcast_excluded.borrow().contains(&session_id)
+    }
+
+    /// Returns the sessions a keystroke typed in `source` is mirrored to.
+    ///
+    /// Empty when `source` is out of the broadcast. Whether broadcast is on and
+    /// whether `source` is still in this split are the caller's checks.
+    #[must_use]
+    pub fn broadcast_targets(&self, source: Uuid) -> Vec<Uuid> {
+        broadcast_targets(
+            source,
+            &self.active_sessions(),
+            &self.broadcast_excluded.borrow(),
+        )
+    }
+
+    /// Drops a session's exclusion when it leaves this split.
+    ///
+    /// The exclusion is a choice made for this split: a session that comes
+    /// back later, from its own tab or another split, comes back included and
+    /// its ticked check box says so.
+    fn forget_broadcast_exclusion(&self, session_id: Uuid) {
+        self.broadcast_excluded.borrow_mut().remove(&session_id);
+    }
+
+    /// Brings the panels' Broadcast check boxes in line with the split's state.
+    ///
+    /// Call after broadcast is switched on or off and after the panes or their
+    /// contents change: the check boxes are rebuilt with the panes, and one is
+    /// only offered on a panel that holds a terminal. Exclusions of sessions no
+    /// longer in any panel (replaced by another session) are dropped here.
+    pub fn refresh_broadcast_controls(&self) {
+        let active = self.broadcast_active.get();
+        let adapter = self.adapter.borrow();
+        let placed: HashSet<Uuid> = adapter
+            .panel_ids()
+            .into_iter()
+            .filter_map(|panel_id| adapter.get_panel_session(panel_id))
+            .map(|session| session.as_uuid())
+            .collect();
+        self.broadcast_excluded
+            .borrow_mut()
+            .retain(|session_id| placed.contains(session_id));
+        adapter.set_broadcast_controls(active, |panel_id| {
+            let session_id = adapter.get_panel_session(panel_id)?.as_uuid();
+            self.get_terminal(session_id)?;
+            Some(self.is_broadcast_member(session_id))
+        });
     }
 
     /// Returns true if the split view has no active sessions in any pane
@@ -2622,7 +2723,7 @@ impl SplitViewBridge {
         self.adapter.borrow().set_close_panel_callback(handler);
     }
 
-    /// Sets up the "Remove from Split" callback for panel buttons and menu items.
+    /// Sets up the "Move to Own Tab" callback for panel buttons and menu items.
     ///
     /// Same two steps as [`Self::setup_close_panel_callback`], but activates
     /// `win.pop-pane-to-tab`, which hands the panel's session back to its own
@@ -2654,6 +2755,33 @@ impl SplitViewBridge {
     {
         let handler = self.panel_action_handler("reconnect-pane", on_focus);
         self.adapter.borrow().set_reconnect_panel_callback(handler);
+    }
+
+    /// Tells the pane menus whether a pane's session owns this split and
+    /// whether it has ended, asked each time a menu opens.
+    ///
+    /// The owner's menu leaves out Move to Own Tab, which on the owner would
+    /// collapse the whole split like Remove Split; Reconnect is offered only
+    /// while `is_disconnected` holds for the pane's session.
+    ///
+    /// # Arguments
+    ///
+    /// * `is_disconnected` - Whether a session has ended and can be reconnected
+    pub fn setup_pane_menu_state<F>(&self, is_disconnected: F)
+    where
+        F: Fn(Uuid) -> bool + 'static,
+    {
+        let owner = Rc::clone(&self.owner_session);
+        self.adapter
+            .borrow()
+            .set_pane_menu_state_provider(move |session| {
+                let session = session.as_uuid();
+                PaneMenuState {
+                    is_owner: owner.get() == Some(session),
+                    is_disconnected: is_disconnected(session),
+                    shows_broadcast: false,
+                }
+            });
     }
 
     /// Sets up the "Move to New Window" callback for the panel button and menu.
@@ -2850,6 +2978,8 @@ impl SplitViewBridge {
         );
 
         self.emit_title_source();
+        // The panel holds another session now; its check box must say so.
+        self.refresh_broadcast_controls();
         Ok(color_index)
     }
 
@@ -2890,6 +3020,77 @@ impl SplitViewBridge {
 impl Default for SplitViewBridge {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Decides where a keystroke typed in `source` is mirrored.
+///
+/// `displayed` is every session shown in the split, `excluded` the sessions the
+/// user took out of the broadcast. An excluded pane is out both ways: what is
+/// typed in it goes nowhere else, and it is never a target. Typing into the
+/// wrong host is the failure this guards against, so the rule lives here, apart
+/// from the GTK wiring, where it can be tested.
+#[must_use]
+fn broadcast_targets(source: Uuid, displayed: &[Uuid], excluded: &HashSet<Uuid>) -> Vec<Uuid> {
+    if excluded.contains(&source) {
+        return Vec::new();
+    }
+    displayed
+        .iter()
+        .copied()
+        .filter(|target| *target != source && !excluded.contains(target))
+        .collect()
+}
+
+#[cfg(test)]
+mod broadcast_target_tests {
+    use std::collections::HashSet;
+
+    use uuid::Uuid;
+
+    use super::broadcast_targets;
+
+    #[test]
+    fn mirrors_to_every_other_pane_when_none_excluded() {
+        let (a, b, c) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let targets = broadcast_targets(a, &[a, b, c], &HashSet::new());
+        assert_eq!(targets, vec![b, c]);
+    }
+
+    #[test]
+    fn excluded_source_sends_nothing() {
+        let (a, b, c) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let excluded = HashSet::from([a]);
+        assert!(broadcast_targets(a, &[a, b, c], &excluded).is_empty());
+    }
+
+    #[test]
+    fn excluded_target_receives_nothing() {
+        let (a, b, c) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let excluded = HashSet::from([b]);
+        assert_eq!(broadcast_targets(a, &[a, b, c], &excluded), vec![c]);
+        assert_eq!(broadcast_targets(c, &[a, b, c], &excluded), vec![a]);
+    }
+
+    #[test]
+    fn excluding_the_only_other_pane_leaves_no_target() {
+        let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
+        let excluded = HashSet::from([b]);
+        assert!(broadcast_targets(a, &[a, b], &excluded).is_empty());
+        assert!(broadcast_targets(b, &[a, b], &excluded).is_empty());
+    }
+
+    #[test]
+    fn exclusion_of_a_session_not_shown_changes_nothing() {
+        let (a, b, gone) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let excluded = HashSet::from([gone]);
+        assert_eq!(broadcast_targets(a, &[a, b], &excluded), vec![b]);
+    }
+
+    #[test]
+    fn source_is_never_its_own_target() {
+        let a = Uuid::new_v4();
+        assert!(broadcast_targets(a, &[a], &HashSet::new()).is_empty());
     }
 }
 

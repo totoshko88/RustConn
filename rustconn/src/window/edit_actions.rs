@@ -125,12 +125,14 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let notebook_clone = self.terminal_notebook.clone();
         let monitoring_clone = self.monitoring.clone();
+        let bridges_clone = self.session_split_bridges.clone();
         connect_action.connect_activate(move |_, _| {
             Self::connect_selected(
                 &state_clone,
                 &sidebar_clone,
                 &notebook_clone,
                 &monitoring_clone,
+                &bridges_clone,
             );
         });
         window.add_action(&connect_action);

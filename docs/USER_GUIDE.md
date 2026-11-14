@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.25.0** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.25.1** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -53,6 +53,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Global Variables](#global-variables)
    - [Password Generator](#password-generator)
    - [Wake-on-LAN](#wake-on-lan)
+   - [Network Scan](#network-scan)
    - [Connection History & Statistics](#connection-history)
    - [Remote Monitoring](#remote-monitoring)
    - [Flatpak Components](#flatpak-components)
@@ -161,6 +162,10 @@ The search row is hidden behind the search toggle (🔍) in the sidebar header, 
 way GNOME apps surface search. Reveal it by clicking the toggle, pressing
 **Ctrl+F**, or simply starting to type while the connection list has focus; it
 collapses again when you clear it.
+
+Press **Enter** in the search field to open the first matching connection (or the
+one you had selected, if it still matches) and save the query to the search
+history; with no match, or an empty field, Enter opens nothing (0.25.1+).
 
 Filter connections by protocol from the **Filter** menu button in the search row:
 - Open the menu and tick one or more protocols (SSH, RDP, VNC, SPICE, Telnet,
@@ -2375,6 +2380,8 @@ Sessions shown through an external viewer (xfreerdp, vncviewer, or an external S
 - **Horizontal Split** — Ctrl+Shift+H splits the current tab horizontally (side by side)
 - **Vertical Split** — Ctrl+Shift+S splits the current tab vertically (top and bottom)
 - **Close Pane** — Ctrl+Shift+X closes the focused pane; if only one pane remains, the split is dissolved and the session returns to normal tab mode
+- **Remove Split** — Ctrl+Shift+J, **Remove Split** in the split tab's context menu or in a pane header's menu, or **Remove Split** in the command palette, returns every session of the split to its own tab without closing any of them. On a tab that is not split it does nothing
+- **Closing a split tab** — a split lives in the tab of its first (owner) session; the other sessions have no tab of their own while they are in the split. The tab's title names the focused pane, which is not always the owner. Closing a tab whose split shows two or more sessions (X, middle-click, **Close Tab…** in the tab menu, or Ctrl+Shift+W) asks first. The dialog says which session the tab belongs to and lists the other sessions it shows (the first three, then how many more), and offers three answers: **Remove Split** (the default, Enter) returns every session to its own tab and closes none of them, the same as Ctrl+Shift+J; **Close All Sessions** disconnects the owner and every other session of the split; **Cancel** (Escape) keeps the tab as it was. Ctrl+Shift+W always acts on the tab, so it asks about the whole split even when another pane has focus (while a terminal has focus Ctrl+W goes to the shell and does not close the tab). **Close Others**, **Close to the Left**, **Close to the Right**, **Close All Tabs** and **Close All Ungrouped** ask once for the whole batch when it includes a split tab, and confirming closes the other sessions of those splits too; **Close All in Group** says so in its own confirmation. Closing one pane's session never asks: use **Close Connection** in the pane header's menu or Ctrl+Shift+X (**Close Pane**), or **Disconnect** in the sidebar. Scripts, clusters, a session that ends by itself and closing the window do not show this dialog either. To take one session out of the split, use **Move to Own Tab**
 - **Focus Next Pane** — Ctrl+` cycles focus between panes
 - **Split with Other Tabs** — right-click a tab and choose **Split with Other Tabs…** or press **Ctrl+Shift+K** while that tab is active (rebind it in **Settings ▸ Interface ▸ Keybindings**). A dialog lists every other tab that can join; tick the ones you want — with the keyboard use Tab to move and Space to tick — and press **Split**. That tab becomes the split's tab and the ticked tabs fill a balanced grid around it (2 tabs side by side or stacked to suit the window's shape, 4 tabs as 2×2, and so on), the same grid a restored workspace uses. The sessions are moved, not reconnected, and each one's own tab disappears while it is in the split. Tabs that cannot be split (external-viewer sessions, tabs in another window) are not listed. The item is hidden on a tab that already hosts a split; use **Remove Split** first, or **Select Tab…** in an empty pane to add one more session. To change the arrangement afterwards, drag the pane headers.
 - **Select Tab** — click the "Select Tab..." button in an empty pane to pick which session to display; sessions already in other split views show a colored indicator
@@ -2384,9 +2391,9 @@ Sessions shown through an external viewer (xfreerdp, vncviewer, or an external S
 
 Embedded viewers adapt to narrow panels: the toolbar collapses its secondary actions into an overflow ("⋯") menu (Fit resolution and Ctrl+Alt+Del stay visible), and the remote desktop rescales to fully fill a small or oddly-shaped panel. The same adaptation applies to a single embedded tab in a small or narrow application window. Keystroke broadcast (Ctrl+Shift+B) applies only to terminals — its toggle appears when a split holds at least two terminal sessions and a terminal panel is focused, and mirroring never targets an embedded remote desktop.
 
-Each occupied panel can be acted on in two ways. First, when the connection-name **headers** are shown (the default), right-click the pane's **header** for a context menu — **Reconnect**, **Remove from Split** (returns the session to its own tab without closing it), **Remove Split**, and **Close Connection** — and on a touchscreen, long-press the header for the same menu. Closing this way takes two deliberate steps (open the menu, pick Close), so it is not second-guessed with a confirmation. The menu lives on the header rather than the pane body on purpose: a terminal or remote-desktop pane handles its own right-click (a terminal's Copy/Paste menu, for example), so putting the pane menu on the body would either fight that menu or suppress it. Second — independently of the headers — each occupied panel shows a small arrow indicator (◂) at the top-right corner; hovering or clicking it reveals **Remove from Split** and **Close**, and the buttons hide after a short delay. Because this hover reveal is a single easy-to-mis-click gesture, **Close** here first asks for confirmation before disconnecting a live session. The header labels and the hover corner buttons each have their own switch and do not hide one another — the small arrow stays available whether or not the names are shown. If you find the hover arrow distracting, turn it off entirely with **Settings ▸ Interface ▸ Window ▸ Hide hover controls in split panes** (off by default); with it hidden, the header context menu and the sidebar connection menu still provide close and detach.
+Each occupied panel can be acted on in two ways. First, when the connection-name **headers** are shown (the default), right-click the pane's **header** for a context menu — **Reconnect** (only once the session has ended), **Move to Own Tab** (returns the session to its own tab without closing it; not on the pane of the split's owner, where it would do what **Remove Split** does), **Move to New Window**, **Remove Split**, and **Close Connection** — and on a touchscreen, long-press the header for the same menu. Closing this way takes two deliberate steps (open the menu, pick Close), so it is not second-guessed with a confirmation. The menu lives on the header rather than the pane body on purpose: a terminal or remote-desktop pane handles its own right-click (a terminal's Copy/Paste menu, for example), so putting the pane menu on the body would either fight that menu or suppress it. Second — independently of the headers — each occupied panel shows a small arrow indicator (◂) at the top-right corner; hovering or clicking it reveals **Move to Own Tab** and **Close**, and the buttons hide after a short delay. Because this hover reveal is a single easy-to-mis-click gesture, **Close** here first asks for confirmation before disconnecting a live session. The header labels and the hover corner buttons each have their own switch and do not hide one another — the small arrow stays available whether or not the names are shown. If you find the hover arrow distracting, turn it off entirely with **Settings ▸ Interface ▸ Window ▸ Hide hover controls in split panes** (off by default); with it hidden, the header context menu and the sidebar connection menu still provide close and detach.
 
-A session whose **Session Toolbar** / **Navigation Toolbar** is switched off is still reachable: through the header's right-click menu when headers are shown, and through the hover corner buttons, which are always present. Either way the split-view actions (Remove from Split / Close) are part of the split infrastructure, not the session toolbar, so turning the toolbar off never leaves a pane with no way out. You can also act on a pane **from the sidebar**: right-click the connection and use **Remove from Split**, **Move to New Window** (pops the pane out of the split and into its own window in one step), or **Close**.
+A session whose **Session Toolbar** / **Navigation Toolbar** is switched off is still reachable: through the header's right-click menu when headers are shown, and through the hover corner buttons, which are always present. Either way the split-view actions (Move to Own Tab / Close) are part of the split infrastructure, not the session toolbar, so turning the toolbar off never leaves a pane with no way out. You can also act on a pane **from the sidebar**: right-click the connection and use **Move to Own Tab** (shown as **Remove Split** on the split's owner, which it collapses), **Move to New Window** (pops the pane out of the split and into its own window in one step), or **Disconnect**.
 
 **Connection name labels** — each split pane shows a compact colored header at the top with the connection name and protocol, making it easy to identify which pane belongs to which connection at a glance — especially useful with 3 or more panes side by side. This is **on by default** for new installations and is switched with **Settings ▸ Interface ▸ Window ▸ Show connection name in split panes**; an existing configuration keeps the value it already stores. The header color matches the panel's indicator color, and in compact mode it shrinks automatically. The header also doubles as the drag handle for moving a pane (see **Move between splits** above).
 
@@ -2435,6 +2442,17 @@ When a terminal session disconnects (SSH, Telnet, Serial, Kubernetes, Zero Trust
 - Reconnect uses the same connection settings (host, credentials, protocol options)
 - If the connection fails again, the banner reappears
 - Close the tab normally with Ctrl+W to dismiss
+- While the banner is shown, with focus in the session's terminal, three keys work. An ended terminal takes no input, so the keys are free; they work the same in a tab, a split pane, a detached window and a cluster window, and under a non-Latin keyboard layout. With Ctrl, Alt or Super held they keep their usual meaning:
+
+  | Key | Action |
+  |-----|--------|
+  | **R** | Reconnect, as the **Reconnect** button does |
+  | **Q** | Close the session, without asking. In a split it closes the pane whose terminal has focus |
+  | **Enter**, then **Enter** again | The first Enter highlights the banner's suggested button and the hint reads *Press Enter again to reconnect*; the second Enter clicks it. When the banner offers **Log In to …** for expired cloud credentials, that is the suggested button and Enter twice signs in. Any other key cancels the first Enter, and holding Enter down does not count as a second press |
+
+- A **Local Shell** whose shell exits gets the same banner: **R** (or **Reconnect**) starts a new shell in the same tab. With **Close tab on clean exit** on (Settings → Terminal), a shell that exits cleanly (`exit`, Ctrl+D) closes its tab instead
+- Right-click in the terminal of an ended session: **Reconnect** heads the menu. It is offered only while the session has ended, never on a live one or while a cloud login runs in the terminal, and works in a tab, a split pane, a detached window and a cluster window. With **Right-click pastes** on, right-click pastes and there is no menu
+- The banner stays in the session's own pane in a split, for the pane that hosts the split too, and comes back when panes are added or closed or when the session moves between a tab, a split and a window, with its **Log In to …** button if it had one
 
 **Automatic reconnect.** Beyond the manual banner, RustConn reconnects on its own
 after a transient drop — the common cases being the machine waking from sleep and
@@ -2446,7 +2464,11 @@ is stale — retrying only risks a lockout), a session that crashed within a few
 seconds of starting (a reconnect loop), a Zero Trust session whose cloud sign-in
 expired (see [Signing In Again When Cloud Credentials Expire](#signing-in-again-when-cloud-credentials-expire)),
 or a tab you closed yourself. In those cases the manual banner is shown instead, so
-the decision stays yours.
+the decision stays yours. OpenSSH exits with status 255 both for refused credentials
+and for a lost connection, so such an exit counts as an authentication failure only
+when ssh's last message says so (`Permission denied`, `Authentication failed`), or
+when it came within 60 seconds of the start with no message; a keepalive timeout, a
+connection reset or a broken pipe is reconnected.
 
 ### Session Logging
 
@@ -3377,6 +3399,8 @@ You can also select several connections in the sidebar and use **Create Cluster*
 - **Close All Ungrouped** closes everything *except* your open clusters
 - The tab switcher (**Ctrl+%**) shows the cluster name beside each member
 
+**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
+
 **Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters… (**Disconnect all cluster sessions**).
 
 Notes on the automatic group:
@@ -3480,6 +3504,8 @@ Broadcast is a property of a **split layout**, not of a cluster: whichever termi
 3. Press **Ctrl+Shift+B**, or click the broadcast toggle in the header bar
 4. Type — the keystrokes are mirrored into the other terminal panels of that split
 5. Press **Ctrl+Shift+B** again to stop
+
+**Leaving a panel out.** While broadcast is on, each terminal panel shows a **Broadcast** check box at the right of its header. Untick it to take that panel out of the broadcast: it stays on screen, receives nothing typed in the other panels, and what you type in it stays in it. Tick it again to bring the panel back. From the keyboard, the panel menu (**Shift+F10** or the **Menu** key in the panel) has the same **Broadcast** item. The choice belongs to the session, so it survives adding or closing other panels and switching broadcast off and on; a session that leaves the split (closed, removed from the split, moved to a window or into another split) is forgotten, and comes back included if it is placed in the split again. If the connection-name headers are switched off in Settings, the headers of terminal panels are shown for as long as broadcast is on so that the check boxes are reachable. Embedded RDP, VNC and SPICE panels get no check box.
 
 The toggle only becomes available when the active tab's split holds at least two terminal sessions and a terminal panel has focus. Mirroring never targets an embedded RDP, VNC or SPICE panel — those are not terminals and receive their own input only.
 
@@ -3658,6 +3684,26 @@ Wake sleeping machines before connecting by sending WoL magic packets.
 **Standalone WoL dialog:** Menu → Tools → **Wake On LAN...**
 
 All GUI sends use 3 retries at 500 ms intervals for reliability.
+
+### Network Scan
+
+Menu → Tools → **Network Scan…** (also in the command palette) finds the hosts of an IPv4 range that answer on the ports RustConn connects to: SSH (22), RDP (3389), VNC (5900), Telnet (23), plus HTTP (80) and HTTPS (443).
+
+Enter the range in any of these forms and press **Scan** (or Enter):
+
+| Form | Example |
+|------|---------|
+| Network with a prefix length | `192.168.1.0/24` |
+| Network with a netmask | `192.168.1.0/255.255.255.0` |
+| First and last address | `192.168.1.10-192.168.1.50` |
+| First address and last octet | `192.168.1.10-50` |
+| Single address | `192.168.1.10` |
+
+The field is pre-filled with a `/24` around this machine's own address. For a network, the network and broadcast addresses are skipped. A scan covers at most 65,536 addresses (a `/16`).
+
+Hosts appear as they answer, sorted by address, with their open ports. Each host has one button per protocol found — **SSH**, **RDP**, **VNC**, **Telnet** — that adds a connection named after the address at the top level of the connection list; rename it and fill in the user name from there. **Stop** ends a running scan and keeps what was found.
+
+The scan is a plain TCP connection attempt, so it needs no special permission. A host counts as present when a scanned port accepts or actively refuses the connection; a host whose firewall silently drops all six ports is not listed. Scan only networks you own or are authorised to scan: many networks treat an unrequested scan as an attack.
 
 ### Connection History
 
@@ -3883,7 +3929,7 @@ set -g allow-passthrough on     # let wrapped sequences through untouched
 
 **Window group:** Remember size (restore window geometry on startup), Show connection in window title (appends the active connection name so time-tracking tools can attribute usage; off by default for privacy), Show hierarchy path in header (shows the active connection's group path — e.g. `AWS Test Lab / Prod` — as a subtitle under the connection name in the content header, GNOME-breadcrumb style; off by default, updates when the active tab changes, and is blank for a connection that sits in the root with no parent group; independent of the window title, so time-tracking tools are unaffected), Show connection name in split panes (compact per-pane header; on by default for new installations, while an existing configuration keeps its stored value — also serves as the pane drag handle).
 
-**Connections group:** Open a new session on every double-click — off by default, so a double-click on a connection that is already running focuses that session instead of duplicating it (hold Shift or Ctrl, or use right-click → Open new session, to force a second one). Turn it on if you routinely keep several concurrent sessions on the same host: every double-click then starts another session, and the modifier is no longer needed.
+**Connections group:** Open a new session on every double-click — off by default, so a double-click on a connection that is already running focuses that session instead of duplicating it (hold Shift or Ctrl, or use right-click → Open new session, to force a second one). Turn it on if you routinely keep several concurrent sessions on the same host: every double-click then starts another session, and the modifier is no longer needed. On a running connection the first item of the sidebar context menu reads **Show Session** instead of **Connect**: it brings up the newest live session (or shows the "Already running in an external window" hint), whatever this setting says, and **Open new session** in the same menu starts another one.
 
 **Startup group:** On startup — Do nothing, Local Shell, or connect to a specific saved connection.
 
@@ -5021,7 +5067,7 @@ markers appear; nothing else changes.
 | Ctrl+Shift+H | Split Horizontal |
 | Ctrl+Shift+S | Split Vertical |
 | Ctrl+Shift+X | Close Pane |
-| Ctrl+Shift+R | Pop Pane to Tab (keeps the session, returns it to its own tab) |
+| Ctrl+Shift+R | Move to Own Tab (keeps the session, returns it to its own tab) |
 | Ctrl+Shift+J | Unsplit (return every session to its own tab) |
 | Ctrl+Shift+K | Split with Other Tabs… (pick tabs to bring into a split with the active tab) |
 | Ctrl+` | Focus Next Pane |

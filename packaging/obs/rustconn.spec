@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.25.0
+Version:        0.25.1
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,24 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sun Nov 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.1-0
+- Version bump to 0.25.1
+- Added: closing a split tab asks to remove the split or close its sessions
+- Added: per-panel Broadcast check box in a split (PR #432, roms2000)
+- Added: R/Q/Enter twice on an ended session (PR #431, roms2000)
+- Added: Reconnect in the context menu of an ended terminal
+- Added: Network Scan (PR #427), cluster in its own window (PR #428, roms2000)
+- Added: Remove Split in the palette (PR #426), Enter opens a search result (PR #425)
+- Fixed: the Session disconnected banner stays in a split pane
+- Fixed: SSH sessions dropped by a keepalive timeout reconnect on their own
+- Fixed: command palette entries that name a window action run again
+- Fixed: a dragged sidebar item drops where the line shows (PR #424, roms2000)
+- Fixed: closing a disconnected session stops its auto-reconnect probe
+- Fixed: closing a split guest session closes it; sidebar split actions act again
+- Changed: Close Tab… on a split tab; Move to Own Tab, Show Session, Disconnect
+- Documentation: closing a split tab in the User Guide
+- Dependencies: glib, gio, cairo-rs, pango-sys, gdk-pixbuf 0.22.11, bumpalo 3.20.4
+
 * Sat Nov 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.0-0
 - Version bump to 0.25.0
 - Added: Split with Other Tabs (#423), Monitors for an external RDP window

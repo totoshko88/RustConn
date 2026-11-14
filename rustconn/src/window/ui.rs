@@ -291,6 +291,7 @@ pub fn create_app_menu() -> gio::Menu {
         Some("win.password-generator"),
     );
     tools_section_sep.append(Some(&i18n("Wake On LAN…")), Some("win.wake-on-lan-dialog"));
+    tools_section_sep.append(Some(&i18n("Network Scan…")), Some("win.network-scan"));
     tools_section_sep.append(Some(&i18n("SSH Tunnels…")), Some("win.ssh-tunnels"));
     tools_submenu.append_section(None, &tools_section_sep);
 

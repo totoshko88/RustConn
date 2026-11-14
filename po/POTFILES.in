@@ -133,6 +133,7 @@ rustconn/src/dialogs/tunnel_builder/step_connection.rs
 rustconn/src/dialogs/tunnel_builder/step_forwards.rs
 rustconn/src/dialogs/tunnel_builder/step_review.rs
 rustconn/src/dialogs/wol.rs
+rustconn/src/dialogs/network_scan.rs
 rustconn/src/dialogs/workspace.rs
 rustconn/src/sidebar/mod.rs
 rustconn/src/sidebar/view.rs
@@ -149,12 +150,14 @@ rustconn/src/terminal/playback.rs
 rustconn/src/terminal/recording.rs
 rustconn/src/terminal/safe_paste.rs
 rustconn/src/terminal/session_lifecycle.rs
+rustconn/src/terminal/split_close.rs
 rustconn/src/terminal/split_title.rs
 rustconn/src/terminal/tab_lifecycle.rs
 rustconn/src/terminal/tab_menu.rs
 rustconn/src/validation.rs
 rustconn/src/vault_ops.rs
 rustconn/src/detached_window.rs
+rustconn/src/session_group_window.rs
 rustconn/src/automation.rs
 rustconn/src/monitor_mode.rs
 rustconn/src/monitoring.rs

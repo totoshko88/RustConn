@@ -395,7 +395,9 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
                     }
 
                     // Then reorder within the group
-                    if let Err(e) = state_mut.reorder_connection(item_uuid, target_uuid) {
+                    if let Err(e) =
+                        state_mut.reorder_connection(item_uuid, target_uuid, position == "before")
+                    {
                         tracing::error!(%e, "Failed to reorder connection");
                         return;
                     }
@@ -536,7 +538,7 @@ fn move_dropped_group(
     if target_is_group
         && !nest_into_target
         && let Ok(mut state_mut) = state.try_borrow_mut()
-        && let Err(e) = state_mut.reorder_group(group_id, target_uuid)
+        && let Err(e) = state_mut.reorder_group(group_id, target_uuid, position == "before")
     {
         // Non-fatal: the folder already sits at the requested level, only the
         // order among its siblings stays as it was.

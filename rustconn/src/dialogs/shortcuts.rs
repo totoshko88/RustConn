@@ -218,7 +218,7 @@ fn i18n_markers() -> Vec<String> {
         i18n("Split Horizontal"),
         i18n("Split Vertical"),
         i18n("Close Pane"),
-        i18n("Remove from Split"),
+        i18n("Move to Own Tab"),
         i18n("Remove Split"),
         i18n("Split with Other Tabs"),
         i18n("Focus Next Pane"),

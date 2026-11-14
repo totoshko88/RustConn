@@ -88,6 +88,7 @@ mod portal_check;
 mod renderer;
 pub mod script_runner;
 pub mod session;
+pub mod session_group_window;
 mod sidebar;
 mod sidebar_types;
 mod sidebar_ui;

@@ -40,12 +40,16 @@ mod recording;
 pub mod safe_paste;
 mod selection_hold;
 mod session_lifecycle;
+mod split_close;
 mod split_title;
 pub mod tab_container;
 mod tab_lifecycle;
 mod tab_menu;
+mod tab_transfer;
 pub mod termprops;
 mod types;
+
+pub(crate) use tab_transfer::return_transferred_tabs;
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -275,6 +279,14 @@ pub struct TerminalNotebook {
     /// owner. Returns `None` for a tab with no split, so the caller falls back
     /// to the owner session.
     focused_session_provider: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<Uuid>>>>>,
+    /// Makes the split pane that shows a session the focused pane of its split,
+    /// and reports whether the session is shown in a pane at all.
+    ///
+    /// `win.close-pane` closes the *focused* pane, and the bridge tracks focus
+    /// from pointer clicks, not keyboard focus. Q on an ended session in a split
+    /// sets it here first, so the pane that got the key is the one closed.
+    /// Wired by the window like [`Self::split_pane_box_provider`].
+    split_pane_focuser: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> bool>>>>,
     /// Toggles a tab's membership in the cross-tab broadcast group (issue #329).
     ///
     /// Wired by the window; the tab context menu calls it to activate the
@@ -302,8 +314,24 @@ pub struct TerminalNotebook {
     /// Callback fired when terminal focus changes (`true` = focus entered the
     /// VTE, `false` = focus left). Drives focus-based accelerator suspend (#197).
     on_terminal_focus: Rc<RefCell<Option<Box<dyn Fn(bool)>>>>,
-    /// Sessions that already have a reconnect banner (prevents duplicates)
+    /// Sessions that should have a reconnect banner (prevents duplicates).
+    ///
+    /// The mark outlives the banner widget: moving a session between a tab, a
+    /// split pane and a window rebuilds the box around its terminal and drops
+    /// the banner with it. [`Self::reconcile_reconnect_banner`] runs whenever
+    /// the terminal is mapped again and puts the banner back for a marked,
+    /// disconnected session.
     reconnect_shown: Rc<RefCell<HashSet<Uuid>>>,
+    /// The cloud login offered on a session's banner, kept so a banner shown
+    /// again after a move gets its "Log In to …" button back.
+    cloud_login_offers: Rc<RefCell<HashMap<Uuid, rustconn_core::protocol::CloudLogin>>>,
+    /// Each terminal's Reconnect entry in its right-click menu, offered only
+    /// while the session has ended. Absent in right-click-pastes mode.
+    vte_reconnect_items: Rc<RefCell<HashMap<Uuid, config::VteReconnectItem>>>,
+    /// Runs when a session's terminal is mapped, which every move between a
+    /// tab, a split pane and a window does. Wired by the window to
+    /// [`Self::reconcile_reconnect_banner`] through a `Weak` notebook handle.
+    on_terminal_mapped: Rc<RefCell<Option<Rc<dyn Fn(Uuid)>>>>,
     /// Sessions whose connection has ended while their tab is still open.
     ///
     /// A tab is kept after the child exits (unless `close_on_clean_exit`) so the
@@ -420,6 +448,10 @@ pub struct TerminalNotebook {
     /// session_id at launch time. Instead we record connection_id →
     /// [`PendingCluster`] here and resolve it the moment a tab is created.
     cluster_pending: Rc<RefCell<HashMap<Uuid, PendingCluster>>>,
+    /// Called with `(cluster_id, cluster_name, session_id)` when the tab of a
+    /// cluster member opened "in a new window" appears. The window layer moves
+    /// that tab into the cluster's own window.
+    on_cluster_window_tab: Rc<RefCell<Option<Box<dyn Fn(Uuid, &str, Uuid)>>>>,
     /// Active recording sessions (tracked by session_id)
     active_recordings: Rc<RefCell<HashSet<Uuid>>>,
     /// Recording paths and start times: session_id → (data_path, timing_path, connection_name, start_time)
@@ -461,6 +493,14 @@ pub struct TerminalNotebook {
     /// therefore have no `TabPage`. Session data stays alive, exactly as for
     /// `parked_in_split`; the `close-page` handler skips teardown for them.
     detached: Rc<RefCell<HashSet<Uuid>>>,
+    /// Who asked for the next close of a session's tab. A missing entry means
+    /// the user did (tab close button, middle-click); programmatic callers
+    /// mark the session first. Consumed by the `close-page` handler.
+    close_intents: Rc<RefCell<HashMap<Uuid, detach::CloseIntent>>>,
+    /// Asks the window layer which sessions a tab's split shows, owner first.
+    split_members: split_close::SplitMembersProvider,
+    /// Split tabs whose close is waiting for the user's answer.
+    split_close_pending: Rc<RefCell<HashSet<Uuid>>>,
     /// Invoked by [`Self::switch_to_tab`] when the target session is detached,
     /// so the window layer can present its window instead of selecting a tab.
     on_focus_detached: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
@@ -595,6 +635,7 @@ impl TerminalNotebook {
             on_cloud_login: Rc::new(RefCell::new(None)),
             split_pane_box_provider: Rc::new(RefCell::new(None)),
             focused_session_provider: Rc::new(RefCell::new(None)),
+            split_pane_focuser: Rc::new(RefCell::new(None)),
             on_tab_broadcast_toggle: Rc::new(RefCell::new(None)),
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),
@@ -604,6 +645,9 @@ impl TerminalNotebook {
             focused_hook: Rc::new(std::cell::Cell::new(None)),
             on_terminal_focus: Rc::new(RefCell::new(None)),
             reconnect_shown: Rc::new(RefCell::new(HashSet::new())),
+            cloud_login_offers: Rc::new(RefCell::new(HashMap::new())),
+            vte_reconnect_items: Rc::new(RefCell::new(HashMap::new())),
+            on_terminal_mapped: Rc::new(RefCell::new(None)),
             disconnected_sessions: Rc::new(RefCell::new(HashSet::new())),
             keep_history_on_reconnect: Rc::new(std::cell::Cell::new(true)),
             max_scrollback_on_reconnect: Rc::new(std::cell::Cell::new(None)),
@@ -622,6 +666,7 @@ impl TerminalNotebook {
             cluster_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_to_cluster: Rc::new(RefCell::new(HashMap::new())),
             cluster_pending: Rc::new(RefCell::new(HashMap::new())),
+            on_cluster_window_tab: Rc::new(RefCell::new(None)),
             recording_paths: RefCell::new(HashMap::new()),
             session_highlight_rules: Rc::new(RefCell::new(HashMap::new())),
             highlight_overlays: Rc::new(RefCell::new(HashMap::new())),
@@ -635,6 +680,9 @@ impl TerminalNotebook {
             tab_containers: Rc::new(RefCell::new(HashMap::new())),
             parked_in_split: Rc::new(RefCell::new(HashSet::new())),
             detached: Rc::new(RefCell::new(HashSet::new())),
+            close_intents: Rc::new(RefCell::new(HashMap::new())),
+            split_members: Rc::new(RefCell::new(None)),
+            split_close_pending: Rc::new(RefCell::new(HashSet::new())),
             on_focus_detached: Rc::new(RefCell::new(None)),
             on_detach_request: Rc::new(RefCell::new(None)),
             on_session_ended: Rc::new(RefCell::new(None)),
@@ -678,6 +726,10 @@ impl TerminalNotebook {
         let child_exited_on_close = Rc::clone(&self.child_exited_handlers);
         let show_welcome_on_close = self.show_welcome.clone();
         let disconnected_on_close = Rc::clone(&self.disconnected_sessions);
+        let reconnect_shown_on_close = Rc::clone(&self.reconnect_shown);
+        let cloud_login_offers_on_close = Rc::clone(&self.cloud_login_offers);
+        let vte_reconnect_items_on_close = Rc::clone(&self.vte_reconnect_items);
+        let poll_tokens_on_close = Rc::clone(&self.poll_cancel_tokens);
         let cursor_row_base_on_close = Rc::clone(&self.cursor_row_base);
         let mark_registries_on_close = Rc::clone(&self.mark_registries);
         let failed_markers_on_close = Rc::clone(&self.failed_markers);
@@ -688,6 +740,7 @@ impl TerminalNotebook {
         let output_filters_on_close = Rc::clone(&self.output_filters);
         let commit_forwarded_on_close = Rc::clone(&self.commit_forwarded);
         let pty_size_timers_on_close = Rc::clone(&self.pty_size_timers);
+        let split_close_on_close = self.split_close_hooks();
 
         // Handle create-window signal - we must connect this to prevent the default
         // behavior which causes CRITICAL warnings. Returning None cancels the tearoff.
@@ -699,6 +752,15 @@ impl TerminalNotebook {
             // Return None to cancel the operation
             // The CRITICAL warning from libadwaita is unavoidable
             None
+        });
+
+        // A cluster window has a tab view of its own, and libadwaita lets a tab
+        // be dragged between any two: hand back a session tab dragged out of here.
+        let sessions_home = self.sessions.clone();
+        return_transferred_tabs(&self.tab_view, move |page| {
+            sessions_home
+                .try_borrow()
+                .is_ok_and(|sessions| sessions.values().any(|p| p == page))
         });
 
         // Handle close-page signal
@@ -715,6 +777,14 @@ impl TerminalNotebook {
                         (*id, conn_id)
                     })
                     .unwrap_or((Uuid::nil(), None))
+            };
+
+            // Consume the close intent first, so no mark outlives this close
+            // whichever branch below handles it.
+            let intent = if session_id.is_nil() {
+                detach::CloseIntent::Programmatic
+            } else {
+                split_close_on_close.take_intent(session_id)
             };
 
             // Parked (Option B): the tab is being removed because the session
@@ -738,6 +808,20 @@ impl TerminalNotebook {
                     Self::append_welcome_page(&tab_view);
                 }
                 return glib::Propagation::Stop;
+            }
+
+            // A user's close of a tab hosting a split of two or more sessions
+            // is held until the user answers (item 11). The members are asked
+            // for only on that path and outside every map borrow above, so a
+            // programmatic close never touches the window's bridge map.
+            if intent == detach::CloseIntent::User {
+                let members = split_close_on_close.members(session_id);
+                if detach::split_close_decision(!members.is_empty(), members.len(), intent)
+                    == detach::SplitCloseDecision::Ask
+                {
+                    split_close_on_close.present_single(page, session_id, &members);
+                    return glib::Propagation::Stop;
+                }
             }
 
             if !session_id.is_nil() {
@@ -811,6 +895,20 @@ impl TerminalNotebook {
 
                 session_info.borrow_mut().remove(&session_id);
                 disconnected_on_close.borrow_mut().remove(&session_id);
+                // `close_tab` clears these two itself, but a tab closed from its
+                // own close button, or a session ended from a detached or
+                // cluster window through `close_session`, reaches only this
+                // handler: without it an auto-reconnect probe kept polling a
+                // session that no longer exists.
+                reconnect_shown_on_close.borrow_mut().remove(&session_id);
+                cloud_login_offers_on_close.borrow_mut().remove(&session_id);
+                vte_reconnect_items_on_close
+                    .borrow_mut()
+                    .remove(&session_id);
+                let poll_token = poll_tokens_on_close.borrow_mut().remove(&session_id);
+                if let Some(cancel) = poll_token {
+                    cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+                }
                 cursor_row_base_on_close.borrow_mut().remove(&session_id);
                 mark_registries_on_close.borrow_mut().remove(&session_id);
                 failed_markers_on_close.borrow_mut().remove(&session_id);
@@ -2055,20 +2153,33 @@ impl TerminalNotebook {
     /// Closes a terminal tab by session ID
     pub fn close_tab(&self, session_id: Uuid) {
         self.reconnect_shown.borrow_mut().remove(&session_id);
+        self.cloud_login_offers.borrow_mut().remove(&session_id);
         self.disconnected_sessions.borrow_mut().remove(&session_id);
         // Cancel any background polling (auto-reconnect, host check) for this session
         self.cancel_poll(session_id);
-        // A detached session has no tab page to close, so route it through the
-        // tabless path — otherwise "close this session" from the session
-        // manager or a clean exit with close-on-clean-exit would silently do
-        // nothing and leave the detached window behind (issue #236).
-        if self.is_detached(session_id) {
-            self.close_session(session_id);
-            return;
-        }
+        // A parked session — a split guest or a detached window — has no tab
+        // page to close, so it goes through the tabless path. Checking only the
+        // detached mark left a split guest running with no pane and no tab when
+        // the sidebar's Close, the session manager, a script or a clean exit
+        // closed it by id (issue #236 for the detached case). The split pane is
+        // taken down by the `on_split_cleanup` hook the close runs.
         let page = self.sessions.borrow().get(&session_id).cloned();
-        if let Some(page) = page {
-            self.tab_view.close_page(&page);
+        let route = detach::close_route(
+            self.parked_in_split.borrow().contains(&session_id),
+            self.is_detached(session_id),
+            page.is_some(),
+        );
+        match (route, page) {
+            (detach::CloseRoute::Parked, _) => self.close_session(session_id),
+            (detach::CloseRoute::Page, Some(page)) => {
+                // Closed on the application's behalf (script, cluster, clean
+                // exit, reconnect, sidebar Disconnect): never ask.
+                self.mark_programmatic_close(session_id);
+                self.tab_view.close_page(&page);
+            }
+            (detach::CloseRoute::Page | detach::CloseRoute::Unknown, _) => {
+                tracing::debug!(session = %session_id, "close_tab: no tab or parked session");
+            }
         }
     }
 
@@ -2475,7 +2586,9 @@ impl TerminalNotebook {
     /// no page either; it resolves through the wired split-pane box provider to
     /// its own pane container, so a reconnect banner attaches to that pane
     /// rather than to the split owner's (issue #328). Only a session displayed
-    /// nowhere resolves to `None`.
+    /// nowhere resolves to `None`. A split owner resolves to its tab's box,
+    /// which holds the whole split; the reconnect banner looks up the owner's
+    /// own pane first instead (`reconnect_banner_box`).
     ///
     /// Used by everything that decorates a session in place (reconnect banner,
     /// monitoring bar) so the decoration follows the session between windows
@@ -3817,15 +3930,46 @@ impl TerminalNotebook {
     ///
     /// When the tab for `connection_id` is eventually created — synchronously,
     /// or after an async port check — it is registered as part of `cluster_id`
-    /// and labelled with the cluster's `group` name.
-    pub fn mark_cluster_pending(&self, cluster_id: Uuid, group: &str, connection_id: Uuid) {
+    /// and labelled with the cluster's `group` name. With `in_window` the tab is
+    /// then handed to the callback set by [`Self::set_on_cluster_window_tab`].
+    pub fn mark_cluster_pending(
+        &self,
+        cluster_id: Uuid,
+        group: &str,
+        connection_id: Uuid,
+        in_window: bool,
+    ) {
         self.cluster_pending.borrow_mut().insert(
             connection_id,
             PendingCluster {
                 cluster_id,
                 group: group.to_owned(),
+                in_window,
             },
         );
+    }
+
+    /// Drops the pending cluster registration of a connection that failed to
+    /// start, so its next, unrelated connect does not join the cluster — or,
+    /// for a cluster opened in its own window, move into that window.
+    pub fn forget_cluster_pending(&self, connection_id: Uuid) {
+        let forgotten = self.cluster_pending.borrow_mut().remove(&connection_id);
+        if let Some(pending) = forgotten {
+            tracing::debug!(
+                connection = %connection_id,
+                cluster = %pending.cluster_id,
+                "cluster member failed to start; pending registration dropped"
+            );
+        }
+    }
+
+    /// Sets the callback that receives the tabs of a cluster opened in its own
+    /// window, as `(cluster_id, cluster_name, session_id)`.
+    pub fn set_on_cluster_window_tab<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, &str, Uuid) + 'static,
+    {
+        *self.on_cluster_window_tab.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Resolves a pending cluster registration for a freshly created tab.
@@ -3846,7 +3990,15 @@ impl TerminalNotebook {
             return;
         };
         self.register_cluster_terminal(pending.cluster_id, &pending.group, session_id);
-        self.set_tab_group(session_id, &pending.group);
+        if pending.in_window {
+            // No tab group: the cluster's own window is the grouping, and a
+            // `[cluster]` prefix on every tab of it would only repeat its title.
+            if let Some(ref callback) = *self.on_cluster_window_tab.borrow() {
+                callback(pending.cluster_id, &pending.group, session_id);
+            }
+        } else {
+            self.set_tab_group(session_id, &pending.group);
+        }
     }
 
     /// Gets all session IDs for a cluster

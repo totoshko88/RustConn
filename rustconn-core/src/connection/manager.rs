@@ -1961,6 +1961,33 @@ impl ConnectionManager {
     /// Returns an error if either connection doesn't exist, they're in different
     /// groups, or persistence fails.
     pub fn reorder_connection(&mut self, connection_id: Uuid, target_id: Uuid) -> ConfigResult<()> {
+        self.reorder_connection_relative(connection_id, target_id, false)
+    }
+
+    /// Reorders a connection to be positioned immediately before another one.
+    ///
+    /// The counterpart of [`Self::reorder_connection`], for a drop on the upper
+    /// half of a row.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if either connection doesn't exist, they're in different
+    /// groups, or persistence fails.
+    pub fn reorder_connection_before(
+        &mut self,
+        connection_id: Uuid,
+        target_id: Uuid,
+    ) -> ConfigResult<()> {
+        self.reorder_connection_relative(connection_id, target_id, true)
+    }
+
+    /// Places `connection_id` next to `target_id`, before it or after it.
+    fn reorder_connection_relative(
+        &mut self,
+        connection_id: Uuid,
+        target_id: Uuid,
+        before: bool,
+    ) -> ConfigResult<()> {
         // Verify both connections exist
         let source_group = self
             .connections
@@ -2001,11 +2028,11 @@ impl ConnectionManager {
 
         group_connections.sort_by_key(|(_, order)| *order);
 
-        // Find the position to insert (after target)
+        // Find the position to insert (before or after target)
         let insert_pos = group_connections
             .iter()
             .position(|(id, _)| *id == target_id)
-            .map_or(group_connections.len(), |p| p + 1);
+            .map_or(group_connections.len(), |p| p + usize::from(!before));
 
         // Insert the source connection at the new position
         group_connections.insert(insert_pos, (connection_id, target_sort_order));
@@ -2047,6 +2074,29 @@ impl ConnectionManager {
     /// Returns an error if either group doesn't exist, they have different
     /// parents, or persistence fails.
     pub fn reorder_group(&mut self, group_id: Uuid, target_id: Uuid) -> ConfigResult<()> {
+        self.reorder_group_relative(group_id, target_id, false)
+    }
+
+    /// Reorders a group to be positioned immediately before another group.
+    ///
+    /// The counterpart of [`Self::reorder_group`], for a drop on the top edge of
+    /// a folder row.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if either group doesn't exist, they have different
+    /// parents, or persistence fails.
+    pub fn reorder_group_before(&mut self, group_id: Uuid, target_id: Uuid) -> ConfigResult<()> {
+        self.reorder_group_relative(group_id, target_id, true)
+    }
+
+    /// Places `group_id` next to `target_id`, before it or after it.
+    fn reorder_group_relative(
+        &mut self,
+        group_id: Uuid,
+        target_id: Uuid,
+        before: bool,
+    ) -> ConfigResult<()> {
         // Verify both groups exist
         let source_parent = self
             .groups
@@ -2087,11 +2137,11 @@ impl ConnectionManager {
 
         sibling_groups.sort_by_key(|(_, order)| *order);
 
-        // Find the position to insert (after target)
+        // Find the position to insert (before or after target)
         let insert_pos = sibling_groups
             .iter()
             .position(|(id, _)| *id == target_id)
-            .map_or(sibling_groups.len(), |p| p + 1);
+            .map_or(sibling_groups.len(), |p| p + usize::from(!before));
 
         // Insert the source group at the new position
         sibling_groups.insert(insert_pos, (group_id, target_sort_order));

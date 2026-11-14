@@ -706,22 +706,39 @@ impl AppState {
             .map_err(|e| format!("Failed to sort all: {e}"))
     }
 
-    /// Reorders a connection to be positioned after another connection
+    /// Reorders a connection to sit next to another one: immediately before it
+    /// when `before` is set, immediately after it otherwise.
     pub fn reorder_connection(
         &mut self,
         connection_id: Uuid,
         target_id: Uuid,
+        before: bool,
     ) -> Result<(), String> {
-        self.connection_manager
-            .reorder_connection(connection_id, target_id)
-            .map_err(|e| format!("Failed to reorder connection: {e}"))
+        let result = if before {
+            self.connection_manager
+                .reorder_connection_before(connection_id, target_id)
+        } else {
+            self.connection_manager
+                .reorder_connection(connection_id, target_id)
+        };
+        result.map_err(|e| format!("Failed to reorder connection: {e}"))
     }
 
-    /// Reorders a group to be positioned after another group
-    pub fn reorder_group(&mut self, group_id: Uuid, target_id: Uuid) -> Result<(), String> {
-        self.connection_manager
-            .reorder_group(group_id, target_id)
-            .map_err(|e| format!("Failed to reorder group: {e}"))
+    /// Reorders a group to sit next to another one: immediately before it when
+    /// `before` is set, immediately after it otherwise.
+    pub fn reorder_group(
+        &mut self,
+        group_id: Uuid,
+        target_id: Uuid,
+        before: bool,
+    ) -> Result<(), String> {
+        let result = if before {
+            self.connection_manager
+                .reorder_group_before(group_id, target_id)
+        } else {
+            self.connection_manager.reorder_group(group_id, target_id)
+        };
+        result.map_err(|e| format!("Failed to reorder group: {e}"))
     }
 
     /// Updates the `last_connected` timestamp for a connection

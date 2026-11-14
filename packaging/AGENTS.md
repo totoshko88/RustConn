@@ -35,6 +35,22 @@ copy of `cargo-sources.json` are listed as maintainer steps; read-only checks
 (`scripts/bump-version.sh X.Y.Z` without `--write`, `scripts/sync-cargo-sources.sh
 --check`, `release.sh --dry-run`) are fine.
 
+The Flathub version line has its own command, which the maintainer runs and an
+agent hands over verbatim in the release report:
+
+```bash
+scripts/flathub-tag.sh X.Y.Z             # set `tag: vX.Y.Z`, print the diff
+scripts/flathub-tag.sh X.Y.Z --dry-run   # diff only, writes nothing
+```
+
+It is the fix `release.sh` prints under the Flathub `[warn]` of its packaging
+gate. It edits only that one line (plus a `commit:` pin in the same source, and
+only from a local tag; it never invents a hash), refuses a version that differs
+from `Cargo.toml` unless `--force`, and checks its result against release.sh's
+own pattern. No git, no network. An agent does not run it against
+`packaging/flathub/`, not even to "just fix the gate"; its test,
+`scripts/test-flathub-tag.sh`, works on a temporary copy and is safe to run.
+
 ## `PKG_FILES` in `scripts/release.sh` is canonical
 
 That array — with its parallel `PKG_PATS` — is the single source of truth for which

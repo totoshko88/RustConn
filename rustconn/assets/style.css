@@ -78,6 +78,16 @@
     border-top-right-radius: 4px;
 }
 
+/* The Broadcast check box in a pane header: no taller than the header. */
+.split-pane-header checkbutton {
+    min-height: 0;
+    padding: 0;
+}
+.split-pane-header checkbutton check {
+    min-height: 12px;
+    min-width: 12px;
+}
+
 .split-panel-color-0 > .split-pane-header { background-color: alpha(#3584e4, 0.15); }
 .split-panel-color-1 > .split-pane-header { background-color: alpha(#26a269, 0.15); }
 .split-panel-color-2 > .split-pane-header { background-color: alpha(#e66100, 0.15); }

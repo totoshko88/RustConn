@@ -118,8 +118,8 @@ pub struct ConnectionSidebar {
     recording_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     /// Callback to check whether a connection has MORE THAN ONE live session.
     /// Takes a connection ID string and returns true when ≥2 sessions are
-    /// open for it, so the per-session sidebar controls (Close / Remove from
-    /// Split / Move to New Window) can be hidden as ambiguous (issue #374).
+    /// open for it, so the per-session sidebar controls (Disconnect / Move to
+    /// Own Tab / Move to New Window) can be hidden as ambiguous (issue #374).
     multi_session_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     /// Smart Folders sidebar section (dynamic tag-based grouping)
     smart_folders_sidebar: SmartFoldersSidebar,
@@ -1559,6 +1559,47 @@ impl ConnectionSidebar {
             };
         }
         None
+    }
+
+    /// Opens the connection the search results point at: the connection with
+    /// `preferred_id` when the list still holds it, otherwise the first
+    /// connection in the list.
+    ///
+    /// Called when Enter is pressed in the search entry, so a search can be
+    /// finished from the keyboard without moving focus into the list. The
+    /// caller passes the connection that was selected *before* it re-filtered
+    /// the list, because rebuilding the store resets the selection to the first
+    /// row. It goes through the list view's own `activate` signal, which is
+    /// what a double-click or Enter on a row emits, so every route opens a
+    /// connection the same way. Returns `false` when the list holds no
+    /// connection.
+    pub fn activate_search_result(&self, preferred_id: Option<&str>) -> bool {
+        let rows: Vec<Option<String>> = {
+            let selection = self.selection_model.borrow();
+            let Some(model) = selection.model() else {
+                return false;
+            };
+            (0..model.n_items())
+                .map(|position| {
+                    let item = model.item(position)?;
+                    let conn_item = if let Some(row) = item.downcast_ref::<TreeListRow>() {
+                        row.item().and_downcast::<ConnectionItem>()
+                    } else {
+                        item.downcast::<ConnectionItem>().ok()
+                    };
+                    conn_item.filter(|c| !c.is_group()).map(|c| c.id())
+                })
+                .collect()
+        };
+
+        let Some(position) = search::pick_search_result(&rows, preferred_id) else {
+            tracing::debug!("search activation: no connection in the result list");
+            return false;
+        };
+        self.list_view
+            .scroll_to(position, gtk4::ListScrollFlags::SELECT, None);
+        self.list_view.emit_by_name::<()>("activate", &[&position]);
+        true
     }
 
     /// Resolves the row under (`x`, `y`) in `list_view` coordinates,
