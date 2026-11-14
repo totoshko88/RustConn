@@ -133,6 +133,7 @@ rustconn/src/dialogs/tunnel_builder/step_connection.rs
 rustconn/src/dialogs/tunnel_builder/step_forwards.rs
 rustconn/src/dialogs/tunnel_builder/step_review.rs
 rustconn/src/dialogs/wol.rs
+rustconn/src/dialogs/network_scan.rs
 rustconn/src/dialogs/workspace.rs
 rustconn/src/sidebar/mod.rs
 rustconn/src/sidebar/view.rs

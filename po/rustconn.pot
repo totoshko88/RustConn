@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 16:54+0200\n"
+"POT-Creation-Date: 2026-11-14 17:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -214,21 +214,21 @@ msgstr ""
 msgid "Move to Main Window"
 msgstr ""
 
-#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:340
+#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:341
 msgid "Settings…"
 msgstr ""
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:358
+#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:359
 msgid "Keyboard Shortcuts…"
 msgstr ""
 
 #: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
-#: rustconn/src/window/ui.rs:359
+#: rustconn/src/window/ui.rs:360
 msgid "Help"
 msgstr ""
 
 #: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
-#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
+#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:361
 msgid "About RustConn"
 msgstr ""
 
@@ -4635,7 +4635,8 @@ msgid "Copy"
 msgstr ""
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
-#: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
+#: rustconn/src/dialogs/key_setup.rs:628
+#: rustconn/src/dialogs/network_scan.rs:253 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -6287,6 +6288,92 @@ msgstr ""
 
 #: rustconn/src/dialogs/mod.rs:52
 msgid "Only in full screen"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
 msgstr ""
 
 #: rustconn/src/dialogs/password.rs:58
@@ -9233,7 +9320,7 @@ msgid "View"
 msgstr ""
 
 #: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:338
-#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:361
+#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:362
 msgid "Quit"
 msgstr ""
 
@@ -11590,7 +11677,7 @@ msgstr ""
 msgid "Fit to screen"
 msgstr ""
 
-#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:352
+#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:353
 msgid "Fullscreen"
 msgstr ""
 
@@ -12075,7 +12162,7 @@ msgstr ""
 msgid "Manage Snippets"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:312
+#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:313
 msgid "Tools"
 msgstr ""
 
@@ -13584,6 +13671,14 @@ msgstr ""
 msgid "Global variables could not be saved to disk."
 msgstr ""
 
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr ""
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr ""
+
 #: rustconn/src/window/key_setup.rs:668
 msgid "The connection could not be read. Try again."
 msgstr ""
@@ -14852,58 +14947,62 @@ msgid "Wake On LAN…"
 msgstr ""
 
 #: rustconn/src/window/ui.rs:308
+msgid "Network Scan…"
+msgstr ""
+
+#: rustconn/src/window/ui.rs:309
 msgid "SSH Tunnels…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:317
+#: rustconn/src/window/ui.rs:318
 msgid "Active Sessions…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:318
+#: rustconn/src/window/ui.rs:319
 msgid "Connection History…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:319
+#: rustconn/src/window/ui.rs:320
 msgid "Statistics…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:320
+#: rustconn/src/window/ui.rs:321
 msgid "Recordings…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:321
+#: rustconn/src/window/ui.rs:322
 msgid "Session Logs…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:324
+#: rustconn/src/window/ui.rs:325
 msgid "Sessions"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:329
+#: rustconn/src/window/ui.rs:330
 msgid "Import Connections…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:330
+#: rustconn/src/window/ui.rs:331
 msgid "Export Connections…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:331
+#: rustconn/src/window/ui.rs:332
 msgid "Copy Connection"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:333
+#: rustconn/src/window/ui.rs:334
 msgid "Paste Connection"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:346
+#: rustconn/src/window/ui.rs:347
 msgid "Components…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:353
+#: rustconn/src/window/ui.rs:354
 msgid "Compact Interface"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:355
+#: rustconn/src/window/ui.rs:356
 msgid "Keyboard Passthrough"
 msgstr ""
 

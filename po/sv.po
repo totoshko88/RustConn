@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 16:54+0200\n"
+"POT-Creation-Date: 2026-11-14 17:11+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -227,21 +227,21 @@ msgstr "Session frånkopplad"
 msgid "Move to Main Window"
 msgstr "Flytta till huvudfönstret"
 
-#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:340
+#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:341
 msgid "Settings…"
 msgstr "Inställningar…"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:358
+#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:359
 msgid "Keyboard Shortcuts…"
 msgstr "Tangentbordsgenvägar…"
 
 #: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
-#: rustconn/src/window/ui.rs:359
+#: rustconn/src/window/ui.rs:360
 msgid "Help"
 msgstr "Hjälp"
 
 #: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
-#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
+#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:361
 msgid "About RustConn"
 msgstr "Om RustConn"
 
@@ -4824,7 +4824,8 @@ msgid "Copy"
 msgstr "Kopiera"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
-#: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
+#: rustconn/src/dialogs/key_setup.rs:628
+#: rustconn/src/dialogs/network_scan.rs:253 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -6576,6 +6577,99 @@ msgstr "På fjärrdatorn"
 #: rustconn/src/dialogs/mod.rs:52
 msgid "Only in full screen"
 msgstr "Endast i helskärm"
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr "Nätverksskanning"
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr "Skanna"
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr "Adresser"
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr ""
+"Ett nätverk med sin mask (192.168.1.0/24 eller 192.168.1.0/255.255.255.0) "
+"eller en första och en sista adress (192.168.1.10-192.168.1.50)."
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr "Nätverk eller adressintervall"
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr ""
+"Söker efter värdar som svarar på portarna för SSH, RDP, VNC, Telnet, HTTP "
+"och HTTPS."
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr "Skanningens förlopp"
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr "Hittade värdar"
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr "Ange ett nätverk eller ett adressintervall."
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr "”{}” är inte en IPv4-adress."
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr "”{}” är varken en prefixlängd (0 till 32) eller en nätmask."
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr "Den sista adressen får inte ligga före den första."
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr ""
+"Det här intervallet omfattar {} adresser; en skanning är begränsad till {}."
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr "Svarar, men ingen av de skannade portarna är öppen"
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr "Skannar {} till {}…"
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr "Skanningen kunde inte startas."
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr "Stoppad efter {} adresser — {} värdar hittade."
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr ""
+"Ingen värd svarade bland {} adresser. En värd vars brandvägg kastar alla "
+"skannade portar förblir osynlig."
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr "{} adresser skannade — {} värdar hittade."
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
+msgstr "Lägg till en {}-anslutning till den här värden"
 
 #: rustconn/src/dialogs/password.rs:58
 msgid "Authentication Required"
@@ -9687,7 +9781,7 @@ msgid "View"
 msgstr "Visa"
 
 #: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:338
-#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:361
+#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:362
 msgid "Quit"
 msgstr "Avsluta"
 
@@ -12175,7 +12269,7 @@ msgstr "Hastighet"
 msgid "Fit to screen"
 msgstr "Anpassa till skärmen"
 
-#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:352
+#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:353
 msgid "Fullscreen"
 msgstr "Helskärm"
 
@@ -12662,7 +12756,7 @@ msgstr "Hantera arbetsytor"
 msgid "Manage Snippets"
 msgstr "Hantera utdrag"
 
-#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:312
+#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:313
 msgid "Tools"
 msgstr "Verktyg"
 
@@ -14281,6 +14375,14 @@ msgstr ""
 msgid "Global variables could not be saved to disk."
 msgstr "Globala variabler kunde inte sparas till disken."
 
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr "Anslutningen ”{}” har lagts till"
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr "Det gick inte att lägga till anslutningen"
+
 #: rustconn/src/window/key_setup.rs:668
 msgid "The connection could not be read. Try again."
 msgstr "Anslutningen kunde inte läsas. Försök igen."
@@ -15644,58 +15746,62 @@ msgid "Wake On LAN…"
 msgstr "Wake On LAN…"
 
 #: rustconn/src/window/ui.rs:308
+msgid "Network Scan…"
+msgstr "Nätverksskanning…"
+
+#: rustconn/src/window/ui.rs:309
 msgid "SSH Tunnels…"
 msgstr "SSH-tunnlar…"
 
-#: rustconn/src/window/ui.rs:317
+#: rustconn/src/window/ui.rs:318
 msgid "Active Sessions…"
 msgstr "Aktiva sessioner…"
 
-#: rustconn/src/window/ui.rs:318
+#: rustconn/src/window/ui.rs:319
 msgid "Connection History…"
 msgstr "Anslutningshistorik…"
 
-#: rustconn/src/window/ui.rs:319
+#: rustconn/src/window/ui.rs:320
 msgid "Statistics…"
 msgstr "Statistik…"
 
-#: rustconn/src/window/ui.rs:320
+#: rustconn/src/window/ui.rs:321
 msgid "Recordings…"
 msgstr "Inspelningar…"
 
-#: rustconn/src/window/ui.rs:321
+#: rustconn/src/window/ui.rs:322
 msgid "Session Logs…"
 msgstr "Sessionsloggar…"
 
-#: rustconn/src/window/ui.rs:324
+#: rustconn/src/window/ui.rs:325
 msgid "Sessions"
 msgstr "Sessioner"
 
-#: rustconn/src/window/ui.rs:329
+#: rustconn/src/window/ui.rs:330
 msgid "Import Connections…"
 msgstr "Importera anslutningar…"
 
-#: rustconn/src/window/ui.rs:330
+#: rustconn/src/window/ui.rs:331
 msgid "Export Connections…"
 msgstr "Exportera anslutningar…"
 
-#: rustconn/src/window/ui.rs:331
+#: rustconn/src/window/ui.rs:332
 msgid "Copy Connection"
 msgstr "Kopiera anslutning"
 
-#: rustconn/src/window/ui.rs:333
+#: rustconn/src/window/ui.rs:334
 msgid "Paste Connection"
 msgstr "Klistra in anslutning"
 
-#: rustconn/src/window/ui.rs:346
+#: rustconn/src/window/ui.rs:347
 msgid "Components…"
 msgstr "komponenter…"
 
-#: rustconn/src/window/ui.rs:353
+#: rustconn/src/window/ui.rs:354
 msgid "Compact Interface"
 msgstr "Kompakt gränssnitt"
 
-#: rustconn/src/window/ui.rs:355
+#: rustconn/src/window/ui.rs:356
 msgid "Keyboard Passthrough"
 msgstr "Tangentbords-passthrough"
 

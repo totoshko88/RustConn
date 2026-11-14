@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 16:54+0200\n"
+"POT-Creation-Date: 2026-11-14 17:11+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Kazakh\n"
@@ -226,21 +226,21 @@ msgstr "Сеанс ажыратылды"
 msgid "Move to Main Window"
 msgstr "Негізгі терезеге жылжыту"
 
-#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:340
+#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:341
 msgid "Settings…"
 msgstr "Параметрлер…"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:358
+#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:359
 msgid "Keyboard Shortcuts…"
 msgstr "Пернетақта тіркесімдері…"
 
 #: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
-#: rustconn/src/window/ui.rs:359
+#: rustconn/src/window/ui.rs:360
 msgid "Help"
 msgstr "Анықтама"
 
 #: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
-#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
+#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:361
 msgid "About RustConn"
 msgstr "RustConn туралы"
 
@@ -4832,7 +4832,8 @@ msgid "Copy"
 msgstr "Көшіру"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
-#: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
+#: rustconn/src/dialogs/key_setup.rs:628
+#: rustconn/src/dialogs/network_scan.rs:253 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -6584,6 +6585,98 @@ msgstr "Қашықтағы компьютерде"
 #: rustconn/src/dialogs/mod.rs:52
 msgid "Only in full screen"
 msgstr "Тек толық экранда"
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr "Желіні сканерлеу"
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr "Сканерлеу"
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr "Адрестер"
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr ""
+"Маскасы бар желі (192.168.1.0/24 немесе 192.168.1.0/255.255.255.0) немесе "
+"бірінші және соңғы адрес (192.168.1.10-192.168.1.50)."
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr "Желі немесе адрестер ауқымы"
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr ""
+"SSH, RDP, VNC, Telnet, HTTP және HTTPS порттарында жауап беретін хосттарды "
+"іздейді."
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr "Сканерлеу барысы"
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr "Табылған хосттар"
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr "Желіні немесе адрестер ауқымын енгізіңіз."
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr "«{}» IPv4 адресі емес."
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr "«{}» префикс ұзындығы (0-ден 32-ге дейін) да, желі маскасы да емес."
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr "Соңғы адрес біріншісінен бұрын болмауы керек."
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr "Бұл ауқым {} адресті қамтиды; сканерлеу {} адреспен шектелген."
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr "Жауап береді, бірақ сканерленген порттардың ешқайсысы ашық емес"
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr "{} бастап {} дейін сканерленуде…"
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr "Сканерлеуді бастау мүмкін болмады."
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr "{} адрестен кейін тоқтатылды — {} хост табылды."
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr ""
+"{} адрестің ішінде ешбір хост жауап бермеді. Желіаралық қалқаны барлық "
+"сканерленген порттарды тастайтын хост көрінбей қалады."
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr "{} адрес сканерленді — {} хост табылды."
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
+msgstr "Осы хостқа {} қосылымын қосу"
 
 #: rustconn/src/dialogs/password.rs:58
 msgid "Authentication Required"
@@ -9693,7 +9786,7 @@ msgid "View"
 msgstr "Көрініс"
 
 #: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:338
-#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:361
+#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:362
 msgid "Quit"
 msgstr "Шығу"
 
@@ -12182,7 +12275,7 @@ msgstr "Жылдамдық"
 msgid "Fit to screen"
 msgstr "Экранға сыйдыру"
 
-#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:352
+#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:353
 msgid "Fullscreen"
 msgstr "Толық экран"
 
@@ -12669,7 +12762,7 @@ msgstr "Жұмыс кеңістіктерін басқару"
 msgid "Manage Snippets"
 msgstr "Үзінділерді басқару"
 
-#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:312
+#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:313
 msgid "Tools"
 msgstr "Құралдар"
 
@@ -14280,6 +14373,14 @@ msgstr ""
 msgid "Global variables could not be saved to disk."
 msgstr "Жаһандық айнымалыларды дискіге сақтау мүмкін болмады."
 
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr "«{}» қосылымы қосылды"
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr "Қосылымды қосу сәтсіз аяқталды"
+
 #: rustconn/src/window/key_setup.rs:668
 msgid "The connection could not be read. Try again."
 msgstr "Қосылымды оқу мүмкін болмады. Қайта көріңіз."
@@ -15638,58 +15739,62 @@ msgid "Wake On LAN…"
 msgstr "Wake On LAN…"
 
 #: rustconn/src/window/ui.rs:308
+msgid "Network Scan…"
+msgstr "Желіні сканерлеу…"
+
+#: rustconn/src/window/ui.rs:309
 msgid "SSH Tunnels…"
 msgstr "SSH туннельдері…"
 
-#: rustconn/src/window/ui.rs:317
+#: rustconn/src/window/ui.rs:318
 msgid "Active Sessions…"
 msgstr "Белсенді сеанстар…"
 
-#: rustconn/src/window/ui.rs:318
+#: rustconn/src/window/ui.rs:319
 msgid "Connection History…"
 msgstr "Қосылым тарихы…"
 
-#: rustconn/src/window/ui.rs:319
+#: rustconn/src/window/ui.rs:320
 msgid "Statistics…"
 msgstr "Статистика…"
 
-#: rustconn/src/window/ui.rs:320
+#: rustconn/src/window/ui.rs:321
 msgid "Recordings…"
 msgstr "Жазбалар…"
 
-#: rustconn/src/window/ui.rs:321
+#: rustconn/src/window/ui.rs:322
 msgid "Session Logs…"
 msgstr "Сеанс журналдары…"
 
-#: rustconn/src/window/ui.rs:324
+#: rustconn/src/window/ui.rs:325
 msgid "Sessions"
 msgstr "Сессиялар"
 
-#: rustconn/src/window/ui.rs:329
+#: rustconn/src/window/ui.rs:330
 msgid "Import Connections…"
 msgstr "Қосылымдарды импорттау…"
 
-#: rustconn/src/window/ui.rs:330
+#: rustconn/src/window/ui.rs:331
 msgid "Export Connections…"
 msgstr "Қосылымдарды экспорттау…"
 
-#: rustconn/src/window/ui.rs:331
+#: rustconn/src/window/ui.rs:332
 msgid "Copy Connection"
 msgstr "Қосылымды көшіру"
 
-#: rustconn/src/window/ui.rs:333
+#: rustconn/src/window/ui.rs:334
 msgid "Paste Connection"
 msgstr "Қосылымды қою"
 
-#: rustconn/src/window/ui.rs:346
+#: rustconn/src/window/ui.rs:347
 msgid "Components…"
 msgstr "компоненттері…"
 
-#: rustconn/src/window/ui.rs:353
+#: rustconn/src/window/ui.rs:354
 msgid "Compact Interface"
 msgstr "Тығыз интерфейс"
 
-#: rustconn/src/window/ui.rs:355
+#: rustconn/src/window/ui.rs:356
 msgid "Keyboard Passthrough"
 msgstr "Пернетақта берілуі"
 

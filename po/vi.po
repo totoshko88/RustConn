@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 16:54+0200\n"
+"POT-Creation-Date: 2026-11-14 17:11+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -225,21 +225,21 @@ msgstr "Phiên đã ngắt kết nối"
 msgid "Move to Main Window"
 msgstr "Chuyển về cửa sổ chính"
 
-#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:340
+#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:341
 msgid "Settings…"
 msgstr "Cài đặt…"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:358
+#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:359
 msgid "Keyboard Shortcuts…"
 msgstr "Phím tắt…"
 
 #: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
-#: rustconn/src/window/ui.rs:359
+#: rustconn/src/window/ui.rs:360
 msgid "Help"
 msgstr "Trợ giúp"
 
 #: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
-#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
+#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:361
 msgid "About RustConn"
 msgstr "Giới thiệu RustConn"
 
@@ -4808,7 +4808,8 @@ msgid "Copy"
 msgstr "Sao chép"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
-#: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
+#: rustconn/src/dialogs/key_setup.rs:628
+#: rustconn/src/dialogs/network_scan.rs:253 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -6556,6 +6557,96 @@ msgstr "Trên máy tính từ xa"
 #: rustconn/src/dialogs/mod.rs:52
 msgid "Only in full screen"
 msgstr "Chỉ khi toàn màn hình"
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr "Quét mạng"
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr "Quét"
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr "Địa chỉ"
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr ""
+"Một mạng kèm mặt nạ (192.168.1.0/24 hoặc 192.168.1.0/255.255.255.0), hoặc "
+"địa chỉ đầu và địa chỉ cuối (192.168.1.10-192.168.1.50)."
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr "Mạng hoặc dải địa chỉ"
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr "Tìm các máy trả lời trên cổng SSH, RDP, VNC, Telnet, HTTP và HTTPS."
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr "Tiến độ quét"
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr "Máy tìm thấy"
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr "Hãy nhập một mạng hoặc một dải địa chỉ."
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr "“{}” không phải là địa chỉ IPv4."
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr "“{}” không phải là độ dài tiền tố (0 đến 32) hay mặt nạ mạng."
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr "Địa chỉ cuối không được đứng trước địa chỉ đầu."
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr "Dải này gồm {} địa chỉ; một lần quét giới hạn ở {}."
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr "Có trả lời, nhưng không cổng nào được quét đang mở"
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr "Đang quét từ {} đến {}…"
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr "Không thể bắt đầu quét."
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr "Đã dừng sau {} địa chỉ — tìm thấy {} máy."
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr ""
+"Không máy nào trả lời trong {} địa chỉ. Máy có tường lửa bỏ qua mọi cổng "
+"được quét sẽ không hiện ra."
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr "Đã quét {} địa chỉ — tìm thấy {} máy."
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
+msgstr "Thêm kết nối {} tới máy này"
 
 #: rustconn/src/dialogs/password.rs:58
 msgid "Authentication Required"
@@ -9658,7 +9749,7 @@ msgid "View"
 msgstr "Xem"
 
 #: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:338
-#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:361
+#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:362
 msgid "Quit"
 msgstr "Thoát"
 
@@ -12124,7 +12215,7 @@ msgstr "Tốc độ"
 msgid "Fit to screen"
 msgstr "Vừa màn hình"
 
-#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:352
+#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:353
 msgid "Fullscreen"
 msgstr "Toàn màn hình"
 
@@ -12611,7 +12702,7 @@ msgstr "Quản lý không gian làm việc"
 msgid "Manage Snippets"
 msgstr "Quản lý đoạn lệnh"
 
-#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:312
+#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:313
 msgid "Tools"
 msgstr "Công cụ"
 
@@ -14216,6 +14307,14 @@ msgstr ""
 msgid "Global variables could not be saved to disk."
 msgstr "Không thể lưu biến toàn cục vào đĩa."
 
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr "Đã thêm kết nối “{}”"
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr "Không thêm được kết nối"
+
 #: rustconn/src/window/key_setup.rs:668
 msgid "The connection could not be read. Try again."
 msgstr "Không thể đọc kết nối. Hãy thử lại."
@@ -15569,58 +15668,62 @@ msgid "Wake On LAN…"
 msgstr "Wake On LAN…"
 
 #: rustconn/src/window/ui.rs:308
+msgid "Network Scan…"
+msgstr "Quét mạng…"
+
+#: rustconn/src/window/ui.rs:309
 msgid "SSH Tunnels…"
 msgstr "Đường hầm SSH…"
 
-#: rustconn/src/window/ui.rs:317
+#: rustconn/src/window/ui.rs:318
 msgid "Active Sessions…"
 msgstr "Phiên đang hoạt động…"
 
-#: rustconn/src/window/ui.rs:318
+#: rustconn/src/window/ui.rs:319
 msgid "Connection History…"
 msgstr "Lịch sử kết nối…"
 
-#: rustconn/src/window/ui.rs:319
+#: rustconn/src/window/ui.rs:320
 msgid "Statistics…"
 msgstr "Thống kê…"
 
-#: rustconn/src/window/ui.rs:320
+#: rustconn/src/window/ui.rs:321
 msgid "Recordings…"
 msgstr "Bản ghi…"
 
-#: rustconn/src/window/ui.rs:321
+#: rustconn/src/window/ui.rs:322
 msgid "Session Logs…"
 msgstr "Nhật ký phiên…"
 
-#: rustconn/src/window/ui.rs:324
+#: rustconn/src/window/ui.rs:325
 msgid "Sessions"
 msgstr "Phiên"
 
-#: rustconn/src/window/ui.rs:329
+#: rustconn/src/window/ui.rs:330
 msgid "Import Connections…"
 msgstr "Nhập kết nối…"
 
-#: rustconn/src/window/ui.rs:330
+#: rustconn/src/window/ui.rs:331
 msgid "Export Connections…"
 msgstr "Xuất kết nối…"
 
-#: rustconn/src/window/ui.rs:331
+#: rustconn/src/window/ui.rs:332
 msgid "Copy Connection"
 msgstr "Sao chép kết nối"
 
-#: rustconn/src/window/ui.rs:333
+#: rustconn/src/window/ui.rs:334
 msgid "Paste Connection"
 msgstr "Dán kết nối"
 
-#: rustconn/src/window/ui.rs:346
+#: rustconn/src/window/ui.rs:347
 msgid "Components…"
 msgstr "Thành phần…"
 
-#: rustconn/src/window/ui.rs:353
+#: rustconn/src/window/ui.rs:354
 msgid "Compact Interface"
 msgstr "Giao diện thu gọn"
 
-#: rustconn/src/window/ui.rs:355
+#: rustconn/src/window/ui.rs:356
 msgid "Keyboard Passthrough"
 msgstr "Chuyển thẳng bàn phím"
 

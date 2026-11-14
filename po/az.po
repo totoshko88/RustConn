@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 16:54+0200\n"
+"POT-Creation-Date: 2026-11-14 17:11+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -226,21 +226,21 @@ msgstr "Sessiyanın bağlantısı kəsildi"
 msgid "Move to Main Window"
 msgstr "Əsas pəncərəyə köçür"
 
-#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:340
+#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:341
 msgid "Settings…"
 msgstr "Tənzimləmələr…"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:358
+#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:359
 msgid "Keyboard Shortcuts…"
 msgstr "Klaviatura qısayolları…"
 
 #: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
-#: rustconn/src/window/ui.rs:359
+#: rustconn/src/window/ui.rs:360
 msgid "Help"
 msgstr "Kömək"
 
 #: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
-#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
+#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:361
 msgid "About RustConn"
 msgstr "RustConn haqqında"
 
@@ -4818,7 +4818,8 @@ msgid "Copy"
 msgstr "Kopyala"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
-#: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
+#: rustconn/src/dialogs/key_setup.rs:628
+#: rustconn/src/dialogs/network_scan.rs:253 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -6577,6 +6578,98 @@ msgstr "Uzaq kompüterdə"
 #: rustconn/src/dialogs/mod.rs:52
 msgid "Only in full screen"
 msgstr "Yalnız tam ekranda"
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr "Şəbəkə skanı"
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr "Skan et"
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr "Ünvanlar"
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr ""
+"Maskası ilə şəbəkə (192.168.1.0/24 və ya 192.168.1.0/255.255.255.0) və ya "
+"ilk və son ünvan (192.168.1.10-192.168.1.50)."
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr "Şəbəkə və ya ünvan aralığı"
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr ""
+"SSH, RDP, VNC, Telnet, HTTP və HTTPS portlarında cavab verən hostları "
+"axtarır."
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr "Skanın gedişi"
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr "Tapılan hostlar"
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr "Şəbəkə və ya ünvan aralığı daxil edin."
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr "“{}” IPv4 ünvanı deyil."
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr "“{}” nə prefiks uzunluğu (0-dan 32-yə qədər), nə də şəbəkə maskasıdır."
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr "Son ünvan ilk ünvandan əvvəl ola bilməz."
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr "Bu aralıq {} ünvanı əhatə edir; skan {} ünvanla məhdudlaşır."
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr "Cavab verir, lakin skan edilən portların heç biri açıq deyil"
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr "{} ünvanından {} ünvanına qədər skan edilir…"
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr "Skanı başlatmaq mümkün olmadı."
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr "{} ünvandan sonra dayandırıldı — {} host tapıldı."
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr ""
+"{} ünvan arasında heç bir host cavab vermədi. Təhlükəsizlik divarı skan "
+"edilən bütün portları atan host görünməz qalır."
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr "{} ünvan skan edildi — {} host tapıldı."
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
+msgstr "Bu hosta {} bağlantısı əlavə et"
 
 #: rustconn/src/dialogs/password.rs:58
 msgid "Authentication Required"
@@ -9677,7 +9770,7 @@ msgid "View"
 msgstr "Görünüş"
 
 #: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:338
-#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:361
+#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:362
 msgid "Quit"
 msgstr "Çıx"
 
@@ -12161,7 +12254,7 @@ msgstr "Sürət"
 msgid "Fit to screen"
 msgstr "Ekrana uyğunlaşdır"
 
-#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:352
+#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:353
 msgid "Fullscreen"
 msgstr "Tam ekran"
 
@@ -12648,7 +12741,7 @@ msgstr "İş sahələrini idarə et"
 msgid "Manage Snippets"
 msgstr "Fraqmentləri idarə et"
 
-#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:312
+#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:313
 msgid "Tools"
 msgstr "Alətlər"
 
@@ -14255,6 +14348,14 @@ msgstr ""
 msgid "Global variables could not be saved to disk."
 msgstr "Qlobal dəyişənlər diskə saxlana bilmədi."
 
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr "“{}” bağlantısı əlavə edildi"
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr "Bağlantını əlavə etmək alınmadı"
+
 #: rustconn/src/window/key_setup.rs:668
 msgid "The connection could not be read. Try again."
 msgstr "Bağlantı oxuna bilmədi. Yenidən cəhd edin."
@@ -15611,58 +15712,62 @@ msgid "Wake On LAN…"
 msgstr "Wake On LAN…"
 
 #: rustconn/src/window/ui.rs:308
+msgid "Network Scan…"
+msgstr "Şəbəkə skanı…"
+
+#: rustconn/src/window/ui.rs:309
 msgid "SSH Tunnels…"
 msgstr "SSH tunelləri…"
 
-#: rustconn/src/window/ui.rs:317
+#: rustconn/src/window/ui.rs:318
 msgid "Active Sessions…"
 msgstr "Aktiv sessiyalar…"
 
-#: rustconn/src/window/ui.rs:318
+#: rustconn/src/window/ui.rs:319
 msgid "Connection History…"
 msgstr "Bağlantı tarixçəsi…"
 
-#: rustconn/src/window/ui.rs:319
+#: rustconn/src/window/ui.rs:320
 msgid "Statistics…"
 msgstr "Statistika…"
 
-#: rustconn/src/window/ui.rs:320
+#: rustconn/src/window/ui.rs:321
 msgid "Recordings…"
 msgstr "Yazılar…"
 
-#: rustconn/src/window/ui.rs:321
+#: rustconn/src/window/ui.rs:322
 msgid "Session Logs…"
 msgstr "Sessiya jurnalları…"
 
-#: rustconn/src/window/ui.rs:324
+#: rustconn/src/window/ui.rs:325
 msgid "Sessions"
 msgstr "Sessiyalar"
 
-#: rustconn/src/window/ui.rs:329
+#: rustconn/src/window/ui.rs:330
 msgid "Import Connections…"
 msgstr "Bağlantıları idxal et…"
 
-#: rustconn/src/window/ui.rs:330
+#: rustconn/src/window/ui.rs:331
 msgid "Export Connections…"
 msgstr "Bağlantıları eksport et…"
 
-#: rustconn/src/window/ui.rs:331
+#: rustconn/src/window/ui.rs:332
 msgid "Copy Connection"
 msgstr "Bağlantını kopyala"
 
-#: rustconn/src/window/ui.rs:333
+#: rustconn/src/window/ui.rs:334
 msgid "Paste Connection"
 msgstr "Bağlantını yapışdır"
 
-#: rustconn/src/window/ui.rs:346
+#: rustconn/src/window/ui.rs:347
 msgid "Components…"
 msgstr "Komponentlər…"
 
-#: rustconn/src/window/ui.rs:353
+#: rustconn/src/window/ui.rs:354
 msgid "Compact Interface"
 msgstr "Yığcam interfeys"
 
-#: rustconn/src/window/ui.rs:355
+#: rustconn/src/window/ui.rs:356
 msgid "Keyboard Passthrough"
 msgstr "Klaviatura ötürməsi"
 
