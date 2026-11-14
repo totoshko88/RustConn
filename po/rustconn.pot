@@ -14930,3 +14930,11 @@ msgstr ""
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr ""
+
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr ""
+
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr ""

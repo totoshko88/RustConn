@@ -29,6 +29,7 @@ use rustconn_core::DetachVerdict;
 use super::*;
 use crate::detached_window::{DetachedSessionWindow, DetachedWindowParams, DetachedWindowRegistry};
 use crate::i18n::i18n;
+use crate::session_group_window::SessionGroupWindow;
 use crate::toast::ToastType;
 
 /// Variant type of `win.detach-session-to-monitor`: session id plus monitor index.
@@ -159,8 +160,7 @@ fn monitor_for_preference(preference: &crate::terminal::DetachMonitor) -> Option
 /// window. The window is cloned out of the registry, so no
 /// borrow is held while it is used.
 pub fn detached_host_window(session_id: Uuid) -> Option<adw::ApplicationWindow> {
-    crate::window::detached_window_registry()?
-        .with_window(session_id, |window| window.window().clone())
+    crate::window::detached_window_registry()?.host_window(session_id)
 }
 
 /// Renames every open session of a connection, in tabs and in detached windows.
@@ -294,7 +294,14 @@ fn attach_session(handles: &DetachHandles, session_id: Uuid) {
                 show_error_in_window(window, &message);
             })
             .is_some();
-        if !shown {
+        if shown {
+            return;
+        }
+        if let Some(group) = targets.registry.group_of(session_id) {
+            let toast = crate::toast::plain_toast(&message);
+            toast.set_priority(adw::ToastPriority::High);
+            group.toast_overlay().add_toast(toast);
+        } else {
             handles.toasts.show_error(&message);
         }
         return;
@@ -305,8 +312,215 @@ fn attach_session(handles: &DetachHandles, session_id: Uuid) {
         // as the user ending the session.
         window.begin_attach();
         window.close();
+    } else if let Some(group) = targets.registry.group_of(session_id) {
+        // The session's content is back in a tab; only its empty page is left.
+        group.remove_session(session_id);
     }
     targets.main_window.present();
+}
+
+/// Moves a freshly opened session into the tabbed window of its group.
+///
+/// Called on idle for every member of a cluster opened "in a new window", once
+/// its tab exists. A session that cannot leave its tab — an external viewer
+/// above all — simply stays in the main window; the rest of the cluster still
+/// gathers in its own.
+fn move_session_to_group_window(
+    handles: &DetachHandles,
+    group_id: Uuid,
+    group_name: &str,
+    session_id: Uuid,
+) {
+    let Some(targets) = handles.upgrade() else {
+        return;
+    };
+    let verdict = targets.notebook.detach_verdict(session_id);
+    if !verdict.is_allowed() {
+        tracing::info!(
+            session = %session_id,
+            reason = verdict.reason_key(),
+            "session stays in the main window instead of its group window"
+        );
+        return;
+    }
+    let Some(info) = targets.notebook.get_session_info(session_id) else {
+        tracing::debug!(session = %session_id, "group window: session ended before it could move");
+        return;
+    };
+    let Some(app) = targets
+        .main_window
+        .application()
+        .and_downcast::<adw::Application>()
+    else {
+        tracing::warn!(session = %session_id, "group window: no application on the main window");
+        return;
+    };
+    // Taken before the window is looked up or created, so a refusal never
+    // leaves an empty window behind.
+    let Some(content) = targets.notebook.take_session_content(session_id) else {
+        return;
+    };
+
+    let group = targets.registry.group(group_id).unwrap_or_else(|| {
+        let group = SessionGroupWindow::new(&app, group_name);
+        wire_group_window(&group, group_id, handles);
+        targets.registry.insert_group(group_id, Rc::clone(&group));
+        group
+    });
+    group.add_session(
+        session_id,
+        info.connection_id,
+        &info.name,
+        &info.protocol,
+        &content,
+    );
+    group.present();
+}
+
+/// Wires the callbacks and the window actions of a fresh group window.
+///
+/// The closures hold the window weakly: the registry owns the only strong
+/// reference, so dropping its entry releases the window.
+fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &DetachHandles) {
+    let handles_attach = handles.clone();
+    group.set_on_attach(move |session_id| attach_session(&handles_attach, session_id));
+
+    // Closing a tab, or the window, ends the session exactly as closing its tab
+    // in the main window would.
+    let notebook = handles.notebook.clone();
+    group.set_on_close(move |session_id| {
+        if let Some(notebook) = notebook.upgrade() {
+            notebook.close_session(session_id);
+        }
+    });
+
+    // Forgotten when the window closes, on idle so the entry is not dropped
+    // from inside the window's own close handler. `destroy` is too late for
+    // this: it fires when the last reference goes, and the registry holds one.
+    let registry = handles.registry.clone();
+    group.window().connect_close_request(move |window| {
+        let registry = registry.clone();
+        let window = window.clone();
+        glib::idle_add_local_once(move || {
+            if let Some(registry) = registry.upgrade() {
+                registry.forget_group(group_id, &window);
+            }
+        });
+        glib::Propagation::Proceed
+    });
+
+    let window = group.window().clone();
+    let add = |name: &str, run: Box<dyn Fn(&SessionGroupWindow)>| {
+        let action = gio::SimpleAction::new(name, None);
+        let group = Rc::downgrade(group);
+        action.connect_activate(move |_, _| {
+            if let Some(group) = group.upgrade() {
+                run(&group);
+            }
+        });
+        window.add_action(&action);
+    };
+
+    add("next-tab", Box::new(|group| group.select_adjacent(true)));
+    add("prev-tab", Box::new(|group| group.select_adjacent(false)));
+    // Ctrl+W ends the selected tab's session — or, while a dialog is open in
+    // the window, closes just the dialog.
+    add(
+        "close-tab",
+        Box::new(|group| {
+            if !super::terminal_actions::close_visible_dialog(group.window()) {
+                group.close_selected();
+            }
+        }),
+    );
+    // Same accelerator as detach in the main window, opposite direction.
+    let handles_toggle = handles.clone();
+    add(
+        "toggle-detach",
+        Box::new(move |group| {
+            if let Some(session_id) = group.selected_session() {
+                attach_session(&handles_toggle, session_id);
+            }
+        }),
+    );
+    let notebook_copy = handles.notebook.clone();
+    add(
+        "copy",
+        Box::new(move |group| {
+            if let Some(notebook) = notebook_copy.upgrade()
+                && let Some(session_id) = group.selected_session()
+                && let Some(terminal) = notebook.get_terminal(session_id)
+                && let Some(text) = terminal.text_selected(vte4::Format::Text)
+            {
+                terminal.display().clipboard().set_text(&text);
+            }
+        }),
+    );
+    let notebook_paste = handles.notebook.clone();
+    add(
+        "paste",
+        Box::new(move |group| {
+            if let Some(notebook) = notebook_paste.upgrade()
+                && let Some(session_id) = group.selected_session()
+                && let Some(terminal) = notebook.get_terminal(session_id)
+            {
+                crate::terminal::safe_paste::paste_into_terminal(&terminal);
+            }
+        }),
+    );
+    let notebook_search = handles.notebook.clone();
+    add(
+        "terminal-search",
+        Box::new(move |group| {
+            if let Some(notebook) = notebook_search.upgrade()
+                && let Some(session_id) = group.selected_session()
+                && let Some(terminal) = notebook.get_terminal(session_id)
+            {
+                let parent = group.window().clone().upcast();
+                crate::dialogs::TerminalSearchDialog::new(Some(&parent), terminal).show();
+            }
+        }),
+    );
+    add(
+        "toggle-fullscreen",
+        Box::new(|group| {
+            let window = group.window();
+            if window.is_fullscreen() {
+                window.unfullscreen();
+            } else {
+                window.fullscreen();
+            }
+        }),
+    );
+    // Settings are application-wide and their dialog lives on the main window.
+    let main_window = handles.main_window.clone();
+    add(
+        "settings",
+        Box::new(move |_| {
+            if let Some(main_window) = main_window.upgrade() {
+                main_window.present();
+                let _ = WidgetExt::activate_action(&main_window, "win.settings", None);
+            }
+        }),
+    );
+}
+
+/// Drops the tab of a session that ended while shown in a group window.
+///
+/// On idle, like [`close_detached_window_later`], so a page is never closed
+/// from inside a handler of its own tab view.
+fn drop_group_tab_later(registry: &Weak<DetachedWindowRegistry>, session_id: Uuid) {
+    let Some(group) = registry
+        .upgrade()
+        .and_then(|registry| registry.group_of(session_id))
+    else {
+        return;
+    };
+    glib::idle_add_local_once(move || {
+        if group.remove_session(session_id) {
+            tracing::debug!(session = %session_id, "group window tab dropped after session end");
+        }
+    });
 }
 
 /// Ends a detached session and closes its window.
@@ -683,7 +897,22 @@ impl MainWindow {
         self.terminal_notebook
             .set_on_session_ended(move |session_id| {
                 close_detached_window_later(&registry_ended, session_id);
+                drop_group_tab_later(&registry_ended, session_id);
             });
+
+        // A cluster opened "in a new window": each member's tab is moved into
+        // the cluster's own window as it appears. On idle, because the tab is
+        // announced from inside its own creation, which is not finished yet.
+        let handles_group = handles.clone();
+        self.terminal_notebook.set_on_cluster_window_tab(
+            move |cluster_id, cluster_name, session_id| {
+                let handles = handles_group.clone();
+                let cluster_name = cluster_name.to_owned();
+                glib::idle_add_local_once(move || {
+                    move_session_to_group_window(&handles, cluster_id, &cluster_name, session_id);
+                });
+            },
+        );
 
         let handles_request = handles;
         self.terminal_notebook

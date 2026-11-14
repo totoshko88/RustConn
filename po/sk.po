@@ -15758,3 +15758,11 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;pripojenie;terminál;vzdialený;
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klaster bol úspešne uložený."
+
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr "Pripojiť ku klastru v novom okne"
+
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr "Presunúť kartu do hlavného okna"

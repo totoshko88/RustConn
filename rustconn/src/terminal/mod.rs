@@ -420,6 +420,10 @@ pub struct TerminalNotebook {
     /// session_id at launch time. Instead we record connection_id →
     /// [`PendingCluster`] here and resolve it the moment a tab is created.
     cluster_pending: Rc<RefCell<HashMap<Uuid, PendingCluster>>>,
+    /// Called with `(cluster_id, cluster_name, session_id)` when the tab of a
+    /// cluster member opened "in a new window" appears. The window layer moves
+    /// that tab into the cluster's own window.
+    on_cluster_window_tab: Rc<RefCell<Option<Box<dyn Fn(Uuid, &str, Uuid)>>>>,
     /// Active recording sessions (tracked by session_id)
     active_recordings: Rc<RefCell<HashSet<Uuid>>>,
     /// Recording paths and start times: session_id → (data_path, timing_path, connection_name, start_time)
@@ -622,6 +626,7 @@ impl TerminalNotebook {
             cluster_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_to_cluster: Rc::new(RefCell::new(HashMap::new())),
             cluster_pending: Rc::new(RefCell::new(HashMap::new())),
+            on_cluster_window_tab: Rc::new(RefCell::new(None)),
             recording_paths: RefCell::new(HashMap::new()),
             session_highlight_rules: Rc::new(RefCell::new(HashMap::new())),
             highlight_overlays: Rc::new(RefCell::new(HashMap::new())),
@@ -3817,15 +3822,32 @@ impl TerminalNotebook {
     ///
     /// When the tab for `connection_id` is eventually created — synchronously,
     /// or after an async port check — it is registered as part of `cluster_id`
-    /// and labelled with the cluster's `group` name.
-    pub fn mark_cluster_pending(&self, cluster_id: Uuid, group: &str, connection_id: Uuid) {
+    /// and labelled with the cluster's `group` name. With `in_window` the tab is
+    /// then handed to the callback set by [`Self::set_on_cluster_window_tab`].
+    pub fn mark_cluster_pending(
+        &self,
+        cluster_id: Uuid,
+        group: &str,
+        connection_id: Uuid,
+        in_window: bool,
+    ) {
         self.cluster_pending.borrow_mut().insert(
             connection_id,
             PendingCluster {
                 cluster_id,
                 group: group.to_owned(),
+                in_window,
             },
         );
+    }
+
+    /// Sets the callback that receives the tabs of a cluster opened in its own
+    /// window, as `(cluster_id, cluster_name, session_id)`.
+    pub fn set_on_cluster_window_tab<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, &str, Uuid) + 'static,
+    {
+        *self.on_cluster_window_tab.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Resolves a pending cluster registration for a freshly created tab.
@@ -3846,7 +3868,15 @@ impl TerminalNotebook {
             return;
         };
         self.register_cluster_terminal(pending.cluster_id, &pending.group, session_id);
-        self.set_tab_group(session_id, &pending.group);
+        if pending.in_window {
+            // No tab group: the cluster's own window is the grouping, and a
+            // `[cluster]` prefix on every tab of it would only repeat its title.
+            if let Some(ref callback) = *self.on_cluster_window_tab.borrow() {
+                callback(pending.cluster_id, &pending.group, session_id);
+            }
+        } else {
+            self.set_tab_group(session_id, &pending.group);
+        }
     }
 
     /// Gets all session IDs for a cluster

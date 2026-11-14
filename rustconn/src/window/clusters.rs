@@ -102,6 +102,26 @@ fn setup_cluster_dialog_callbacks(
             &sidebar_clone,
             &monitoring_clone,
             cluster_id,
+            false,
+        );
+    });
+
+    // Connect-in-new-window callback: the same connect, with every member's
+    // tab moved into a window of the cluster's own as it appears.
+    let state_clone = state.clone();
+    let notebook_clone = notebook.clone();
+    let window_clone = window.clone();
+    let sidebar_clone = sidebar.clone();
+    let monitoring_clone = monitoring.clone();
+    dialog_ref.set_on_connect_window(move |cluster_id| {
+        connect_cluster(
+            &state_clone,
+            &notebook_clone,
+            &window_clone,
+            &sidebar_clone,
+            &monitoring_clone,
+            cluster_id,
+            true,
         );
     });
 
@@ -232,6 +252,7 @@ fn connect_cluster(
     sidebar: &SharedSidebar,
     monitoring: &super::types::SharedMonitoring,
     cluster_id: Uuid,
+    in_window: bool,
 ) {
     // Get cluster info. Resolve the EFFECTIVE membership (explicit members plus
     // any regex auto-membership matches) rather than the raw connection_ids, so
@@ -284,8 +305,11 @@ fn connect_cluster(
                         &notebook,
                         &sidebar,
                         &monitoring,
-                        cluster_id,
-                        &cluster_name,
+                        &ClusterLaunch {
+                            id: cluster_id,
+                            name: &cluster_name,
+                            in_window,
+                        },
                         &connection_ids,
                     );
                 },
@@ -426,20 +450,34 @@ fn confirm_cluster_bastions(
     });
 }
 
+/// Which cluster is being opened, and where its tabs go.
+struct ClusterLaunch<'a> {
+    id: Uuid,
+    name: &'a str,
+    /// Gather the members' tabs in a window of the cluster's own instead of
+    /// the main window's tab bar.
+    in_window: bool,
+}
+
 /// Starts the cluster session and every member connection.
 fn dispatch_cluster_connect(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     sidebar: &SharedSidebar,
     monitoring: &super::types::SharedMonitoring,
-    cluster_id: Uuid,
-    cluster_name: &str,
+    launch: &ClusterLaunch<'_>,
     connection_ids: &[Uuid],
 ) {
+    let ClusterLaunch {
+        id: cluster_id,
+        name: cluster_name,
+        in_window,
+    } = *launch;
     tracing::info!(
         cluster = %cluster_name,
         cluster_id = %cluster_id,
         connections = connection_ids.len(),
+        in_window,
         "Connecting cluster"
     );
 
@@ -455,7 +493,7 @@ fn dispatch_cluster_connect(
     // appears, registering the new session in the cluster's session list and
     // labelling its tab with a tab group named after the cluster.
     for conn_id in connection_ids {
-        notebook.mark_cluster_pending(cluster_id, cluster_name, *conn_id);
+        notebook.mark_cluster_pending(cluster_id, cluster_name, *conn_id, in_window);
     }
 
     // Kick off each connection. We don't care whether `start_connection`

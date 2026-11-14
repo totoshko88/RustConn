@@ -15665,3 +15665,11 @@ msgstr ""
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Đã lưu cụm thành công."
+
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr "Kết nối tới cụm trong cửa sổ mới"
+
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr "Chuyển thẻ về cửa sổ chính"

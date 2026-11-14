@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Open a cluster in a window of its own** — a second button on each row of Tools → **Clusters…** connects the cluster with every member's tab gathered in a separate window titled after the cluster, instead of the main window's tab bar. The sessions are detached sessions like those of *Move to New Window*: closing a tab or the window ends them, **Move Tab to Main Window** hands one back, and Disconnect all, renames and the disconnected marker reach them there. (`rustconn/src/session_group_window.rs`, `rustconn/src/window/detach_actions.rs`)
+
 ## [0.25.0] - 2026-11-14
 
 ### Added

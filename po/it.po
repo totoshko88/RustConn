@@ -15845,3 +15845,11 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connessione;terminal;remote;kube
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Il cluster è stato salvato con successo."
+
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr "Connetti al cluster in una nuova finestra"
+
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr "Sposta la scheda nella finestra principale"
