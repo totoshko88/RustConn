@@ -15832,3 +15832,101 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ligação;terminal;remoto;kubern
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "O cluster foi salvo com sucesso."
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr "Análise da rede"
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr "Analisar"
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr "Endereços"
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr "Uma rede com a sua máscara (192.168.1.0/24 ou 192.168.1.0/255.255.255.0), ou um primeiro e um último endereço (192.168.1.10-192.168.1.50)."
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr "Rede ou intervalo de endereços"
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr "Procura anfitriões que respondam nas portas SSH, RDP, VNC, Telnet, HTTP e HTTPS."
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr "Progresso da análise"
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr "Anfitriões encontrados"
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr "Introduza uma rede ou um intervalo de endereços."
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr "«{}» não é um endereço IPv4."
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr "«{}» não é um comprimento de prefixo (0 a 32) nem uma máscara de rede."
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr "O último endereço não pode ser anterior ao primeiro."
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr "Este intervalo abrange {} endereços; uma análise está limitada a {}."
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr "Responde, mas nenhuma das portas analisadas está aberta"
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr "A analisar de {} a {}…"
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr "Não foi possível iniciar a análise."
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr "Parada após {} endereços — {} anfitriões encontrados."
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr "Nenhum anfitrião respondeu entre {} endereços. Um anfitrião cuja firewall descarta todas as portas analisadas permanece invisível."
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr "{} endereços analisados — {} anfitriões encontrados."
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
+msgstr "Adicionar uma ligação {} a este anfitrião"
+
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr "Ligação «{}» adicionada"
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr "Falha ao adicionar a ligação"
+
+#: rustconn/src/window/ui.rs:294
+msgid "Network Scan…"
+msgstr "Análise da rede…"

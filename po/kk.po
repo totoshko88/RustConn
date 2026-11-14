@@ -15733,3 +15733,101 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Кластер сәтті сақталды."
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr "Желіні сканерлеу"
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr "Сканерлеу"
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr "Адрестер"
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr "Маскасы бар желі (192.168.1.0/24 немесе 192.168.1.0/255.255.255.0) немесе бірінші және соңғы адрес (192.168.1.10-192.168.1.50)."
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr "Желі немесе адрестер ауқымы"
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr "SSH, RDP, VNC, Telnet, HTTP және HTTPS порттарында жауап беретін хосттарды іздейді."
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr "Сканерлеу барысы"
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr "Табылған хосттар"
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr "Желіні немесе адрестер ауқымын енгізіңіз."
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr "«{}» IPv4 адресі емес."
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr "«{}» префикс ұзындығы (0-ден 32-ге дейін) да, желі маскасы да емес."
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr "Соңғы адрес біріншісінен бұрын болмауы керек."
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr "Бұл ауқым {} адресті қамтиды; сканерлеу {} адреспен шектелген."
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr "Жауап береді, бірақ сканерленген порттардың ешқайсысы ашық емес"
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr "{} бастап {} дейін сканерленуде…"
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr "Сканерлеуді бастау мүмкін болмады."
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr "{} адрестен кейін тоқтатылды — {} хост табылды."
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr "{} адрестің ішінде ешбір хост жауап бермеді. Желіаралық қалқаны барлық сканерленген порттарды тастайтын хост көрінбей қалады."
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr "{} адрес сканерленді — {} хост табылды."
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
+msgstr "Осы хостқа {} қосылымын қосу"
+
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr "«{}» қосылымы қосылды"
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr "Қосылымды қосу сәтсіз аяқталды"
+
+#: rustconn/src/window/ui.rs:294
+msgid "Network Scan…"
+msgstr "Желіні сканерлеу…"

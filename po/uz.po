@@ -15830,3 +15830,101 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ulanish;terminal;masofaviy;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klaster muvaffaqiyatli saqlandi."
+
+#: rustconn/src/dialogs/network_scan.rs:68
+msgid "Network Scan"
+msgstr "Tarmoqni skanerlash"
+
+#: rustconn/src/dialogs/network_scan.rs:74
+#: rustconn/src/dialogs/network_scan.rs:317
+msgid "Scan"
+msgstr "Skanerlash"
+
+#: rustconn/src/dialogs/network_scan.rs:85
+msgid "Addresses"
+msgstr "Manzillar"
+
+#: rustconn/src/dialogs/network_scan.rs:87
+msgid ""
+"A network with its mask (192.168.1.0/24 or 192.168.1.0/255.255.255.0), or a "
+"first and a last address (192.168.1.10-192.168.1.50)."
+msgstr "Niqobi bilan tarmoq (192.168.1.0/24 yoki 192.168.1.0/255.255.255.0) yoki birinchi va oxirgi manzil (192.168.1.10-192.168.1.50)."
+
+#: rustconn/src/dialogs/network_scan.rs:91
+msgid "Network or address range"
+msgstr "Tarmoq yoki manzillar oraligʻi"
+
+#: rustconn/src/dialogs/network_scan.rs:100
+msgid ""
+"Looks for hosts answering on the SSH, RDP, VNC, Telnet, HTTP and HTTPS ports."
+msgstr "SSH, RDP, VNC, Telnet, HTTP va HTTPS portlarida javob beradigan xostlarni qidiradi."
+
+#: rustconn/src/dialogs/network_scan.rs:110
+msgid "Scan progress"
+msgstr "Skanerlash jarayoni"
+
+#: rustconn/src/dialogs/network_scan.rs:114
+msgid "Hosts Found"
+msgstr "Topilgan xostlar"
+
+#: rustconn/src/dialogs/network_scan.rs:189
+msgid "Enter a network or an address range."
+msgstr "Tarmoq yoki manzillar oraligʻini kiriting."
+
+#: rustconn/src/dialogs/network_scan.rs:190
+msgid "“{}” is not an IPv4 address."
+msgstr "“{}” IPv4 manzili emas."
+
+#: rustconn/src/dialogs/network_scan.rs:192
+msgid "“{}” is not a prefix length (0 to 32) or a netmask."
+msgstr "“{}” prefiks uzunligi (0 dan 32 gacha) ham, tarmoq niqobi ham emas."
+
+#: rustconn/src/dialogs/network_scan.rs:196
+msgid "The last address must not be before the first one."
+msgstr "Oxirgi manzil birinchisidan oldin boʻlmasligi kerak."
+
+#: rustconn/src/dialogs/network_scan.rs:199
+msgid "This range covers {} addresses; a scan is limited to {}."
+msgstr "Bu oraliq {} ta manzilni qamrab oladi; skanerlash {} ta bilan cheklangan."
+
+#: rustconn/src/dialogs/network_scan.rs:208
+msgid "Answers, but none of the scanned ports is open"
+msgstr "Javob beradi, lekin skanerlangan portlarning hech biri ochiq emas"
+
+#: rustconn/src/dialogs/network_scan.rs:257
+msgid "Scanning {} to {}…"
+msgstr "{} dan {} gacha skanerlanmoqda…"
+
+#: rustconn/src/dialogs/network_scan.rs:321
+msgid "The scan could not be started."
+msgstr "Skanerlashni boshlab boʻlmadi."
+
+#: rustconn/src/dialogs/network_scan.rs:328
+msgid "Stopped after {} addresses — {} hosts found."
+msgstr "{} ta manzildan keyin toʻxtatildi — {} ta xost topildi."
+
+#: rustconn/src/dialogs/network_scan.rs:333
+msgid ""
+"No host answered among {} addresses. A host whose firewall drops every "
+"scanned port stays invisible."
+msgstr "{} ta manzil orasida hech bir xost javob bermadi. Xavfsizlik devori barcha skanerlangan portlarni tashlab yuboradigan xost koʻrinmay qoladi."
+
+#: rustconn/src/dialogs/network_scan.rs:338
+msgid "{} addresses scanned — {} hosts found."
+msgstr "{} ta manzil skanerlandi — {} ta xost topildi."
+
+#: rustconn/src/dialogs/network_scan.rs:363
+msgid "Add a {} connection to this host"
+msgstr "Ushbu xostga {} ulanishini qoʻshish"
+
+#: rustconn/src/window/history_actions.rs:382
+msgid "Connection “{}” added"
+msgstr "“{}” ulanishi qoʻshildi"
+
+#: rustconn/src/window/history_actions.rs:393
+msgid "Failed to add the connection"
+msgstr "Ulanishni qoʻshib boʻlmadi"
+
+#: rustconn/src/window/ui.rs:294
+msgid "Network Scan…"
+msgstr "Tarmoqni skanerlash…"
