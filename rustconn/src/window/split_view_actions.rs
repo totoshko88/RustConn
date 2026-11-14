@@ -1500,3 +1500,160 @@ fn create_split_from_tabs(
         }
     });
 }
+
+/// Where a session shown in a split lives on screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct SplitPaneLocation {
+    /// The session whose tab hosts the layout; selecting it shows the split.
+    pub host_tab: Uuid,
+    /// The pane showing the session. A pane id, never a session id: the
+    /// bridge's focus methods look panes up by this id only.
+    pub pane: Uuid,
+}
+
+/// Why a session in the split map could not be located in its layout.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum SplitPaneMiss {
+    /// The layout records no owner, so there is no tab to select.
+    NoOwner,
+    /// No pane of the layout shows the session: a stale map entry.
+    NotDisplayed,
+}
+
+/// Finds the tab and the pane showing `session_id` in one split layout.
+///
+/// `panes` lists the layout's panes as `(pane id, session shown)`. Terminals and
+/// embedded RDP/VNC/SPICE viewers sit in panes the same way, so the protocol
+/// plays no part. The owner is located like any guest: its pane is the one
+/// the split actions must focus before collapsing the layout.
+pub(super) fn locate_split_pane(
+    session_id: Uuid,
+    owner: Option<Uuid>,
+    panes: &[(Uuid, Option<Uuid>)],
+) -> Result<SplitPaneLocation, SplitPaneMiss> {
+    let host_tab = owner.ok_or(SplitPaneMiss::NoOwner)?;
+    let pane = panes
+        .iter()
+        .find(|(_, shown)| *shown == Some(session_id))
+        .map(|(pane, _)| *pane)
+        .ok_or(SplitPaneMiss::NotDisplayed)?;
+    Ok(SplitPaneLocation { host_tab, pane })
+}
+
+/// Shows the split pane holding `session_id` and makes it the focused pane.
+///
+/// Selects the layout's host tab, then focuses the session's pane, so the
+/// active-tab actions that work on the focused pane (`win.pop-pane-to-tab`,
+/// `win.detach-pane-to-window`) act on this session. Shared by the sidebar's
+/// Move to Own Tab / Remove Split / Move to New Window and by Show Session.
+///
+/// Returns the layout, or `None` (logged) when the session is not in a split
+/// or cannot be found in the layout its map entry names.
+pub(super) fn focus_split_pane(
+    notebook: &SharedNotebook,
+    bridges: &SessionSplitBridges,
+    session_id: Uuid,
+) -> Option<Rc<SplitViewBridge>> {
+    // Clone the `Rc` out: switching tabs and focusing re-enter code that
+    // borrows the same map.
+    let Some(bridge) = bridges.borrow().get(&session_id).cloned() else {
+        tracing::debug!(session = %session_id, "split pane focus: session is not in a split");
+        return None;
+    };
+    let panes: Vec<(Uuid, Option<Uuid>)> = bridge
+        .pane_ids()
+        .into_iter()
+        .map(|pane| (pane, bridge.get_pane_session(pane)))
+        .collect();
+    let location = match locate_split_pane(session_id, bridge.owner_session(), &panes) {
+        Ok(location) => location,
+        Err(miss) => {
+            tracing::warn!(
+                session = %session_id,
+                ?miss,
+                panes = panes.len(),
+                "split pane focus: session not found in its split"
+            );
+            return None;
+        }
+    };
+    notebook.switch_to_tab(location.host_tab);
+    notebook.show_tab_view_content();
+    if let Err(e) = bridge.focus_pane(location.pane) {
+        tracing::warn!(session = %session_id, pane = %location.pane, "split pane focus: {e}");
+        return None;
+    }
+    tracing::debug!(
+        session = %session_id,
+        host_tab = %location.host_tab,
+        pane = %location.pane,
+        "split pane focus: pane focused"
+    );
+    Some(bridge)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SplitPaneLocation, SplitPaneMiss, locate_split_pane};
+    use uuid::Uuid;
+
+    #[test]
+    fn a_guest_is_found_by_its_pane_not_its_session_id() {
+        let owner = Uuid::new_v4();
+        let guest = Uuid::new_v4();
+        let (owner_pane, guest_pane, empty_pane) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let panes = [
+            (owner_pane, Some(owner)),
+            (empty_pane, None),
+            (guest_pane, Some(guest)),
+        ];
+        let location = locate_split_pane(guest, Some(owner), &panes);
+        assert_eq!(
+            location,
+            Ok(SplitPaneLocation {
+                host_tab: owner,
+                pane: guest_pane
+            })
+        );
+        // The bug: the session id was handed to the pane focus as a pane id.
+        assert_ne!(location.map(|l| l.pane), Ok(guest));
+    }
+
+    #[test]
+    fn the_owner_is_located_in_its_own_pane() {
+        let owner = Uuid::new_v4();
+        let owner_pane = Uuid::new_v4();
+        let panes = [
+            (Uuid::new_v4(), Some(Uuid::new_v4())),
+            (owner_pane, Some(owner)),
+        ];
+        assert_eq!(
+            locate_split_pane(owner, Some(owner), &panes),
+            Ok(SplitPaneLocation {
+                host_tab: owner,
+                pane: owner_pane
+            })
+        );
+    }
+
+    #[test]
+    fn a_stale_entry_is_reported_not_focused() {
+        let owner = Uuid::new_v4();
+        let gone = Uuid::new_v4();
+        let panes = [(Uuid::new_v4(), Some(owner)), (Uuid::new_v4(), None)];
+        assert_eq!(
+            locate_split_pane(gone, Some(owner), &panes),
+            Err(SplitPaneMiss::NotDisplayed)
+        );
+    }
+
+    #[test]
+    fn a_layout_without_owner_has_no_tab_to_show() {
+        let guest = Uuid::new_v4();
+        let panes = [(Uuid::new_v4(), Some(guest))];
+        assert_eq!(
+            locate_split_pane(guest, None, &panes),
+            Err(SplitPaneMiss::NoOwner)
+        );
+    }
+}

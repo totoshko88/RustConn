@@ -3010,40 +3010,23 @@ impl MainWindow {
         session_split_bridges: &SessionSplitBridges,
         target_id: Uuid,
     ) -> bool {
-        // Resolve the owner tab and (if split) the pane holding the session up
-        // front, then release the bridges borrow before any tab switch / focus
-        // call — those re-enter the notebook/bridge and would risk a
-        // BorrowMutError if a borrow were still held.
-        let mut owner_tab = target_id;
-        let mut bridge_pane: Option<(Rc<SplitViewBridge>, Uuid)> = None;
-        {
-            let bridges = session_split_bridges.borrow();
-            for (owner_id, bridge) in bridges.iter() {
-                if bridge.active_sessions().contains(&target_id) {
-                    owner_tab = *owner_id;
-                    bridge_pane = bridge
-                        .pane_ids()
-                        .into_iter()
-                        .find(|pane| bridge.get_pane_session(*pane) == Some(target_id))
-                        .map(|pane| (Rc::clone(bridge), pane));
-                    break;
-                }
-            }
-        }
-
         // R7.6: bail if the session vanished between resolution and focus.
         if notebook.get_session_info(target_id).is_none() {
+            tracing::debug!(session = %target_id, "show session: session vanished");
             return false;
         }
 
-        notebook.switch_to_tab(owner_tab);
-        notebook.show_tab_view_content();
-
-        if let Some((bridge, pane_uuid)) = bridge_pane
-            && let Err(e) = bridge.focus_pane(pane_uuid)
+        // A split pane is shown through the layout's host tab. The bridge map
+        // is keyed by every session a layout shows, so the tab to select is
+        // the bridge's owner, never the map key: a guest's own key names a
+        // parked session with no tab, and selecting it did nothing.
+        if split_view_actions::focus_split_pane(notebook, session_split_bridges, target_id)
+            .is_none()
         {
-            tracing::debug!(error = %e, %target_id, "focus_pane failed for smart double-click");
+            notebook.switch_to_tab(target_id);
+            notebook.show_tab_view_content();
         }
+        tracing::debug!(session = %target_id, "show session: focused");
 
         // Set input focus on the session widget where one exists (terminals);
         // embedded viewers have no VTE widget, so selecting the tab is enough.
