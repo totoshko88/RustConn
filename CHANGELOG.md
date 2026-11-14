@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.1] - 2026-11-14
 
+### Added
+
+- **Enter in the sidebar search opens the connection** — pressing Enter in the search field opens the selected result, or the first one when none is selected, so a connection can be found and opened without leaving the keyboard or moving focus into the list. Enter pressed right after typing, before the list has caught up, filters with the typed text first, so it opens what was typed and not a row of the previous list. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/window/mod.rs`)
+
 ### Fixed
 
 - **Dragging a connection or a folder drops it where the line shows (PR #424)** — the sidebar drew the drop line above or below the target row, but the drop itself always placed the dragged item *after* the target: an item could not be moved to the top of its folder, and to land in a given place it had to be dropped on the row above it. A drop on the upper half of a row now places the item before that row and a drop on the lower half after it, for connections and for folders. (`rustconn-core/src/connection/manager.rs`, `rustconn/src/window/sorting.rs`)

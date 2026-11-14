@@ -2191,21 +2191,34 @@ impl MainWindow {
             }
         });
 
-        // Add to search history when user presses Enter or stops searching
+        // Enter in the search entry records the query in the history and opens
+        // the connection the results point at: the selected one, or the first.
         let sidebar_for_history = sidebar.clone();
         let state_for_history = state.clone();
         sidebar.search_entry().connect_activate(move |entry| {
             let query = entry.text().to_string();
-            if !query.is_empty() {
-                sidebar_for_history.add_to_search_history(&query);
-                // Persist to settings
-                if let Ok(mut state_mut) = state_for_history.try_borrow_mut() {
-                    state_mut.settings_mut().ui.add_search_history(&query);
-                    if let Err(e) = state_mut.save_settings() {
-                        tracing::warn!(?e, "Failed to save settings");
-                    }
+            if query.is_empty() {
+                return;
+            }
+            sidebar_for_history.add_to_search_history(&query);
+            // Persist to settings
+            if let Ok(mut state_mut) = state_for_history.try_borrow_mut() {
+                state_mut.settings_mut().ui.add_search_history(&query);
+                if let Err(e) = state_mut.save_settings() {
+                    tracing::warn!(?e, "Failed to save settings");
                 }
             }
+
+            // A fast typist presses Enter before the list has caught up with the
+            // text: `search-changed` is itself delayed by GtkSearchEntry, and
+            // the debounce above adds to that. Filter with what the entry holds
+            // right now so Enter opens what was typed, not a row of the
+            // previous list; clearing the pending query turns the scheduled
+            // debounce timeout into a no-op.
+            sidebar_for_history.hide_search_pending();
+            sidebar_for_history.set_pending_search_query(None);
+            Self::filter_connections(&state_for_history, &sidebar_for_history, &query);
+            sidebar_for_history.activate_search_result();
         });
 
         // Also add to history when search entry loses focus with non-empty query
