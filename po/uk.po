@@ -6627,7 +6627,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/network_scan.rs:201
 msgid "Enter a network or an address range."
-msgstr "Введи мережу або діапазон адрес."
+msgstr "Уведи мережу або діапазон адрес."
 
 #: rustconn/src/dialogs/network_scan.rs:202
 msgid "“{}” is not an IPv4 address."
