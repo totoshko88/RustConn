@@ -15830,3 +15830,11 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ulanish;terminal;masofaviy;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klaster muvaffaqiyatli saqlandi."
+
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr "Klasterga yangi oynada ulanish"
+
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr "Varaqni asosiy oynaga koʻchirish"

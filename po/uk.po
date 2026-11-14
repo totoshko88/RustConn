@@ -15720,3 +15720,11 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;з'єднок;термінал;�
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Кластер успішно збережено."
+
+#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+msgid "Connect to cluster in a new window"
+msgstr "Доєднайся до кластера в новому вікні"
+
+#: rustconn/src/session_group_window.rs:83
+msgid "Move Tab to Main Window"
+msgstr "Перемісти вкладинку до головного вікна"

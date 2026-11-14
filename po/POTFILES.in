@@ -155,6 +155,7 @@ rustconn/src/terminal/tab_menu.rs
 rustconn/src/validation.rs
 rustconn/src/vault_ops.rs
 rustconn/src/detached_window.rs
+rustconn/src/session_group_window.rs
 rustconn/src/automation.rs
 rustconn/src/monitor_mode.rs
 rustconn/src/monitoring.rs
