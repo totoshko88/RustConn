@@ -41,9 +41,13 @@ pub fn balanced_split_plan(width: f64, height: f64, splits: usize) -> Vec<Balanc
         let key = |&(pw, ph): &(f64, f64)| (pw * ph, pw.max(ph));
         let mut target = 0;
         for (i, panel) in panels.iter().enumerate().skip(1) {
-            let (a, l) = key(panel);
-            let (ba, bl) = key(&panels[target]);
-            if a.total_cmp(&ba).then(l.total_cmp(&bl)).is_ge() {
+            let (area, side) = key(panel);
+            let (best_area, best_side) = key(&panels[target]);
+            if area
+                .total_cmp(&best_area)
+                .then(side.total_cmp(&best_side))
+                .is_ge()
+            {
                 target = i;
             }
         }

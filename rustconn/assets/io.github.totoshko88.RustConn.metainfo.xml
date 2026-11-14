@@ -125,9 +125,12 @@
           <li>An external RDP window can use chosen monitors.</li>
           <li>The Filter menu keeps named searches, and the sidebar has a Trash row with Restore and Empty Trash; deleted items stay there until you empty it.</li>
           <li>rustconn-cli import reads PuTTY and mRemoteNG files.</li>
+          <li>Folders get New Subgroup, Duplicate and Move to Group, every group picker can be searched, and a single Trash item can be deleted permanently.</li>
+          <li>Connections added with rustconn-cli while the window is open are kept and appear in the sidebar without a restart.</li>
           <li>A jump host or key path with a shell metacharacter can no longer run a command.</li>
           <li>The Passbolt passphrase is no longer visible in the process list, and CLI downloads are checked against the vendor checksum and stay on HTTPS.</li>
           <li>Sync exports are created owner-only, and PTY descriptors no longer leak into child processes.</li>
+          <li>WinRM and Telnet sessions show as connected, and rustconn-cli run-script reads a KeePass database set on a connection or group (#411).</li>
           <li>Secret Service uses oo7 0.7 and zbus 6; rustconn-cli --config has no -c short form.</li>
           <li>Updated dependencies.</li>
         </ul>

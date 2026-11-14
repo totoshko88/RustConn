@@ -400,12 +400,17 @@ done
 - Added: Split with Other Tabs (#423), Monitors for an external RDP window
 - Added: rustconn-cli import reads PuTTY and mRemoteNG files
 - Added: saved searches and a Trash row in the sidebar
+- Added: New Subgroup, Duplicate and Move to Group for folders; Create Another
+- Added: Delete Permanently in the Trash; search in every group picker
 - Fixed: a jump host or key path with a shell metacharacter could run a command
 - Fixed: Passbolt passphrase no longer visible in the process list
 - Fixed: CLI downloads checked against the vendor SHA256, HTTPS only
 - Fixed: sync exports owner-only and crash-safe; PTY descriptors no longer leak
 - Fixed: -f putty reads a regedit UTF-16 export
 - Fixed: the tray click raises the window on Wayland (KDE)
+- Fixed: rustconn-cli changes are no longer overwritten by an open window
+- Fixed: WinRM/Telnet status in the sidebar; Clear Session Data asks first
+- Fixed: rustconn-cli run-script reads a per-connection .kdbx (#411)
 - Changed: a deleted item stays in the Trash until Empty Trash
 - Changed: oo7 0.7, zbus 6; rustconn-cli --config has no -c short form
 - Removed: unused credential-resolver methods, interner, cache, drag_drop

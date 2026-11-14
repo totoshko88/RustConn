@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Clear Session Data in the embedded browser asks first** — the browser menu item, now **Clear Session Data…**, erased the site's cookies and saved logins at once. It opens a confirmation that says what will be lost, with **Cancel** as the default and Escape response and a destructive **Clear**; only **Clear** erases the data. (`rustconn/src/embedded_web/navigation.rs`, `po/`)
+- **`rustconn-cli run-script` reads a `.kdbx` set on a connection or group ([#411](https://github.com/totoshko88/RustConn/issues/411))** — it read saved passwords from the global KeePass database only, so a host with its own database got no saved password and fell back to its keys. It now opens the database the GUI does: the connection's own, else its nearest group's, else the global one, with the same database password and key file; an inherited password is read from the group's database. (`rustconn-cli/src/commands/run_script.rs`)
 - **A subgroup made inside a Cloud Sync Master tree is exported** — creating a group under a parent never told the export channel, so the new subgroup waited for an unrelated change to the tree before the Master wrote it. (`rustconn-core/src/connection/manager.rs`)
 - **A save no longer drops connections another process wrote** — the window saved its whole in-memory list over `connections.toml`, `groups.toml` and `trash.toml`, so a `rustconn-cli add` (or a second instance) made while the window was open vanished at the window's next save. Every save now reads the file under the write locks and merges it with the window's list by id against the state it last saw: an entry the other process added is kept, one it removed is removed here too, an edit on one side only is taken, and when both sides edited the same entry the newer `updated_at` wins (this window on a tie). A deletion made in the window is honoured. A file that cannot be parsed is replaced as before, and a file that already matches the merge is not rewritten. (`rustconn-core/src/config/merge.rs`, `rustconn-core/src/config/manager.rs`, `rustconn-core/src/connection/manager.rs`)
 - **Connections added with `rustconn-cli` appear in a running window** — the window watches the three files and, a moment after another process rewrites one, merges the change in (`ConnectionManager::reload_from_disk`) and refreshes the sidebar, with no restart. A reload never waits for a disk write: if a save is running it tries again a second later. If the directory cannot be watched the window still merges on save and only loses the live update. (`rustconn-core/src/config/watch.rs`, `rustconn/src/app.rs`)
@@ -116,10 +117,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Flatpak: fast_float 8.3.0 → 8.3.3 (VTE build dependency) and waypipe 0.11.2 → 0.11.3, with their `sha256`
 - `nix`, `libc` and `socket2` are declared once in `[workspace.dependencies]`
 - RUSTSEC-2023-0071 (`rsa`) stays ignored: sspi 0.23.1, winscard 0.4.1 and picky 7.0.0-rc.29 still pin rsa 0.10.0-rc.18
-
-### Known Issues
-
-- **`rustconn-cli run-script` does not see a `.kdbx` set on a connection or group ([#411](https://github.com/totoshko88/RustConn/issues/411))** — the GUI and `rustconn-cli secret` honour the per-connection / per-group KeePass database, but `run-script` reads saved passwords from the global database only, so a host with its own `.kdbx` gets no saved password and falls back to its keys or fails with "could not read the saved password". Found by reading the code (`rustconn-cli/src/commands/run_script.rs`), not confirmed by a run. Workaround: run the script from the GUI (**Run Local Script…**).
 
 ## [0.24.11] - 2026-11-12
 
