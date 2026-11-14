@@ -2435,6 +2435,8 @@ When a terminal session disconnects (SSH, Telnet, Serial, Kubernetes, Zero Trust
 - Reconnect uses the same connection settings (host, credentials, protocol options)
 - If the connection fails again, the banner reappears
 - Close the tab normally with Ctrl+W to dismiss
+- While the banner is shown, press **R** to reconnect or **Q** to close the session, with focus in its terminal. An ended terminal takes no input, so the two keys are free; they work the same in a tab, a split pane (Q closes that pane) and a detached window, and under a non-Latin keyboard layout
+- A **Local Shell** whose shell exits gets the same banner: **R** (or **Reconnect**) starts a new shell in the same tab
 
 **Automatic reconnect.** Beyond the manual banner, RustConn reconnects on its own
 after a transient drop — the common cases being the machine waking from sleep and

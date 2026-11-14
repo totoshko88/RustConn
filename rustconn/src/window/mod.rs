@@ -1012,6 +1012,23 @@ impl MainWindow {
                     .get_session_info(session_id)
                     .map(|info| info.protocol.clone());
 
+                // A local shell has no saved connection to dial again: start a
+                // new shell in the same terminal.
+                if protocol.as_deref() == Some(LOCAL_SHELL_PROTOCOL) {
+                    if notebook_for_reconnect.prepare_for_reconnect(session_id) {
+                        let terminal_settings = state_for_reconnect
+                            .try_borrow()
+                            .map(|s| s.settings().terminal.clone())
+                            .unwrap_or_default();
+                        Self::start_local_shell_process(
+                            &notebook_for_reconnect,
+                            session_id,
+                            &terminal_settings,
+                        );
+                    }
+                    return;
+                }
+
                 // For VTE-based sessions, reconnect in-place (reuse existing tab)
                 let is_vte_protocol = protocol.as_deref().is_some_and(|p| {
                     p == "ssh"
@@ -5356,6 +5373,34 @@ impl MainWindow {
             &[],
         );
 
+        Self::start_local_shell_process(notebook, session_id, &terminal_settings);
+
+        // A shell that exits leaves a tab that takes no input. Mark it ended
+        // and show the banner every other terminal session gets, so the tab
+        // can be closed with Q or the shell started again with R (or the
+        // Reconnect button) instead of sitting there dead.
+        let notebook_weak = Rc::downgrade(notebook);
+        notebook.connect_child_exited(session_id, ChildExitHook::Disconnect, move |exit_status| {
+            let Some(notebook) = notebook_weak.upgrade() else {
+                return;
+            };
+            tracing::info!(%session_id, exit_status, "local shell exited");
+            notebook.mark_tab_disconnected(session_id);
+            notebook.show_reconnect_overlay(session_id);
+        });
+
+        session_id
+    }
+
+    /// Starts the shell process of a local shell session in its terminal.
+    ///
+    /// Used when the session is created and again when an ended one is
+    /// restarted in place, so both run exactly the same command.
+    fn start_local_shell_process(
+        notebook: &SharedNotebook,
+        session_id: Uuid,
+        terminal_settings: &rustconn_core::config::TerminalSettings,
+    ) {
         // Get user's default shell
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
 
@@ -5455,8 +5500,6 @@ impl MainWindow {
             #[cfg(not(target_os = "macos"))]
             notebook.spawn_command(session_id, &[&shell], None, None, None);
         }
-
-        session_id
     }
 
     /// Starts the Flatpak host shell once its terminal widget has a size.
