@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 17:11+0200\n"
+"POT-Creation-Date: 2026-11-14 17:23+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -4829,7 +4829,7 @@ msgstr "Копіюй"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
-#: rustconn/src/dialogs/network_scan.rs:253 rustconn/src/dialogs/script.rs:171
+#: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -6584,9 +6584,9 @@ msgid "Network Scan"
 msgstr "Сканування мережі"
 
 #: rustconn/src/dialogs/network_scan.rs:74
-#: rustconn/src/dialogs/network_scan.rs:317
+#: rustconn/src/dialogs/network_scan.rs:332
 msgid "Scan"
-msgstr "Сканувати"
+msgstr "Скануй"
 
 #: rustconn/src/dialogs/network_scan.rs:85
 msgid "Addresses"
@@ -6618,57 +6618,79 @@ msgstr "Поступ сканування"
 msgid "Hosts Found"
 msgstr "Знайдені гости"
 
-#: rustconn/src/dialogs/network_scan.rs:189
+#: rustconn/src/dialogs/network_scan.rs:116
+#: rustconn/src/dialogs/network_scan.rs:367
+msgid "A host whose firewall drops every scanned port is not listed."
+msgstr ""
+"Гост, мережевий екран якого відкидає всі скановані порти, не потрапляє до "
+"списку."
+
+#: rustconn/src/dialogs/network_scan.rs:201
 msgid "Enter a network or an address range."
 msgstr "Введи мережу або діапазон адрес."
 
-#: rustconn/src/dialogs/network_scan.rs:190
+#: rustconn/src/dialogs/network_scan.rs:202
 msgid "“{}” is not an IPv4 address."
 msgstr "«{}» не є адресою IPv4."
 
-#: rustconn/src/dialogs/network_scan.rs:192
+#: rustconn/src/dialogs/network_scan.rs:204
 msgid "“{}” is not a prefix length (0 to 32) or a netmask."
 msgstr "«{}» не є ні довжиною префікса (від 0 до 32), ні маскою мережі."
 
-#: rustconn/src/dialogs/network_scan.rs:196
+#: rustconn/src/dialogs/network_scan.rs:208
 msgid "The last address must not be before the first one."
 msgstr "Остання адреса не може передувати першій."
 
-#: rustconn/src/dialogs/network_scan.rs:199
-msgid "This range covers {} addresses; a scan is limited to {}."
-msgstr "Цей діапазон охоплює {} адрес; сканування обмежено до {}."
+#: rustconn/src/dialogs/network_scan.rs:212
+msgid "This range covers {} address; a scan is limited to {}."
+msgid_plural "This range covers {} addresses; a scan is limited to {}."
+msgstr[0] "Цей діапазон охоплює {} адресу; сканування обмежено {} адресами."
+msgstr[1] "Цей діапазон охоплює {} адреси; сканування обмежено {} адресами."
+msgstr[2] "Цей діапазон охоплює {} адрес; сканування обмежено {} адресами."
 
-#: rustconn/src/dialogs/network_scan.rs:208
+#: rustconn/src/dialogs/network_scan.rs:223
 msgid "Answers, but none of the scanned ports is open"
 msgstr "Відповідає, але жоден зі сканованих портів не відкритий"
 
-#: rustconn/src/dialogs/network_scan.rs:257
+#: rustconn/src/dialogs/network_scan.rs:272
 msgid "Scanning {} to {}…"
 msgstr "Сканування від {} до {}…"
 
-#: rustconn/src/dialogs/network_scan.rs:321
+#: rustconn/src/dialogs/network_scan.rs:336
 msgid "The scan could not be started."
 msgstr "Не вдалося розпочати сканування."
 
-#: rustconn/src/dialogs/network_scan.rs:328
-msgid "Stopped after {} addresses — {} hosts found."
-msgstr "Зупинено після {} адрес — знайдено гостів: {}."
+#: rustconn/src/dialogs/network_scan.rs:345
+msgid "Stopped after {} address."
+msgid_plural "Stopped after {} addresses."
+msgstr[0] "Зупинено після {} адреси."
+msgstr[1] "Зупинено після {} адрес."
+msgstr[2] "Зупинено після {} адрес."
 
-#: rustconn/src/dialogs/network_scan.rs:333
-msgid ""
-"No host answered among {} addresses. A host whose firewall drops every "
-"scanned port stays invisible."
-msgstr ""
-"Жоден гост не відповів серед {} адрес. Гост, мережевий екран якого відкидає "
-"всі скановані порти, лишається невидимим."
+#: rustconn/src/dialogs/network_scan.rs:352
+msgid "No host answered among {} address."
+msgid_plural "No host answered among {} addresses."
+msgstr[0] "Жоден гост не відповів серед {} адреси."
+msgstr[1] "Жоден гост не відповів серед {} адрес."
+msgstr[2] "Жоден гост не відповів серед {} адрес."
 
-#: rustconn/src/dialogs/network_scan.rs:338
-msgid "{} addresses scanned — {} hosts found."
-msgstr "Проскановано адрес: {} — знайдено гостів: {}."
+#: rustconn/src/dialogs/network_scan.rs:359
+msgid "{} address scanned."
+msgid_plural "{} addresses scanned."
+msgstr[0] "Проскановано {} адресу."
+msgstr[1] "Проскановано {} адреси."
+msgstr[2] "Проскановано {} адрес."
 
-#: rustconn/src/dialogs/network_scan.rs:363
+#: rustconn/src/dialogs/network_scan.rs:370
+msgid "{} host found."
+msgid_plural "{} hosts found."
+msgstr[0] "Знайдено {} гост."
+msgstr[1] "Знайдено {} гости."
+msgstr[2] "Знайдено {} гостів."
+
+#: rustconn/src/dialogs/network_scan.rs:397
 msgid "Add a {} connection to this host"
-msgstr "Додай з'єднування {} з цим гостом"
+msgstr "Додай з'єднок {} до цього госта"
 
 #: rustconn/src/dialogs/password.rs:58
 msgid "Authentication Required"
@@ -15819,6 +15841,22 @@ msgstr "Менеджер підключень"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;з'єднок;термінал;віддалений;kubernetes;k8s;послідовний;sftp;"
+
+#~ msgid "This range covers {} addresses; a scan is limited to {}."
+#~ msgstr "Цей діапазон охоплює {} адрес; сканування обмежено {} адресами."
+
+#~ msgid "Stopped after {} addresses — {} hosts found."
+#~ msgstr "Зупинено після {} адрес — знайдено гостів: {}."
+
+#~ msgid ""
+#~ "No host answered among {} addresses. A host whose firewall drops every "
+#~ "scanned port stays invisible."
+#~ msgstr ""
+#~ "Жоден гост не відповів серед {} адрес. Гост, мережевий екран якого "
+#~ "відкидає всі скановані порти, лишається невидимим."
+
+#~ msgid "{} addresses scanned — {} hosts found."
+#~ msgstr "Проскановано адрес: {} — знайдено гостів: {}."
 
 #~ msgid ""
 #~ "“{}” will be removed together with its saved password. This cannot be "

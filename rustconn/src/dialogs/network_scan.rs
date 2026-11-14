@@ -23,7 +23,7 @@ use rustconn_core::network_scan::{
 };
 
 use crate::dialogs::widgets::dialog_pack_action;
-use crate::i18n::{i18n, i18n_f};
+use crate::i18n::{i18n, i18n_f, ni18n_f};
 
 /// Called when the user asks for a connection to a found host. Returns whether
 /// the connection was created.
@@ -112,6 +112,9 @@ impl NetworkScanDialog {
 
         let results_group = adw::PreferencesGroup::builder()
             .title(i18n("Hosts Found"))
+            .description(i18n(
+                "A host whose firewall drops every scanned port is not listed.",
+            ))
             .visible(false)
             .build();
         let results_list = gtk4::ListBox::builder()
@@ -183,6 +186,15 @@ impl NetworkScanDialog {
     }
 }
 
+/// The count to pick a plural form by. `ngettext` takes a `u32`; a larger
+/// count keeps its last six digits, which is all a plural rule reads.
+fn plural_count(count: u64) -> u32 {
+    u32::try_from(count).unwrap_or_else(|_| {
+        // Below 2 000 000, so the conversion cannot fail.
+        u32::try_from(count % 1_000_000 + 1_000_000).unwrap_or(u32::MAX)
+    })
+}
+
 /// Explains a rejected range in the user's language.
 fn describe_error(error: &NetworkScanError) -> String {
     match error {
@@ -195,8 +207,11 @@ fn describe_error(error: &NetworkScanError) -> String {
         NetworkScanError::ReversedRange { .. } => {
             i18n("The last address must not be before the first one.")
         }
-        NetworkScanError::TooLarge { count, max } => i18n_f(
+        // Keyed on the range size; the limit is a fixed 65 536.
+        NetworkScanError::TooLarge { count, max } => ni18n_f(
+            "This range covers {} address; a scan is limited to {}.",
             "This range covers {} addresses; a scan is limited to {}.",
+            plural_count(*count),
             &[&count.to_string(), &max.to_string()],
         ),
     }
@@ -323,23 +338,42 @@ impl ScanView {
         }
         let found = self.listed.borrow().len();
         let stopped = self.cancel.borrow().load(Ordering::Relaxed);
-        let summary = if stopped {
-            i18n_f(
-                "Stopped after {} addresses — {} hosts found.",
-                &[&scanned.to_string(), &found.to_string()],
+        let scanned_text = scanned.to_string();
+        // One plural per count: the two numbers need their own forms.
+        let addresses = if stopped {
+            ni18n_f(
+                "Stopped after {} address.",
+                "Stopped after {} addresses.",
+                scanned,
+                &[&scanned_text],
             )
         } else if found == 0 {
-            i18n_f(
-                "No host answered among {} addresses. A host whose firewall drops every scanned port stays invisible.",
-                &[&scanned.to_string()],
+            ni18n_f(
+                "No host answered among {} address.",
+                "No host answered among {} addresses.",
+                scanned,
+                &[&scanned_text],
             )
         } else {
-            i18n_f(
-                "{} addresses scanned — {} hosts found.",
-                &[&scanned.to_string(), &found.to_string()],
+            ni18n_f(
+                "{} address scanned.",
+                "{} addresses scanned.",
+                scanned,
+                &[&scanned_text],
             )
         };
-        self.set_status(&summary, false);
+        let hosts = if found == 0 && !stopped {
+            // The list stays hidden, so its description cannot say it.
+            i18n("A host whose firewall drops every scanned port is not listed.")
+        } else {
+            ni18n_f(
+                "{} host found.",
+                "{} hosts found.",
+                u32::try_from(found).unwrap_or(u32::MAX),
+                &[&found.to_string()],
+            )
+        };
+        self.set_status(&format!("{addresses} {hosts}"), false);
     }
 
     /// Adds a row for a host that answered, keeping the list in address order.
@@ -381,5 +415,18 @@ impl ScanView {
         self.results_list
             .insert(&row, i32::try_from(position).unwrap_or(-1));
         self.results_group.set_visible(true);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::plural_count;
+
+    #[test]
+    fn plural_count_keeps_the_last_digits_of_a_huge_count() {
+        assert_eq!(plural_count(65_537), 65_537);
+        assert_eq!(plural_count(u64::from(u32::MAX)), u32::MAX);
+        // 2^32 = 4 294 967 296: the plural rule still sees ...96.
+        assert_eq!(plural_count(1 << 32), 1_967_296);
     }
 }

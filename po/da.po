@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 17:11+0200\n"
+"POT-Creation-Date: 2026-11-14 17:23+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -4825,7 +4825,7 @@ msgstr "Kopiér"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
-#: rustconn/src/dialogs/network_scan.rs:253 rustconn/src/dialogs/script.rs:171
+#: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -6586,7 +6586,7 @@ msgid "Network Scan"
 msgstr "Netværksscanning"
 
 #: rustconn/src/dialogs/network_scan.rs:74
-#: rustconn/src/dialogs/network_scan.rs:317
+#: rustconn/src/dialogs/network_scan.rs:332
 msgid "Scan"
 msgstr "Scan"
 
@@ -6621,55 +6621,71 @@ msgstr "Scanningens forløb"
 msgid "Hosts Found"
 msgstr "Fundne værter"
 
-#: rustconn/src/dialogs/network_scan.rs:189
+#: rustconn/src/dialogs/network_scan.rs:116
+#: rustconn/src/dialogs/network_scan.rs:367
+msgid "A host whose firewall drops every scanned port is not listed."
+msgstr ""
+"En vært, hvis firewall afviser alle scannede porte, vises ikke på listen."
+
+#: rustconn/src/dialogs/network_scan.rs:201
 msgid "Enter a network or an address range."
 msgstr "Angiv et netværk eller et adresseinterval."
 
-#: rustconn/src/dialogs/network_scan.rs:190
+#: rustconn/src/dialogs/network_scan.rs:202
 msgid "“{}” is not an IPv4 address."
 msgstr "“{}” er ikke en IPv4-adresse."
 
-#: rustconn/src/dialogs/network_scan.rs:192
+#: rustconn/src/dialogs/network_scan.rs:204
 msgid "“{}” is not a prefix length (0 to 32) or a netmask."
 msgstr "“{}” er hverken en præfikslængde (0 til 32) eller en netmaske."
 
-#: rustconn/src/dialogs/network_scan.rs:196
+#: rustconn/src/dialogs/network_scan.rs:208
 msgid "The last address must not be before the first one."
 msgstr "Den sidste adresse må ikke ligge før den første."
 
-#: rustconn/src/dialogs/network_scan.rs:199
-msgid "This range covers {} addresses; a scan is limited to {}."
-msgstr "Dette interval dækker {} adresser; en scanning er begrænset til {}."
+#: rustconn/src/dialogs/network_scan.rs:212
+msgid "This range covers {} address; a scan is limited to {}."
+msgid_plural "This range covers {} addresses; a scan is limited to {}."
+msgstr[0] "Dette interval dækker {} adresse; en scanning er begrænset til {}."
+msgstr[1] "Dette interval dækker {} adresser; en scanning er begrænset til {}."
 
-#: rustconn/src/dialogs/network_scan.rs:208
+#: rustconn/src/dialogs/network_scan.rs:223
 msgid "Answers, but none of the scanned ports is open"
 msgstr "Svarer, men ingen af de scannede porte er åbne"
 
-#: rustconn/src/dialogs/network_scan.rs:257
+#: rustconn/src/dialogs/network_scan.rs:272
 msgid "Scanning {} to {}…"
 msgstr "Scanner {} til {}…"
 
-#: rustconn/src/dialogs/network_scan.rs:321
+#: rustconn/src/dialogs/network_scan.rs:336
 msgid "The scan could not be started."
 msgstr "Scanningen kunne ikke startes."
 
-#: rustconn/src/dialogs/network_scan.rs:328
-msgid "Stopped after {} addresses — {} hosts found."
-msgstr "Stoppet efter {} adresser — {} værter fundet."
+#: rustconn/src/dialogs/network_scan.rs:345
+msgid "Stopped after {} address."
+msgid_plural "Stopped after {} addresses."
+msgstr[0] "Stoppet efter {} adresse."
+msgstr[1] "Stoppet efter {} adresser."
 
-#: rustconn/src/dialogs/network_scan.rs:333
-msgid ""
-"No host answered among {} addresses. A host whose firewall drops every "
-"scanned port stays invisible."
-msgstr ""
-"Ingen vært svarede blandt {} adresser. En vært, hvis firewall kasserer alle "
-"scannede porte, forbliver usynlig."
+#: rustconn/src/dialogs/network_scan.rs:352
+msgid "No host answered among {} address."
+msgid_plural "No host answered among {} addresses."
+msgstr[0] "Ingen vært svarede blandt {} adresse."
+msgstr[1] "Ingen vært svarede blandt {} adresser."
 
-#: rustconn/src/dialogs/network_scan.rs:338
-msgid "{} addresses scanned — {} hosts found."
-msgstr "{} adresser scannet — {} værter fundet."
+#: rustconn/src/dialogs/network_scan.rs:359
+msgid "{} address scanned."
+msgid_plural "{} addresses scanned."
+msgstr[0] "{} adresse scannet."
+msgstr[1] "{} adresser scannet."
 
-#: rustconn/src/dialogs/network_scan.rs:363
+#: rustconn/src/dialogs/network_scan.rs:370
+msgid "{} host found."
+msgid_plural "{} hosts found."
+msgstr[0] "{} vært fundet."
+msgstr[1] "{} værter fundet."
+
+#: rustconn/src/dialogs/network_scan.rs:397
 msgid "Add a {} connection to this host"
 msgstr "Tilføj en {}-forbindelse til denne vært"
 
@@ -15825,6 +15841,22 @@ msgstr "Forbindelsesstyring"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "This range covers {} addresses; a scan is limited to {}."
+#~ msgstr "Dette interval dækker {} adresser; en scanning er begrænset til {}."
+
+#~ msgid "Stopped after {} addresses — {} hosts found."
+#~ msgstr "Stoppet efter {} adresser — {} værter fundet."
+
+#~ msgid ""
+#~ "No host answered among {} addresses. A host whose firewall drops every "
+#~ "scanned port stays invisible."
+#~ msgstr ""
+#~ "Ingen vært svarede blandt {} adresser. En vært, hvis firewall kasserer "
+#~ "alle scannede porte, forbliver usynlig."
+
+#~ msgid "{} addresses scanned — {} hosts found."
+#~ msgstr "{} adresser scannet — {} værter fundet."
 
 #~ msgid ""
 #~ "“{}” will be removed together with its saved password. This cannot be "

@@ -3685,7 +3685,7 @@ The field is pre-filled with a `/24` around this machine's own address. For a ne
 
 Hosts appear as they answer, sorted by address, with their open ports. Each host has one button per protocol found — **SSH**, **RDP**, **VNC**, **Telnet** — that adds a connection named after the address at the top level of the connection list; rename it and fill in the user name from there. **Stop** ends a running scan and keeps what was found.
 
-The scan is a plain TCP connection attempt, so it needs no special permission. A host counts as present when a scanned port accepts or actively refuses the connection; a host whose firewall silently drops all six ports is not listed.
+The scan is a plain TCP connection attempt, so it needs no special permission. A host counts as present when a scanned port accepts or actively refuses the connection; a host whose firewall silently drops all six ports is not listed. Scan only networks you own or are authorised to scan: many networks treat an unrequested scan as an attack.
 
 ### Connection History
 

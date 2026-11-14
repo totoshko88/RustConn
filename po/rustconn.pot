@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 17:11+0200\n"
+"POT-Creation-Date: 2026-11-14 17:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4636,7 +4636,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
-#: rustconn/src/dialogs/network_scan.rs:253 rustconn/src/dialogs/script.rs:171
+#: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1322
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -6295,7 +6295,7 @@ msgid "Network Scan"
 msgstr ""
 
 #: rustconn/src/dialogs/network_scan.rs:74
-#: rustconn/src/dialogs/network_scan.rs:317
+#: rustconn/src/dialogs/network_scan.rs:332
 msgid "Scan"
 msgstr ""
 
@@ -6326,53 +6326,70 @@ msgstr ""
 msgid "Hosts Found"
 msgstr ""
 
-#: rustconn/src/dialogs/network_scan.rs:189
+#: rustconn/src/dialogs/network_scan.rs:116
+#: rustconn/src/dialogs/network_scan.rs:367
+msgid "A host whose firewall drops every scanned port is not listed."
+msgstr ""
+
+#: rustconn/src/dialogs/network_scan.rs:201
 msgid "Enter a network or an address range."
 msgstr ""
 
-#: rustconn/src/dialogs/network_scan.rs:190
+#: rustconn/src/dialogs/network_scan.rs:202
 msgid "“{}” is not an IPv4 address."
 msgstr ""
 
-#: rustconn/src/dialogs/network_scan.rs:192
+#: rustconn/src/dialogs/network_scan.rs:204
 msgid "“{}” is not a prefix length (0 to 32) or a netmask."
 msgstr ""
 
-#: rustconn/src/dialogs/network_scan.rs:196
+#: rustconn/src/dialogs/network_scan.rs:208
 msgid "The last address must not be before the first one."
 msgstr ""
 
-#: rustconn/src/dialogs/network_scan.rs:199
-msgid "This range covers {} addresses; a scan is limited to {}."
-msgstr ""
+#: rustconn/src/dialogs/network_scan.rs:212
+msgid "This range covers {} address; a scan is limited to {}."
+msgid_plural "This range covers {} addresses; a scan is limited to {}."
+msgstr[0] ""
+msgstr[1] ""
 
-#: rustconn/src/dialogs/network_scan.rs:208
+#: rustconn/src/dialogs/network_scan.rs:223
 msgid "Answers, but none of the scanned ports is open"
 msgstr ""
 
-#: rustconn/src/dialogs/network_scan.rs:257
+#: rustconn/src/dialogs/network_scan.rs:272
 msgid "Scanning {} to {}…"
 msgstr ""
 
-#: rustconn/src/dialogs/network_scan.rs:321
+#: rustconn/src/dialogs/network_scan.rs:336
 msgid "The scan could not be started."
 msgstr ""
 
-#: rustconn/src/dialogs/network_scan.rs:328
-msgid "Stopped after {} addresses — {} hosts found."
-msgstr ""
+#: rustconn/src/dialogs/network_scan.rs:345
+msgid "Stopped after {} address."
+msgid_plural "Stopped after {} addresses."
+msgstr[0] ""
+msgstr[1] ""
 
-#: rustconn/src/dialogs/network_scan.rs:333
-msgid ""
-"No host answered among {} addresses. A host whose firewall drops every "
-"scanned port stays invisible."
-msgstr ""
+#: rustconn/src/dialogs/network_scan.rs:352
+msgid "No host answered among {} address."
+msgid_plural "No host answered among {} addresses."
+msgstr[0] ""
+msgstr[1] ""
 
-#: rustconn/src/dialogs/network_scan.rs:338
-msgid "{} addresses scanned — {} hosts found."
-msgstr ""
+#: rustconn/src/dialogs/network_scan.rs:359
+msgid "{} address scanned."
+msgid_plural "{} addresses scanned."
+msgstr[0] ""
+msgstr[1] ""
 
-#: rustconn/src/dialogs/network_scan.rs:363
+#: rustconn/src/dialogs/network_scan.rs:370
+msgid "{} host found."
+msgid_plural "{} hosts found."
+msgstr[0] ""
+msgstr[1] ""
+
+#: rustconn/src/dialogs/network_scan.rs:397
 msgid "Add a {} connection to this host"
 msgstr ""
 
