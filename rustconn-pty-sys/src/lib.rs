@@ -50,9 +50,9 @@ mod controlling_terminal {
     ///
     /// Verified on `aarch64-apple-darwin`: at the call site the widening form
     /// tripped `clippy::cast_lossless` whichever way the target type was written,
-    /// which is what ruled out collapsing the two arms. The glibc arm is not
-    /// checkable here — no CI job and no local target builds it — so it is left
-    /// as the expression that needs no conversion at all.
+    /// which is what ruled out collapsing the two arms. The glibc arm is the
+    /// one every Linux CI job builds; it is the expression that needs no
+    /// conversion at all.
     ///
     /// Not `unsafe`, and not a precondition guard: it only names the integer
     /// handed to `ioctl`. A type mismatch is a compile error, so there is nothing
@@ -160,15 +160,45 @@ pub struct PtyPair {
 ///
 /// # Errors
 ///
-/// Returns `io::Error` if `openpty` fails (e.g. out of PTY devices).
+/// Returns `io::Error` if `openpty` fails (e.g. out of PTY devices). The error
+/// keeps the OS `errno`, so `kind()` and `raw_os_error()` stay meaningful.
+///
+/// `openpty` does not set `FD_CLOEXEC`, so both descriptors are marked
+/// close-on-exec here; otherwise any child spawned meanwhile (from any session)
+/// would inherit the master and the reader would never see a hangup.
+///
+/// The flag is set after `openpty` returns, so a child forked by another thread
+/// in that instant can still inherit the pair. This narrows the leak to that
+/// window; it does not remove it.
+// ponytail: two-call window between openpty and fcntl; fine while spawns are
+// rare. Upgrade: posix_openpt(O_CLOEXEC) + grantpt/unlockpt, no new unsafe.
 #[cfg(unix)]
 pub fn open_pty_pair() -> io::Result<PtyPair> {
     let result =
-        nix::pty::openpty(None, None).map_err(|e| io::Error::other(format!("openpty: {e}")))?;
-    Ok(PtyPair {
+        nix::pty::openpty(None, None).map_err(|e| io::Error::from_raw_os_error(e as i32))?;
+    let pair = PtyPair {
         master: result.master,
         slave: result.slave,
-    })
+    };
+    set_cloexec(&pair.master)?;
+    set_cloexec(&pair.slave)?;
+    Ok(pair)
+}
+
+/// Sets `FD_CLOEXEC` on an open descriptor.
+#[cfg(unix)]
+fn set_cloexec(fd: &OwnedFd) -> io::Result<()> {
+    // SAFETY: `fd` is a valid open descriptor borrowed for the call; F_GETFD
+    // only reads its descriptor flags.
+    let flags = unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_GETFD) };
+    if flags == -1 {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: as above; F_SETFD only writes the descriptor flags.
+    if unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_SETFD, flags | libc::FD_CLOEXEC) } == -1 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
 }
 
 // ============================================================================
@@ -232,7 +262,9 @@ pub fn pty_set_winsize(master_fd: impl AsFd, rows: u16, cols: u16) -> io::Result
 ///
 /// # Errors
 ///
-/// Returns `io::Error` if `poll(2)` fails for any reason other than `EINTR`.
+/// Returns `io::Error` if `poll(2)` fails for any reason other than `EINTR`, or
+/// `EBADF` if the descriptor is not open (`POLLNVAL`) — reporting that as "not
+/// ready" would make the caller's loop spin without blocking.
 #[cfg(unix)]
 pub fn pty_wait_readable(fd: impl AsFd, timeout: std::time::Duration) -> io::Result<bool> {
     let mut pollfd = libc::pollfd {
@@ -260,8 +292,19 @@ pub fn pty_wait_readable(fd: impl AsFd, timeout: std::time::Duration) -> io::Res
             }
         }
         0 => Ok(false),
-        _ => Ok(pollfd.revents & (libc::POLLIN | libc::POLLHUP | libc::POLLERR) != 0),
+        _ => classify_revents(pollfd.revents),
     }
+}
+
+/// Maps the `revents` of a ready `poll(2)` result to "readable or hung up".
+///
+/// `POLLNVAL` means the descriptor is not open: an error (`EBADF`), never "not
+/// ready", which would make a reader loop spin.
+fn classify_revents(revents: libc::c_short) -> io::Result<bool> {
+    if revents & libc::POLLNVAL != 0 {
+        return Err(io::Error::from_raw_os_error(libc::EBADF));
+    }
+    Ok(revents & (libc::POLLIN | libc::POLLHUP | libc::POLLERR) != 0)
 }
 
 // ============================================================================
@@ -339,8 +382,8 @@ mod tests {
         //   fails first with `EPERM`.
         //
         // The `ENODEV` arm was missing, which made this the one test in the
-        // workspace that failed on macOS — invisibly, because no CI job builds
-        // it. Accepting the three keeps the assertion narrow enough to still rule
+        // workspace that failed on macOS — invisibly, because no CI job built
+        // macOS then (the `macos-sys` job does since 0.21.0). Accepting the three keeps the assertion narrow enough to still rule
         // out an unrelated spawn failure.
         let errno = err.raw_os_error();
         assert!(
@@ -416,5 +459,29 @@ mod tests {
             0,
             "the duplicate must be close-on-exec"
         );
+    }
+
+    /// Both ends of a fresh pair must be close-on-exec (`openpty` does not set it).
+    #[test]
+    fn open_pty_pair_sets_cloexec_on_both_ends() {
+        let pair = open_pty_pair().expect("openpty");
+        for fd in [&pair.master, &pair.slave] {
+            // SAFETY: fd is a valid open fd; F_GETFD only reads flags.
+            let flags = unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_GETFD) };
+            assert_ne!(flags & libc::FD_CLOEXEC, 0, "FD_CLOEXEC must be set");
+        }
+    }
+
+    /// A closed descriptor is an error, not "not ready" (which would busy-loop).
+    ///
+    /// Tested on the pure mapping: polling a descriptor number that was just
+    /// closed races with parallel tests, which may be handed the same number.
+    #[test]
+    fn closed_fd_revents_is_ebadf() {
+        let err = classify_revents(libc::POLLNVAL).expect_err("closed fd must be an error");
+        assert_eq!(err.raw_os_error(), Some(libc::EBADF));
+        assert!(classify_revents(libc::POLLIN).expect("readable"));
+        assert!(classify_revents(libc::POLLHUP).expect("hung up"));
+        assert!(!classify_revents(0).expect("not ready"));
     }
 }

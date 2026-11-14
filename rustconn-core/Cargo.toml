@@ -134,10 +134,9 @@ ironrdp-mstsgu = { version = "0.1", features = ["native-tls"], optional = true }
 # Pin native-tls to avoid Tlsv13 compile bug in 0.2.17
 native-tls = { workspace = true, optional = true }
 # `user` for `getuid`: the mc wrapper root must belong to this user (mc_ssh).
-nix = { version = "0.31.2", features = ["fs", "signal", "process", "user"] }
+nix = { workspace = true, features = ["fs", "signal", "process", "user"] }
 # MPTCP (Multipath TCP) socket creation — safe API, no unsafe needed
-socket2 = { version = "0.6", features = ["all"] }
-fs2 = "0.4"
+socket2 = { workspace = true }
 
 # HTTP/1.1 client for the persistent `bw serve` transport (feature
 # `bitwarden-serve`, W2). All already in Cargo.lock transitively (hyper 1.12,

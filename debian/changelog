@@ -1,3 +1,50 @@
+rustconn (0.25.0-1) unstable; urgency=medium
+
+  * Version bump to 0.25.0
+  * Added: Split with Other Tabs splits several tabs at once (#423), also
+    on Ctrl+Shift+K
+  * Added: Monitors setting for an external RDP window
+  * Added: rustconn-cli import reads PuTTY and mRemoteNG files
+  * Added: saved searches in the sidebar Filter menu
+  * Added: Trash row in the sidebar, with Restore and Empty Trash
+  * Added: Settings > Clients keeps detection results and has Refresh
+  * Added: a missing desktop portal is reported at startup
+  * Added: translated desktop entry in every language of po/
+  * Added: New Subgroup, Duplicate and Move to Group on a folder's menu,
+    and Create Another in the New Group dialog
+  * Added: Delete Permanently for a single item in the Trash
+  * Added: substring search in every group picker
+  * Fixed: a jump host or key path with a shell metacharacter could run
+    a command through the jump host ProxyCommand
+  * Fixed: Passbolt passphrase no longer visible in the process list
+  * Fixed: six CLI downloads are checked against the vendor's SHA256, and
+    all downloads stay on HTTPS
+  * Fixed: sync exports are created owner-only and written crash-safely
+  * Fixed: PTY descriptors no longer leak into child processes
+  * Fixed: a line break in a host or option can no longer add directives
+    to the ssh configuration Midnight Commander uses
+  * Fixed: rustconn-cli completions and man-page no longer panic in a
+    debug build
+  * Fixed: Bitwarden Unlock no longer freezes the window on a slow keyring
+  * Fixed: -f putty reads a regedit UTF-16 export
+  * Fixed: the tray click raises the window on Wayland (KDE)
+  * Fixed: a rustconn-cli change made while the window is open is no
+    longer overwritten by the window's next save, and shows up live
+  * Fixed: WinRM and Telnet sessions turn green in the sidebar
+  * Fixed: Clear Session Data in the embedded browser asks first
+  * Fixed: rustconn-cli run-script reads a .kdbx set on a connection or
+    group (#411)
+  * Changed: a deleted connection or group stays in the Trash until Empty
+    Trash, also after a bulk delete
+  * Changed: Secret Service client oo7 0.7, zbus 6; rustconn-cli --config
+    has no -c short form
+  * Removed: unused credential-resolver methods, interner, cache and
+    drag_drop modules, and dead GUI code
+  * Documentation: Accessibility and KDE/Wayland sections in the User Guide
+  * Dependencies: resvg 0.50, oo7 0.7.1, ashpd 0.14, zbus 6.3.0,
+    rustls-webpki 0.103.17, vnc-rs 0.6.1, zstd 0.14.4, cc 1.11.2, mio 1.2.5
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 14 Nov 2026 08:09:17 +0200
+
 rustconn (0.24.11-1) unstable; urgency=medium
 
   * Version bump to 0.24.11

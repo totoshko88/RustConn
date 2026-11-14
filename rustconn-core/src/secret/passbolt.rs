@@ -9,8 +9,11 @@
 //! The Passbolt CLI must be installed and configured:
 //! ```bash
 //! passbolt configure --serverAddress https://passbolt.example.org \
-//!     --userPassword 'passphrase' --userPrivateKeyFile 'key.asc'
+//!     --userPrivateKeyFile 'key.asc'
 //! ```
+//!
+//! A passphrase given to [`PassboltBackend::with_user_password`] reaches the CLI
+//! through its environment, never its argv.
 //!
 //! # Resources
 //!
@@ -26,6 +29,9 @@ use serde::Deserialize;
 use tokio::process::Command;
 
 use super::backend::SecretBackend;
+
+/// Environment variable go-passbolt-cli reads `userPassword` from.
+const USER_PASSWORD_ENV: &str = "USERPASSWORD";
 use super::serde_helpers::serde_error_kind;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
@@ -191,9 +197,9 @@ impl PassboltBackend {
         let mut cmd = Command::new("passbolt");
         cmd.env("PATH", crate::cli_download::get_extended_path());
         // `PASSBOLT_INVOCATION_TIMEOUT` drops the future when it fires, and
-        // `tokio::process` does not kill the child on drop by default. This
-        // matters more here than elsewhere: the passphrase is on this command's
-        // argv, so an orphan leaves it visible in `/proc/PID/cmdline`.
+        // `tokio::process` does not kill the child on drop by default. A
+        // resource password can be on this command's argv (see `store`), so an
+        // orphan would leave it visible in `/proc/PID/cmdline`.
         cmd.kill_on_drop(true);
         cmd.args(args);
 
@@ -202,10 +208,11 @@ impl PassboltBackend {
         }
 
         if let Some(ref passphrase) = self.user_password {
-            // NOTE: go-passbolt-cli does not support stdin-based passphrase input.
-            // The passphrase is visible in /proc/PID/cmdline for the command duration.
-            // This is a limitation of the upstream CLI tool.
-            cmd.arg("--userPassword").arg(passphrase.expose_secret());
+            // go-passbolt-cli has no stdin input, but it reads every setting from
+            // the environment too (viper `AutomaticEnv`, no prefix), so the
+            // passphrase goes there: `/proc/PID/environ` is readable by the owner
+            // only, whereas `/proc/PID/cmdline` is world-readable.
+            cmd.env(USER_PASSWORD_ENV, passphrase.expose_secret());
         }
 
         // Always request JSON output for parsing
@@ -499,8 +506,9 @@ impl SecretBackend for PassboltBackend {
 
         let name = Self::entry_name(connection_id);
         let username = credentials.username.clone().unwrap_or_default();
-        // Wiped on drop. The CLI needs the password as a plain argument (it has no
-        // stdin path — see `build_command`), but that is no reason to also leave
+        // Wiped on drop. The CLI takes the resource password only as the
+        // `--password` flag (a plain cobra flag: no stdin, no environment), a
+        // documented exception in AGENTS.md; that is no reason to also leave
         // the copy behind in freed memory.
         let password = zeroize::Zeroizing::new(
             credentials
@@ -578,13 +586,7 @@ impl SecretBackend for PassboltBackend {
 
     async fn is_available(&self) -> bool {
         // Check if passbolt CLI is installed
-        let installed = Command::new("passbolt")
-            .env("PATH", crate::cli_download::get_extended_path())
-            .arg("--version")
-            .output()
-            .await
-            .map(|o| o.status.success())
-            .unwrap_or(false);
+        let installed = crate::which::is_available("passbolt");
 
         if !installed {
             return false;
@@ -813,6 +815,31 @@ mod debug_tests {
         assert!(
             rendered.contains("[REDACTED]"),
             "Debug must show redacted marker: {rendered}"
+        );
+    }
+
+    /// The account passphrase must reach the CLI through its environment: argv
+    /// is world-readable in `/proc/PID/cmdline`.
+    #[test]
+    fn the_account_passphrase_is_passed_by_env_not_argv() {
+        let backend = PassboltBackend::new()
+            .with_user_password(SecretString::from("s3cret-phrase".to_owned()));
+        let cmd = backend.build_command(&["list", "resource"]);
+        let std_cmd = cmd.as_std();
+
+        assert!(
+            std_cmd
+                .get_args()
+                .all(|a| a != "s3cret-phrase" && a != "--userPassword"),
+            "passphrase on argv: {:?}",
+            std_cmd.get_args().collect::<Vec<_>>()
+        );
+        assert!(
+            std_cmd
+                .get_envs()
+                .any(|(k, v)| k == USER_PASSWORD_ENV
+                    && v == Some(std::ffi::OsStr::new("s3cret-phrase"))),
+            "passphrase missing from the environment"
         );
     }
 

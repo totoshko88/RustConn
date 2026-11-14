@@ -156,6 +156,13 @@ impl PanelPlacement {
         let origin = self.origin;
         tracing::debug!(%session_id, %panel_uuid, origin, "placing session in panel");
 
+        // Never overwrite a session that already sits in the panel: the move
+        // would drop it from the layout without any message.
+        if !self.bridge.is_pane_empty(panel_uuid) {
+            tracing::warn!(%session_id, %panel_uuid, origin, "panel is not empty");
+            return false;
+        }
+
         // Refuse before anything moves — see `refuses_split_placement`.
         if refuses_split_placement(&self.notebook, session_id, origin) {
             return false;
@@ -1209,5 +1216,176 @@ impl MainWindow {
             }
         });
         window.add_action(&reconnect_pane_action);
+
+        // Split with Other Tabs (issue #423): the active tab becomes the split
+        // owner, the tabs the user ticks fill a balanced grid around it. The
+        // panels come from the same `win.split-*` actions and the same
+        // `PanelPlacement` Select Tab uses, so the result is exactly what the
+        // user would have built by hand.
+        let split_tabs_action = gio::SimpleAction::new("split-with-tabs", None);
+        let notebook_tabs = self.terminal_notebook.clone();
+        let bridges_tabs = self.session_split_bridges.clone();
+        let monitoring_tabs = self.monitoring.clone();
+        let refresh_broadcast_tabs = refresh_broadcast.clone();
+        let window_weak_tabs = window.downgrade();
+        split_tabs_action.connect_activate(move |_, _| {
+            let Some(win) = window_weak_tabs.upgrade() else {
+                return;
+            };
+            let Some(owner) = notebook_tabs.get_active_session_id() else {
+                return;
+            };
+            let toast = |message: String| {
+                crate::toast::show_toast_on_window(&win, &message, crate::toast::ToastType::Warning);
+            };
+            let embeddable = |id: Uuid| {
+                matches!(
+                    notebook_tabs.split_eligibility(id),
+                    crate::terminal::SplitEligibility::Embeddable
+                ) && notebook_tabs.may_place_in_split(id)
+            };
+            // The owner's own tab hosts the layout, so it must not host one
+            // already (that tab uses Select Tab in its empty panels).
+            if bridges_tabs.borrow().contains_key(&owner) {
+                toast(crate::i18n::i18n(
+                    "This tab already has a split. Remove it first, or use Select Tab in a panel.",
+                ));
+                return;
+            }
+            if !embeddable(owner) {
+                toast(crate::i18n::i18n(
+                    "Split view is not available for external-viewer sessions. Switch this connection to embedded mode to use split.",
+                ));
+                return;
+            }
+            let owner_name = notebook_tabs
+                .get_session_info(owner)
+                .map(|i| i.name)
+                .unwrap_or_default();
+            let choices: Vec<crate::dialogs::split_tabs::SplitTabChoice> = notebook_tabs
+                .sessions_in_tab_order()
+                .into_iter()
+                .filter(|s| s.id != owner && embeddable(s.id))
+                .filter(|s| !bridges_tabs.borrow().contains_key(&s.id))
+                .map(|s| crate::dialogs::split_tabs::SplitTabChoice {
+                    session_id: s.id,
+                    name: s.name,
+                    protocol: s.protocol,
+                })
+                .collect();
+            if choices.is_empty() {
+                toast(crate::i18n::i18n(
+                    "There are no other tabs that can be shown in a split.",
+                ));
+                return;
+            }
+
+            let notebook = notebook_tabs.clone();
+            let bridges = bridges_tabs.clone();
+            let monitoring = monitoring_tabs.clone();
+            let refresh_broadcast = refresh_broadcast_tabs.clone();
+            let win_weak = win.downgrade();
+            crate::dialogs::split_tabs::show_split_tabs_dialog(
+                &win,
+                &owner_name,
+                choices,
+                move |chosen| {
+                    let Some(win) = win_weak.upgrade() else {
+                        return;
+                    };
+                    create_split_from_tabs(
+                        &win,
+                        &notebook,
+                        &bridges,
+                        &monitoring,
+                        &refresh_broadcast,
+                        owner,
+                        &chosen,
+                    );
+                },
+            );
+        });
+        window.add_action(&split_tabs_action);
     }
+}
+
+/// Builds a balanced split on `owner`'s tab and moves `guests` into it.
+///
+/// The empty panels are all created first and only then filled: parking a
+/// guest's tab makes `AdwTabView` select another page, and every split step
+/// resolves its layout through the *active* tab, so interleaving the two would
+/// split the wrong tab.
+fn create_split_from_tabs(
+    win: &adw::ApplicationWindow,
+    notebook: &SharedNotebook,
+    bridges: &SessionSplitBridges,
+    monitoring: &Rc<MonitoringCoordinator>,
+    refresh_broadcast: &Rc<dyn Fn()>,
+    owner: Uuid,
+    guests: &[Uuid],
+) {
+    // The dialog is modal and closes before this runs, but tabs may have been
+    // closed or moved in the meantime: keep only guests that can still join.
+    let guests: Vec<Uuid> = guests
+        .iter()
+        .copied()
+        .filter(|id| *id != owner && notebook.may_place_in_split(*id))
+        .collect();
+    if guests.is_empty() || bridges.borrow().contains_key(&owner) {
+        return;
+    }
+    notebook.switch_to_tab(owner);
+
+    let (width, height) = (win.width(), win.height());
+    let mut panes: Vec<Uuid> = Vec::with_capacity(guests.len());
+    crate::split_view::run_balanced_splits(
+        win.upcast_ref(),
+        notebook,
+        bridges,
+        f64::from(width),
+        f64::from(height),
+        guests.len(),
+        |_, pane| panes.push(pane),
+    );
+
+    let Some(bridge) = bridges.borrow().get(&owner).cloned() else {
+        tracing::warn!(%owner, "split-with-tabs: the split was not created");
+        return;
+    };
+    let placement = PanelPlacement {
+        notebook: notebook.clone(),
+        bridge: Rc::clone(&bridge),
+        bridges: bridges.clone(),
+        monitoring: Rc::clone(monitoring),
+        refresh_broadcast: Rc::clone(refresh_broadcast),
+        origin: "tabs",
+    };
+    let placed = panes
+        .iter()
+        .zip(&guests)
+        .filter(|(pane, guest)| placement.place(**pane, **guest))
+        .count();
+    if placed < guests.len() {
+        tracing::warn!(
+            panes = panes.len(),
+            placed,
+            wanted = guests.len(),
+            "split-with-tabs: some tabs were not placed"
+        );
+        crate::toast::show_toast_on_window(
+            win,
+            &crate::i18n::i18n("Some tabs could not be added to the split."),
+            crate::toast::ToastType::Warning,
+        );
+    }
+
+    // Parking the guests' tabs moved the selection; return to the split, one
+    // idle later for the same reparent race `wire_new_shell_button` documents.
+    let notebook = Rc::clone(notebook);
+    glib::idle_add_local_once(move || {
+        notebook.switch_to_tab(owner);
+        if let Some(widget) = bridge.content_widget(owner) {
+            widget.grab_focus();
+        }
+    });
 }

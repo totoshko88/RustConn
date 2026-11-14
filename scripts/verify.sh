@@ -84,6 +84,7 @@ mkdir -p target
 
 failed=0
 declare -a results=()
+declare -a missing=()
 
 say() { printf '%s\n' "$*"; }
 
@@ -111,6 +112,8 @@ run_gate() {
 skip_gate() {
     say "  skip  $1 ($2)"
     results+=("SKIP	$1 — $2")
+    [ "$2" = 'not installed' ] && missing+=("$1")
+    return 0
 }
 
 # ── Serialisation ────────────────────────────────────────────────────────────
@@ -323,6 +326,10 @@ else
     run_gate 'cargo clippy -p rustconn-cli --features full' \
         "$CARGO" clippy -p rustconn-cli --features full --all-targets -- -D warnings
 
+    # Needs the CLI binary, so it sits with the cargo gates rather than the
+    # fast ones; the script builds the debug binary itself.
+    run_gate 'check-cli-docs' scripts/check-cli-docs.sh
+
     # rustdoc lints (broken intra-doc links, unclosed HTML, bare URLs) are only
     # evaluated by rustdoc, so clippy above cannot see them. Same feature set as
     # clippy, for the same macOS reason. --document-private-items because these
@@ -373,6 +380,13 @@ say 'Summary'
 for r in "${results[@]}"; do
     printf '  %s\n' "$(printf '%s' "$r" | sed 's/\t/  /')"
 done
+
+if [ "${#missing[@]}" -gt 0 ]; then
+    say ''
+    say "NOT CHECKED — missing tool(s): ${missing[*]}"
+    say '  A green result above does not cover them. CI runs them; to run them here see'
+    say '  CONTRIBUTING.md ("The quality gate"), e.g. cargo install typos-cli cargo-machete'
+fi
 
 say ''
 if [ "$failed" -gt 0 ]; then

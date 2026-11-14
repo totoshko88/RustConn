@@ -2491,6 +2491,7 @@ impl TemplateDialog {
             performance_mode: RdpPerformanceMode::default(),
             graphics_mode: rustconn_core::rdp_client::graphics::GraphicsMode::default(),
             external_display_mode,
+            monitor_ids: Vec::new(),
             resolution,
             color_depth,
             audio_redirect: RdpAudioMode::from_index(audio_mode_dropdown.selected())

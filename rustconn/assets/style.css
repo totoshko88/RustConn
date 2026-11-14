@@ -508,20 +508,6 @@ button.context-menu-destructive:hover {
 }
 
 /* ============================================================
- * Terminal Activity Monitor — Tab Indicator Styles
- * ============================================================ */
-
-/* Activity notification indicator (e.g. new output after quiet period) */
-.tab-activity-indicator {
-    color: @accent_color;
-}
-
-/* Silence notification indicator (e.g. no output for configured duration) */
-.tab-silence-indicator {
-    color: @warning_color;
-}
-
-/* ============================================================
  * Monitoring Bar Styles
  * ============================================================ */
 
@@ -628,8 +614,10 @@ window:not(.compact):not(.macos) .sidebar-search-row {
 /* ============================================================
  * Accessibility: Reduced Motion
  * GTK4 CSS does not support @media (prefers-reduced-motion).
- * The transitions used in this stylesheet are minimal (≤200ms)
- * and do not cause accessibility issues.
+ * The transitions used in this stylesheet are minimal (≤200ms).
+ * The looping `tunnel-pulse` animations are switched off at runtime by
+ * `follow_reduced_motion()` in app.rs when `gtk-enable-animations` is false.
+ * Add any new looping animation to its selector list there.
  * ============================================================ */
 
 /* ============================================================

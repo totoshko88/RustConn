@@ -374,6 +374,14 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
             "Remove Split",
             SplitView,
         ),
+        // Opens the "Split with Other Tabs" picker for the active tab, so the
+        // feature is reachable without the tab's context menu (issue #423).
+        KeybindingDef::new(
+            "win.split-with-tabs",
+            "<Control><Shift>k",
+            "Split with Other Tabs",
+            SplitView,
+        ),
         KeybindingDef::new(
             "win.focus-next-pane",
             "<Control>grave",

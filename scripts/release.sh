@@ -379,6 +379,7 @@ PKG_FILES=(
     "packaging/flathub/io.github.totoshko88.RustConn.yml"
     "snap/snapcraft.yaml"
     "flake.nix"
+    "packaging/nixpkgs/package.nix"
     "docs/USER_GUIDE.md"
     "docs/ARCHITECTURE.md"
     "docs/AI_DEVELOPMENT.md"
@@ -402,6 +403,7 @@ PKG_PATS=(
     "tag: v$VERSION_RE$"
     "^version: '$VERSION_RE'$"
     "version = \"$VERSION_RE\""
+    "^  version = \"$VERSION_RE\";$"
     "\\*\\*Version $VERSION_RE\\*\\*"
     "\\*\\*Version $VERSION_RE\\*\\*"
     "\\*\\*Version $VERSION_RE\\*\\*"
@@ -590,6 +592,7 @@ VERSION_ONLY_FILES=(
     "packaging/flathub/io.github.totoshko88.RustConn.yml"
     "snap/snapcraft.yaml"
     "flake.nix"
+    "packaging/nixpkgs/package.nix"
     "po/rustconn.pot"
     "packaging/macos/rustconn.rb"
 )
@@ -663,6 +666,33 @@ if [[ -f "$BREW_FORMULA" ]]; then
     ok "$BREW_FORMULA template is CI-ready (archive URL v$VERSION + sha256)"
 else
     skipped "Homebrew formula check" "$BREW_FORMULA not found"
+fi
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 5e. flake.nix is valid Nix, not just a file with the right version string
+#     Gate 5 only greps `version = "x.y.z"`. A flake that fails to evaluate (a
+#     renamed nixpkgs attribute, a syntax slip) passes it and is found by users
+#     of `nix run github:totoshko88/RustConn`. Needs the nix CLI; where it is
+#     missing the gate is recorded as skipped, never silently passed. CI runs the
+#     same check on PRs (job `nix` in ci.yml).
+# ──────────────────────────────────────────────────────────────────────────────
+if command -v nix >/dev/null; then
+    NIX_FLAGS=(--extra-experimental-features 'nix-command flakes')
+    # --no-build: evaluate and check outputs, build nothing. flake.lock is not
+    # committed (docs/INSTALL.md), so this resolves the current nixpkgs-unstable.
+    if ! nix "${NIX_FLAGS[@]}" flake check --no-build >&2; then
+        fail "nix flake check --no-build failed on flake.nix"
+    fi
+    # Force the derivation of the default package: catches an attribute that
+    # exists but does not evaluate, which `flake check --no-build` can miss.
+    # meta.platforms is linux only, so evaluate the linux system of this CPU.
+    NIX_SYSTEM="$(uname -m | sed 's/^arm64$/aarch64/')-linux"
+    if ! nix "${NIX_FLAGS[@]}" eval --raw ".#packages.${NIX_SYSTEM}.default.drvPath" >/dev/null; then
+        fail "packages.default of flake.nix does not evaluate"
+    fi
+    ok "flake.nix passes nix flake check and packages.default evaluates"
+else
+    skipped "Nix flake validation" "nix is not installed (flake.nix version string was still checked)"
 fi
 
 # ──────────────────────────────────────────────────────────────────────────────

@@ -115,6 +115,7 @@ pub fn show_batch_edit_dialog(
         .title(i18n("Group"))
         .model(&group_model)
         .build();
+    crate::dialogs::widgets::enable_combo_row_search(&group_row);
     group_row.add_prefix(&group_check);
     prefs_group.add(&group_row);
 

@@ -25,7 +25,9 @@ pub use crate::sidebar_types::{
 // Submodules
 pub mod drag_drop;
 pub mod filter;
+pub mod saved_searches;
 pub mod search;
+pub mod trash;
 pub mod view;
 
 use std::cell::RefCell;
@@ -79,6 +81,8 @@ pub struct ConnectionSidebar {
 
     /// Search history
     search_history: Rc<RefCell<Vec<String>>>,
+    /// Saved searches section of the Filter popover
+    saved_searches: saved_searches::SavedSearchesSection,
     /// Search history popover
     history_popover: gtk4::Popover,
     /// Drop indicator for drag-and-drop visual feedback
@@ -193,11 +197,12 @@ impl ConnectionSidebar {
         // permanent protocol pill buttons. Its popover holds one GtkCheckButton
         // per protocol; toggling a checkbox drives the SAME filtering mechanism
         // (`search::update_search_with_filters`) the old pills used.
-        let (protocol_filter_menu, protocol_filter_checks) = Self::create_protocol_filter_menu(
-            &search_entry,
-            &active_protocol_filters,
-            &programmatic_flag,
-        );
+        let (protocol_filter_menu, protocol_filter_checks, saved_searches) =
+            Self::create_protocol_filter_menu(
+                &search_entry,
+                &active_protocol_filters,
+                &programmatic_flag,
+            );
         search_box.append(&protocol_filter_menu);
 
         // Sidebar as a proper panel: an AdwToolbarView whose TOP BAR is the
@@ -832,6 +837,7 @@ impl ConnectionSidebar {
             group_ops_mode,
 
             search_history,
+            saved_searches,
             history_popover,
             drop_indicator,
             scrolled_window,
@@ -936,6 +942,7 @@ impl ConnectionSidebar {
     ) -> (
         gtk4::MenuButton,
         Rc<RefCell<std::collections::HashMap<String, gtk4::CheckButton>>>,
+        saved_searches::SavedSearchesSection,
     ) {
         // Protocol key paired with its translatable label. The key, lowercased,
         // becomes the `protocol:`/`protocols:` query (see
@@ -1009,6 +1016,9 @@ impl ConnectionSidebar {
         }
 
         let popover = gtk4::Popover::new();
+        let saved = saved_searches::SavedSearchesSection::new(search_entry, &popover);
+        list_box.append(&gtk4::Separator::new(Orientation::Horizontal));
+        list_box.append(saved.widget());
         popover.set_child(Some(&list_box));
 
         menu_button.set_icon_name(crate::icon_render::theme_icon_or(
@@ -1022,7 +1032,7 @@ impl ConnectionSidebar {
         ))]);
         Self::sync_filter_indicator(&menu_button, false);
 
-        (menu_button, checks)
+        (menu_button, checks, saved)
     }
 
     /// Shows on the Filter button whether any protocol filter is on.
@@ -1116,6 +1126,82 @@ impl ConnectionSidebar {
     #[must_use]
     pub const fn list_view(&self) -> &ListView {
         &self.list_view
+    }
+
+    /// Whether the virtual Trash row is currently expanded.
+    #[must_use]
+    pub fn trash_expanded(&self) -> bool {
+        (0..self.tree_model.n_items()).any(|i| {
+            self.tree_model
+                .item(i)
+                .and_downcast::<TreeListRow>()
+                .is_some_and(|row| {
+                    row.is_expanded()
+                        && row
+                            .item()
+                            .and_downcast::<ConnectionItem>()
+                            .is_some_and(|item| item.id() == trash::TRASH_GROUP_ID)
+                })
+        })
+    }
+
+    /// Replaces the virtual Trash row at the end of the tree.
+    ///
+    /// The row exists only while `entries` is non-empty, so emptying the trash or
+    /// restoring its last item removes it. `expanded` re-opens it afterwards,
+    /// because the new `ConnectionItem` starts collapsed.
+    pub fn set_trash_row(&self, entries: &[trash::TrashEntry], expanded: bool) {
+        for i in 0..self.store.n_items() {
+            if self
+                .store
+                .item(i)
+                .and_downcast::<ConnectionItem>()
+                .is_some_and(|item| item.id() == trash::TRASH_GROUP_ID)
+            {
+                self.store.remove(i);
+                break;
+            }
+        }
+        if !trash::row_visible(entries) {
+            return;
+        }
+        let trash_item =
+            ConnectionItem::new_group_with_icon(trash::TRASH_GROUP_ID, &i18n("Trash"), "🗑");
+        for entry in entries {
+            let id = trash::trash_item_id(entry.kind, entry.id);
+            let child = match entry.kind {
+                trash::TrashKind::Group => {
+                    ConnectionItem::new_group_with_icon(&id, &entry.name, "📁")
+                }
+                trash::TrashKind::Connection => ConnectionItem::new_connection_full_with_icon(
+                    &id,
+                    &entry.name,
+                    &entry.protocol,
+                    &entry.host,
+                    "disconnected",
+                    false,
+                    "",
+                ),
+            };
+            trash_item.add_child(&child);
+        }
+        self.store.append(&trash_item);
+        if expanded {
+            let tree_model = self.tree_model.clone();
+            glib::idle_add_local_once(move || {
+                for i in 0..tree_model.n_items() {
+                    if let Some(row) = tree_model.item(i).and_downcast::<TreeListRow>()
+                        && row
+                            .item()
+                            .and_downcast::<ConnectionItem>()
+                            .is_some_and(|item| item.id() == trash::TRASH_GROUP_ID)
+                    {
+                        row.set_expanded(true);
+                        break;
+                    }
+                }
+            });
+        }
     }
 
     /// Returns the underlying store
@@ -1738,6 +1824,19 @@ impl ConnectionSidebar {
         current.clear();
         current.extend(history.iter().cloned());
         current.truncate(MAX_SEARCH_HISTORY);
+    }
+
+    /// Loads saved searches from persisted settings
+    pub fn load_saved_searches(&self, items: &[rustconn_core::SavedSearch]) {
+        self.saved_searches.set_items(items);
+    }
+
+    /// Registers the persistence callback; it gets the full list after each change
+    pub fn connect_saved_searches_changed<F: Fn(&[rustconn_core::SavedSearch]) + 'static>(
+        &self,
+        f: F,
+    ) {
+        self.saved_searches.connect_changed(f);
     }
 
     /// Saves the current tree state before starting a search

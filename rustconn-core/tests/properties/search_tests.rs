@@ -1249,3 +1249,37 @@ mod debounce_edge_case_tests {
         assert_eq!(debouncer.delay(), Duration::from_millis(250));
     }
 }
+
+proptest! {
+    /// A saved search survives the settings file unchanged, and applying it
+    /// yields the same results as the text it was saved from.
+    #[test]
+    fn saved_searches_round_trip_and_apply_like_typing(
+        name in "[^\\s][\\PC]{0,20}",
+        query in "[a-zA-Z0-9#@:,._ \"'\\\\-]{1,30}",
+    ) {
+        use rustconn_core::config::UiSettings;
+        use rustconn_core::add_saved_search;
+
+        prop_assume!(!query.trim().is_empty());
+        let mut ui = UiSettings::default();
+        prop_assume!(add_saved_search(&mut ui.saved_searches, &name, &query).is_ok());
+
+        let text = toml::to_string(&ui).expect("serialize");
+        let back: UiSettings = toml::from_str(&text).expect("parse");
+        prop_assert_eq!(&back.saved_searches, &ui.saved_searches);
+
+        let applied = &back.saved_searches[0].query;
+        let conns = rustconn_core::search::benchmark::generate_test_connections(20);
+        let run = |q: &str| {
+            SearchEngine::parse_query(q).ok().map(|p| {
+                SearchEngine::new()
+                    .search(&p, &refs(&conns), &[])
+                    .into_iter()
+                    .map(|r| r.connection_id)
+                    .collect::<Vec<_>>()
+            })
+        };
+        prop_assert_eq!(run(applied), run(query.trim()));
+    }
+}

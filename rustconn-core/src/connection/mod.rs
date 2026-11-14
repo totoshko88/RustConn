@@ -5,9 +5,8 @@
 //! `LazyGroupLoader` for lazy loading of connection groups to improve startup
 //! performance with large connection databases.
 //!
-//! The module also includes string interning utilities for memory optimization
-//! when dealing with large numbers of connections, and virtual scrolling helpers
-//! for efficient rendering of large connection lists.
+//! The module also includes virtual scrolling helpers for efficient rendering of
+//! large connection lists.
 //!
 //! ## Retry Logic
 //!
@@ -18,8 +17,8 @@ pub mod automation_inheritance;
 pub mod copy_field;
 mod dial;
 pub mod gateway_failover;
+pub mod group_copy;
 pub mod host_range;
-mod interning;
 pub mod jump_chain;
 pub mod keepalive;
 pub mod knock;
@@ -38,10 +37,6 @@ mod virtual_scroll;
 
 pub use copy_field::{CopyField, copy_fields, copy_text, format_address};
 pub use dial::connect_tcp;
-pub use interning::{
-    check_interning_stats, get_interning_stats, intern_connection_strings, intern_hostname,
-    intern_protocol_name, intern_username, log_interning_stats, log_interning_stats_with_warning,
-};
 pub use jump_chain::{JumpChain, resolve_jump_chain, resolve_proxy_jump_value};
 pub use keepalive::{KeepaliveConfig, apply_interactive_keepalive, set_interactive_keepalive};
 pub use knock::{
@@ -52,7 +47,7 @@ pub use lazy_loader::LazyGroupLoader;
 pub use login_prompt::{
     DEFAULT_USERNAME_PROMPTS, LoginPrompt, LoginPromptMatcher, looks_like_username_prompt,
 };
-pub use manager::ConnectionManager;
+pub use manager::{ConnectionManager, ReloadOutcome};
 pub use mdns::{apply_mdns_fallback, is_mdns_name, resolve_sandboxed_hostname};
 pub use mptcp::{
     MptcpError, MptcpResult, connect_mptcp, connect_mptcp_async, is_mptcp_available,

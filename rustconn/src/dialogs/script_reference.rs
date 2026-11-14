@@ -82,10 +82,11 @@ msg <text> [ok]
 3. SESSION MANAGEMENT
 ---------------------
 
-start <name-or-uuid> [manual] [cluster=<name>] [-> uuid,tmp]
+start <name-or-uuid> [manual] [-> uuid,tmp]
     Start a session. The selector is a connection name or a connection UUID.
     "manual" requests the manual-login flag. "-> uuid,tmp" stores the started
-    session's UUID and temporary UUID in the named variables.
+    session's UUID and temporary UUID in the named variables. The "cluster="
+    option is not supported and stops the script with an error.
 
 select <name-or-uuid> [-> uuid,tmp]
     Select an open session by connection name or by session UUID, and store

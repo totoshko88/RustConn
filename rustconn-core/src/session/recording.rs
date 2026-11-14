@@ -622,30 +622,9 @@ fn rewrite_body(
     new_counts
 }
 
-/// Writes `bytes` to `path` atomically (temp sibling + rename), `0600` on unix.
+/// Writes `bytes` to `path` atomically, `0600` on unix.
 fn write_file_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let tmp = path.with_extension(format!(
-        "{}.tmp",
-        path.extension()
-            .map(|e| e.to_string_lossy().into_owned())
-            .unwrap_or_default()
-    ));
-
-    let mut open_opts = fs::OpenOptions::new();
-    open_opts.write(true).create(true).truncate(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        open_opts.mode(0o600);
-    }
-    {
-        let mut file = open_opts.open(&tmp)?;
-        file.write_all(bytes)?;
-        file.sync_all()?;
-    }
-    fs::rename(&tmp, path).inspect_err(|_| {
-        let _ = fs::remove_file(&tmp);
-    })
+    crate::fs_atomic::atomic_write(path, bytes, crate::fs_atomic::MODE_PRIVATE)
 }
 
 // ---------------------------------------------------------------------------

@@ -13,11 +13,19 @@
 # are therefore NOT covered by this list; a genuine test-only false positive in
 # one of those is handled by dismissing that individual alert as "false positive"
 # (which persists across runs), not by excluding its file.
+#
+# CodeQL has no filter for Rust test code: `paths-ignore` works on whole files,
+# and `query-filters` select by query id/tag, not by path or `#[cfg(test)]`.
+# For files already split out as `tests.rs` the glob below applies; most of the
+# tests here are inline `mod tests`, which stay in scope.
 name: RustConn CodeQL config
 
 paths-ignore:
   # Rust integration tests and benchmarks: test harnesses only, never shipped.
   - rustconn-core/tests
+  - rustconn-cli/tests
+  # Test modules split into their own file (`#[cfg(test)] mod tests;`).
+  - '**/tests.rs'
   - rustconn-core/benches
   # Build, packaging and developer tooling (Python/Ruby/shell helpers): not part
   # of the application that ships to users.

@@ -9,7 +9,7 @@
 //! partial or corrupt JSON.
 
 use std::collections::HashSet;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::BufReader;
 use std::path::Path;
 
 use chrono::{DateTime, Utc};
@@ -547,24 +547,10 @@ impl GroupSyncExport {
     /// Returns [`SyncError::Io`] on file system errors or [`SyncError::InvalidFormat`]
     /// if serialization fails.
     pub fn to_file(&self, path: &Path) -> Result<(), SyncError> {
-        let temp_path = path.with_extension("rcn.tmp");
-
-        let file = std::fs::File::create(&temp_path)?;
-        let mut writer = BufWriter::new(file);
-        serde_json::to_writer_pretty(&mut writer, self)?;
-        writer.flush()?;
-
-        // Atomic rename into final location.
-        std::fs::rename(&temp_path, path)?;
-
-        // Restrict file permissions to owner-only (0600) — sync files may
-        // contain hostnames, usernames, automation scripts, and variable
-        // references that should not be world-readable.
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
-        }
+        // Owner-only from creation (sync files hold hostnames, usernames and
+        // variable references), fsynced, temp removed on failure.
+        let bytes = serde_json::to_vec_pretty(self)?;
+        crate::fs_atomic::atomic_write(path, &bytes, crate::fs_atomic::MODE_PRIVATE)?;
 
         Ok(())
     }
@@ -838,6 +824,22 @@ mod tests {
         let json = serde_json::to_string_pretty(&export).unwrap();
         let deserialized: GroupSyncExport = serde_json::from_str(&json).unwrap();
         assert_eq!(export, deserialized);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn to_file_is_owner_only_and_leaves_no_temp() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("group.rcn");
+        std::fs::write(&path, b"old").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+
+        sample_export().to_file(&path).unwrap();
+
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
     }
 
     #[test]

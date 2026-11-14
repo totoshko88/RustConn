@@ -199,6 +199,22 @@ impl MainWindow {
         });
         window.add_action(&duplicate_action);
 
+        // Duplicate a group with its subgroups and connections
+        let duplicate_group_action = gio::SimpleAction::new("duplicate-group", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        duplicate_group_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                super::operations::duplicate_selected_group(
+                    win.upcast_ref(),
+                    &state_clone,
+                    &sidebar_clone,
+                );
+            }
+        });
+        window.add_action(&duplicate_group_action);
+
         // Run a local bash script on the selected SSH hosts
         let run_script_action = gio::SimpleAction::new("run-local-script", None);
         let window_weak = window.downgrade();
@@ -260,36 +276,6 @@ impl MainWindow {
             }
         });
         window.add_action(&move_to_group_action);
-
-        // Copy username to clipboard
-        let copy_username_action = gio::SimpleAction::new("copy-username", None);
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        let window_weak = window.downgrade();
-        let toast_clone = self.toast_overlay.clone();
-        copy_username_action.connect_activate(move |_, _| {
-            if let Some(conn_id) = selected_connection_id(&sidebar_clone)
-                && let Some(win) = window_weak.upgrade()
-            {
-                super::copy_field_actions::copy_username(&win, &state_clone, &toast_clone, conn_id);
-            }
-        });
-        window.add_action(&copy_username_action);
-
-        // Copy password to clipboard (with auto-clear after 30 seconds)
-        let copy_password_action = gio::SimpleAction::new("copy-password", None);
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        let window_weak = window.downgrade();
-        let toast_clone = self.toast_overlay.clone();
-        copy_password_action.connect_activate(move |_, _| {
-            if let Some(conn_id) = selected_connection_id(&sidebar_clone)
-                && let Some(win) = window_weak.upgrade()
-            {
-                super::copy_field_actions::copy_password(&win, &state_clone, &toast_clone, conn_id);
-            }
-        });
-        window.add_action(&copy_password_action);
 
         self.setup_copy_field_actions(window, state, sidebar);
 
@@ -387,37 +373,156 @@ impl MainWindow {
         });
         window.add_action(&undo_delete_action);
 
-        // Purge-deleted action — fired when the Undo toast for a deletion
-        // dismisses without Undo having been used. This is what makes a delete
-        // permanent and removes the credential from the password vault; the
-        // trash itself is only the undo buffer (issue #263).
-        let purge_deleted_action =
-            gio::SimpleAction::new("purge-deleted", Some(glib::VariantTy::STRING));
+        // Empty-trash action — permanently removes every entry in the trash
+        // (and its vault credential) after a confirmation. A deleted item stays
+        // in the trash until this runs, so the Trash row can restore it, and the
+        // vault credential survives the deletion for the same reason (issue #263).
+        let empty_trash_action = gio::SimpleAction::new("empty-trash", None);
         let state_clone = state.clone();
-        purge_deleted_action.connect_activate(move |_, param| {
-            if let Some(param) = param
-                && let Some(param_str) = param.get::<String>()
-            {
-                // Format: "type:uuid"
-                let Some((item_type, id_str)) = param_str.split_once(':') else {
-                    return;
-                };
-                let Ok(id) = Uuid::parse_str(id_str) else {
-                    return;
-                };
-
-                // try_borrow_mut: the purge is best-effort cleanup, so a busy
-                // state is simply skipped rather than risking a BorrowMutError.
-                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                    match item_type {
-                        "connection" => state_mut.purge_deleted_connection(id),
-                        "group" => state_mut.purge_deleted_group(id),
-                        _ => {}
+        let sidebar_clone = sidebar.clone();
+        let window_weak = window.downgrade();
+        empty_trash_action.connect_activate(move |_, _| {
+            let Some(win) = window_weak.upgrade() else {
+                return;
+            };
+            let state = state_clone.clone();
+            let sidebar = sidebar_clone.clone();
+            let win_for_result = win.clone();
+            crate::alert::show_confirm(
+                &win,
+                &crate::i18n::i18n("Empty trash?"),
+                &crate::i18n::i18n(
+                    "Deleted items will be removed permanently. This cannot be undone.",
+                ),
+                &crate::i18n::i18n("Empty Trash"),
+                true,
+                move |confirmed| {
+                    if !confirmed {
+                        return;
                     }
-                }
-            }
+                    let Ok(mut state_mut) = state.try_borrow_mut() else {
+                        tracing::warn!("Empty trash skipped: state busy");
+                        return;
+                    };
+                    // The vault credentials of the deleted items are removed on a
+                    // worker thread (about 0.7 s each with a KeePass file). The
+                    // header-bar spinner shows until it ends, while the Trash row
+                    // already reflects the emptied trash.
+                    let busy_guard = super::acquire_busy_guard();
+                    let result = state_mut.empty_trash(move || drop(busy_guard));
+                    drop(state_mut);
+                    // Whatever the outcome, the row must show what is left.
+                    sorting::refresh_trash_row(&state, &sidebar);
+                    match result {
+                        Ok(()) => crate::toast::show_toast_on_window(
+                            &win_for_result,
+                            &crate::i18n::i18n("Trash emptied"),
+                            crate::toast::ToastType::Success,
+                        ),
+                        Err(e) => {
+                            tracing::warn!(error = %e, "Failed to empty trash");
+                            crate::toast::show_toast_on_window(
+                                &win_for_result,
+                                &crate::i18n::i18n_f(
+                                    "Failed to empty trash: {}",
+                                    &[&e.to_string()],
+                                ),
+                                crate::toast::ToastType::Error,
+                            );
+                        }
+                    }
+                },
+            );
         });
-        window.add_action(&purge_deleted_action);
+        window.add_action(&empty_trash_action);
+
+        // Purge-trash-item action — the single-entry Empty Trash, behind
+        // "Delete Permanently…" on a trashed row. Target: "type:uuid", the
+        // format `win.undo-delete` takes. Asks first, then removes that entry
+        // and its vault credential, sparing a credential another connection
+        // still resolves to (`AppState::purge_trash_item`).
+        let purge_trash_item_action =
+            gio::SimpleAction::new("purge-trash-item", Some(glib::VariantTy::STRING));
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let window_weak = window.downgrade();
+        purge_trash_item_action.connect_activate(move |_, param| {
+            let Some(win) = window_weak.upgrade() else {
+                return;
+            };
+            let Some((kind, id)) = param
+                .and_then(glib::Variant::get::<String>)
+                .and_then(|target| crate::sidebar::trash::parse_item_target(&target))
+            else {
+                return;
+            };
+            let Some(name) = state_clone
+                .borrow()
+                .trash_entries()
+                .into_iter()
+                .find(|entry| entry.kind == kind && entry.id == id)
+                .map(|entry| entry.name)
+            else {
+                return;
+            };
+            let body = match kind {
+                crate::sidebar::trash::TrashKind::Connection => crate::i18n::i18n_f(
+                    "“{}” will be removed together with its saved password, if any. This cannot be undone.",
+                    &[&name],
+                ),
+                crate::sidebar::trash::TrashKind::Group => crate::i18n::i18n_f(
+                    "The group “{}” will be removed together with its saved password, if any. Its connections stay in the trash. This cannot be undone.",
+                    &[&name],
+                ),
+            };
+            let state = state_clone.clone();
+            let sidebar = sidebar_clone.clone();
+            let win_for_result = win.clone();
+            crate::alert::show_confirm(
+                &win,
+                &crate::i18n::i18n("Delete permanently?"),
+                &body,
+                &crate::i18n::i18n("Delete"),
+                true,
+                move |confirmed| {
+                    if !confirmed {
+                        return;
+                    }
+                    let Ok(mut state_mut) = state.try_borrow_mut() else {
+                        tracing::warn!("Permanent delete skipped: state busy");
+                        return;
+                    };
+                    // The vault credential is removed on a worker thread; the
+                    // header-bar spinner shows until it ends.
+                    let busy_guard = super::acquire_busy_guard();
+                    let result = state_mut.purge_trash_item(kind, id, move || drop(busy_guard));
+                    drop(state_mut);
+                    // Whatever the outcome, the row must show what is left.
+                    sorting::refresh_trash_row(&state, &sidebar);
+                    match result {
+                        Ok(true) => crate::toast::show_toast_on_window(
+                            &win_for_result,
+                            &crate::i18n::i18n("Deleted permanently"),
+                            crate::toast::ToastType::Success,
+                        ),
+                        // Restored or purged while the dialog was open.
+                        Ok(false) => {}
+                        Err(e) => {
+                            tracing::warn!(error = %e, "Failed to delete a trash item permanently");
+                            crate::toast::show_toast_on_window(
+                                &win_for_result,
+                                &crate::i18n::i18n_f(
+                                    "Failed to delete permanently: {}",
+                                    &[&e.to_string()],
+                                ),
+                                crate::toast::ToastType::Error,
+                            );
+                        }
+                    }
+                },
+            );
+        });
+        window.add_action(&purge_trash_item_action);
 
         // Retry connect action — retries a failed connection from toast button
         let retry_action = gio::SimpleAction::new("retry-connect", Some(glib::VariantTy::STRING));

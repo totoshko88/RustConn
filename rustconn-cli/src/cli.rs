@@ -15,7 +15,9 @@ use crate::util::parse_key_val;
 #[command(propagate_version = true)]
 pub struct Cli {
     /// Path to the configuration directory
-    #[arg(short, long, global = true)]
+    // Long form only: `-c` belongs to the subcommands (`-c <connection>`,
+    // `-c <command>`), and a global short clashes with them.
+    #[arg(long, global = true)]
     pub config: Option<PathBuf>,
 
     /// Increase output verbosity (-v, -vv, -vvv)
@@ -1551,6 +1553,11 @@ pub enum ImportFormatArg {
     Libvirt,
     /// CSV format (.csv)
     Csv,
+    /// PuTTY / KiTTY sessions from a Registry export (.reg)
+    Putty,
+    /// mRemoteNG connection file (confCons.xml)
+    #[value(name = "mremoteng", alias = "m-remote-ng")]
+    MRemoteNg,
     /// SecureCRT session format (.ini directory)
     #[value(name = "secure-crt", alias = "securecrt")]
     SecureCrt,
@@ -1663,7 +1670,8 @@ pub enum SnippetCommands {
         name: String,
 
         /// Variable values (format: var=value, can be repeated)
-        #[arg(short, long, value_parser = parse_key_val)]
+        // Long form only: `-v` is the global `--verbose`.
+        #[arg(long, value_parser = parse_key_val)]
         var: Vec<(String, String)>,
 
         /// Actually execute the command (default: just print)
@@ -1964,13 +1972,13 @@ pub enum ClusterCommands {
         #[arg(short, long)]
         connections: Option<String>,
 
-        /// Enable broadcast mode by default
-        #[arg(short, long)]
+        /// Deprecated no-op since 0.14.8 (accepted for script compatibility)
+        #[arg(short, long, hide = true)]
         broadcast: bool,
     },
 
-    /// Edit a cluster (rename or toggle broadcast)
-    #[command(about = "Edit a cluster's name or broadcast setting")]
+    /// Edit a cluster (rename)
+    #[command(about = "Rename a cluster")]
     Edit {
         /// Cluster name or ID
         name: String,
@@ -1979,8 +1987,8 @@ pub enum ClusterCommands {
         #[arg(long)]
         new_name: Option<String>,
 
-        /// Enable or disable broadcast mode (true/false)
-        #[arg(short, long)]
+        /// Deprecated no-op since 0.14.8 (accepted for script compatibility)
+        #[arg(short, long, hide = true)]
         broadcast: Option<bool>,
     },
 
@@ -2456,8 +2464,8 @@ pub enum MonitorCommands {
         name: String,
     },
 
-    /// Show monitoring metrics for a connection
-    #[command(about = "Show monitoring metrics for a connection")]
+    /// Show the effective monitoring configuration for a connection (not live metrics)
+    #[command(about = "Show the effective monitoring configuration (not live metrics)")]
     Metrics {
         /// Connection name or UUID
         name: String,
@@ -2480,4 +2488,25 @@ pub enum MonitorCommands {
         #[arg(long)]
         all: bool,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::CommandFactory;
+
+    use super::Cli;
+
+    /// Catches duplicate short/long flags (e.g. a subcommand `-c` shadowing the
+    /// global `--config`), which otherwise panic only when completions are built.
+    #[test]
+    fn command_definition_is_valid() {
+        // The command tree is deep enough to overflow the 2 MiB default test
+        // thread stack in a debug build; the main thread has 8 MiB.
+        std::thread::Builder::new()
+            .stack_size(16 * 1024 * 1024)
+            .spawn(|| Cli::command().debug_assert())
+            .expect("spawn test thread")
+            .join()
+            .expect("command definition is valid");
+    }
 }

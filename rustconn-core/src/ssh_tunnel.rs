@@ -1096,7 +1096,36 @@ pub fn append_proxy_command_destination(proxy_parts: &mut Vec<String>, jump_host
     } else {
         host.to_string()
     };
-    proxy_parts.push(destination);
+    // The parts are joined into a command that ssh runs through `sh -c`, so a
+    // destination with a shell metacharacter (an imported or synced host such as
+    // `bastion;cmd`) must stay one word, and one that starts with `-` must not
+    // be read as an ssh option.
+    if destination.starts_with('-') {
+        proxy_parts.push("--".to_string());
+    }
+    proxy_parts.push(shell_word(&destination));
+}
+
+/// `s` as one word of a `sh -c` command: unchanged when it holds only
+/// characters a shell passes through, otherwise single-quoted.
+///
+/// Use it for every value that comes from a connection, a key path or an
+/// imported host before it is joined into a `ProxyCommand`.
+#[must_use]
+pub fn shell_word(s: &str) -> String {
+    let bare = !s.is_empty()
+        && s.chars().all(|c| {
+            c.is_ascii_alphanumeric()
+                || matches!(
+                    c,
+                    '@' | ':' | '.' | '/' | '-' | '_' | '%' | ',' | '=' | '+' | '[' | ']'
+                )
+        });
+    if bare {
+        s.to_string()
+    } else {
+        shell_single_quote(s)
+    }
 }
 
 /// Single-quotes `s` for safe embedding inside a `sh -c` `ProxyCommand`,
@@ -1464,18 +1493,21 @@ pub fn target_password_askpass_allowed(config: &SshConfig, has_resolved_identity
 /// OpenSSH reads as one file. ssh also expands `%` tokens in this option
 /// (ssh_config(5), TOKENS: `UserKnownHostsFile` accepts `%%`, "A literal
 /// '%'"), so a `%` in the path is written as `%%`. Returns `None` for a path
-/// ssh cannot be given this way: not UTF-8, or holding a `"` or `\`, which ssh
-/// reads as quoting; the caller then leaves the option out and ssh uses its
+/// ssh cannot be given this way: not UTF-8, holding a `"` or `\`, which ssh
+/// reads as quoting, or a `${`, which ssh expands from the environment; the
+/// caller then leaves the option out and ssh uses its
 /// default `known_hosts`. A `ProxyCommand` is run by a shell and needs
 /// [`crate::jump_route::proxy_known_hosts_option`] instead.
 #[must_use]
 pub fn user_known_hosts_option(path: &std::path::Path) -> Option<String> {
     let option = path
         .to_str()
-        .filter(|path| !path.contains(['"', '\\']))
+        .filter(|path| !path.contains(['"', '\\']) && !path.contains("${"))
         .map(|path| path.replace('%', "%%"))
         .map(|path| {
-            if path.chars().any(char::is_whitespace) {
+            // A `'` is a quote to ssh too, so it needs the double quotes a
+            // space does.
+            if path.chars().any(|c| c.is_whitespace() || c == '\'') {
                 format!("UserKnownHostsFile=\"{path}\"")
             } else {
                 format!("UserKnownHostsFile={path}")
@@ -1642,7 +1674,7 @@ fn build_nested_proxy_command_inner(
     }
     if let Some(key) = identity_file {
         parts.push("-i".to_string());
-        parts.push(key.to_string());
+        parts.push(shell_word(key));
         parts.push("-o".to_string());
         parts.push("IdentitiesOnly=yes".to_string());
     }
@@ -1844,6 +1876,44 @@ mod tests {
         let mut parts = Vec::new();
         append_proxy_command_destination(&mut parts, "[fe80::1]");
         assert_eq!(parts, vec!["[fe80::1]"]);
+    }
+
+    #[test]
+    fn test_proxy_destination_with_shell_metacharacter_stays_one_word() {
+        let mut parts = Vec::new();
+        append_proxy_command_destination(&mut parts, "admin@bastion;touch /tmp/x");
+        assert_eq!(parts, vec!["'admin@bastion;touch /tmp/x'"]);
+    }
+
+    #[test]
+    fn test_proxy_destination_starting_with_dash_is_not_an_option() {
+        let mut parts = Vec::new();
+        append_proxy_command_destination(&mut parts, "-oProxyCommand=evil");
+        assert_eq!(parts, vec!["--", "-oProxyCommand=evil"]);
+    }
+
+    #[test]
+    fn test_shell_word_quotes_only_when_needed() {
+        assert_eq!(
+            shell_word("/home/u/.ssh/id_ed25519"),
+            "/home/u/.ssh/id_ed25519"
+        );
+        assert_eq!(shell_word("/home/u/my key"), "'/home/u/my key'");
+        assert_eq!(shell_word("/k/$(reboot)"), "'/k/$(reboot)'");
+        assert_eq!(shell_word("it's"), "'it'\\''s'");
+        assert_eq!(shell_word(""), "''");
+    }
+
+    #[test]
+    fn test_nested_proxy_command_quotes_identity_and_hop() {
+        let cmd = build_nested_proxy_command(
+            &["b;rm -rf x"],
+            Some("/k/my key"),
+            None,
+            HopHostKeys::UserConfig,
+        );
+        assert!(cmd.contains("-i '/k/my key'"), "{cmd}");
+        assert!(cmd.ends_with("'b;rm -rf x'"), "{cmd}");
     }
 
     #[test]
@@ -2485,6 +2555,58 @@ mod proxy_detection_tests {
             super::user_known_hosts_option(Path::new("/home/a\\ b/kh")),
             None
         );
+    }
+
+    /// Review item ssh-args-matrix: whatever `user_known_hosts_option` returns
+    /// for a path, the real `ssh` reads back that same path, and a path it
+    /// cannot carry gets no option. `ssh -G` prints the value ssh parsed.
+    #[cfg(unix)]
+    #[test]
+    fn known_hosts_option_round_trips_through_ssh() {
+        use std::path::Path;
+        let probe = |option: &str| -> Option<String> {
+            let output = std::process::Command::new("ssh")
+                .args(["-F", "/dev/null", "-G", "-o", option, "host.invalid"])
+                .output()
+                .ok()?;
+            String::from_utf8(output.stdout)
+                .ok()?
+                .lines()
+                .find_map(|l| l.strip_prefix("userknownhostsfile ").map(str::to_string))
+        };
+        if probe("UserKnownHostsFile=/probe").as_deref() != Some("/probe") {
+            eprintln!("skipping: no usable `ssh -G` here");
+            return;
+        }
+        for path in [
+            "/home/me/.ssh/known_hosts",
+            "/home/my name/.ssh/kh",
+            "/home/100%u/kh",
+            "/home/50% off/kh",
+            "/home/o'brien/kh",
+            "/home/o'brien and sons/kh",
+            "/home/a;b/kh",
+            "/home/a#b/kh",
+            "/home/a`b`/kh",
+            "/home/$HOME/kh",
+            "/home/ключ/kh",
+            "/home/a\tb/kh",
+            "/home/${HOME}/kh",
+            "/home/a\"b/kh",
+            "/home/a\\b/kh",
+        ] {
+            match super::user_known_hosts_option(Path::new(path)) {
+                Some(option) => assert_eq!(
+                    probe(&option).as_deref(),
+                    Some(path),
+                    "{path:?} became {option:?}"
+                ),
+                None => assert!(
+                    path.contains(['"', '\\']) || path.contains("${"),
+                    "{path:?} was refused without reason"
+                ),
+            }
+        }
     }
 
     /// Review item cleanup-known-hosts-percent: ssh expands `%` tokens in

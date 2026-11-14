@@ -281,6 +281,7 @@ impl ExportDialog {
 
         let group_filter_list = StringList::new(&[&i18n("All connections")]);
         let group_filter_dropdown = DropDown::new(Some(group_filter_list), gtk4::Expression::NONE);
+        crate::dialogs::widgets::enable_string_search(&group_filter_dropdown);
         group_filter_dropdown.set_selected(0);
         group_filter_dropdown.set_valign(gtk4::Align::Center);
 
@@ -525,23 +526,6 @@ impl ExportDialog {
         vbox.append(&scrolled);
 
         (vbox, result_label, result_details)
-    }
-
-    /// Gets the selected export format
-    #[must_use]
-    pub fn get_selected_format(&self) -> ExportFormat {
-        Self::format_from_index(self.format_dropdown.selected())
-    }
-
-    /// Gets the output path
-    #[must_use]
-    pub fn get_output_path(&self) -> Option<PathBuf> {
-        let text = self.output_path_entry.text();
-        if text.is_empty() {
-            None
-        } else {
-            Some(PathBuf::from(text.as_str()))
-        }
     }
 
     /// Sets the connections to export

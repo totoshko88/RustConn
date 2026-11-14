@@ -79,8 +79,8 @@ modules:
       - -DFASTFLOAT_TEST=OFF
     sources:
       - type: archive
-        url: https://github.com/fastfloat/fast_float/archive/refs/tags/v8.3.0.tar.gz
-        sha256: 90485994d0fed61d0693e8dba32c464b0e8adf7f2e7c2efbf5bff0df5ef5b13f
+        url: https://github.com/fastfloat/fast_float/archive/refs/tags/v8.3.3.tar.gz
+        sha256: 4dd695f051893c8218faf2ed9871fa4a4990aa6aee2d3190ed7bfa2e83092245
 
   - name: vte
     buildsystem: meson
@@ -246,8 +246,8 @@ modules:
       - ln -sf waypipe-c /app/bin/waypipe
     sources:
       - type: archive
-        url: https://gitlab.freedesktop.org/mstoeckl/waypipe/-/archive/v0.11.2/waypipe-v0.11.2.tar.gz
-        sha256: 70914b590b2b9a74a16fe9936bb7dba6b3eb59466ed17aaba2613c9fa09b8dad
+        url: https://gitlab.freedesktop.org/mstoeckl/waypipe/-/archive/v0.11.3/waypipe-v0.11.3.tar.gz
+        sha256: 92482a459eb86bef2dae025ea2eb37f5560aea3d3744a097bed9d284b863a5a6
 
   # cJSON — required so FreeRDP's WinPR builds with JSON support
   # (WITH_WINPR_JSON=ON). Without a JSON backend WinPR falls back to
@@ -367,7 +367,9 @@ modules:
       - CC=/app/bin/cc-wrap cargo build --release -p rustconn-cli --features full
       - install -Dm755 target/release/rustconn /app/bin/rustconn
       - install -Dm755 target/release/rustconn-cli /app/bin/rustconn-cli
-      - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop /app/share/applications/io.github.totoshko88.RustConn.desktop
+      # Translated Name/GenericName/Comment/Keywords come from po/*.po.
+      - install -d /app/share/applications
+      - msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po -o /app/share/applications/io.github.totoshko88.RustConn.desktop
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-rdp.xml /app/share/mime/packages/io.github.totoshko88.RustConn-rdp.xml
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-vv.xml /app/share/mime/packages/io.github.totoshko88.RustConn-vv.xml
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml /app/share/metainfo/io.github.totoshko88.RustConn.metainfo.xml
@@ -386,5 +388,5 @@ modules:
     sources:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
-        tag: v0.24.11
+        tag: v0.25.0
       - cargo-sources.json

@@ -33,9 +33,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use futures::StreamExt as _;
-use zbus::Connection;
 use zbus::proxy::CacheProperties;
-use zbus::zvariant::OwnedFd;
+use zbus::{Connection, OwnedFd};
 
 use super::LockEvent;
 
@@ -43,8 +42,7 @@ use super::LockEvent;
 #[zbus::proxy(
     interface = "org.freedesktop.login1.Manager",
     default_service = "org.freedesktop.login1",
-    default_path = "/org/freedesktop/login1",
-    gen_blocking = false
+    default_path = "/org/freedesktop/login1"
 )]
 trait Login1Manager {
     /// Takes an inhibitor lock; it lasts until the returned fd is closed.
@@ -58,8 +56,7 @@ trait Login1Manager {
 #[zbus::proxy(
     interface = "org.freedesktop.ScreenSaver",
     default_service = "org.freedesktop.ScreenSaver",
-    default_path = "/org/freedesktop/ScreenSaver",
-    gen_blocking = false
+    default_path = "/org/freedesktop/ScreenSaver"
 )]
 trait ScreenSaver {
     #[zbus(signal)]
@@ -75,8 +72,7 @@ mod gnome {
     #[zbus::proxy(
         interface = "org.gnome.ScreenSaver",
         default_service = "org.gnome.ScreenSaver",
-        default_path = "/org/gnome/ScreenSaver",
-        gen_blocking = false
+        default_path = "/org/gnome/ScreenSaver"
     )]
     pub(super) trait GnomeScreenSaver {
         #[zbus(signal)]
@@ -293,5 +289,29 @@ async fn connect_gnome_saver(conn: &Connection) -> Option<gnome::ActiveChangedSt
             tracing::info!(error = %e, "lock listener: org.gnome.ScreenSaver unavailable");
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// An absent source must never be ready, or `select!` would spin on it.
+    #[tokio::test]
+    async fn next_opt_on_an_absent_stream_never_resolves() {
+        let absent: Option<&mut futures::stream::Iter<std::vec::IntoIter<u8>>> = None;
+        let waited =
+            tokio::time::timeout(std::time::Duration::from_millis(20), next_opt(absent)).await;
+        assert!(waited.is_err(), "an absent stream resolved: {waited:?}");
+    }
+
+    /// A present source yields its items, then `None` once it ends, which is
+    /// what makes the listener drop that branch.
+    #[tokio::test]
+    async fn next_opt_yields_then_reports_the_end() {
+        let mut stream = futures::stream::iter(vec![true, false]);
+        assert_eq!(next_opt(Some(&mut stream)).await, Some(true));
+        assert_eq!(next_opt(Some(&mut stream)).await, Some(false));
+        assert_eq!(next_opt(Some(&mut stream)).await, None);
     }
 }

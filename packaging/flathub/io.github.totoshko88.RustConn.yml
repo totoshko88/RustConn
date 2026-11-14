@@ -81,8 +81,8 @@ modules:
       - -DFASTFLOAT_TEST=OFF
     sources:
       - type: archive
-        url: https://github.com/fastfloat/fast_float/archive/refs/tags/v8.3.0.tar.gz
-        sha256: 90485994d0fed61d0693e8dba32c464b0e8adf7f2e7c2efbf5bff0df5ef5b13f
+        url: https://github.com/fastfloat/fast_float/archive/refs/tags/v8.3.3.tar.gz
+        sha256: 4dd695f051893c8218faf2ed9871fa4a4990aa6aee2d3190ed7bfa2e83092245
 
   - name: vte
     buildsystem: meson
@@ -219,8 +219,8 @@ modules:
       - ln -sf waypipe-c /app/bin/waypipe
     sources:
       - type: archive
-        url: https://gitlab.freedesktop.org/mstoeckl/waypipe/-/archive/v0.11.2/waypipe-v0.11.2.tar.gz
-        sha256: 70914b590b2b9a74a16fe9936bb7dba6b3eb59466ed17aaba2613c9fa09b8dad
+        url: https://gitlab.freedesktop.org/mstoeckl/waypipe/-/archive/v0.11.3/waypipe-v0.11.3.tar.gz
+        sha256: 92482a459eb86bef2dae025ea2eb37f5560aea3d3744a097bed9d284b863a5a6
 
   - name: rustconn-terminfo
     buildsystem: simple
@@ -381,7 +381,7 @@ modules:
         # chicken-and-egg problem and any placeholder would be a fake pin.
         # The immutable commit is added once the tag exists — by hand or by the
         # Flathub bot — in the Flathub repository, not here.
-        tag: v0.24.11
+        tag: v0.25.0
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$

@@ -104,10 +104,13 @@ cargo build --release      # release, all crates
 | `rdp-audio` | ✓ | RDP session audio (cpal); enables `rdp-embedded` |
 | `rd-gateway` | ✓ | Native RD Gateway tunneling for embedded RDP |
 | `wayland-native` | ✓ | Wayland surface support (gdk4-wayland) |
+| `web-embedded` | ✓ | Embedded WebKitGTK 6.0 browser for Web connections (Linux only) |
+| `bitwarden-serve` | ✓ | Persistent `bw serve` transport for Bitwarden (toggle in Settings → Secrets) |
 | `tray-macos` | — | macOS tray icon support |
 | `adw-1-6` | — | libadwaita 1.6+ (AdwSpinner, CSS variables) |
 | `adw-1-7` | — | libadwaita 1.7+ (AdwWrapBox); enables `adw-1-6` |
 | `adw-1-8` | — | libadwaita 1.8+ (AdwShortcutsDialog); enables `adw-1-7` |
+| `adw-1-10` | — | libadwaita 1.10+ bindings (no 1.10 API used yet); enables `adw-1-8` |
 
 The default build targets **libadwaita 1.5** (the workspace floor, e.g.
 Ubuntu 24.04 LTS). The snap builds on **core26** (the gnome-core26 platform ships
@@ -148,6 +151,12 @@ client runtimes.
 | `rdp-embedded` | — | IronRDP runtime for embedded RDP sessions |
 | `gfx-h264` | — | RDP EGFX/H.264 pipeline; enables `rdp-embedded` |
 | `rd-gateway` | — | Native RD Gateway tunneling; enables `rdp-embedded` |
+| `web-embedded` | — | Makes the embedded browser the default for new Web connections |
+| `bitwarden-serve` | — | Persistent `bw serve` transport (hyper) for the Bitwarden backend |
+| `lock-events` | — | D-Bus listener for screen lock and suspend (no-op on macOS) |
+
+The GUI always enables `lock-events` (not a GUI feature): removing the SSH keys
+RustConn added on screen lock is a security behaviour.
 
 Examples:
 

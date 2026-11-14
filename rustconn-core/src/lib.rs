@@ -5,15 +5,19 @@
 //!
 //! # Crate Structure
 //!
+//! The main modules; the full list is the `pub mod` block below.
+//!
 //! - [`models`] - Core data structures (Connection, Group, Protocol configs)
 //! - [`config`] - Application settings and persistence
 //! - [`connection`] - Connection CRUD operations and managers
-//! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE, Telnet, Serial, SFTP, Kubernetes)
-//! - [`import`] / [`export`] - Format converters (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm)
+//! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE, Telnet, Serial, SFTP, Kubernetes, MOSH, WinRM, Web, Zero Trust)
+//! - [`import`] / [`export`] - Format converters (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm,
+//!   Royal TS, SecureCRT, PuTTY, mRemoteNG, RDM, RDP files, virt-viewer, libvirt, CSV, native)
 //! - [`secret`] - Credential backends and resolvers; host keyring integration is optional
 //! - [`search`] - Fuzzy search with caching and debouncing
 //! - [`automation`] - Expect scripts, key sequences, tasks
-//! - [`performance`] - Connection-string interner (dedup) + search debouncer
+//! - [`performance`] - Search debouncer
+//! - [`sync`] / [`session`] / [`ssh_tunnel`] - Cloud/group sync, session logging, SSH tunnels
 //!
 //! # Feature Flags
 //!
@@ -25,6 +29,10 @@
 //! - `rdp-embedded` - Native RDP client via `IronRDP`
 //! - `gfx-h264` - RDP EGFX/H.264 pipeline support
 //! - `rd-gateway` - Native RD Gateway tunneling for embedded RDP
+//! - `web-embedded` - Makes the embedded WebKitGTK browser the default for new Web connections
+//! - `bitwarden-serve` - Persistent `bw serve` transport for the Bitwarden backend
+//! - `lock-events` - D-Bus listener for screen lock and suspend (Linux; the GUI
+//!   always enables it)
 //!
 //! SPICE sessions use an external viewer (virt-viewer/remote-viewer); the
 //! native embedded SPICE client was removed in 0.18.0.
@@ -33,7 +41,7 @@
 #![warn(missing_docs)]
 // Inline test modules import items via `use super::*` and sometimes also via explicit
 // `use crate::...` paths — the latter are flagged as redundant. Suppressing here avoids
-// touching 146 inline test modules.
+// touching every inline test module.
 #![cfg_attr(
     test,
     allow(
@@ -47,7 +55,6 @@
 pub mod activity_monitor;
 pub mod automation;
 pub mod busy;
-pub mod cache;
 pub mod cli_download;
 pub mod cluster;
 pub mod config;
@@ -55,12 +62,12 @@ pub mod connection;
 pub mod crash_report;
 pub mod dialog_utils;
 pub mod display_geometry;
-pub mod drag_drop;
 pub mod dynamic_folder;
 pub mod embedded_client_error;
 pub mod error;
 pub mod export;
 pub mod flatpak;
+pub mod fs_atomic;
 pub mod highlight;
 pub mod host_check;
 pub mod import;
@@ -131,7 +138,6 @@ pub use automation::{
     builtin_templates, elevated_credentials_rules, templates_for_protocol,
 };
 pub use busy::{BusyGuard, BusyStack};
-pub use cache::{CacheRef, Cached, DEFAULT_CACHE_TTL_SECS, LoadCacheObject};
 pub use cli_download::{
     ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory,
     DOWNLOADABLE_COMPONENTS, DownloadCancellation, DownloadProgress, DownloadableComponent,
@@ -150,16 +156,10 @@ pub use config::{
 };
 pub use connection::{
     ConnectionManager, LazyGroupLoader, LoginPrompt, LoginPromptMatcher, PortCheckError,
-    PortCheckResult, RetryConfig, RetryState, SelectionState, check_interning_stats, check_port,
-    check_port_async, get_interning_stats, intern_connection_strings, intern_hostname,
-    intern_protocol_name, intern_username, log_interning_stats, log_interning_stats_with_warning,
-    looks_like_password_prompt, looks_like_username_prompt,
+    PortCheckResult, ReloadOutcome, RetryConfig, RetryState, SelectionState, check_port,
+    check_port_async, looks_like_password_prompt, looks_like_username_prompt,
 };
 pub use display_geometry::{DesktopRequest, desktop_request_for_area};
-pub use drag_drop::{
-    DropConfig, DropPosition, ItemType, calculate_drop_position, calculate_indicator_y,
-    calculate_row_index, is_valid_drop_position,
-};
 pub use embedded_client_error::EmbeddedClientError;
 pub use error::{
     ConfigError, ConfigResult, ImportError, ProtocolError, RustConnError, SecretError,
@@ -212,7 +212,7 @@ pub use password_generator::{
     CharacterSet, PasswordGenerator, PasswordGeneratorConfig, PasswordGeneratorError,
     PasswordGeneratorResult, PasswordStrength, estimate_crack_time,
 };
-pub use performance::{Debouncer, InternerStats, StringInterner, interner};
+pub use performance::Debouncer;
 pub use progress::{
     CallbackProgressReporter, CancelHandle, LocalProgressReporter, NoOpProgressReporter,
     ProgressReporter,
@@ -269,6 +269,10 @@ pub use rdp_client::{RdpClient, RdpCommandSender, RdpEventReceiver};
 pub use search::cache::SearchCache;
 pub use search::command_palette::{
     CommandPaletteAction, PaletteItem, PaletteMode, builtin_commands, parse_palette_input,
+};
+pub use search::saved::{
+    MAX_SAVED_SEARCH_NAME_CHARS, MAX_SAVED_SEARCHES, SavedSearch, SavedSearchError,
+    add_saved_search, remove_saved_search, rename_saved_search,
 };
 pub use search::{
     ConnectionSearchResult, DebouncedSearchEngine, MatchHighlight, SearchEngine, SearchError,

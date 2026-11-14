@@ -384,7 +384,7 @@ impl SafeFreeRdpLauncher {
         // visible in `/proc/<pid>/cmdline`.
         //
         // The exact spelling of the switch depends on the installed FreeRDP
-        // version, see [`super::detect::args_from_argument`].
+        // version, see [`super::detect::args_from_argument_for_form`].
         //
         // The RD Gateway no longer needs a separate secret here: FreeRDP
         // reuses the session credentials (`/u:`, `/d:` and the `/p:` from
@@ -554,15 +554,6 @@ impl SafeFreeRdpLauncher {
         super::detect::detect_best_freerdp()
     }
 
-    /// Detects the best FreeRDP binary for RemoteApp (RAIL) sessions.
-    ///
-    /// `wlfreerdp` does not support RAIL — it renders a full desktop into a
-    /// Wayland subsurface and cannot create individual application windows.
-    /// This method skips `wl*` variants and prefers `xfreerdp3`/`sdl-freerdp3`.
-    pub fn detect_freerdp_for_remoteapp() -> Option<String> {
-        super::detect::detect_best_freerdp_for_remoteapp()
-    }
-
     /// Translates the embedded widget's configuration into the shared
     /// [`FreeRdpConfig`](rustconn_core::protocol::FreeRdpConfig).
     ///
@@ -582,6 +573,7 @@ impl SafeFreeRdpLauncher {
             password: None,
             domain: config.domain.clone(),
             display_mode: config.external_display_mode,
+            monitor_ids: config.external_monitor_ids.clone(),
             resolution: config.external_resolution.clone(),
             scale_override: config.scale_override,
             system_scale_percent: config.system_scale_percent,

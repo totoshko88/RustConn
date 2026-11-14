@@ -188,23 +188,6 @@ impl ToastOverlay {
     pub fn show_error(&self, message: &str) {
         self.show_toast_with_type(message, ToastType::Error);
     }
-
-    /// Shows a toast with an action (e.g. "Undo")
-    pub fn show_toast_with_action(
-        &self,
-        message: &str,
-        action_label: &str,
-        action_name: &str,
-        action_target: Option<&glib::Variant>,
-    ) {
-        let toast = plain_toast(message);
-        toast.set_button_label(Some(action_label));
-        toast.set_action_name(Some(action_name));
-        if let Some(target) = action_target {
-            toast.set_action_target_value(Some(target));
-        }
-        self.overlay.add_toast(toast);
-    }
 }
 
 impl Default for ToastOverlay {
@@ -308,18 +291,10 @@ fn find_toast_overlay(widget: &gui::Widget) -> Option<adw::ToastOverlay> {
 
 /// Helper to show an Undo toast on a window
 ///
-/// The toast's lifetime is the undo window for the deletion. When it dismisses
-/// without Undo having been used, `win.purge-deleted` makes the deletion
-/// permanent — which is what finally removes the connection's credential from
-/// the password vault (issue #263). Before 0.19.19 nothing ever made a deletion
-/// permanent, so vault entries outlived every deleted connection.
-///
-/// Whether Undo was used is tracked with an explicit flag set from
-/// `button-clicked` rather than inferred from the trash. libadwaita documents
-/// `button-clicked` as being emitted before the toast is dismissed, but says
-/// nothing about the button's action activating before `dismissed` — so
-/// checking the trash alone could purge the entry out from under
-/// `win.undo-delete` and lose the item instead of restoring it.
+/// Undo is a shortcut for `win.undo-delete`. The deleted item stays in the
+/// trash after the toast closes, where the sidebar's Trash row can still
+/// restore it; only Empty Trash makes the deletion permanent and removes the
+/// credential from the password vault (issue #263).
 pub fn show_undo_toast_on_window(
     window: &impl IsA<gui::Window>,
     message: &str,
@@ -332,26 +307,6 @@ pub fn show_undo_toast_on_window(
         toast.set_button_label(Some(&crate::i18n::i18n("Undo")));
         toast.set_action_name(Some("win.undo-delete"));
         toast.set_action_target_value(Some(&glib::Variant::from(action_target)));
-
-        let undo_used = std::rc::Rc::new(std::cell::Cell::new(false));
-        let undo_used_for_button = std::rc::Rc::clone(&undo_used);
-        toast.connect_button_clicked(move |_| {
-            undo_used_for_button.set(true);
-        });
-
-        let target = action_target.to_string();
-        let window_weak = window.as_ref().downgrade();
-        toast.connect_dismissed(move |_| {
-            if undo_used.get() {
-                return;
-            }
-            if let Some(win) = window_weak.upgrade()
-                && let Err(e) =
-                    win.activate_action("win.purge-deleted", Some(&glib::Variant::from(&target)))
-            {
-                tracing::warn!(target = %target, error = %e, "Failed to purge deleted item");
-            }
-        });
 
         overlay.add_toast(toast);
     }

@@ -356,17 +356,35 @@ pub fn show_context_menu_for_item(
             &i18n("Run Local Script…"),
             "run-local-script",
         ));
-        // § Organisation
+        // § Creation (GNOME HIG: what makes new things, kept together)
+        // An import group mirrors its source, so a connection or folder made by
+        // hand in it would not survive the next sync.
         items.push(ContextMenuItem::Separator);
-        items.push(ContextMenuItem::action(&i18n("Rename"), "rename-item"));
-        // § Creation / properties (GNOME HIG: properties-like items before delete)
-        // Import groups: hide "New Connection in Group" (connections managed by sync)
         if !is_import_group {
-            items.push(ContextMenuItem::Separator);
             items.push(ContextMenuItem::action(
                 &i18n("New Connection in Group"),
                 "new-connection-in-group",
             ));
+            items.push(ContextMenuItem::action(
+                &i18n("New Subgroup"),
+                "new-subgroup",
+            ));
+            items.push(ContextMenuItem::Separator);
+        }
+        // § Organisation and properties
+        items.push(ContextMenuItem::action(&i18n("Rename"), "rename-item"));
+        if !is_import_group {
+            items.push(ContextMenuItem::action(
+                &i18n("Move to Group…"),
+                "move-to-group",
+            ));
+            // A dynamic folder's content is generated, so a copy would be empty.
+            if !has_dynamic_folder {
+                items.push(ContextMenuItem::action(
+                    &i18n("Duplicate"),
+                    "duplicate-group",
+                ));
+            }
         }
         items.push(ContextMenuItem::action(&i18n("Edit"), "edit-connection"));
         // § Cloud Sync (flat items, GNOME HIG)
@@ -577,6 +595,49 @@ pub fn show_context_menu_for_item(
     show_popover(widget, window, &items, x, y, activation);
 }
 
+/// Shows the context menu of the virtual Trash row (`row_id` is the Trash group
+/// itself) or of one trashed item under it.
+///
+/// Restore reuses `win.undo-delete`, the action behind the Undo toast, so the
+/// restore logic is not duplicated. Delete Permanently… (`win.purge-trash-item`)
+/// asks before removing that one entry; the Trash row offers Empty Trash.
+pub fn show_trash_context_menu(
+    widget: &impl IsA<gtk4::Widget>,
+    x: f64,
+    y: f64,
+    row_id: &str,
+    activation: MenuActivation,
+) {
+    let Some(root) = widget.root() else { return };
+    let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() else {
+        return;
+    };
+
+    let mut items: Vec<ContextMenuItem> = Vec::new();
+    if let Some((kind, id)) = crate::sidebar::trash::parse_trash_item_id(row_id) {
+        items.push(ContextMenuItem::action_with_target(
+            &i18n("Restore"),
+            "undo-delete",
+            &crate::sidebar::trash::restore_target(kind, id).to_variant(),
+        ));
+        items.push(ContextMenuItem::Separator);
+        items.push(
+            ContextMenuItem::action_with_target(
+                &i18n("Delete Permanently…"),
+                "purge-trash-item",
+                &crate::sidebar::trash::restore_target(kind, id).to_variant(),
+            )
+            .destructive(),
+        );
+    } else {
+        // The Trash row itself. A trashed item does not offer Empty Trash: two
+        // destructive items side by side invite the wrong one.
+        items.push(ContextMenuItem::action(&i18n("Empty Trash"), "empty-trash").destructive());
+    }
+
+    show_popover(widget, window, &items, x, y, activation);
+}
+
 /// Shows the context menu for empty space in the sidebar
 pub fn show_empty_space_context_menu(widget: &impl IsA<gtk4::Widget>, x: f64, y: f64) {
     let Some(root) = widget.root() else { return };
@@ -655,12 +716,22 @@ pub fn show_popover(
     // items, so nothing changes for the common case; a long one scrolls.
     // Arrow-key navigation still works: a `ScrolledWindow` scrolls to whichever
     // child takes focus.
+    //
+    // The scrollbar is only asked for when the menu is taller than the cap: an
+    // `Automatic` policy reserves the scrollbar's minimum height even when the
+    // content fits, which left blank space under a one-item menu (Empty Trash).
+    let max_height = menu_max_height(window);
+    let scroll_policy = if stack.measure(Orientation::Vertical, -1).1 > max_height {
+        gtk4::PolicyType::Automatic
+    } else {
+        gtk4::PolicyType::External
+    };
     let scroller = gtk4::ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
-        .vscrollbar_policy(gtk4::PolicyType::Automatic)
+        .vscrollbar_policy(scroll_policy)
         .propagate_natural_height(true)
         .propagate_natural_width(true)
-        .max_content_height(menu_max_height(window))
+        .max_content_height(max_height)
         .child(&stack)
         .build();
     popover.set_child(Some(&scroller));
@@ -1357,5 +1428,73 @@ mod tests {
         ] {
             assert!(!offers_key_setup(protocol), "{protocol}");
         }
+    }
+}
+
+#[cfg(test)]
+mod gtk_tests {
+    use super::*;
+
+    /// A one-item menu must be as tall as its item. A `ScrolledWindow` with an
+    /// automatic vertical scrollbar reserves the scrollbar's minimum height even
+    /// when the content fits, which left blank space under "Empty Trash".
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact sidebar_ui::gtk_tests::short_menu_is_as_tall_as_its_items`"]
+    fn short_menu_is_as_tall_as_its_items() {
+        if gtk4::init().is_err() {
+            return;
+        }
+        let app = gtk4::Application::builder()
+            .application_id("org.rustconn.test.menu-height")
+            .build();
+        if app.register(gtk4::gio::Cancellable::NONE).is_err() {
+            return;
+        }
+        let win = gtk4::ApplicationWindow::new(&app);
+        let anchor = Label::new(Some("row"));
+        win.set_child(Some(&anchor));
+        win.present();
+        let ctx = glib::MainContext::default();
+        while ctx.iteration(false) {}
+
+        show_trash_context_menu(
+            &anchor,
+            5.0,
+            5.0,
+            crate::sidebar::trash::TRASH_GROUP_ID,
+            MenuActivation::PointerFallback,
+        );
+        for _ in 0..20 {
+            while ctx.iteration(false) {}
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        let popover = anchor
+            .last_child()
+            .and_downcast::<gtk4::Popover>()
+            .expect("the menu is a popover child of its anchor");
+        let scroller = popover
+            .child()
+            .and_downcast::<gtk4::ScrolledWindow>()
+            .expect("the menu sits in a scrolled window");
+        let content = scroller.child().expect("viewport");
+        // The Trash row's menu is the single "Empty Trash" item: no separator
+        // without an item on both sides of it.
+        let page = content
+            .first_child()
+            .and_downcast::<gtk4::Stack>()
+            .and_then(|st| st.visible_child())
+            .expect("menu page");
+        assert!(
+            page.first_child().is_some_and(|c| c.is::<Button>())
+                && page.first_child() == page.last_child(),
+            "the Trash row menu must hold exactly one item and no separator"
+        );
+        let natural = content.measure(Orientation::Vertical, -1).1;
+        assert_eq!(
+            scroller.height(),
+            natural,
+            "blank space under the menu items"
+        );
+        close_active_popover();
     }
 }

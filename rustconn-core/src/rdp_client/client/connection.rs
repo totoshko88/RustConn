@@ -475,6 +475,20 @@ fn with_broker_routing(
     connector
 }
 
+/// Moves the CUPS default queue to the end of `queues`.
+///
+/// It is announced LAST so it wins IronRDP's hardcoded DEFAULTPRINTER flag race
+/// (see plan Appendix A).
+fn default_printer_last(mut queues: Vec<String>, default: Option<String>) -> Vec<String> {
+    if let Some(default) = default
+        && let Some(pos) = queues.iter().position(|q| *q == default)
+    {
+        let d = queues.remove(pos);
+        queues.push(d);
+    }
+    queues
+}
+
 /// Opens the direct TCP connection to the RDP host.
 async fn connect_direct(
     config: &RdpClientConfig,
@@ -688,21 +702,20 @@ async fn connect_once(
             let base = config.shared_folders.len() as u32;
 
             // Decide which queues to forward: an explicit subset, or all local
-            // queues when none are listed.
-            let mut queues = if config.printers.is_empty() {
-                list_cups_printers()
-            } else {
-                config.printers.clone()
-            };
-
-            // Announce the CUPS default LAST so it wins IronRDP's hardcoded
-            // DEFAULTPRINTER flag race (see plan Appendix A).
-            if let Some(default) = cups_default_printer()
-                && let Some(pos) = queues.iter().position(|q| *q == default)
-            {
-                let d = queues.remove(pos);
-                queues.push(d);
-            }
+            // queues when none are listed. `lpstat` blocks (bounded by
+            // `CUPS_TIMEOUT`), so it runs off the runtime thread.
+            let explicit = config.printers.clone();
+            let (queues, default) = tokio::task::spawn_blocking(move || {
+                let queues = if explicit.is_empty() {
+                    list_cups_printers()
+                } else {
+                    explicit
+                };
+                (queues, cups_default_printer())
+            })
+            .await
+            .unwrap_or_default();
+            let queues = default_printer_last(queues, default);
 
             for (idx, queue) in queues.into_iter().enumerate() {
                 let device_id = base + 1 + idx as u32;
@@ -1321,6 +1334,17 @@ fn get_timezone_info() -> TimezoneInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_printer_is_announced_last() {
+        let q = vec!["a".to_owned(), "b".to_owned(), "c".to_owned()];
+        assert_eq!(
+            default_printer_last(q.clone(), Some("a".into())),
+            ["b", "c", "a"]
+        );
+        assert_eq!(default_printer_last(q.clone(), Some("x".into())), q);
+        assert_eq!(default_printer_last(q.clone(), None), q);
+    }
 
     #[test]
     fn routing_tokens_lose_the_crlf_and_must_be_printable() {

@@ -1398,6 +1398,13 @@ impl ConnectionDialog {
         self.rdp_microphone_check.set_active(rdp.microphone_enabled);
         self.rdp_smartcard_check.set_active(rdp.smartcard_enabled);
         self.rdp_auto_reconnect_check.set_active(rdp.auto_reconnect);
+        self.rdp_monitors_entry.set_text(
+            &rdp.monitor_ids
+                .iter()
+                .map(u32::to_string)
+                .collect::<Vec<_>>()
+                .join(","),
+        );
         self.rdp_keyboard_hook_dropdown.set_selected(
             rustconn_core::models::RdpKeyboardHook::index_of(rdp.keyboard_hook),
         );

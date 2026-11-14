@@ -138,6 +138,7 @@ pub fn show_move_to_group_dialog(
         .selected(current_index)
         .hexpand(true)
         .build();
+    crate::dialogs::widgets::enable_string_search(&group_dropdown);
 
     content.append(&group_dropdown);
 

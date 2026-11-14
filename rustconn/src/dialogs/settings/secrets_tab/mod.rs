@@ -1203,23 +1203,17 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             let save_to_keyring =
                 storage_combo_value(&storage_combo) == CredentialStorage::SystemKeyring;
 
-            // Resolve password from keyring or text field, wrapping intermediate
-            // plaintext copies in Zeroizing so they are wiped on drop
-            // (M-PUBLIC-DEBUG / SecretString patterns).
-            let password = if password_text.is_empty() && save_to_keyring {
-                if let Some(val) = get_bw_password_from_keyring() {
-                    use secrecy::ExposeSecret;
-                    zeroize::Zeroizing::new(val.expose_secret().to_string())
-                } else {
-                    update_status_label(&status_label, &i18n("Enter password"), "warning");
-                    return;
-                }
-            } else if password_text.is_empty() {
+            // An empty field with "system keyring" storage means "use the saved
+            // password". The keyring read can block for seconds on a hung
+            // D-Bus service, so it happens on the worker thread below, not here.
+            let from_keyring = password_text.is_empty() && save_to_keyring;
+            if password_text.is_empty() && !from_keyring {
                 update_status_label(&status_label, &i18n("Enter password"), "warning");
                 return;
-            } else {
-                zeroize::Zeroizing::new(password_text.to_string())
-            };
+            }
+            // Wrapped in Zeroizing so the plaintext copy is wiped on drop
+            // (M-PUBLIC-DEBUG / SecretString patterns).
+            let password = zeroize::Zeroizing::new(password_text.to_string());
 
             button.set_sensitive(false);
             update_status_label(&status_label, &i18n("Unlocking…"), "dim-label");
@@ -1229,47 +1223,65 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             // Note: do not log password length — it leaks bruteforce metadata.
             tracing::debug!(
                 bw_cmd = %bw_cmd_str,
-                password_source = if password_text.is_empty() { "keyring" } else { "manual" },
-                has_password = !password.is_empty(),
+                password_source = if from_keyring { "keyring" } else { "manual" },
                 "Bitwarden GUI: unlock button clicked"
             );
 
             // Run unlock asynchronously to avoid blocking the GTK main loop.
             let status_label_async = status_label.clone();
             let button_async = button.clone();
-            // Both copies stay `Zeroizing`. `password` above is already
-            // `Zeroizing`, and `password.to_string()` was quietly demoting it to a
-            // bare `String` that then moved into two closures and dropped
-            // unwiped — the master password left in freed heap, which is the one
-            // thing the wrapper three statements up exists to prevent.
+            // Stays `Zeroizing`: `password.to_string()` would quietly demote it to a
+            // bare `String` that dropped unwiped — the master password left in
+            // freed heap, which is the one thing the wrapper exists to prevent.
             let password_owned = zeroize::Zeroizing::new(password.to_string());
-            let password_for_keyring = zeroize::Zeroizing::new(password.to_string());
-            // `bw_cmd_str` is only logged now. The unlock itself no longer needs
-            // it: core resolves the command through `get_bw_cmd()`, which is where
-            // the Flatpak host lookup lives.
             glib::spawn_future_local(async move {
-                let (session_result, raw_stderr) = gtk4::gio::spawn_blocking(move || {
-                    // One call, not a hand-rolled --raw/verbose ladder. Core's
-                    // `unlock_vault_blocking` runs the same two strategies plus a
-                    // stdin fallback for older CLIs, and adds the three things this
-                    // site was missing: the extended PATH a sandboxed `bw` needs,
-                    // `--nointeraction`, and a deadline (issue #312).
-                    // `.as_str()`, not `&password_owned`: `SecretString::from` is
-                    // generic, and deref coercion does not apply through a generic
-                    // bound, so a `Zeroizing<String>` has to be unwrapped.
-                    match rustconn_core::secret::unlock_vault_blocking(&SecretString::from(
-                        password_owned.as_str(),
-                    )) {
-                        Ok(session) => (Some(session), String::new()),
-                        // The reason is matched against below to pick a message,
-                        // so it has to survive. It carries `bw`'s stderr and never
-                        // the password: the password reaches `bw` through the
-                        // environment, so it cannot appear in an argv echoed back.
-                        Err(e) => (None, e.to_string()),
-                    }
-                })
-                .await
-                .unwrap_or((None, String::new()));
+                let (session_result, raw_stderr, no_saved_password) =
+                    gtk4::gio::spawn_blocking(move || {
+                        let password_owned = if from_keyring {
+                            use secrecy::ExposeSecret;
+                            match get_bw_password_from_keyring() {
+                                Some(val) => {
+                                    zeroize::Zeroizing::new(val.expose_secret().to_string())
+                                }
+                                None => return (None, String::new(), true),
+                            }
+                        } else {
+                            password_owned
+                        };
+                        // One call, not a hand-rolled --raw/verbose ladder. Core's
+                        // `unlock_vault_blocking` runs the same two strategies plus a
+                        // stdin fallback for older CLIs, and adds the three things this
+                        // site was missing: the extended PATH a sandboxed `bw` needs,
+                        // `--nointeraction`, and a deadline (issue #312).
+                        // `.as_str()`, not `&password_owned`: `SecretString::from` is
+                        // generic, and deref coercion does not apply through a generic
+                        // bound, so a `Zeroizing<String>` has to be unwrapped.
+                        match rustconn_core::secret::unlock_vault_blocking(&SecretString::from(
+                            password_owned.as_str(),
+                        )) {
+                            Ok(session) => {
+                                // A freshly typed password is remembered; one that
+                                // came from the keyring is already there.
+                                if save_to_keyring && !from_keyring {
+                                    save_bw_password_to_keyring(&password_owned);
+                                }
+                                (Some(session), String::new(), false)
+                            }
+                            // The reason is matched against below to pick a message,
+                            // so it has to survive. It carries `bw`'s stderr and never
+                            // the password: the password reaches `bw` through the
+                            // environment, so it cannot appear in an argv echoed back.
+                            Err(e) => (None, e.to_string(), false),
+                        }
+                    })
+                    .await
+                    .unwrap_or((None, String::new(), false));
+
+                if no_saved_password {
+                    update_status_label(&status_label_async, &i18n("Enter password"), "warning");
+                    button_async.set_sensitive(true);
+                    return;
+                }
 
                 if let Some(session_key) = session_result {
                     // No length field. The handler above already declines to log
@@ -1281,10 +1293,6 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     // line re-wrapped, which left the key in freed heap.
                     set_session_key(session_key);
                     update_status_label(&status_label_async, &i18n("Unlocked"), "success");
-
-                    if save_to_keyring {
-                        save_bw_password_to_keyring(&password_for_keyring);
-                    }
                 } else {
                     tracing::warn!(
                         raw_stderr = %raw_stderr,
@@ -1400,21 +1408,12 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             // Try to open a terminal with op signin
             // This requires user interaction for biometric or password
             let op_cmd_str = op_cmd.borrow().clone();
-            let xfce_cmd = format!("{op_cmd_str} signin");
-            let terminal_cmds: [(&str, Vec<&str>); 4] = [
-                ("gnome-terminal", vec!["--", &op_cmd_str, "signin"]),
-                ("konsole", vec!["-e", &op_cmd_str, "signin"]),
-                ("xfce4-terminal", vec!["-e", &xfce_cmd]),
-                ("xterm", vec!["-e", &op_cmd_str, "signin"]),
-            ];
+            let terminal_cmds = terminal_launchers(&op_cmd_str);
 
             let mut launched = false;
             for (term, args) in &terminal_cmds {
                 if rustconn_core::which::is_available(term)
-                    && std::process::Command::new(term)
-                        .args(args.iter().copied())
-                        .spawn()
-                        .is_ok()
+                    && std::process::Command::new(term).args(args).spawn().is_ok()
                 {
                     launched = true;
                     update_status_label(&status_label, &i18n("Check terminal"), "warning");
@@ -4187,6 +4186,29 @@ fn revoke_stale_keyring_credentials(previous: &SecretSettings, current: &SecretS
     failures
 }
 
+/// External terminals to try for `op signin`, desktop-native choice first.
+/// `xdg-terminal-exec` follows the user's configured default; the rest are the
+/// terminals shipped by GNOME (ptyxis, gnome-terminal), KDE (konsole), XFCE and
+/// the common standalone ones. Each takes the command in its own syntax.
+fn terminal_launchers(op: &str) -> Vec<(&'static str, Vec<String>)> {
+    let own = |args: &[&str]| args.iter().map(|a| (*a).to_string()).collect::<Vec<_>>();
+    vec![
+        ("xdg-terminal-exec", own(&[op, "signin"])),
+        ("ptyxis", own(&["--", op, "signin"])),
+        ("kitty", own(&[op, "signin"])),
+        ("foot", own(&[op, "signin"])),
+        ("alacritty", own(&["-e", op, "signin"])),
+        ("gnome-terminal", own(&["--", op, "signin"])),
+        ("konsole", own(&["-e", op, "signin"])),
+        // xfce4-terminal takes the whole command line as one string.
+        (
+            "xfce4-terminal",
+            vec!["-e".to_string(), format!("{op} signin")],
+        ),
+        ("xterm", own(&["-e", op, "signin"])),
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4262,5 +4284,17 @@ mod tests {
             );
         }
         assert_eq!(SecretBackendType::from_backend_id("nonesuch"), None);
+    }
+
+    #[test]
+    fn signin_terminals_cover_kde_and_gnome_defaults() {
+        let list = terminal_launchers("op");
+        let names: Vec<_> = list.iter().map(|(n, _)| *n).collect();
+        for want in ["xdg-terminal-exec", "ptyxis", "konsole", "kitty", "foot"] {
+            assert!(names.contains(&want), "{want} missing");
+        }
+        // xfce4-terminal wants one string, not separate arguments.
+        let xfce = list.iter().find(|(n, _)| *n == "xfce4-terminal").unwrap();
+        assert_eq!(xfce.1, ["-e", "op signin"]);
     }
 }

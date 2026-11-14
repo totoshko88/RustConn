@@ -9,13 +9,16 @@
 //!
 //! Downloads are checked against a per-component [`ChecksumPolicy`]:
 //! components with a stable release URL pin a `Static` SHA256 and fail to
-//! install on mismatch, while components fetched from a "latest" URL (which has
-//! no stable published hash to pin against) use `SkipLatest` — the download
+//! install on mismatch; components whose installer resolves the latest release
+//! and whose vendor publishes a per-release SHA256 (kubectl, tsh, tailscale,
+//! boundary, hoop, bw) use `Published` and also fail on a missing or wrong hash;
+//! the rest, fetched from a "latest" URL with no published hash, use
+//! `SkipLatest` — the download
 //! proceeds over HTTPS but is **not** integrity-verified, and the skip is
 //! logged with a warning and surfaced in the UI. A component marked `None` is
-//! not downloadable at all. Every install path — the generic installer, the
-//! cloud installers and the custom installers — funnels its downloaded bytes
-//! through the same policy check.
+//! not downloadable at all. The generic and cloud installers funnel their bytes
+//! through `enforce_checksum_policy`; the `Published` installers through
+//! `verify_published_sha256`.
 
 mod components;
 mod detection;
@@ -202,6 +205,11 @@ pub enum ComponentCategory {
 pub enum ChecksumPolicy {
     /// Verified against a known SHA256 hash.
     Static(&'static str),
+    /// The installer resolves the latest version and verifies the download
+    /// against the SHA256 that upstream publishes for that exact release
+    /// (`.sha256` sibling or a `SHA256SUMS` file). A missing or mismatching
+    /// hash fails the install.
+    Published,
     /// No stable checksum available (e.g. "latest" URL that changes).
     /// Installation proceeds with a warning to the user.
     SkipLatest,

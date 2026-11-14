@@ -38,7 +38,8 @@ pub use protocol::{
     SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
     TailscaleSshConfig, TeleportConfig, TelnetConfig, VncClientMode, VncConfig, VncPerformanceMode,
     WebBrowserMode, WebConfig, WinRmConfig, ZeroTrustConfig, ZeroTrustProvider,
-    ZeroTrustProviderConfig, build_remote_app_freerdp_args,
+    ZeroTrustProviderConfig, build_remote_app_freerdp_args, freerdp_monitor_args,
+    parse_monitor_ids,
 };
 pub use smart_folder::SmartFolder;
 pub use snippet::{ScriptDelivery, Snippet, SnippetTarget, SnippetVariable};

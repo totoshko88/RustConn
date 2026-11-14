@@ -372,7 +372,11 @@ pub fn show_new_group_dialog_with_parent(
     preselected_parent: Option<Uuid>,
 ) {
     let group_dialog = adw::Dialog::builder()
-        .title(i18n("New Group"))
+        .title(if preselected_parent.is_some() {
+            i18n("New Subgroup")
+        } else {
+            i18n("New Group")
+        })
         .content_width(450)
         .build();
 
@@ -398,10 +402,13 @@ pub fn show_new_group_dialog_with_parent(
 
     clamp.set_child(Some(&content));
 
-    // Use ToolbarView for proper adw::Dialog layout
+    // Use ToolbarView for proper adw::Dialog layout. The overlay is the dialog's
+    // own: a toast on the main window would sit under the open dialog.
+    let toast_overlay = adw::ToastOverlay::new();
+    toast_overlay.set_child(Some(&clamp));
     let toolbar_view = adw::ToolbarView::new();
     toolbar_view.add_top_bar(&header);
-    toolbar_view.set_content(Some(&clamp));
+    toolbar_view.set_content(Some(&toast_overlay));
     group_dialog.set_child(Some(&toolbar_view));
 
     // === Group Details ===
@@ -464,6 +471,7 @@ pub fn show_new_group_dialog_with_parent(
         .selected(preselected_index)
         .valign(gtk4::Align::Center)
         .build();
+    crate::dialogs::widgets::enable_string_search(&parent_dropdown);
 
     let parent_row = adw::ActionRow::builder()
         .title(i18n("Parent"))
@@ -471,6 +479,13 @@ pub fn show_new_group_dialog_with_parent(
         .build();
     parent_row.add_suffix(&parent_dropdown);
     details_group.add(&parent_row);
+
+    // Several groups in a row: keep the dialog (and its parent, credentials and
+    // description) open and clear the name, instead of closing after each.
+    let create_another_row = adw::SwitchRow::builder()
+        .title(i18n("Create Another"))
+        .build();
+    details_group.add(&create_another_row);
 
     content.append(&details_group);
 
@@ -740,6 +755,8 @@ pub fn show_new_group_dialog_with_parent(
     let sidebar_clone = sidebar;
     let window_clone = group_dialog.clone();
     let name_row_clone = name_row;
+    let create_another_clone = create_another_row;
+    let toast_overlay_clone = toast_overlay;
     let icon_row_clone = icon_row;
     let dropdown_clone = parent_dropdown;
     let username_row_clone = username_row;
@@ -803,6 +820,9 @@ pub fn show_new_group_dialog_with_parent(
             return;
         }
 
+        // `name` is consumed by the create call; the toast for "Create Another"
+        // needs it afterwards.
+        let created_name = name.clone();
         if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
             let result = if let Some(pid) = parent_id {
                 state_mut.create_group_with_parent(name, pid)
@@ -881,9 +901,27 @@ pub fn show_new_group_dialog_with_parent(
                     let state = state_clone.clone();
                     let sidebar = sidebar_clone.clone();
                     let window = window_clone.clone();
+                    let keep_open = create_another_clone.is_active();
+                    let name_row = name_row_clone.clone();
+                    let toast_overlay = toast_overlay_clone.clone();
                     glib::idle_add_local_once(move || {
                         MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
-                        window.close();
+                        // A subgroup made under a collapsed folder would
+                        // otherwise appear to have gone nowhere.
+                        if let Some(pid) = parent_id {
+                            sidebar.apply_expanded_groups(&std::collections::HashSet::from([pid]));
+                        }
+                        if keep_open {
+                            // Plain text: a group name may hold `&` or `<`.
+                            toast_overlay.add_toast(crate::toast::plain_toast(&i18n_f(
+                                "Group ‘{}’ created",
+                                &[&created_name],
+                            )));
+                            name_row.set_text("");
+                            name_row.grab_focus();
+                        } else {
+                            window.close();
+                        }
                     });
                 }
                 Err(e) => {

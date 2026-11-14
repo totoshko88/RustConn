@@ -621,49 +621,6 @@ impl CredentialResolver {
         Ok(keepass_creds.is_none())
     }
 
-    /// Checks if credentials need migration using hierarchical paths
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to check
-    /// * `groups` - All available connection groups
-    ///
-    /// # Returns
-    /// `true` if migration is needed, `false` otherwise
-    ///
-    /// # Errors
-    /// Returns `SecretError` if backend operations fail
-    pub async fn needs_keepass_migration_with_hierarchy(
-        &self,
-        connection: &Connection,
-        groups: &[ConnectionGroup],
-    ) -> SecretResult<bool> {
-        // Migration only makes sense if KeePass is enabled
-        if !self.settings.kdbx_enabled || self.settings.kdbx_path.is_none() {
-            return Ok(false);
-        }
-
-        // Check if credentials exist in Keyring
-        let keyring_creds = self.resolve_from_keyring(connection).await?;
-        if keyring_creds.is_none() {
-            return Ok(false);
-        }
-
-        // Check if credentials exist in KeePass (hierarchical path)
-        let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
-        let keepass_creds = self.secret_manager.retrieve(&lookup_key).await?;
-
-        if keepass_creds.is_some() {
-            return Ok(false);
-        }
-
-        // Also check legacy flat key
-        let legacy_key = Self::generate_lookup_key(connection);
-        let legacy_creds = self.secret_manager.retrieve(&legacy_key).await?;
-
-        // Need migration if in Keyring but not in KeePass (either path)
-        Ok(legacy_creds.is_none())
-    }
-
     /// Migrates credentials from Keyring to `KeePass`
     ///
     /// Copies credentials from Keyring to `KeePass` and optionally deletes
@@ -691,43 +648,6 @@ impl CredentialResolver {
 
         // Store in KeePass
         let lookup_key = Self::generate_lookup_key(connection);
-        self.secret_manager.store(&lookup_key, &creds).await?;
-
-        // Optionally delete from Keyring
-        if delete_from_keyring {
-            let connection_id = connection.id.to_string();
-            let _ = self.secret_manager.delete(&connection_id).await;
-        }
-
-        Ok(true)
-    }
-
-    /// Migrates credentials from Keyring to `KeePass` using hierarchical paths
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to migrate credentials for
-    /// * `groups` - All available connection groups
-    /// * `delete_from_keyring` - Whether to delete from Keyring after migration
-    ///
-    /// # Returns
-    /// `true` if migration was successful, `false` if no credentials to migrate
-    ///
-    /// # Errors
-    /// Returns `SecretError` if backend operations fail
-    pub async fn migrate_to_keepass_with_hierarchy(
-        &self,
-        connection: &Connection,
-        groups: &[ConnectionGroup],
-        delete_from_keyring: bool,
-    ) -> SecretResult<bool> {
-        // Get credentials from Keyring
-        let keyring_creds = self.resolve_from_keyring(connection).await?;
-        let Some(creds) = keyring_creds else {
-            return Ok(false);
-        };
-
-        // Store in KeePass with hierarchical path
-        let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
         self.secret_manager.store(&lookup_key, &creds).await?;
 
         // Optionally delete from Keyring
@@ -797,55 +717,6 @@ impl CredentialResolver {
         }
     }
 
-    /// Stores credentials using the unified storage backend with hierarchical paths
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to store credentials for
-    /// * `credentials` - The credentials to store
-    /// * `groups` - All available connection groups
-    ///
-    /// # Errors
-    /// Returns `SecretError` if storage fails
-    pub async fn store_unified_with_hierarchy(
-        &self,
-        connection: &Connection,
-        credentials: &Credentials,
-        groups: &[ConnectionGroup],
-    ) -> SecretResult<()> {
-        let backend = self.select_storage_backend();
-
-        match backend {
-            SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-                let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
-                self.secret_manager.store(&lookup_key, credentials).await
-            }
-            SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
-                let lookup_key = Self::generate_keyring_key_with_hierarchy(connection, groups);
-                self.secret_manager.store(&lookup_key, credentials).await
-            }
-            SecretBackendType::Bitwarden
-            | SecretBackendType::OnePassword
-            | SecretBackendType::Passbolt
-            | SecretBackendType::Pass => {
-                // Non-KeePass backends use flat keys — group hierarchy is not
-                // encoded in the lookup key, so moves/renames don't break lookups.
-                let lookup_key = Self::generate_lookup_key(connection);
-                self.secret_manager.store(&lookup_key, credentials).await
-            }
-            SecretBackendType::EncryptedFile => {
-                // Flat-key backend (no hierarchy): store under the same flat
-                // lookup key as store_unified, so moves/renames don't break it.
-                let lookup_key = Self::generate_lookup_key(connection);
-                self.secret_manager.store(&lookup_key, credentials).await
-            }
-            SecretBackendType::PortableEncryptedFile => {
-                // Passphrase-based flat-key backend (no hierarchy).
-                let lookup_key = Self::generate_lookup_key(connection);
-                self.secret_manager.store(&lookup_key, credentials).await
-            }
-        }
-    }
-
     /// Resolves credentials with verification status
     ///
     /// This method combines credential resolution with verification tracking
@@ -904,65 +775,6 @@ impl CredentialResolver {
         }
     }
 
-    /// Resolves credentials with verification status using hierarchical paths
-    ///
-    /// This is the hierarchical version of `resolve_verified()` that uses the
-    /// connection's group structure to determine the `KeePass` entry path.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to resolve credentials for
-    /// * `groups` - All available connection groups for hierarchy resolution
-    /// * `verification_manager` - Manager tracking verification status
-    ///
-    /// # Returns
-    /// `VerifiedCredentials` with status information
-    ///
-    /// # Errors
-    /// Returns `SecretError` if backend operations fail
-    pub async fn resolve_verified_with_hierarchy(
-        &self,
-        connection: &Connection,
-        groups: &[ConnectionGroup],
-        verification_manager: &CredentialVerificationManager,
-    ) -> SecretResult<VerifiedCredentials> {
-        // Get verification status for this connection
-        let status = verification_manager.get_status(connection.id);
-
-        // If credentials are not verified, always show dialog
-        if !status.is_verified() {
-            return Ok(VerifiedCredentials::new(
-                connection.username.clone(),
-                None,
-                connection.domain.clone(),
-                status,
-            ));
-        }
-
-        // Try to resolve credentials from storage using hierarchical path
-        let credentials = self.resolve_with_hierarchy(connection, groups).await?;
-
-        match credentials {
-            Some(creds) => {
-                // Found credentials and they're verified - can use automatically
-                Ok(VerifiedCredentials::new(
-                    creds.username,
-                    creds.password,
-                    connection.domain.clone(),
-                    status,
-                ))
-            }
-            None => {
-                // No credentials found - need to prompt
-                Ok(VerifiedCredentials::new(
-                    connection.username.clone(),
-                    None,
-                    connection.domain.clone(),
-                    CredentialStatus::new(),
-                ))
-            }
-        }
-    }
-
     /// Generates a hierarchical lookup key for `KeePass` entry retrieval.
     ///
     /// The key format is: `RustConn/GroupA/SubGroup/ConnectionName`
@@ -980,48 +792,6 @@ impl CredentialResolver {
         groups: &[ConnectionGroup],
     ) -> String {
         KeePassHierarchy::build_entry_path(connection, groups)
-    }
-
-    /// Stores credentials for a connection with hierarchical path support.
-    ///
-    /// This method stores credentials using the connection's group hierarchy
-    /// to determine the `KeePass` entry path.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to store credentials for
-    /// * `credentials` - The credentials to store
-    /// * `groups` - All available connection groups for hierarchy resolution
-    ///
-    /// # Errors
-    /// Returns `SecretError` if storage fails
-    pub async fn store_with_hierarchy(
-        &self,
-        connection: &Connection,
-        credentials: &Credentials,
-        groups: &[ConnectionGroup],
-    ) -> SecretResult<()> {
-        let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
-        self.secret_manager.store(&lookup_key, credentials).await
-    }
-
-    /// Retrieves credentials for a connection using hierarchical path.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to retrieve credentials for
-    /// * `groups` - All available connection groups for hierarchy resolution
-    ///
-    /// # Returns
-    /// `Some(Credentials)` if found, `None` if not found
-    ///
-    /// # Errors
-    /// Returns `SecretError` if retrieval fails
-    pub async fn retrieve_with_hierarchy(
-        &self,
-        connection: &Connection,
-        groups: &[ConnectionGroup],
-    ) -> SecretResult<Option<Credentials>> {
-        let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
-        self.secret_manager.retrieve(&lookup_key).await
     }
 
     /// Resolves credentials for a connection using hierarchical paths.
@@ -1094,7 +864,7 @@ impl CredentialResolver {
             SecretBackendType::Pass => self.resolve_from_pass(connection).await,
             SecretBackendType::EncryptedFile => {
                 // Flat-key backend with no hierarchy: use the flat lookup key
-                // (symmetric with store_unified_with_hierarchy).
+                // (the stores use the same flat key).
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.retrieve(&lookup_key).await
             }
@@ -1169,202 +939,6 @@ impl CredentialResolver {
         // Fall back to keyring (with hierarchical key + legacy fallback)
         self.resolve_from_keyring_hierarchical(connection, groups)
             .await
-    }
-
-    /// Deletes credentials for a connection using hierarchical path.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection to delete credentials for
-    /// * `groups` - All available connection groups for hierarchy resolution
-    ///
-    /// # Errors
-    /// Returns `SecretError` if deletion fails
-    pub async fn delete_with_hierarchy(
-        &self,
-        connection: &Connection,
-        groups: &[ConnectionGroup],
-    ) -> SecretResult<()> {
-        let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
-        self.secret_manager.delete(&lookup_key).await
-    }
-
-    /// Moves a credential entry when a connection's group changes.
-    ///
-    /// This retrieves the credential from the old path, stores it at the new path,
-    /// and deletes the old entry.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection with updated `group_id`
-    /// * `old_group_id` - The previous group ID (None if was at root)
-    /// * `groups` - All available connection groups
-    ///
-    /// # Errors
-    /// Returns `SecretError` if the move operation fails
-    pub async fn move_credential_on_group_change(
-        &self,
-        connection: &Connection,
-        old_group_id: Option<uuid::Uuid>,
-        groups: &[ConnectionGroup],
-    ) -> SecretResult<()> {
-        let backend = self.select_storage_backend();
-
-        // Only KeePass backends encode group hierarchy in the lookup key.
-        // All other backends use flat keys that don't change on group move.
-        match backend {
-            SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-                // Build old path
-                let mut old_connection = connection.clone();
-                old_connection.group_id = old_group_id;
-                let old_key = Self::generate_hierarchical_lookup_key(&old_connection, groups);
-
-                // Retrieve from old location
-                let credentials = self.secret_manager.retrieve(&old_key).await?;
-
-                if let Some(creds) = credentials {
-                    // Store at new location
-                    let new_key = Self::generate_hierarchical_lookup_key(connection, groups);
-                    if old_key != new_key {
-                        self.secret_manager.store(&new_key, &creds).await?;
-                        let _ = self.secret_manager.delete(&old_key).await;
-                    }
-                }
-            }
-            SecretBackendType::LibSecret
-            | SecretBackendType::MacOsKeychain
-            | SecretBackendType::Bitwarden
-            | SecretBackendType::OnePassword
-            | SecretBackendType::Passbolt
-            | SecretBackendType::Pass
-            | SecretBackendType::EncryptedFile
-            | SecretBackendType::PortableEncryptedFile => {
-                // Flat keys — no rename needed on group move.
-                // (EncryptedFile/PortableEncryptedFile are flat-key; grouping
-                // here is correct, not a placeholder.)
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Renames a credential entry when a connection is renamed.
-    ///
-    /// This retrieves the credential using the old name, stores it with the new name,
-    /// and deletes the old entry. Handles all backend types appropriately.
-    ///
-    /// # Arguments
-    /// * `connection` - The connection with the NEW name already set
-    /// * `old_name` - The previous connection name
-    /// * `groups` - All available connection groups
-    ///
-    /// # Errors
-    /// Returns `SecretError` if the rename operation fails
-    pub async fn rename_credential(
-        &self,
-        connection: &Connection,
-        old_name: &str,
-        groups: &[ConnectionGroup],
-    ) -> SecretResult<()> {
-        // Build old connection with old name for key generation
-        let mut old_connection = connection.clone();
-        old_connection.name = old_name.to_string();
-
-        match connection.password_source {
-            PasswordSource::Vault => {
-                // Vault uses the configured backend — rename based on
-                // which backend is active
-                let backend = self.select_storage_backend();
-                match backend {
-                    SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-                        // KeePass uses hierarchical paths
-                        let old_key =
-                            Self::generate_hierarchical_lookup_key(&old_connection, groups);
-                        let new_key = Self::generate_hierarchical_lookup_key(connection, groups);
-                        if old_key != new_key
-                            && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
-                        {
-                            self.secret_manager.store(&new_key, &creds).await?;
-                            let _ = self.secret_manager.delete(&old_key).await;
-                        }
-                    }
-                    SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
-                        // LibSecret/Keychain uses hierarchical "RustConn/{group}/{name} ({protocol})" format.
-                        // Also check the legacy flat key for migration.
-                        let old_key =
-                            Self::generate_keyring_key_with_hierarchy(&old_connection, groups);
-                        let new_key = Self::generate_keyring_key_with_hierarchy(connection, groups);
-                        if old_key != new_key {
-                            // Try new hierarchical key first, then legacy flat key
-                            let creds =
-                                if let Some(c) = self.secret_manager.retrieve(&old_key).await? {
-                                    Some(c)
-                                } else {
-                                    // Fallback: try legacy flat key format
-                                    let legacy_key = Self::generate_keyring_key(&old_connection);
-                                    self.secret_manager.retrieve(&legacy_key).await?
-                                };
-                            if let Some(creds) = creds {
-                                self.secret_manager.store(&new_key, &creds).await?;
-                                // Delete both old keys (hierarchical and legacy) to clean up
-                                let _ = self.secret_manager.delete(&old_key).await;
-                                let legacy_key = Self::generate_keyring_key(&old_connection);
-                                if legacy_key != old_key {
-                                    let _ = self.secret_manager.delete(&legacy_key).await;
-                                }
-                            }
-                        }
-                    }
-                    SecretBackendType::Bitwarden
-                    | SecretBackendType::OnePassword
-                    | SecretBackendType::Passbolt
-                    | SecretBackendType::Pass => {
-                        // These backends use "rustconn/{name}" flat key
-                        let old_key = Self::generate_lookup_key(&old_connection);
-                        let new_key = Self::generate_lookup_key(connection);
-                        if old_key != new_key
-                            && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
-                        {
-                            self.secret_manager.store(&new_key, &creds).await?;
-                            let _ = self.secret_manager.delete(&old_key).await;
-                        }
-                    }
-                    SecretBackendType::EncryptedFile => {
-                        // EncryptedFile uses the same "rustconn/{name}" flat key
-                        // as the other app-managed backends; rename moves the
-                        // credentials, and a legacy key passphrase in the old
-                        // entry is dropped with it (StoredCredentials).
-                        // (Flat-key; correct, not a 2.5 placeholder.)
-                        let old_key = Self::generate_lookup_key(&old_connection);
-                        let new_key = Self::generate_lookup_key(connection);
-                        if old_key != new_key
-                            && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
-                        {
-                            self.secret_manager.store(&new_key, &creds).await?;
-                            let _ = self.secret_manager.delete(&old_key).await;
-                        }
-                    }
-                    SecretBackendType::PortableEncryptedFile => {
-                        // Same flat-key rename as EncryptedFile.
-                        let old_key = Self::generate_lookup_key(&old_connection);
-                        let new_key = Self::generate_lookup_key(connection);
-                        if old_key != new_key
-                            && let Some(creds) = self.secret_manager.retrieve(&old_key).await?
-                        {
-                            self.secret_manager.store(&new_key, &creds).await?;
-                            let _ = self.secret_manager.delete(&old_key).await;
-                        }
-                    }
-                }
-            }
-            PasswordSource::Variable(_)
-            | PasswordSource::Script(_)
-            | PasswordSource::Prompt
-            | PasswordSource::Inherit
-            | PasswordSource::None => {
-                // No credentials stored in these modes
-            }
-        }
-
-        Ok(())
     }
 
     /// Resolves credentials by inheriting from parent groups.

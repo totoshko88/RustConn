@@ -105,7 +105,7 @@ use crate::automation::{AutomationSession, prepare_rules_from_config};
 use crate::embedded_rdp::EmbeddedRdpWidget;
 use crate::i18n::{i18n, i18n_f};
 use crate::monitoring::MonitoringCoordinator;
-use crate::session::{SessionState, SessionWidget, VncSessionWidget};
+use crate::session::VncSessionWidget;
 use crate::terminal::highlight_overlay::HighlightOverlay;
 use crate::terminal::tab_container::TabPageContainer;
 
@@ -908,21 +908,6 @@ impl TerminalNotebook {
         }
     }
 
-    /// Gets the session widget (VNC) for a session
-    #[must_use]
-    pub fn get_session_widget(&self, session_id: Uuid) -> Option<SessionWidget> {
-        let widgets = self.session_widgets.borrow();
-        if let Some(SessionWidgetStorage::Vnc(_)) = widgets.get(&session_id) {
-            Some(SessionWidget::Vnc(VncSessionWidget::new()))
-        } else {
-            drop(widgets);
-            self.terminals
-                .borrow()
-                .get(&session_id)
-                .map(|terminal| SessionWidget::Ssh(terminal.clone()))
-        }
-    }
-
     /// Gets the GTK widget for a session (for display in split view)
     #[must_use]
     pub fn get_session_display_widget(&self, session_id: Uuid) -> Option<Widget> {
@@ -960,16 +945,6 @@ impl TerminalNotebook {
 
         let has_terminal = self.terminals.borrow().contains_key(&session_id);
         eligibility_from(has_terminal, None)
-    }
-
-    /// Gets the session state for a VNC session
-    #[must_use]
-    pub fn get_session_state(&self, session_id: Uuid) -> Option<SessionState> {
-        let widgets = self.session_widgets.borrow();
-        match widgets.get(&session_id) {
-            Some(SessionWidgetStorage::Vnc(widget)) => Some(widget.state()),
-            _ => None,
-        }
     }
 
     /// Spawns a session command on its own PTY and attaches it to the terminal.
@@ -2543,6 +2518,24 @@ impl TerminalNotebook {
         self.session_info.borrow().values().cloned().collect()
     }
 
+    /// Sessions that currently have a tab, left to right.
+    ///
+    /// Unlike [`Self::get_all_sessions`] (hash order, includes sessions parked
+    /// in a split or detached), this is the order the user sees in the tab bar
+    /// and only lists sessions a tab selection could name.
+    #[must_use]
+    pub fn sessions_in_tab_order(&self) -> Vec<TerminalSession> {
+        let sessions = self.sessions.borrow();
+        let info = self.session_info.borrow();
+        (0..self.tab_view.n_pages())
+            .filter_map(|i| {
+                let page = self.tab_view.nth_page(i);
+                let (id, _) = sessions.iter().find(|(_, p)| **p == page)?;
+                info.get(id).cloned()
+            })
+            .collect()
+    }
+
     /// Sets the log file path for a session
     pub fn set_log_file(&self, session_id: Uuid, log_file: PathBuf) {
         if let Some(info) = self.session_info.borrow_mut().get_mut(&session_id) {
@@ -2951,12 +2944,6 @@ impl TerminalNotebook {
         self.sessions.clone()
     }
 
-    /// Returns the number of open tabs
-    #[must_use]
-    pub fn tab_count(&self) -> u32 {
-        self.tab_view.n_pages() as u32
-    }
-
     /// Returns the number of active sessions (excluding Welcome tab)
     #[must_use]
     pub fn session_count(&self) -> usize {
@@ -3223,12 +3210,6 @@ impl TerminalNotebook {
     pub fn show_tab_view_content(&self) {
         self.tab_view.set_visible(true);
         self.tab_view.set_vexpand(true);
-    }
-
-    /// Returns whether the TabView content is currently visible
-    #[must_use]
-    pub fn is_tab_view_content_visible(&self) -> bool {
-        self.tab_view.is_visible()
     }
 
     // ========================================================================
@@ -3510,11 +3491,6 @@ impl TerminalNotebook {
         *self.on_tab_added.borrow_mut() = Some(Box::new(callback));
     }
 
-    /// Clears the `on_tab_added` callback.
-    pub fn clear_on_tab_added(&self) {
-        *self.on_tab_added.borrow_mut() = None;
-    }
-
     /// Fires the `on_tab_added` callback if set.
     fn notify_tab_added(&self, session_id: Uuid, connection_id: Uuid) {
         // Cluster membership is resolved here rather than in each creation path
@@ -3523,7 +3499,7 @@ impl TerminalNotebook {
         self.resolve_cluster_pending(connection_id, session_id);
 
         // Take the callback out to avoid holding a borrow across the call —
-        // the callback may call `clear_on_tab_added()` which also borrows.
+        // the callback may set `on_tab_added` itself, which borrows it too.
         let callback = self.on_tab_added.borrow_mut().take();
         if let Some(cb) = callback {
             cb(session_id, connection_id);
@@ -3533,7 +3509,7 @@ impl TerminalNotebook {
             // is still None after the call, the callback was NOT self-clearing
             // from within (because take already emptied it), so we restore.
             // If the workspace callback wants to signal "done", it must NOT
-            // call clear_on_tab_added — instead it signals via a shared flag
+            // clear the slot — instead it signals via a shared flag
             // captured in the closure. We simply always restore here; the
             // workspace code uses an `Rc<Cell<bool>>` to stop re-firing.
             let mut slot = self.on_tab_added.borrow_mut();
@@ -4671,12 +4647,18 @@ mod vte_contract_tests {
     #[test]
     #[ignore = "initialises GTK: needs a display and its own process"]
     fn fractional_scroll_position_is_kept() {
-        use gtk4::prelude::{AdjustmentExt, ScrollableExt};
+        use gtk4::prelude::{AdjustmentExt, GtkWindowExt, ScrollableExt};
 
         if gtk4::init().is_err() {
             return;
         }
         let terminal = super::Terminal::new();
+        // VTE sizes its vertical adjustment (upper, page_size) in size_allocate,
+        // so a terminal never placed in a mapped window reports 0 for
+        // both (measured on VTE 0.84.1). Give it a real allocation first.
+        let window = gtk4::Window::new();
+        window.set_child(Some(&terminal));
+        window.present();
         terminal.set_size(80, 10);
         for line in 0..40 {
             terminal.feed(format!("line {line}\r\n").as_bytes());

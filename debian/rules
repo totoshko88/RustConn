@@ -29,8 +29,9 @@ override_dh_auto_install:
 	install -Dm755 target/release/rustconn debian/rustconn/usr/bin/rustconn
 	install -Dm755 target/release/rustconn-cli debian/rustconn/usr/bin/rustconn-cli
 	# Desktop file
-	install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
-		debian/rustconn/usr/share/applications/io.github.totoshko88.RustConn.desktop
+	install -d debian/rustconn/usr/share/applications
+	msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po \
+		-o debian/rustconn/usr/share/applications/io.github.totoshko88.RustConn.desktop
 	# MIME type for .rdp files
 	install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-rdp.xml \
 		debian/rustconn/usr/share/mime/packages/io.github.totoshko88.RustConn-rdp.xml

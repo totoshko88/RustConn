@@ -80,6 +80,7 @@ pub(super) fn create_rdp_options() -> (
     Entry,
     adw::SwitchRow,
     DropDown,
+    Entry,
 ) {
     let scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -191,6 +192,31 @@ pub(super) fn create_rdp_options() -> (
         .build();
     display_mode_row.add_suffix(&display_mode_dropdown);
     display_group.add(&display_mode_row);
+
+    // FreeRDP monitor ids for `/monitors:`. Empty keeps FreeRDP's own choice
+    // (the current monitor; every monitor under "All monitors"). The subtitle
+    // lists what GDK reports, so the user can match a screen to a number.
+    let rdp_monitors_entry = Entry::builder()
+        .hexpand(true)
+        .valign(gtk4::Align::Center)
+        .placeholder_text(i18n("e.g. 0,1"))
+        .build();
+    rdp_monitors_entry.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Monitor numbers for the external window",
+    ))]);
+    rdp_monitors_entry.connect_changed(|entry| {
+        let invalid = rustconn_core::models::parse_monitor_ids(&entry.text()).is_err();
+        crate::dialogs::widgets::set_invalid(entry, invalid);
+    });
+    let monitors_row = adw::ActionRow::builder()
+        .title(i18n("Monitors"))
+        .subtitle(monitors_row_subtitle())
+        // Connector and model names come from the display server and may hold
+        // `&` or `<`, which Pango would read as broken markup.
+        .use_markup(false)
+        .build();
+    monitors_row.add_suffix(&rdp_monitors_entry);
+    display_group.add(&monitors_row);
 
     // Resolution
     let res_box = GtkBox::new(Orientation::Horizontal, 4);
@@ -377,6 +403,25 @@ pub(super) fn create_rdp_options() -> (
         .active(false)
         .build();
     features_group.add(&rdp_smartcard_check);
+    // The embedded viewer has no smart card channel, so the switch would do
+    // nothing there. Say so while Embedded is picked instead of letting it
+    // look like it works; the saved value is left alone.
+    {
+        let smartcard_row = rdp_smartcard_check.clone();
+        let sync_subtitle = move |dropdown: &DropDown| {
+            let embedded =
+                RdpClientMode::from_index(dropdown.selected()) == RdpClientMode::Embedded;
+            smartcard_row.set_subtitle(&if embedded {
+                i18n("Not used in Embedded mode. Set Client Mode to External RDP client.")
+            } else {
+                i18n(
+                    "Use local smart card readers in the remote session (External client, needs PC/SC)",
+                )
+            });
+        };
+        sync_subtitle(&client_mode_dropdown);
+        client_mode_dropdown.connect_selected_notify(sync_subtitle);
+    }
 
     // Windows key combinations (mstsc's "Apply Windows key combinations"). The
     // first entry follows Settings → Interface, so a connection only overrides
@@ -1060,5 +1105,46 @@ pub(super) fn create_rdp_options() -> (
         rdp_load_balance_entry,
         rdp_auto_reconnect_check,
         rdp_keyboard_hook_dropdown,
+        rdp_monitors_entry,
     )
+}
+
+/// Subtitle for the Monitors row: the screens GDK reports, numbered from 0.
+///
+/// ponytail: FreeRDP numbers monitors itself (`xfreerdp /list:monitor`), and on
+/// a single-GPU desktop its order normally matches GDK's; where it does not the
+/// user corrects the numbers. Upgrade: query FreeRDP's list when it exposes one.
+fn monitors_row_subtitle() -> String {
+    use gtk4::gdk;
+    use gtk4::prelude::*;
+
+    let hint =
+        i18n("Numbers for the external client, comma-separated; empty uses the current monitor");
+    let Some(display) = gdk::Display::default() else {
+        return hint;
+    };
+    let monitors = display.monitors();
+    let names: Vec<String> = (0..monitors.n_items())
+        .filter_map(|index| {
+            let monitor = monitors.item(index).and_downcast::<gdk::Monitor>()?;
+            Some(format!("{index}: {}", monitor_label(&monitor)))
+        })
+        .collect();
+    tracing::debug!(monitors = ?names, "GDK monitors for the RDP monitor picker");
+    if names.is_empty() {
+        hint
+    } else {
+        format!("{hint} — {}", names.join(", "))
+    }
+}
+
+/// Connector (`DP-1`) with the model in brackets, whichever the backend exposes.
+fn monitor_label(monitor: &gtk4::gdk::Monitor) -> String {
+    let connector = monitor.connector().map(|c| c.to_string());
+    let model = monitor.model().map(|m| m.to_string());
+    match (connector, model) {
+        (Some(c), Some(m)) => format!("{c} ({m})"),
+        (Some(x), None) | (None, Some(x)) => x,
+        (None, None) => i18n("unknown"),
+    }
 }

@@ -24,20 +24,25 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "rustconn";
-  version = "0.19.4";
+  version = "0.25.0";
 
   src = fetchFromGitHub {
     owner = "totoshko88";
     repo = "RustConn";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    # Unknown until the tag exists; whoever submits this to nixpkgs fills it in
+    # with `nix store prefetch-file --unpack` (see below).
+    hash = lib.fakeHash;
   };
 
-  # Replace with the real hash obtained by running:
-  #   nix-prefetch --option extra-experimental-features flakes \
-  #     '(import <nixpkgs> {}).rustconn.cargoDeps'
-  # or by setting lib.fakeHash here and reading the actual hash from the build error.
-  cargoHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+  # cargoHash is the vendored-crates hash of the tag above (computed with
+  # rustPlatform.fetchCargoVendor on nixpkgs-unstable). On a version bump set
+  # lib.fakeHash, run
+  #   nix-build -A rustconn   (in a nixpkgs checkout)
+  # and copy the "got:" hash from the error. Cargo.lock has no git sources, so
+  # no outputHashes are needed. src hash is refreshed per release the same way:
+  #   nix store prefetch-file --unpack https://github.com/totoshko88/RustConn/archive/refs/tags/v<version>.tar.gz
+  cargoHash = lib.fakeHash;
 
   nativeBuildInputs = [
     pkg-config
@@ -82,8 +87,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     install -Dm755 target/release/rustconn     "$out/bin/rustconn"
     install -Dm755 target/release/rustconn-cli "$out/bin/rustconn-cli"
 
-    install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
-      "$out/share/applications/io.github.totoshko88.RustConn.desktop"
+    install -d "$out/share/applications"
+    msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po \
+      -o "$out/share/applications/io.github.totoshko88.RustConn.desktop"
 
     install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
       "$out/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"

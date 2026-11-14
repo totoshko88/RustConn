@@ -602,12 +602,7 @@ pub fn create_ui_page() -> (
     // The list grows with one entry per saved connection, so give it the same
     // type-to-search the jump-host picker has. A ComboRow needs an expression to
     // match against before enable_search shows anything but a dead box.
-    startup_action_row.set_expression(Some(gtk4::PropertyExpression::new(
-        gtk4::StringObject::static_type(),
-        None::<gtk4::Expression>,
-        "string",
-    )));
-    startup_action_row.set_enable_search(true);
+    crate::dialogs::widgets::enable_combo_row_search(&startup_action_row);
     let startup_action_dropdown = startup_action_row.clone();
     startup_group.add(&startup_action_row);
 
@@ -1041,6 +1036,7 @@ pub fn collect_ui_settings(
             max_age_hours: max_age_row.value().max(0.0) as u32,
         },
         search_history: Vec::new(), // Preserve existing history from current settings
+        saved_searches: Vec::new(), // Preserved by the caller, like the history
         startup_action,
         // Retired settings with no row any more; the caller copies the stored
         // values back so a save never rewrites what an older build left.

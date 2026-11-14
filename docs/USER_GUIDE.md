@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.24.11** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.25.0** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -62,6 +62,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Adaptive UI](#adaptive-ui)
    - [Startup Action](#startup-action)
    - [Backup & Restore](#backup--restore)
+   - [Accessibility](#accessibility)
 9. [Import, Export & Migration](#import-export--migration)
    - [Import](#import-ctrli)
    - [Export](#export-ctrlshifte)
@@ -169,6 +170,27 @@ Filter connections by protocol from the **Filter** menu button in the search row
 - The Filter button turns accent-coloured while any protocol is ticked
 - Clearing the search field, or closing the search row, resets the filters and
   unticks every box
+
+#### Saved searches
+
+The **Filter** menu also keeps your saved searches. A saved search is a name plus
+the exact text of the search field, so it includes the protocols you ticked, any
+`#tag`, `group:` or free text.
+
+- **Save** — type or tick what you want, open the **Filter** menu and choose
+  **Save current search…**, then enter a name. The button is greyed out while the
+  search field is empty. Names are unique (case is ignored), up to 64 characters;
+  you can keep up to 50.
+- **Apply** — click its name. The text goes back into the search field, so the
+  list is exactly what typing it would give.
+- **Rename / Delete** — the pencil and bin buttons on the row. Deleting asks first
+  and never touches your connections.
+- Everything is keyboard reachable (Tab / Enter); each button has a screen-reader
+  label. A saved search is not refreshed when you later change the tags or groups
+  it names — it simply runs the text again.
+- Saved searches are stored in the settings file (`ui.saved_searches`), not in
+  `connections.toml`, so Simple Sync does not carry them to another device and
+  older versions of RustConn still open your connections and settings.
 
 ### Password Vault Button
 
@@ -720,7 +742,15 @@ Temporary connection without saving:
 Deleted items are moved to Trash and can be restored:
 - After deleting, an "Undo" notification appears
 - Click "Undo" to restore the deleted item
+- Deleting several selected items at once also moves them to Trash; there is no "Undo" notification for that, so use the Trash row
+- Items stay in Trash, with their saved vault credentials, until you choose **Empty Trash**
 - Trash is persisted across sessions for recovery
+
+**The Trash row:** while the trash holds anything, a 🗑 **Trash** row appears at the bottom of the sidebar tree, like the Favorites group at the top. Expand it to see the deleted connections and groups.
+- Right-click an item → **Restore** puts it back (the same action as the "Undo" notification)
+- Right-click the row or an item → **Empty Trash** asks for confirmation, then removes everything in the trash for good, including saved vault credentials. This cannot be undone
+- The row disappears when the last item is restored or the trash is emptied
+- Items in the Trash row cannot be connected, edited or dragged; restore them first
 
 ### Test Connection
 
@@ -1268,6 +1298,23 @@ One such server is GNOME Remote Desktop's **Remote Login** mode (GNOME 46+): it 
 Before 0.20.9 there was no such setting. A separate window was sized from a fixed resolution that the editor collected in a hidden row and defaulted to 1920×1080, so on a 4K display the client opened at roughly a quarter of the screen. **A connection that genuinely needs a fixed resolution has to select *Custom resolution* once** — a stored 1920×1080 cannot be told apart from that old default, so it is not assumed.
 
 From the CLI: `--rdp-display-mode fit|fullscreen|custom|multimon` and `--rdp-resolution WIDTHxHEIGHT`.
+
+#### Choosing Which Monitors an External RDP Window Uses
+
+*New in 0.25.0.* The **Monitors** row under **External Window** takes FreeRDP monitor numbers, comma-separated. Its subtitle lists the screens GTK reports on this machine, numbered from 0, for example `0: DP-1 (DELL U2723QE), 1: HDMI-A-1 (LG)`.
+
+| Monitors | Window mode | Command line |
+|----------|-------------|--------------|
+| empty *(default)* | any | nothing added: FreeRDP uses the current monitor |
+| empty | **All monitors** | `/multimon` |
+| `1` | **Fullscreen** | `/f /monitors:1` |
+| `1` | **Fit to screen** / **Custom** | `/monitors:1 /multimon` |
+| `0,2` | any but **All monitors** | `/monitors:0,2 /multimon` |
+| `0,2` | **All monitors** | `/monitors:0,2 /multimon` (once) |
+
+A list wins over **All monitors**. FreeRDP honours `/monitors:` only in fullscreen or multi-monitor mode, so with **Fit to screen** or **Custom resolution** RustConn adds `/multimon`. The numbers are FreeRDP's, as printed by `xfreerdp /list:monitor`; on most desktops they follow the GTK order shown in the row, but if the wrong screen opens, check that list and correct the numbers. Connections saved before 0.25.0 have no list and behave as before.
+
+The setting is read only by the external FreeRDP client. The embedded viewer is a single widget, and GTK 4 on Wayland cannot place a window across several screens by coordinates, so it cannot span monitors. To put an embedded session fullscreen on one screen, right-click its tab and use **Move to New Window on…**.
 
 #### Resizing on Legacy Servers — Dynamic Resolution and Smart Sizing
 
@@ -2329,6 +2376,7 @@ Sessions shown through an external viewer (xfreerdp, vncviewer, or an external S
 - **Vertical Split** — Ctrl+Shift+S splits the current tab vertically (top and bottom)
 - **Close Pane** — Ctrl+Shift+X closes the focused pane; if only one pane remains, the split is dissolved and the session returns to normal tab mode
 - **Focus Next Pane** — Ctrl+` cycles focus between panes
+- **Split with Other Tabs** — right-click a tab and choose **Split with Other Tabs…** or press **Ctrl+Shift+K** while that tab is active (rebind it in **Settings ▸ Interface ▸ Keybindings**). A dialog lists every other tab that can join; tick the ones you want — with the keyboard use Tab to move and Space to tick — and press **Split**. That tab becomes the split's tab and the ticked tabs fill a balanced grid around it (2 tabs side by side or stacked to suit the window's shape, 4 tabs as 2×2, and so on), the same grid a restored workspace uses. The sessions are moved, not reconnected, and each one's own tab disappears while it is in the split. Tabs that cannot be split (external-viewer sessions, tabs in another window) are not listed. The item is hidden on a tab that already hosts a split; use **Remove Split** first, or **Select Tab…** in an empty pane to add one more session. To change the arrangement afterwards, drag the pane headers.
 - **Select Tab** — click the "Select Tab..." button in an empty pane to pick which session to display; sessions already in other split views show a colored indicator
 - **Move between splits** — a session can be moved from one split to another via "Select Tab"; the original split keeps a placeholder in the vacated panel, and the session's own tab shows a "Displayed in Split View" page with a "Go to Split View" button. You can also **drag a pane by its connection-name header** onto another panel or tab to move it there (the pointer turns into a grab hand over the header, and its tooltip shows the full connection name and a "Drag to move…" hint). Because the drag handle is the header, this needs the connection-name labels to be visible. They are on by default for new installations; a configuration saved by an earlier version keeps the setting it had, which was off, so if your panes show no header, turn on **Settings ▸ Interface ▸ Window ▸ Show connection name in split panes**.
 - **Tab Overview** — split-view tabs render correctly in Tab Overview (Ctrl+Shift+O) with live thumbnails showing the split layout
@@ -2826,7 +2874,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 | `print <text>` | Print an ANSI-coloured message on the terminal |
 | `ask "<prompt>" [hide] <var>` | Ask the user for input; `hide` masks it |
 | `msg <text> [ok]` | Show a message window (optionally with an OK button) |
-| `start <name-or-uuid> [manual] [cluster=<name>] [-> uuid,tmp]` | Start a session; optionally record its ids |
+| `start <name-or-uuid> [manual] [-> uuid,tmp]` | Start a session; optionally record its ids |
 | `select <name-or-uuid> [-> uuid,tmp]` | Select an open session |
 | `stop <session-var>` | Close a session |
 | `split <a> <b> [vertical]` | Split two sessions into a shared layout |
@@ -3972,6 +4020,32 @@ Back up your entire RustConn configuration as a single ZIP archive.
 
 > **Important:** The `.machine-key` file (`~/.local/share/rustconn/.machine-key`) is **not** included in backups. This key is used to encrypt credentials stored locally (AES-256-GCM). To migrate encrypted credentials to a different machine, copy `.machine-key` from the old machine **before** restoring the backup, or re-enter passwords after restore.
 
+### Accessibility
+
+**Keyboard only.** Every dialog and the main window can be driven without a mouse: Tab and the arrow keys move focus, **F10** opens the main menu, **Menu** or **Shift+F10** opens the context menu of the selected row, **Ctrl+P** opens the command palette. The full list is in [Keyboard Shortcuts](#keyboard-shortcuts); all of them can be changed in Settings → Interface → Keybindings.
+
+**Screen readers (Orca).** Icon-only buttons carry an accessible label as well as a tooltip, and toast messages are announced. Terminal tabs rely on VTE's own accessibility support. An embedded RDP or VNC session is a bitmap, so a screen reader only hears its label ("session view"), not the remote desktop; use the remote machine's own screen reader, or open the connection in an external viewer.
+
+**Leaving an embedded session with the keyboard.** While focus is inside a terminal or an embedded RDP/VNC session, the keys go to the remote side. To get out:
+
+| Keys | Result |
+|------|--------|
+| **Ctrl+1** or **Alt+1** | Focus the sidebar (the connection list) |
+| **Ctrl+2** or **Alt+2** | Focus the active session again |
+| **Ctrl+Shift+Backspace** | Turn [keyboard passthrough](#keyboard-passthrough-mode) off first, if it is on: in passthrough only this key, **Ctrl+Q** and **F11** still work |
+| **Super+Esc** | Give desktop shortcuts (Alt+Tab, Super) back to the desktop after passthrough took them |
+
+**Reduced motion.** RustConn follows the desktop's animation switch (`gtk-enable-animations`). When it is off, the pulsing indicators (a starting SSH tunnel, an active broadcast toggle) stay still. Turn it off in GNOME with Settings → Accessibility → Seeing → Reduce Animation, or for any desktop by adding this to `~/.config/gtk-4.0/settings.ini`:
+
+```ini
+[Settings]
+gtk-enable-animations=false
+```
+
+**Contrast and colors.** The light/dark choice and high-contrast mode come from the system (Settings → Interface → Appearance can override light/dark).
+
+---
+
 ---
 
 ## Import, Export & Migration
@@ -4702,7 +4776,7 @@ Quick checklist:
 ### Passbolt Not Working
 
 1. Install `go-passbolt-cli` from github.com/passbolt/go-passbolt-cli
-2. Configure: `passbolt configure --serverAddress https://your-server.com --userPrivateKeyFile key.asc --userPassword`
+2. Configure: `passbolt configure --serverAddress https://your-server.com --userPrivateKeyFile key.asc` (if you enter the passphrase in RustConn's Passbolt settings, you can leave `--userPassword` out of the CLI config; RustConn passes it through the environment, never the command line)
 3. Verify: `passbolt list resource`
 
 ### KeePass Not Working
@@ -4741,6 +4815,22 @@ RustConn opens the KeePass database directly by file (`.kdbx`); it does not use 
 1. Requires `tray-icon` feature
 2. Check DE tray support
 3. Some DEs need extensions
+
+### KDE Plasma and Wayland
+
+**Tray icon does not raise the window.** Plasma hands every tray click an activation token, and RustConn passes it to the window (0.25.0+). Without a token KWin only flashes the taskbar entry. If it still does, check that the click really reaches the app: run `RUST_LOG=rustconn=debug rustconn` and look for `handling tray message` when you click. On GNOME the tray needs the AppIndicator extension; a tray host that sends no token can still get a refused raise.
+
+**File dialogs do not open, or theme and notifications are wrong.** GTK 4 uses `xdg-desktop-portal` and the portal backend of your desktop. RustConn checks this at startup and shows "Desktop portal not found…" (and a `portal_check` line in the log) when the service or its file-chooser backend is missing. Install `xdg-desktop-portal` plus `xdg-desktop-portal-kde` (KDE), `xdg-desktop-portal-gnome` (GNOME) or `xdg-desktop-portal-gtk`, then log out and in. To check by hand:
+
+```bash
+busctl --user get-property org.freedesktop.portal.Desktop \
+  /org/freedesktop/portal/desktop org.freedesktop.portal.FileChooser version
+systemctl --user status xdg-desktop-portal xdg-desktop-portal-kde
+```
+
+**External terminal for 1Password sign-in.** The button tries `xdg-terminal-exec`, `ptyxis`, `kitty`, `foot`, `alacritty`, `gnome-terminal`, `konsole`, `xfce4-terminal` and `xterm` in that order and uses the first one found in `PATH`. Install one of them, or sign in with `op signin` yourself.
+
+**Flatpak on a KDE host.** The Flatpak build uses the GNOME runtime, which runs on Plasma. The tray, file dialogs and notifications go through the host's `xdg-desktop-portal-kde` and `StatusNotifierWatcher`, so the portal checks above apply to the host, not to the sandbox.
 
 ### Debug Logging
 
@@ -4933,7 +5023,9 @@ markers appear; nothing else changes.
 | Ctrl+Shift+X | Close Pane |
 | Ctrl+Shift+R | Pop Pane to Tab (keeps the session, returns it to its own tab) |
 | Ctrl+Shift+J | Unsplit (return every session to its own tab) |
+| Ctrl+Shift+K | Split with Other Tabs… (pick tabs to bring into a split with the active tab) |
 | Ctrl+` | Focus Next Pane |
+| Ctrl+Shift+Y | Reconnect Session (focused pane, or the active tab when not split) |
 
 ### Application
 

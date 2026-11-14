@@ -599,7 +599,21 @@ impl MainWindow {
         // Load persisted search history
         with_state(&state, |s| {
             sidebar.load_search_history(&s.settings().ui.search_history);
+            sidebar.load_saved_searches(&s.settings().ui.saved_searches);
         });
+        {
+            let state_for_saved = state.clone();
+            sidebar.connect_saved_searches_changed(move |items| {
+                if let Ok(mut state_mut) = state_for_saved.try_borrow_mut() {
+                    state_mut.settings_mut().ui.saved_searches = items.to_vec();
+                    if let Err(e) = state_mut.save_settings() {
+                        tracing::warn!(?e, "Failed to save settings");
+                    }
+                } else {
+                    tracing::warn!("State busy; the saved searches change was not stored");
+                }
+            });
+        }
 
         // Create global color pool shared across all split containers
         // This ensures different split containers get different colors
@@ -765,6 +779,9 @@ impl MainWindow {
         terminal_notebook.set_on_page_closed(move |session_id, connection_id| {
             monitoring_for_close.stop_monitoring(session_id);
             activity_for_close.stop(session_id);
+            // A script still running on the closed tab would keep its timer and
+            // its `ACTIVE_SCRIPTS` entry alive against a terminal that is gone.
+            crate::script_runner::cancel_script_for_session(session_id);
             // Drop the closed session from the broadcast set so a reused UUID
             // can never inherit its membership, and the wired set stays bounded.
             group_broadcast_for_close.forget(session_id);
@@ -1822,7 +1839,7 @@ impl MainWindow {
             &self.session_split_bridges,
             &state,
         );
-        self.setup_group_operations_actions(window, &state, &terminal_notebook, &sidebar);
+        self.setup_group_operations_actions(window, &state, &sidebar);
         self.setup_group_broadcast_actions(window, &terminal_notebook);
         self.setup_snippet_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_cluster_actions(window, &state, &terminal_notebook, &sidebar);
@@ -2359,6 +2376,7 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let notebook_for_close = terminal_notebook.clone();
         let tunnel_manager_for_close = self.tunnel_manager.clone();
+        let monitoring_for_exit = self.monitoring.clone();
         // One-shot flag: set after the user confirms closing with open
         // sessions, so the second close() pass proceeds without re-asking.
         let force_close = Rc::new(std::cell::Cell::new(false));
@@ -2483,6 +2501,9 @@ impl MainWindow {
             // because a standalone forward belongs to the window, not to a session.
             tunnel_manager_for_close.borrow_mut().stop_all();
 
+            // Stop every monitoring collector so none outlives the window.
+            monitoring_for_exit.stop_all();
+
             // End every live session: external viewers, session children, detached
             // windows (issues #209, #304, #236). One call, so this path cannot
             // drift from the other two the way it did before.
@@ -2573,7 +2594,7 @@ impl MainWindow {
         // returns borrowed `&Connection`s, so the search runs on references —
         // no per-keystroke deep clone of every connection.
         let connections: Vec<&rustconn_core::models::Connection> = state_ref.list_connections();
-        let groups: Vec<_> = state_ref.list_groups().iter().cloned().cloned().collect();
+        let groups = state_ref.list_groups();
 
         // Protocol filter syntax: a single name (protocol:rdp, proto:ssh, p:vnc)
         // or an OR-list (protocols:ssh,mosh). Both go straight to a direct

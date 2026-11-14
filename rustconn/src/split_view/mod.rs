@@ -54,6 +54,7 @@ pub use bridge::{
 };
 use gtk4::prelude::*;
 use rustconn_core::models::WorkspaceSplitLayout;
+use rustconn_core::split::balanced_split_plan;
 // Re-export GUI-specific types
 pub use types::{ConnectionId, DropOutcome, DropSource, EvictionAction, SourceCleanup};
 use uuid::Uuid;
@@ -88,15 +89,12 @@ pub fn apply_layout(
     if !layout.is_split {
         return;
     }
-    let extra = layout.extra_splits;
-    let total_splits = extra + 1;
+    let total_splits = layout.extra_splits + 1;
 
     // Get window dimensions for initial aspect ratio.
     // default_size() returns the configured size (before mapping); if unavailable
     // fall back to a 4:3 aspect which still produces a good balanced grid.
     let (win_w, win_h) = window.default_size();
-    let initial_w: f64 = if win_w > 0 { f64::from(win_w) } else { 1280.0 };
-    let initial_h: f64 = if win_h > 0 { f64::from(win_h) } else { 960.0 };
 
     let window_weak = window.downgrade();
     let notebook = notebook.clone();
@@ -108,102 +106,15 @@ pub fn apply_layout(
             return;
         };
 
-        // Track logical panel sizes for the balanced algorithm.
-        // Each entry: (width, height, pane_uuid). The first panel is the entire
-        // window area; subsequent splits halve one dimension.
-        // We don't know the UUID of the initial panel until after the first split
-        // creates the bridge, so we use a sentinel (nil) and resolve it later.
-        let mut panels: Vec<(f64, f64, Option<Uuid>)> = vec![(initial_w, initial_h, None)];
-
-        for split_idx in 0..total_splits {
-            // Find the largest panel (by area; tie-break by longest side).
-            let largest_idx = panels
-                .iter()
-                .enumerate()
-                .max_by(|(_, a), (_, b)| {
-                    let area_a = a.0 * a.1;
-                    let area_b = b.0 * b.1;
-                    area_a
-                        .partial_cmp(&area_b)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                        .then_with(|| {
-                            let longest_a = a.0.max(a.1);
-                            let longest_b = b.0.max(b.1);
-                            longest_a
-                                .partial_cmp(&longest_b)
-                                .unwrap_or(std::cmp::Ordering::Equal)
-                        })
-                })
-                .map(|(i, _)| i)
-                .unwrap_or(0);
-
-            let (pw, ph, pane_uuid) = panels[largest_idx];
-
-            // Determine direction: split along the longest side.
-            // width >= height → split-vertical (creates left/right, halves width)
-            // height > width → split-horizontal (creates top/bottom, halves height)
-            let split_horizontal = ph > pw;
-            let action = if split_horizontal {
-                "win.split-horizontal"
-            } else {
-                "win.split-vertical"
-            };
-
-            // Before splitting (except the very first split), switch the
-            // bridge's focused pane to the target panel so the action splits
-            // the correct one.
-            if split_idx > 0
-                && let Some(target_uuid) = pane_uuid
-                && let Some(active_session) = notebook.get_active_session_id()
-            {
-                let bridges = session_bridges.borrow();
-                if let Some(bridge) = bridges.get(&active_session) {
-                    bridge.set_focused_pane(Some(target_uuid));
-                }
-            }
-
-            // Fire the split action synchronously.
-            let _ = WidgetExt::activate_action(&win, action, None);
-
-            // After the split, resolve the new pane UUID from the bridge.
-            // The bridge now has one more pane than before. The new pane is
-            // the one not present in our tracking list.
-            let new_uuid: Option<Uuid> =
-                notebook.get_active_session_id().and_then(|active_session| {
-                    let bridges = session_bridges.borrow();
-                    let bridge = bridges.get(&active_session)?;
-                    let all_uuids = bridge.pane_ids();
-                    // Find the UUID that isn't already tracked.
-                    let tracked: Vec<Uuid> = panels.iter().filter_map(|(_, _, u)| *u).collect();
-                    all_uuids.into_iter().find(|u| !tracked.contains(u))
-                });
-
-            // Also resolve the original pane's UUID if this was the first split.
-            if split_idx == 0 {
-                // After first split the bridge has 2 panes. The focused one
-                // (original) is the one that's NOT new_uuid.
-                if let Some(active_session) = notebook.get_active_session_id() {
-                    let bridges = session_bridges.borrow();
-                    if let Some(bridge) = bridges.get(&active_session) {
-                        let all_uuids = bridge.pane_ids();
-                        let original_uuid =
-                            all_uuids.iter().find(|u| Some(**u) != new_uuid).copied();
-                        panels[largest_idx].2 = original_uuid;
-                    }
-                }
-            }
-
-            // Update tracking: split the largest panel into two halves.
-            let (new_w, new_h) = if split_horizontal {
-                (pw, ph / 2.0)
-            } else {
-                (pw / 2.0, ph)
-            };
-            // The original panel shrinks to half.
-            panels[largest_idx] = (new_w, new_h, panels[largest_idx].2);
-            // The new panel is the other half.
-            panels.push((new_w, new_h, new_uuid));
-        }
+        run_balanced_splits(
+            &win,
+            &notebook,
+            &session_bridges,
+            f64::from(win_w),
+            f64::from(win_h),
+            total_splits,
+            |_, _| {},
+        );
 
         // Reapply the saved root split ratio. Every split above opened at the
         // model default of 0.5; the persisted fraction is written back into the
@@ -217,4 +128,82 @@ pub fn apply_layout(
             bridge.set_root_split_position(root_ratio);
         }
     });
+}
+
+/// Splits the active tab `splits` times into a balanced grid.
+///
+/// The steps come from [`balanced_split_plan`]: each one targets the largest
+/// panel and halves it along its longest side. Every step fires the regular
+/// `win.split-*` action, so the panel is wired exactly like one the user made.
+/// All steps run synchronously, so the active tab cannot change between them
+/// unless `on_new_pane` changes it.
+///
+/// `on_new_pane(step, pane_uuid)` runs right after step `step` created the
+/// empty panel `pane_uuid`; "Split with Other Tabs" places a session there.
+/// A callback that moves the active tab must restore it before returning,
+/// because the next step resolves the layout through the active tab.
+pub fn run_balanced_splits(
+    win: &gtk4::Window,
+    notebook: &SharedNotebook,
+    session_bridges: &SessionSplitBridges,
+    width: f64,
+    height: f64,
+    splits: usize,
+    mut on_new_pane: impl FnMut(usize, Uuid),
+) {
+    let plan = balanced_split_plan(width, height, splits);
+    // Panel UUIDs by plan index. The original panel's UUID is only known once
+    // the first split has created its sibling.
+    let mut panels: Vec<Option<Uuid>> = vec![None];
+
+    for (idx, step) in plan.iter().enumerate() {
+        // Before every split but the first, point the bridge's focused pane at
+        // the target so the action splits the correct one.
+        if idx > 0
+            && let Some(target_uuid) = panels[step.target]
+            && let Some(active_session) = notebook.get_active_session_id()
+            && let Some(bridge) = session_bridges.borrow().get(&active_session)
+        {
+            bridge.set_focused_pane(Some(target_uuid));
+        }
+
+        let action = if step.horizontal {
+            "win.split-horizontal"
+        } else {
+            "win.split-vertical"
+        };
+        let _ = WidgetExt::activate_action(win, action, None);
+
+        // The bridge now has one more pane: the new one is the UUID we do not
+        // track yet.
+        let (all_uuids, first_empty): (Vec<Uuid>, Option<Uuid>) = notebook
+            .get_active_session_id()
+            .and_then(|active| {
+                session_bridges
+                    .borrow()
+                    .get(&active)
+                    .map(|b| (b.pane_ids(), b.first_empty_pane_uuid()))
+            })
+            .unwrap_or_default();
+        // At step 0 neither pane is tracked yet and `pane_ids()` has no stable
+        // order, so "the first untracked one" could be the original pane that
+        // holds the session. The new pane is the empty one.
+        let new_uuid = if idx == 0 {
+            first_empty
+        } else {
+            all_uuids
+                .iter()
+                .find(|u| !panels.contains(&Some(**u)))
+                .copied()
+        };
+        if idx == 0 {
+            // The original pane is the one that is NOT new.
+            panels[0] = all_uuids.iter().find(|u| Some(**u) != new_uuid).copied();
+        }
+        panels.push(new_uuid);
+
+        if let Some(new_uuid) = new_uuid {
+            on_new_pane(idx, new_uuid);
+        }
+    }
 }

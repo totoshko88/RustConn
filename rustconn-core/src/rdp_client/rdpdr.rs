@@ -1734,13 +1734,9 @@ fn spool_to_cups(document: &[u8], queue: Option<&str>) {
 ///
 /// Returns an empty vector if `lpstat` is unavailable or fails; callers should
 /// treat that as "no printers to forward" rather than an error.
-// Called from an async context on a single-threaded runtime, so this still parks
-// the runtime — but for at most [`CUPS_TIMEOUT`] rather than for as long as CUPS
-// feels like taking. The note here used to say "fine while lpstat responds in
-// <100 ms; move to spawn_blocking if that becomes a real issue", which named the
-// right hazard and the wrong remedy: `spawn_blocking` moves an unbounded wait off
-// the runtime thread, it does not bound it, and the connection would still stall
-// waiting for the answer.
+// Blocking, bounded by [`CUPS_TIMEOUT`]: the async caller runs it via
+// `spawn_blocking`, so a slow CUPS stalls the connection (it needs the answer)
+// but no longer parks the runtime thread.
 pub(crate) fn list_cups_printers() -> Vec<String> {
     let child = Command::new("lpstat")
         .arg("-e")
@@ -1782,7 +1778,7 @@ fn parse_cups_printers(stdout: &str) -> Vec<String> {
 ///
 /// Used only to decide announce ordering (default announced last so it wins the
 /// IronRDP `DEFAULTPRINTER` flag race).
-// Same bounded-blocking caveat as `list_cups_printers`.
+// Blocking like `list_cups_printers`; call it via `spawn_blocking`.
 pub(crate) fn cups_default_printer() -> Option<String> {
     let child = Command::new("lpstat")
         .arg("-d")

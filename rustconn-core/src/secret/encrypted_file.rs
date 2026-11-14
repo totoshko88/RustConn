@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, Zeroizing};
 
 use super::backend::SecretBackend;
-use super::local_crypto::{decrypt_credential, encrypt_credential, fill_random, get_machine_key};
+use super::local_crypto::{decrypt_credential, encrypt_credential, get_machine_key};
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
@@ -189,49 +189,6 @@ pub(crate) fn read_map(path: &Path) -> SecretResult<BTreeMap<String, String>> {
     }
 }
 
-/// Computes a unique sibling temp path for an atomic write (same directory so
-/// the `rename` stays on one filesystem).
-///
-/// The suffix is random so two RustConn processes writing at once cannot pick
-/// the same temp, and so the name is not one an attacker can pre-create as a
-/// symlink. See [`create_temp_file`] for the other half of that guarantee.
-///
-/// # Errors
-/// Returns [`SecretError::StoreFailed`] if the RNG is unavailable.
-fn tmp_path(path: &Path) -> SecretResult<PathBuf> {
-    let mut suffix = [0u8; 8];
-    fill_random(&mut suffix).map_err(SecretError::StoreFailed)?;
-
-    let mut name = path.file_name().map_or_else(
-        || std::ffi::OsString::from(STORE_FILE_NAME),
-        ToOwned::to_owned,
-    );
-    name.push(format!(".{}.tmp", data_encoding::HEXLOWER.encode(&suffix)));
-    Ok(path.with_file_name(name))
-}
-
-/// Creates the temp file with owner-only permissions already in place.
-///
-/// `create_new` refuses an existing path, so a leftover temp or a planted
-/// symlink is an error rather than a redirected write. On unix the mode goes
-/// into the `open` call: setting it after the write leaves a window in which the
-/// ciphertext is world-readable.
-///
-/// # Errors
-/// Returns [`SecretError::StoreFailed`] if the file cannot be created.
-fn create_temp_file(tmp: &Path) -> SecretResult<std::fs::File> {
-    let mut options = std::fs::OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(STORE_FILE_MODE);
-    }
-    options
-        .open(tmp)
-        .map_err(|e| SecretError::StoreFailed(format!("cannot create encrypted store temp: {e}")))
-}
-
 /// Atomically writes the credential map: temp file + `0600` + `rename`.
 ///
 /// The map values are ciphertext (base64 `RCSC` blobs), so the serialized JSON
@@ -251,27 +208,11 @@ pub(crate) fn write_map_atomic(path: &Path, map: &BTreeMap<String, String>) -> S
     let json = serde_json::to_vec_pretty(map)
         .map_err(|e| SecretError::StoreFailed(format!("cannot serialize encrypted store: {e}")))?;
 
-    let tmp = tmp_path(path)?;
-    let write_result = (|| -> SecretResult<()> {
-        use std::io::Write;
-        let mut file = create_temp_file(&tmp)?;
-        file.write_all(&json)
-            .map_err(|e| SecretError::StoreFailed(format!("cannot write encrypted store: {e}")))
-    })();
-    if let Err(e) = write_result {
-        // The temp name is random, so a leftover would never be reused; remove
-        // it rather than accumulate one per failed write.
-        let _ = std::fs::remove_file(&tmp);
-        return Err(e);
-    }
-    std::fs::rename(&tmp, path).map_err(|e| {
-        let _ = std::fs::remove_file(&tmp);
-        SecretError::StoreFailed(format!("cannot finalize encrypted store: {e}"))
-    })?;
-    // No chmod on the destination: `rename` gives the name to the temp file's
-    // inode, created 0600, so the mode is already right whatever the replaced
-    // file's was.
-    Ok(())
+    // No chmod on the destination: the temp file is created 0600 and `rename`
+    // gives its inode the name, so the mode is right whatever the replaced
+    // file's was. The write is fsynced and the temp removed on failure.
+    crate::fs_atomic::atomic_write(path, &json, STORE_FILE_MODE)
+        .map_err(|e| SecretError::StoreFailed(format!("cannot write encrypted store: {e}")))
 }
 
 /// Encrypts one connection's credentials into a base64 `RCSC` blob.
@@ -322,8 +263,10 @@ fn decrypt_entry(encoded: &str) -> SecretResult<Credentials> {
 
     let plaintext = decrypt_credential(&blob, &machine_key)
         .map_err(|e| SecretError::RetrieveFailed(format!("decryption failed: {e}")))?;
-    let stored: StoredCredentials = serde_json::from_slice(&plaintext).map_err(|e| {
-        SecretError::RetrieveFailed(format!("cannot parse decrypted credentials: {e}"))
+    // The serde error is dropped on purpose: it can quote the offending value,
+    // which here is decrypted credential text.
+    let stored: StoredCredentials = serde_json::from_slice(&plaintext).map_err(|_| {
+        SecretError::RetrieveFailed("cannot parse decrypted credentials".to_string())
     })?;
     Ok(stored.into_credentials())
 }

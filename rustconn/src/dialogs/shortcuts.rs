@@ -220,6 +220,7 @@ fn i18n_markers() -> Vec<String> {
         i18n("Close Pane"),
         i18n("Remove from Split"),
         i18n("Remove Split"),
+        i18n("Split with Other Tabs"),
         i18n("Focus Next Pane"),
         i18n("Reconnect Session"),
         // View
@@ -700,6 +701,7 @@ mod tests {
         "<Control><Shift>x",
         "<Control><Shift>r",
         "<Control><Shift>j",
+        "<Control><Shift>k",
         "<Control>grave",
         "<Control><Shift>y",
         // View

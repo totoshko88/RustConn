@@ -162,13 +162,17 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
     drop(state_ref);
 
     // Rebuild store with sorted items (groups first, then ungrouped)
+    let trash_expanded = sidebar.trash_expanded();
     store.remove_all();
 
     // If no connections exist, the list will be empty
     // The empty state is shown via CSS/placeholder in the list view
     if total_connections == 0 && groups.is_empty() {
         // Store is empty - list view will show nothing
-        // Empty state is handled by the main window layout
+        // Empty state is handled by the main window layout. The Trash row still
+        // shows: deleting the last connection is when Undo is most needed.
+        let trash = state.borrow().trash_entries();
+        sidebar.set_trash_row(&trash, trash_expanded);
         return;
     }
 
@@ -236,6 +240,10 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
     for conn in &ungrouped {
         store.append(&build_connection_item(sidebar, conn, conn.is_pinned));
     }
+
+    // The virtual Trash row closes the tree, and only exists while the trash
+    // holds something.
+    sidebar.set_trash_row(&state_ref.trash_entries(), trash_expanded);
 
     // Refresh Smart Folders section with current filter evaluation
     let smart_folders = state_ref.settings().smart_folders.clone();
@@ -536,4 +544,12 @@ fn move_dropped_group(
     }
 
     true
+}
+
+/// Refreshes only the virtual Trash row, keeping the rest of the tree (and the
+/// selection) as it is. For changes that touch the trash alone, such as
+/// emptying it.
+pub fn refresh_trash_row(state: &SharedAppState, sidebar: &SharedSidebar) {
+    let entries = state.borrow().trash_entries();
+    sidebar.set_trash_row(&entries, sidebar.trash_expanded());
 }

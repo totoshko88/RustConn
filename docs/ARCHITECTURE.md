@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.24.11** | Last updated: November 2026
+**Version 0.25.0** | Last updated: November 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -53,7 +53,7 @@ Only `rustconn` depends on the `-sys` crates. `rustconn-cli` depends on
 | `rustconn-core` | Domain logic: models, config persistence, CRUD managers, protocol data, import/export, credential abstractions | Non-GUI Rust dependencies only; host keyring and embedded-client runtimes stay behind explicit features — NO GTK |
 | `rustconn` | GTK4 UI, dialogs, terminal integration, embedded/external session presentation | Owns `gtk4`, `vte4`, `libadwaita`, and enables core integration features when needed |
 | `rustconn-cli` | Headless management CLI: config, connections, import/export, list/show, simple operations | CLI/runtime dependencies plus `rustconn-core`; client launch and secret-management stay behind explicit features — NO GTK |
-| `rustconn-pty-sys` | FFI helper: give a spawned child its PTY slave as a controlling terminal (`setsid` + `TIOCSCTTY`) for the macOS native PTY ([#175](https://github.com/totoshko88/RustConn/issues/175)) | `libc` only — NO GTK |
+| `rustconn-pty-sys` | FFI helper: give a spawned child its PTY slave as a controlling terminal (`setsid` + `TIOCSCTTY`) — plus PTY creation, sizing and readiness — for every VTE-backed session on all platforms (first added for the macOS native PTY, [#175](https://github.com/totoshko88/RustConn/issues/175)) | `libc` + `nix` (`term`, for `openpty`) — NO GTK |
 | `rustconn-locale-sys` | FFI helper: the startup `setlocale` call, refused once this program spawns a thread of its own, once a call arrives from a second thread, or once the startup window is sealed ([#267](https://github.com/totoshko88/RustConn/issues/267)) | `gettext-rs` only — NO GTK |
 | `rustconn-env-sys` | FFI helper: the startup `GSK_RENDERER` and `LANGUAGE` writes, guarded the same way. Neither GTK nor gettext offers an API, so the environment is the only interface and it has to be written before `gtk_init` ([#274](https://github.com/totoshko88/RustConn/issues/274), [#158](https://github.com/totoshko88/RustConn/issues/158)) | No dependencies — NO GTK |
 | `rustconn-dock-sys` | FFI helper: `-[NSApplication setApplicationIconImage:]`, so the macOS Dock shows RustConn's icon when no `.app` bundle is behind the process. GDK exposes no Dock API and `set_icon_name` is a no-op on its macOS backend | `objc2` + AppKit bindings, macOS-gated — NO GTK |
@@ -76,6 +76,9 @@ Optional integration features:
 | `rustconn-core/rdp-embedded` | GUI | Native IronRDP client runtime |
 | `rustconn-core/gfx-h264` | GUI | RDP EGFX/H.264 pipeline |
 | `rustconn-core/rd-gateway` | GUI | Native RD Gateway tunneling for embedded RDP |
+| `rustconn-core/web-embedded` | GUI | Embedded WebKitGTK browser as the default for new Web connections |
+| `rustconn-core/bitwarden-serve` | GUI | Persistent `bw serve` transport for the Bitwarden backend |
+| `rustconn-core/lock-events` | GUI (always on) | D-Bus screen-lock / suspend listener; not a GUI feature, so no build drops it |
 | `rustconn-cli/client-launch` | Full CLI | Launch external clients or desktop file managers |
 | `rustconn-cli/secret-management` | Full CLI | Secret backend commands and system keyring support |
 
@@ -101,115 +104,19 @@ small `-sys` crate with a documented safety contract) instead of relaxing the
 lint in the main crates. New FFI gets a new `-sys` crate; it never earns an
 exception where the caller lives.
 
-The mechanism is `unsafe_code = "deny"` in `[workspace.lints.rust]`, plus a
-crate-level `#![expect(unsafe_code, reason = "…")]` in each helper.
-It used to be `forbid`, which cannot be overridden at any level — so the helpers
-could not inherit the workspace lint table and each declared its own
-`[lints.rust]` instead. Because a crate-local `[lints]` table *replaces* the
-inherited one rather than adding to it, the only three crates allowed to write
-`unsafe` were also the only three running with no clippy lints at all: no
-`pedantic`, no `nursery`, no `unwrap_used`. `deny` is one step weaker on paper and
-considerably stronger in practice. `rustconn` itself keeps a local `forbid`, since
-it spells out its own lint set for GTK-specific suppressions anyway.
+The mechanism is `unsafe_code = "deny"` in `[workspace.lints.rust]`, re-opened by
+a crate-level `#![expect(unsafe_code, reason = "…")]` in each helper; why `deny`
+and not `forbid` is in `.kiro/steering/core-rules.md`. Each helper's safety
+contract lives in one place — its `src/lib.rs` — and its rules in its `AGENTS.md`.
+This section only says where to look:
 
-`rustconn-pty-sys` exposes a handful of safe functions covering PTY creation
-(`open_pty_pair`), sizing (`pty_set_winsize`), readiness waiting
-(`pty_wait_readable`), close-on-exec descriptor duplication (`dup_fd`) and
-controlling-terminal setup (`set_controlling_terminal`, a `pre_exec` hook calling
-only async-signal-safe `libc` functions). Reading and writing the descriptor is
-deliberately *not* there: callers turn the master into a `std::fs::File`, so no
-session data passes through any `unsafe` code. See `rustconn-pty-sys/src/lib.rs`
-and its consumers, `rustconn/src/terminal/pty_spawn.rs` and
-`rustconn/src/terminal/pty_relay.rs`.
-
-`rustconn-locale-sys` wraps the one gettext call that cannot be safe.
-`setlocale(3)` replaces process-global locale state and reads the environment
-without synchronisation, so it is sound only while the process is still
-single-threaded — the unsoundness behind RUSTSEC-2026-0244, which is why
-`gettext-rs` 0.8 marks it `unsafe`. The crate's `init_locale` enforces what it can
-of that precondition rather than merely documenting it. It refuses a call that
-arrives from a thread other than the first caller, and any call after
-`seal_locale()` has closed the startup window; on Linux it additionally counts
-`/proc/self/task` and refuses once that count has **grown past the baseline it
-sampled on its first call**.
-
-Growth, not "a second thread exists" — and the distinction is the whole of
-[#271](https://github.com/totoshko88/RustConn/issues/271). The guard originally
-demanded exactly one live thread, which is not a state an application can arrange:
-a shared library's ELF constructor runs before `main()` is entered and may spawn a
-thread there, which is what Fedora 44 (glibc 2.43 + OpenSSL 3.5) does, so 0.19.20
-aborted at startup on a perfectly correct call site. Pre-existing library threads
-are therefore tolerated, and only a thread *this program* started between two
-calls is refused — which is the case the call site actually controls and the shape
-a regression in `main()`'s ordering would take. That one clause is a judgement
-rather than a proof, and the SAFETY comment in `init_locale` says so: whether a
-constructor-spawned thread reads locale state is not knowable from there.
-
-What makes the call sound remains the call site. `rustconn/src/i18n.rs` is the only
-consumer, and it seals the locale at the end of `apply_language_from_config()`, so
-a `setlocale` call added to a running application panics during development
-instead of corrupting memory in the field. Everything else in the gettext API is
-safe and is called from `rustconn` directly.
-
-`rustconn-env-sys` is the same shape, with the same guard, for the two environment
-variables RustConn has to write. GTK exposes no API for choosing a GSK renderer —
-`GSK_RENDERER` is the only interface, and it is read while the first surface is
-realised, so it has to be in the environment before `gtk_init`. GNU gettext is in
-the same position with `LANGUAGE`, which it honours even when the named locale is
-not installed, the normal case inside a Flatpak sandbox
-([#158](https://github.com/totoshko88/RustConn/issues/158)). `setenv(3)`, which
-`std::env::set_var` wraps, mutates the process-global environment block without
-synchronisation, so `set_startup_var` refuses a call from a thread other than the
-first caller, a call after `seal_env()`, and — on Linux, where `/proc/self/task`
-answers — a call made after the thread count has grown past the baseline sampled
-on the first call. The baseline rule and the reason for it are exactly as described
-for `rustconn-locale-sys` above; the two guards are deliberately duplicated rather
-than shared, so that neither crate has to depend on anything but `std`.
-
-There are two consumers, in this order: `rustconn/src/i18n.rs` writes `LANGUAGE`
-from `apply_language_from_config()`, then `rustconn/src/renderer.rs` decides the
-renderer from the saved preference plus a per-environment probe and calls
-`seal_env()`. Nothing between them spawns a thread, which is what keeps the second
-write admissible.
-
-This replaced a re-exec that set the variables in a child process. That worked on
-Linux but was unavailable on macOS, where replacing the process image destroys
-the LaunchServices scene registration `NSStatusItem` needs and the tray icon
-disappears — so the macOS guest-VM case
-([#274](https://github.com/totoshko88/RustConn/issues/274)) had no fix until the
-write moved in-process — and anyone running a non-system interface language lost
-the tray icon for the same reason, since the language re-exec was not
-platform-gated. Startup now spawns two processes fewer than it used to.
-
-`rustconn-dock-sys` is the fourth, and the only one whose contract is not about
-memory soundness. macOS reads the Dock icon from the launched bundle's
-`Info.plist`, never from the running program, so a process with nothing behind it
-gets the generic Unix-executable tile — the case for a shell launch, and for the
-Homebrew formula's `.app`, whose `CFBundleExecutable` is a wrapper that `exec`s a
-binary outside the bundle. GDK has no Dock API and `gtk_window_set_icon_name` is
-an X11/Wayland concept that the macOS backend ignores, leaving
-`-[NSApplication setApplicationIconImage:]` as the only interface. Its
-precondition is AppKit's main-thread rule, which `objc2::MainThreadMarker` proves
-by asking the runtime; a violation is reported as an outcome rather than a panic,
-because a wrong Dock tile is cosmetic and taking the process down over it would
-be the worse failure. `rustconn/src/app.rs` calls it once from `run()`, after
-`gtk4::init()` has created the `NSApplication` singleton, and only when
-`macos_bundle_resources_dir()` reports no bundle — inside a real one the `.icns`
-is strictly better, since it carries every size from 16px to 1024px and preserves
-a custom icon a user pasted on in Finder.
-
-`rustconn-lock-sys` is the fifth, with the same shape as `rustconn-dock-sys`:
-its objc2/AppKit dependencies are limited to macOS, the crate itself is not. It
-observes `com.apple.screenIsLocked` on the distributed notification centre (with
-immediate delivery, so a lock while RustConn is in the background is not held
-back) and `NSWorkspaceWillSleepNotification` on the workspace notification
-centre, and reports each as a `LockSignal`. The observers are removed when the
-returned guard drops, the main-thread rule is proved by `MainThreadMarker` and
-reported as an outcome, and a panic in the handler is caught before it can unwind
-into Foundation. `rustconn/src/app.rs` maps each signal onto a
-`rustconn-core::lock_events::LockEvent` and passes it to `lock_events::notify`,
-which queues it for a dispatch thread, so the handler returns to the main loop at
-once. `rustconn-core` does not depend on this crate.
+| Crate | Called from | Contract and history |
+|-------|-------------|----------------------|
+| `rustconn-pty-sys` | `rustconn/src/terminal/pty_spawn.rs`, `pty_relay.rs` | `rustconn-pty-sys/src/lib.rs`; session data never passes through `unsafe` |
+| `rustconn-locale-sys` | `rustconn/src/i18n.rs` (seals it) | `rustconn-locale-sys/src/lib.rs`; the thread-baseline guard, [#271](https://github.com/totoshko88/RustConn/issues/271) |
+| `rustconn-env-sys` | `rustconn/src/i18n.rs` (`LANGUAGE`), then `rustconn/src/renderer.rs` (`GSK_RENDERER`, seals it) | `rustconn-env-sys/src/lib.rs`, `rustconn-env-sys/AGENTS.md` |
+| `rustconn-dock-sys` | `rustconn/src/main.rs` (`apply_macos_dock_icon`, called from `app.rs`) | `rustconn-dock-sys/src/lib.rs` |
+| `rustconn-lock-sys` | `rustconn/src/app.rs`, mapped onto `rustconn-core::lock_events::notify` | `rustconn-lock-sys/src/lib.rs` |
 
 ### Who Owns a Session's PTY
 
@@ -541,6 +448,14 @@ This is particularly useful during:
 - Bulk import operations
 - Rapid edits to connection properties
 
+### Sharing the files with other processes
+
+`connections.toml`, `groups.toml` and `trash.toml` are also written by `rustconn-cli` and by a second instance, so a save is never a plain overwrite. Each file has a *base*, the list this process last saw on disk (`config::merge::SharedBase`). A save takes the base, asks the debounce channel for the latest snapshot, reads the file under the write locks, merges the three lists by id (`merge_three_way`: an entry added elsewhere is kept, one removed elsewhere is removed, a one-sided edit is taken, a two-sided edit goes to the newer `updated_at`, a deletion made here is honoured) and writes the result unless it equals the file. The base then becomes the snapshot that was saved.
+
+`ConnectionManager::reload_from_disk()` applies the same merge to memory. The GUI calls it from `config::watch::ConfigWatcher` (inotify, polled once a second from the GTK main loop, 700 ms of quiet) so a `rustconn-cli add` shows up in the sidebar without a restart. It takes the bases with `try_lock`, so it never waits for a disk write; a busy reload is retried on the next tick. The snapshot is read *after* the base is held, on both sides, because a snapshot taken earlier can predate a reload and would otherwise delete what the reload just added.
+
+Not covered: `rustconn-cli` still reads, edits and writes the whole file itself, so two CLI commands racing each other, or a CLI command racing a GUI save in the few milliseconds between its read and its write, can still lose one change.
+
 ## Thread Safety Patterns
 
 ### Mutex Poisoning Recovery
@@ -687,23 +602,22 @@ spawn_async(async move {
     update_ui(result);
 });
 
-// Async with callback for result handling
-spawn_async_with_callback(
-    async move { expensive_operation().await },
+// Run a tokio future on the shared runtime (async traits, channels)
+let value = with_runtime(|rt| rt.block_on(async { fetch_value().await }))?;
+
+// Blocking work on a worker thread, result handed back to the main loop
+// (`rustconn/src/utils.rs`)
+spawn_blocking_with_callback(
+    || expensive_operation(),
     |result| handle_result(result),
 );
 
-// Blocking async with timeout (for operations that must complete)
-let result = block_on_async_with_timeout(
-    async move { critical_operation().await },
+// The same with a time limit; the callback gets `None` on timeout
+spawn_blocking_with_timeout(
+    || operation_that_might_hang(),
     Duration::from_secs(30),
-)?;
-
-// Thread safety checks
-if is_main_thread() {
-    update_widget();
-}
-ensure_main_thread(|| update_widget());
+    |result| handle_result(result),
+);
 ```
 
 **When to Use What:**
@@ -711,8 +625,6 @@ ensure_main_thread(|| update_widget());
 - `spawn_blocking_with_timeout`: Operations that might hang
 - `with_runtime`: When you need tokio features (async traits, channels)
 - `spawn_async`: Non-blocking async on GTK main thread
-- `spawn_async_with_callback`: Async with result callback
-- `block_on_async_with_timeout`: Bounded blocking for critical operations
 
 ### Deferred Secret Backend Initialization
 
@@ -784,7 +696,7 @@ pub enum ProtocolError {
 **Rules:**
 - Every fallible function returns `Result<T, E>`
 - Use `?` for propagation
-- No `unwrap()` except for provably impossible states
+- No `unwrap()`/`expect()` outside tests (`AGENTS.md`); clippy enforces `unwrap_used`
 - Include context in error messages
 
 ### GUI Error Display
@@ -873,6 +785,17 @@ pub struct Credentials {
 - Log credential values
 - Include credentials in error messages
 - Serialize passwords to config files
+
+**Documented exceptions** (the rule list is `AGENTS.md`):
+- *Passbolt resource password on argv.* `go-passbolt-cli` takes the resource
+  password only as `--password` (no stdin, no environment), so it is visible in
+  `/proc/PID/cmdline` while `create`/`update resource` runs. The child is
+  `kill_on_drop` and bounded by a timeout; stderr is redacted. The account
+  passphrase does not share this: it goes through `USERPASSWORD` in the
+  environment, which only the owner can read.
+- *RDP gateway password without `Zeroizing`.* `ironrdp-mstsgu` needs an owned
+  `String`; it is moved (not copied) into `ZeroizingGatewayTarget`, whose `Drop`
+  wipes that one buffer (`rdp_client/client/connection.rs`).
 
 ### Secret Backend Abstraction
 
@@ -1071,7 +994,7 @@ let key = KeePassHierarchy::build_group_lookup_key(&group, &groups, true);
 **Group Credentials:**
 - Groups can store shared credentials (username/password)
 - Stored in `RustConn/Groups/{path}` to separate from connection entries
-- Child connections can inherit group credentials via `PasswordSource::Group`
+- Child connections can inherit group credentials via `PasswordSource::Inherit`
 
 ### Fallback Chain
 
@@ -1138,7 +1061,7 @@ pub trait Protocol: Send + Sync {
     fn display_name(&self) -> &'static str;
     fn default_port(&self) -> u16;
     fn validate_connection(&self, connection: &Connection) -> ProtocolResult<()>;
-    fn capabilities(&self) -> ProtocolCapabilities { ProtocolCapabilities::default() }
+    fn capabilities(&self) -> ProtocolCapabilities { ProtocolCapabilities::terminal() }
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> { None }
 }
 
@@ -1151,6 +1074,15 @@ pub struct ProtocolCapabilities {
     pub clipboard: bool,
     pub split_view: bool,
     pub terminal_based: bool,
+    pub multi_monitor: bool,
+    pub usb_redirection: bool,
+    pub port_forwarding: bool,
+    pub wayland_forwarding: bool,
+    pub x11_forwarding: bool,
+    pub session_recording: bool,
+    pub remote_monitoring: bool,
+    pub command_snippets: bool,
+    pub wake_on_lan: bool,
 }
 ```
 
@@ -1164,16 +1096,18 @@ pub struct ProtocolCapabilities {
 - `KubernetesProtocol`: Kubernetes via external `kubectl exec` (capabilities: terminal, split_view)
 - `SftpProtocol`: SFTP file transfer via file manager/mc (capabilities: file_transfer, external_fallback, split_view when mc mode is active)
 - `MoshProtocol`: MOSH mobile shell via external `mosh` client (capabilities: terminal, split_view)
-- `WebProtocol`: Web URLs opened in the system browser via `UriLauncher`/`xdg-open` (capabilities: external_fallback)
+- `WebProtocol`: Web URLs in the embedded WebKitGTK browser (`web-embedded`) or the system browser via `UriLauncher`/`xdg-open` (capabilities: external_fallback)
+- `WinRmProtocol`: PowerShell on Windows via external `evil-winrm` in a VTE terminal (capabilities: terminal, split_view)
+- `ZeroTrustProtocol`: Zero Trust brokers via provider CLIs (aws, gcloud, az, oci, cloudflared, tsh, tailscale, boundary, hoop) in a VTE terminal (capabilities: terminal, split_view)
 
 > **Split-view eligibility is not the `split_view` capability flag.** Since 0.18.1, whether a session
 > can be placed in a split panel is decided at the *widget* level by
 > `TerminalNotebook::split_eligibility()` (`rustconn/src/terminal/mod.rs`), keyed on the stored
 > widget kind rather than the protocol's `ProtocolCapabilities.split_view` flag:
 > - **Any in-process embedded widget is `Embeddable`** — a VTE terminal *or* an embedded viewer
->   (`EmbeddedRdp`, `Vnc`, `EmbeddedSpice`). Split view is no longer VTE-only; it works for every
->   embedded tab, including RDP/VNC/SPICE remote desktops.
-> - An `ExternalProcess` session (xfreerdp/vncviewer/external SPICE viewer) is `ExternalViewer` and
+>   (`EmbeddedRdp`, `Vnc`, `EmbeddedWeb`). Split view is no longer VTE-only; it works for every
+>   embedded tab, including RDP/VNC remote desktops. SPICE has no embedded widget since 0.18.0.
+> - An `ExternalProcess` session (xfreerdp/vncviewer/remote-viewer for SPICE) is `ExternalViewer` and
 >   is declined — it has no in-process widget to reparent into a panel.
 > - A session with no live widget is `None`.
 >
@@ -1433,7 +1367,7 @@ window.set_content(Some(&toolbar_view));
 ### Toast Notifications
 
 ```rust
-// rustconn/src/dialogs/adw_dialogs.rs
+// rustconn/src/toast.rs (see plain_toast)
 pub fn show_toast(overlay: &adw::ToastOverlay, message: &str) {
     let toast = adw::Toast::builder()
         .title(message)
@@ -1467,7 +1401,7 @@ rustconn/src/
 │   ├── group_broadcast.rs # Cross-tab keystroke broadcast (GroupBroadcast, #329)
 │   └── ...                # Domain-specific window functionality
 ├── state.rs               # SharedAppState
-├── async_utils.rs         # Async helpers (spawn_async, block_on_async_with_timeout)
+├── async_utils.rs         # Async helpers (spawn_async, with_runtime)
 ├── sidebar/               # Connection tree (modular structure)
 │   ├── mod.rs             # Module exports, Sidebar struct
 │   ├── search.rs          # Search logic, predicates, history
@@ -1513,7 +1447,6 @@ rustconn/src/
 │   │   ├── kubernetes.rs  # Kubernetes options
 │   │   ├── web.rs         # Web (browser) options
 │   │   └── zerotrust.rs   # Zero Trust provider options
-│   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── command_palette.rs # Command palette dialog (Ctrl+P)
 │   ├── wol.rs             # Wake On LAN dialog (standalone + manual entry)
 │   ├── flatpak_components.rs  # Flatpak CLI download dialog
@@ -1572,6 +1505,15 @@ rustconn-core/src/
 │   ├── local_crypto.rs    # AES-256-GCM + Argon2id primitives
 │   ├── detection.rs       # Password manager detection
 │   ├── status.rs          # KeePass status detection
+│   ├── async_resolver.rs  # Non-blocking credential resolution for the UI
+│   ├── bitwarden_serve.rs # Persistent `bw serve` transport (feature bitwarden-serve)
+│   ├── kdbx_backend.rs    # KDBX SecretBackend wrapper
+│   ├── passphrase_strength.rs # Portable store passphrase strength estimate
+│   ├── serde_helpers.rs   # Serde helpers for secret fields
+│   ├── store_key.rs       # Vault keys a credential is stored under
+│   ├── touch.rs           # Hardware-key touch notice for keepassxc-cli
+│   ├── vault_identity.rs  # Account identity supplied with a vault password
+│   ├── verification.rs    # Credential verification tracking
 │   └── ...
 ├── session/               # Session management
 │   ├── mod.rs             # Module exports
@@ -1607,9 +1549,10 @@ rustconn-core/src/
 ├── sftp.rs                # SFTP URI/command builders, ssh-add, mc FISH VFS
 ├── flatpak.rs             # Flatpak sandbox detection, portal key path resolution, stable key copy
 ├── snap.rs                # Snap environment detection and paths
-├── performance/           # String interner (connection-string dedup) + search debouncer
+├── performance/           # Search debouncer
 ├── tracing/               # Span name constants + the `rustconn::perf` timing target (PerfSpan)
-└── ...
+└── ...                    # ssh_tunnel, ssh_agent, sync, split, tmux_control (experimental, unused by the GUI), cluster, lock_events,
+                           # mc_ssh, socks_relay, jump_route, remote_script, … — full list: `pub mod` in lib.rs
 ```
 
 ## Performance Instrumentation (`rustconn::perf`)
@@ -1711,7 +1654,7 @@ Per-connection override via `MonitoringConfig` on the `Connection` model:
 
 ### Property Tests
 
-Located in `rustconn-core/tests/properties/` (1300+ tests):
+Located in `rustconn-core/tests/properties/` (~240 `proptest!` blocks; `rustconn-core/tests/` holds 1500+ `#[test]` functions, on top of the unit tests in `src/`):
 
 ```rust
 proptest! {

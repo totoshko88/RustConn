@@ -9,6 +9,7 @@ use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
+use rustconn_core::connection::group_copy::{plan_group_copy, unique_copy_name};
 use rustconn_core::connection::host_range::{self, HostRangeError};
 use uuid::Uuid;
 
@@ -320,6 +321,153 @@ pub fn duplicate_selected_connection(
             }
         }
     }
+}
+
+/// Duplicates the selected group with its subgroups and connections.
+///
+/// The copy lands beside the original as "name (copy)". What is carried over
+/// and what is not is decided by [`plan_group_copy`]; this applies the plan,
+/// then copies the vault credentials of the connections that keep one.
+pub fn duplicate_selected_group(
+    window: &gtk4::Window,
+    state: &SharedAppState,
+    sidebar: &SharedSidebar,
+) {
+    let Some(item) = sidebar.get_selected_item() else {
+        return;
+    };
+    if !item.is_group() {
+        return;
+    }
+    let Ok(group_id) = Uuid::parse_str(&item.id()) else {
+        return;
+    };
+
+    let plan = {
+        let Ok(state_ref) = state.try_borrow() else {
+            return;
+        };
+        let groups = state_ref.list_groups_owned();
+        let connections = state_ref.list_connections_owned();
+        let Some(original) = groups.iter().find(|g| g.id == group_id) else {
+            return;
+        };
+        let sibling_names: Vec<&str> = groups
+            .iter()
+            .filter(|g| g.parent_id == original.parent_id)
+            .map(|g| g.name.as_str())
+            .collect();
+        let root_name = unique_copy_name(&original.name, |candidate| {
+            sibling_names
+                .iter()
+                .any(|name| name.eq_ignore_ascii_case(candidate))
+        });
+        plan_group_copy(&groups, &connections, group_id, &root_name, |conn| {
+            state_ref
+                .generate_unique_connection_name(&format!("{} (copy)", conn.name), conn.protocol)
+        })
+    };
+    let Some(plan) = plan else {
+        crate::toast::show_toast_on_window(
+            window,
+            &i18n("Failed to duplicate group"),
+            crate::toast::ToastType::Error,
+        );
+        return;
+    };
+    let new_root_id = plan.groups.first().map(|g| g.id);
+
+    // Parents before children, then the connections. A failure stops the rest;
+    // what was made stays, as the sidebar shows it.
+    let created = {
+        let Ok(mut state_mut) = state.try_borrow_mut() else {
+            return;
+        };
+        let mut outcome = Ok(());
+        for group in &plan.groups {
+            if let Err(e) = state_mut
+                .connection_manager()
+                .create_group_from(group.clone())
+            {
+                outcome = Err(e.to_string());
+                break;
+            }
+        }
+        if outcome.is_ok() {
+            for pair in &plan.connections {
+                if let Err(e) = state_mut
+                    .connection_manager()
+                    .create_connection_from(pair.copy.clone())
+                {
+                    outcome = Err(e.to_string());
+                    break;
+                }
+            }
+        }
+        outcome
+    };
+
+    if let Err(e) = created {
+        tracing::error!(error = %e, "Failed to duplicate group");
+        crate::toast::show_toast_on_window(
+            window,
+            &i18n("Failed to duplicate group"),
+            crate::toast::ToastType::Error,
+        );
+    } else {
+        crate::toast::show_toast_on_window(
+            window,
+            &i18n("Group duplicated"),
+            crate::toast::ToastType::Success,
+        );
+    }
+
+    // Carry the vault credentials over, as a single duplicate does: a copy that
+    // keeps `password_source = Vault` without an entry of its own would prompt.
+    // The group list is read after the copy, so the new paths exist.
+    let vault_pairs: Vec<_> = plan
+        .connections
+        .iter()
+        .filter(|pair| pair.copy.password_source == rustconn_core::models::PasswordSource::Vault)
+        .cloned()
+        .collect();
+    if !vault_pairs.is_empty()
+        && let Ok(state_ref) = state.try_borrow()
+    {
+        let settings = state_ref.settings().clone();
+        let groups = state_ref.list_groups_owned();
+        drop(state_ref);
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                vault_pairs
+                    .iter()
+                    .filter_map(|pair| {
+                        crate::vault_ops::copy_vault_credential(
+                            &settings,
+                            &groups,
+                            &pair.original,
+                            &pair.copy,
+                        )
+                        .err()
+                    })
+                    .collect::<Vec<_>>()
+            },
+            |errors| {
+                for error in errors {
+                    tracing::warn!(%error, "Failed to copy vault credential on group duplicate");
+                }
+            },
+        );
+    }
+
+    let state = state.clone();
+    let sidebar = sidebar.clone();
+    glib::idle_add_local_once(move || {
+        MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+        if let Some(id) = new_root_id {
+            sidebar.select_item_by_id(id);
+        }
+    });
 }
 
 /// Plans a range duplicate of `source` against the current connection list.
@@ -856,12 +1004,8 @@ fn perform_bulk_delete(
             match delete_result {
                 Ok(()) => {
                     success_count += 1;
-                    // Bulk delete offers no Undo, so the deletion is permanent
-                    // right away: purge the trash entry and its vault credential
-                    // instead of leaving the credential behind (issue #263).
-                    // Whichever purge does not match the item's kind is a no-op.
-                    state_mut.purge_deleted_connection(*id);
-                    state_mut.purge_deleted_group(*id);
+                    // The items wait in the trash, with their vault credentials,
+                    // until Empty Trash; the Trash row restores them.
                 }
                 Err(e) => failures.push(format!("{id}: {e}")),
             }
@@ -1106,6 +1250,7 @@ pub fn show_move_selected_to_group_dialog(
         .selected(0)
         .hexpand(true)
         .build();
+    crate::dialogs::widgets::enable_string_search(&group_dropdown);
 
     content.append(&group_dropdown);
 

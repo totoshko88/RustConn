@@ -1198,43 +1198,6 @@ pub(super) fn record_reconnect_when_established(
     });
 }
 
-/// Delegates to [`rustconn_core::ssh_tunnel::append_proxy_command_destination`].
-pub(super) fn append_proxy_command_destination(proxy_parts: &mut Vec<String>, jump_host: &str) {
-    rustconn_core::ssh_tunnel::append_proxy_command_destination(proxy_parts, jump_host);
-}
-
-/// Parses a jump-host string (`[user@]host[:port]`) for tunnel ControlPath.
-fn parse_jump_host_for_tunnel_control(jump_host: &str) -> (String, u16) {
-    let host_port = jump_host
-        .rfind('@')
-        .map_or(jump_host, |at| &jump_host[at + 1..]);
-
-    let (host, port_str) = if host_port.starts_with('[') {
-        if let Some(end) = host_port.find(']') {
-            let after = &host_port[end + 1..];
-            if let Some(p) = after.strip_prefix(':') {
-                (&host_port[1..end], Some(p))
-            } else {
-                (&host_port[1..end], None)
-            }
-        } else {
-            (host_port, None)
-        }
-    } else if let Some(pos) = host_port.rfind(':') {
-        let p = &host_port[pos + 1..];
-        if !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()) {
-            (&host_port[..pos], Some(p))
-        } else {
-            (host_port, None)
-        }
-    } else {
-        (host_port, None)
-    };
-
-    let port = port_str.and_then(|p| p.parse().ok()).unwrap_or(22);
-    (host.to_string(), port)
-}
-
 /// Resolves the recursive jump host chain for a given connection and returns
 /// extra SSH args (`-J` or `-o ProxyCommand`) needed to reach it.
 ///
@@ -1374,214 +1337,21 @@ fn probe_gateway(
 }
 
 /// The `ssh` arguments that take a tunnel to `jump_conn` through the jump hosts
-/// past it.
-///
-/// `tunnel_has_password` is true when the tunnel answers `jump_conn`'s password
-/// through its askpass helper. Those hops then go through
-/// [`rustconn_core::jump_route::tunnel_hop_args`], so none of them inherits
-/// that helper. When they cannot (an address a shell could interpret), the
-/// usual route is returned and `create_tunnel` does not send the password.
+/// past it; see [`rustconn_core::jump_route::tunnel_jump_args`].
 pub fn resolve_jump_chain_for_tunnel(
     state_ref: &crate::state::AppState,
     jump_conn: &rustconn_core::Connection,
     tunnel_has_password: bool,
     hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
 ) -> Vec<String> {
-    let groups: Vec<rustconn_core::ConnectionGroup> = state_ref.list_groups_owned();
-    let network = state_ref.settings().network.clone();
-
-    // Check if the jump host itself has a jump host (recursive chain)
-    let ssh_config = match &jump_conn.protocol_config {
-        rustconn_core::ProtocolConfig::Ssh(cfg) => cfg,
-        _ => return Vec::new(),
-    };
-
-    // Collect the chain of jump hosts above the immediate jump host
-    let mut chain: Vec<String> = Vec::new();
-
-    // First check for string-based proxy_jump on the jump host
-    if let Some(proxy) = rustconn_core::connection::ssh_inheritance::resolve_ssh_proxy_jump(
-        jump_conn, &groups, &network,
-    ) {
-        chain.push(proxy);
-    }
-
-    // Then resolve reference-based jump hosts recursively
-    // Also resolve the identity file for the first hop (needed for ProxyCommand)
-    let mut first_hop_identity: Option<String> = None;
-    // PKCS#11 provider of the first hop (not inherited via -J — inject into ProxyCommand)
-    let mut first_hop_pkcs11: Option<String> = None;
-    if let Some(parent_jump_id) = ssh_config.jump_host_id {
-        let mut current_id = Some(parent_jump_id);
-        let mut visited = std::collections::HashSet::new();
-        visited.insert(jump_conn.id); // Avoid self-reference
-        let mut is_first = true;
-
-        for _ in 0..10 {
-            if let Some(jid) = current_id {
-                if visited.contains(&jid) {
-                    break;
-                }
-                visited.insert(jid);
-
-                if let Some(parent_conn) = state_ref.get_connection(jid) {
-                    // Resolve identity file for the first hop
-                    if is_first {
-                        first_hop_identity =
-                            rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path(
-                                parent_conn,
-                                &groups,
-                            )
-                            .and_then(|p| rustconn_core::resolve_key_path(&p))
-                            .map(|p| p.to_string_lossy().to_string());
-                        if let rustconn_core::ProtocolConfig::Ssh(parent_cfg) =
-                            &parent_conn.protocol_config
-                        {
-                            first_hop_pkcs11 = parent_cfg
-                                .pkcs11_provider
-                                .clone()
-                                .filter(|p| !p.trim().is_empty());
-                        }
-                        is_first = false;
-                    }
-
-                    // Format: [user@]host[:port] for -J
-                    let mut host_str = parent_conn.host.clone();
-                    if let Some(user) = &parent_conn.username {
-                        host_str = format!("{user}@{host_str}");
-                    }
-                    if parent_conn.port != 22 {
-                        host_str = format!("{host_str}:{}", parent_conn.port);
-                    }
-                    chain.push(host_str);
-
-                    // Continue up the chain
-                    if let rustconn_core::ProtocolConfig::Ssh(parent_cfg) =
-                        &parent_conn.protocol_config
-                    {
-                        if let Some(p) = &parent_cfg.proxy_jump {
-                            chain.insert(chain.len() - 1, p.clone());
-                        }
-                        current_id = parent_cfg.jump_host_id;
-                    } else {
-                        current_id = None;
-                    }
-                } else {
-                    current_id = None;
-                }
-            } else {
-                break;
-            }
-        }
-    }
-
-    if chain.is_empty() {
-        return Vec::new();
-    }
-
-    // In Flatpak, use ProxyCommand so the nested SSH inherits known_hosts
-    let flatpak_kh = rustconn_core::get_flatpak_known_hosts_path();
-    let proxy_command_route = flatpak_kh.is_some() || first_hop_pkcs11.is_some();
-    if tunnel_has_password {
-        // The deeper hops get what the routes below give them: the first
-        // hop's key only where those use a ProxyCommand.
-        let request = rustconn_core::jump_route::TunnelHopsRequest {
-            hops: &chain,
-            first_hop_identity: first_hop_identity.as_deref(),
-            deeper_hop_identity: first_hop_identity
-                .as_deref()
-                .filter(|_| proxy_command_route),
-            first_hop_pkcs11: first_hop_pkcs11.as_deref(),
-            known_hosts: flatpak_kh.as_deref(),
-            hop_host_keys,
-        };
-        if let Some(args) = rustconn_core::jump_route::tunnel_hop_args(&request) {
-            return args;
-        }
-        tracing::warn!(
-            "Tunnel: a jump host past the first has an address RustConn does not pass to a \
-             shell, so the first jump host's password is not sent"
-        );
-    }
-    if proxy_command_route {
-        // Build ProxyCommand for the first hop in the chain. `-J` does not pass
-        // -o/-i to the nested SSH, so Flatpak known_hosts and PKCS#11 tokens must
-        // be injected explicitly here.
-        let mut proxy_parts = vec!["ssh".to_string(), "-W".to_string(), "%h:%p".to_string()];
-        if let Some(option) = flatpak_kh
-            .as_deref()
-            .and_then(rustconn_core::jump_route::proxy_known_hosts_option)
-        {
-            proxy_parts.push("-o".to_string());
-            proxy_parts.push(option);
-        }
-
-        // Pass identity file for the first hop if available
-        if let Some(ref key) = first_hop_identity {
-            proxy_parts.push("-i".to_string());
-            proxy_parts.push(key.clone());
-            proxy_parts.push("-o".to_string());
-            proxy_parts.push("IdentitiesOnly=yes".to_string());
-        }
-
-        // Pass PKCS#11 provider for the first hop (token also auths the bastion)
-        if let Some(ref provider) = first_hop_pkcs11 {
-            proxy_parts.push("-o".to_string());
-            proxy_parts.push(format!("PKCS11Provider={}", provider.trim()));
-        }
-
-        // Reuse the jump host's ControlMaster socket so parallel tunnel
-        // establishments share the already-authenticated link. Only set
-        // ControlPath — if the master exists, SSH multiplexes; if not, it
-        // connects standalone (no auth issues from missing identity).
-        {
-            let (jh_host, jh_port) = parse_jump_host_for_tunnel_control(&chain[0]);
-            let jh_control = rustconn_core::ssh_control_path(&jh_host, jh_port);
-            proxy_parts.push("-o".to_string());
-            proxy_parts.push(format!("ControlPath={jh_control}"));
-        }
-
-        // ponytail: PKCS#11/identity reach only the first hop; deeper hops do
-        // not get the bastion's own PKCS#11 token. Fine for the common
-        // single-bastion case.
-        //
-        // Multi-hop: nest a ProxyCommand per remaining hop so EACH inherits the
-        // identity file and Flatpak known_hosts. Plain `-J b,c` would drop them
-        // and the deeper hops fail in Flatpak (issue #191 follow-up — double jump).
-        if chain.len() > 1 {
-            let inner_hops: Vec<&str> = chain[1..].iter().map(String::as_str).collect();
-            let inner = rustconn_core::ssh_tunnel::build_nested_proxy_command(
-                &inner_hops,
-                first_hop_identity.as_deref(),
-                flatpak_kh.as_deref(),
-                rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
-            );
-            proxy_parts.push("-o".to_string());
-            proxy_parts.push(format!(
-                "ProxyCommand={}",
-                rustconn_core::ssh_tunnel::shell_single_quote(&inner)
-            ));
-        }
-
-        // Add the first hop destination with proper -p port parsing
-        append_proxy_command_destination(&mut proxy_parts, &chain[0]);
-
-        let proxy_cmd = proxy_parts.join(" ");
-        tracing::debug!(
-            proxy_command = %proxy_cmd,
-            "Tunnel: using ProxyCommand for jump host chain (Flatpak known_hosts or PKCS#11)"
-        );
-        vec!["-o".to_string(), format!("ProxyCommand={proxy_cmd}")]
-    } else {
-        // Non-Flatpak: use standard -J. RustConn resolves chains target-first,
-        // but OpenSSH `-J` visits hops client-first, so reverse them.
-        let j_chain = rustconn_core::ssh_tunnel::proxy_jump_arg(&chain.join(","));
-        tracing::debug!(
-            jump_chain = %j_chain,
-            "Tunnel: using -J for jump host chain"
-        );
-        vec!["-J".to_string(), j_chain]
-    }
+    rustconn_core::jump_route::tunnel_jump_args(
+        jump_conn,
+        &state_ref.list_connections_owned(),
+        &state_ref.list_groups_owned(),
+        &state_ref.settings().network,
+        tunnel_has_password,
+        hop_host_keys,
+    )
 }
 
 /// Starts VNC and observes a session created after asynchronous setup.
@@ -2865,6 +2635,17 @@ fn start_telnet_connection_internal(
                 "telnet",
             ),
         );
+    }
+
+    // --- Status detection: mark the sidebar "connected" once the client has
+    // printed something that is not a failure, counted from below the connect
+    // banner. A client that prints an error and exits stays on "connecting"
+    // until the exit marks it failed (same verdict as an in-place reconnect).
+    {
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, StatusClient::Other, move || {
+            sidebar.increment_session_count(&connection_id.to_string(), session_id);
+        });
     }
 
     // --- Auto-recording for Telnet ---

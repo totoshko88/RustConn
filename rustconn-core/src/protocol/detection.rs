@@ -121,13 +121,25 @@ impl ClientDetectionResult {
     /// otherwise runs full detection and caches the result.
     #[must_use]
     pub fn detect_cached() -> Self {
+        Self::detect_with_cache(false)
+    }
+
+    /// Runs full detection now, ignoring the cache, and stores the result so
+    /// later [`detect_cached`](Self::detect_cached) calls see it.
+    #[must_use]
+    pub fn refresh_cached() -> Self {
+        Self::detect_with_cache(true)
+    }
+
+    fn detect_with_cache(force: bool) -> Self {
         static CACHE: OnceLock<Mutex<Option<(ClientDetectionResult, Instant)>>> = OnceLock::new();
         let cache = CACHE.get_or_init(|| Mutex::new(None));
 
         let mut guard = cache
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some((ref result, ref ts)) = *guard
+        if !force
+            && let Some((ref result, ref ts)) = *guard
             && ts.elapsed() < Duration::from_mins(5)
         {
             return result.clone();

@@ -7,8 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use fs2::FileExt;
-
+use super::merge::{Mergeable, SharedBase, merge_three_way};
 use super::settings::AppSettings;
 use super::version_skew::{self, Existing, RUNNING_VERSION, is_newer_than_running};
 use crate::cluster::Cluster;
@@ -42,7 +41,7 @@ const LOCK_WAIT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10
 
 /// Poll interval while waiting for the lock.
 ///
-/// `fs2` offers no timed acquire, so the wait is a poll. Short enough that the
+/// `File::try_lock` offers no timed acquire, so the wait is a poll. Short enough that the
 /// ordinary case — a lock held for the length of one fsync — is barely delayed.
 const LOCK_POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(25);
 
@@ -63,27 +62,34 @@ const LOCK_POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis
 /// not call itself, so it cannot deadlock against itself.
 static CONFIG_WRITE_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+/// The trash as it is stored: trashed connections and trashed groups, each with
+/// the time it was trashed.
+pub type TrashLists = (
+    Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
+    Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+);
+
 /// Marked config files a newer `RustConn` wrote, by path, with the version that wrote each.
 type NewerFiles = std::collections::BTreeMap<PathBuf, String>;
 
 /// Wrapper for serializing a list of connections
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct ConnectionsFile {
+struct ConnectionsFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    connections: Vec<Connection>,
+    connections: std::borrow::Cow<'a, [Connection]>,
 }
 
 /// Wrapper for serializing a list of groups
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct GroupsFile {
+struct GroupsFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    groups: Vec<ConnectionGroup>,
+    groups: std::borrow::Cow<'a, [ConnectionGroup]>,
 }
 
 /// A file wrapper that records which `RustConn` version wrote it.
@@ -92,55 +98,55 @@ trait Marked {
     fn marker(&self) -> Option<&str>;
 }
 
-impl Marked for ConnectionsFile {
+impl Marked for ConnectionsFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for GroupsFile {
+impl Marked for GroupsFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for SnippetsFile {
+impl Marked for SnippetsFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for ClustersFile {
+impl Marked for ClustersFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for TemplatesFile {
+impl Marked for TemplatesFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for WorkspaceProfilesFile {
+impl Marked for WorkspaceProfilesFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for HistoryFile {
+impl Marked for HistoryFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for TombstonesFile {
+impl Marked for TombstonesFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
 }
 
-impl Marked for TrashFile {
+impl Marked for TrashFile<'_> {
     fn marker(&self) -> Option<&str> {
         self.written_by.as_deref()
     }
@@ -148,74 +154,74 @@ impl Marked for TrashFile {
 
 /// Wrapper for serializing a list of snippets
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct SnippetsFile {
+struct SnippetsFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    snippets: Vec<Snippet>,
+    snippets: std::borrow::Cow<'a, [Snippet]>,
 }
 
 /// Wrapper for serializing a list of clusters
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct ClustersFile {
+struct ClustersFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    clusters: Vec<Cluster>,
+    clusters: std::borrow::Cow<'a, [Cluster]>,
 }
 
 /// Wrapper for serializing a list of templates
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct TemplatesFile {
+struct TemplatesFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    templates: Vec<ConnectionTemplate>,
+    templates: std::borrow::Cow<'a, [ConnectionTemplate]>,
 }
 
 /// Wrapper for serializing connection history
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct HistoryFile {
+struct HistoryFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    entries: Vec<ConnectionHistoryEntry>,
+    entries: std::borrow::Cow<'a, [ConnectionHistoryEntry]>,
 }
 
 /// Wrapper for serializing Simple Sync tombstones
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct TombstonesFile {
+struct TombstonesFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    tombstones: Vec<Tombstone>,
+    tombstones: std::borrow::Cow<'a, [Tombstone]>,
 }
 
 /// Wrapper for serializing trash (deleted items)
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-pub(super) struct TrashFile {
+pub(super) struct TrashFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    pub connections: Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
+    pub connections: std::borrow::Cow<'a, [(Connection, chrono::DateTime<chrono::Utc>)]>,
     #[serde(default)]
-    pub groups: Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+    pub groups: std::borrow::Cow<'a, [(ConnectionGroup, chrono::DateTime<chrono::Utc>)]>,
 }
 
 /// Wrapper for serializing workspace profiles
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct WorkspaceProfilesFile {
+struct WorkspaceProfilesFile<'a> {
     /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     written_by: Option<String>,
     #[serde(default)]
-    profiles: Vec<WorkspaceProfile>,
+    profiles: std::borrow::Cow<'a, [WorkspaceProfile]>,
 }
 
 /// Configuration manager for `RustConn`
@@ -368,7 +374,7 @@ impl ConfigManager {
                 ))
             })?;
 
-        if lock_file.try_lock_exclusive().is_ok() {
+        if lock_file.try_lock().is_ok() {
             return Ok(lock_file);
         }
 
@@ -384,7 +390,7 @@ impl ConfigManager {
         let deadline = std::time::Instant::now() + LOCK_WAIT_TIMEOUT;
         loop {
             std::thread::sleep(LOCK_POLL_INTERVAL);
-            if lock_file.try_lock_exclusive().is_ok() {
+            if lock_file.try_lock().is_ok() {
                 return Ok(lock_file);
             }
             if std::time::Instant::now() >= deadline {
@@ -408,6 +414,15 @@ impl ConfigManager {
     /// of a file a newer `RustConn` wrote happens here: see
     /// [`Self::back_up_newer_file`].
     fn write_locked(&self, path: &Path, content: &str) -> ConfigResult<()> {
+        self.with_write_lock(|manager| manager.write_unlocked(path, content))
+    }
+
+    /// Runs `body` holding both write locks.
+    ///
+    /// For a read-merge-write, which must not let another writer in between its
+    /// read and its write. `body` may call [`Self::write_unlocked`] but never
+    /// [`Self::write_locked`] or anything else that takes the locks again.
+    fn with_write_lock<R>(&self, body: impl FnOnce(&Self) -> ConfigResult<R>) -> ConfigResult<R> {
         // In-process writers queue here; see CONFIG_WRITE_LOCK. The guard holds
         // `()`, so a poisoned mutex carries no invalid state and recovering is
         // strictly better than propagating a panic from an unrelated writer.
@@ -418,54 +433,19 @@ impl ConfigManager {
         // Advisory lock against other processes (released on drop)
         let _lock = self.acquire_lock()?;
 
+        body(self)
+    }
+
+    /// The write itself, for a caller already inside [`Self::with_write_lock`].
+    fn write_unlocked(&self, path: &Path, content: &str) -> ConfigResult<()> {
         // A file a newer RustConn wrote is copied aside before this process first
         // replaces it. Under both locks, so the copy holds exactly the bytes the
         // rename below replaces; a copy that fails fails this write.
         self.back_up_newer_file(path)?;
 
-        let temp_path = path.with_extension("tmp");
-
-        fs::write(&temp_path, content).map_err(|e| {
-            ConfigError::Write(format!("Failed to write {}: {}", temp_path.display(), e))
-        })?;
-
-        // Restrict file permissions to owner-only (0600)
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&temp_path, fs::Permissions::from_mode(0o600)).map_err(|e| {
-                ConfigError::Write(format!(
-                    "Failed to set permissions on {}: {}",
-                    temp_path.display(),
-                    e
-                ))
-            })?;
-        }
-
-        // Sync data to disk before rename
-        {
-            let file = fs::File::open(&temp_path).map_err(|e| {
-                ConfigError::Write(format!(
-                    "Failed to open {} for sync: {}",
-                    temp_path.display(),
-                    e
-                ))
-            })?;
-            file.sync_all().map_err(|e| {
-                ConfigError::Write(format!("Failed to sync {}: {}", temp_path.display(), e))
-            })?;
-        }
-
-        fs::rename(&temp_path, path).map_err(|e| {
-            ConfigError::Write(format!(
-                "Failed to rename {} to {}: {}",
-                temp_path.display(),
-                path.display(),
-                e
-            ))
-        })?;
-
-        Ok(())
+        // Owner-only from creation, fsynced, temp removed on failure.
+        crate::fs_atomic::atomic_write(path, content.as_bytes(), crate::fs_atomic::MODE_PRIVATE)
+            .map_err(|e| ConfigError::Write(format!("Failed to write {}: {}", path.display(), e)))
     }
 
     // ========== Version Skew ==========
@@ -697,7 +677,9 @@ impl ConfigManager {
     pub fn load_connections(&self) -> ConfigResult<Vec<Connection>> {
         let path = self.config_dir.join(CONNECTIONS_FILE);
         let file: ConnectionsFile = self.load_marked_toml_file(&path)?;
-        Ok(file.connections)
+        let connections = file.connections.into_owned();
+        warn_invalid("connection", &Self::validate_connections(&connections));
+        Ok(connections)
     }
 
     /// Saves connections to the configuration file
@@ -712,7 +694,7 @@ impl ConfigManager {
         let path = self.config_dir.join(CONNECTIONS_FILE);
         let file = ConnectionsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            connections: connections.to_vec(),
+            connections: std::borrow::Cow::Borrowed(connections),
         };
         self.save_toml_file(&path, &file)
     }
@@ -729,7 +711,7 @@ impl ConfigManager {
         let path = self.config_dir.join(CONNECTIONS_FILE);
         let file = ConnectionsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            connections: connections.to_vec(),
+            connections: std::borrow::Cow::Borrowed(connections),
         };
         self.save_toml_file_async(&path, &file).await
     }
@@ -746,7 +728,9 @@ impl ConfigManager {
     pub fn load_groups(&self) -> ConfigResult<Vec<ConnectionGroup>> {
         let path = self.config_dir.join(GROUPS_FILE);
         let file: GroupsFile = self.load_marked_toml_file(&path)?;
-        Ok(file.groups)
+        let groups = file.groups.into_owned();
+        warn_invalid("group", &Self::validate_groups(&groups));
+        Ok(groups)
     }
 
     /// Saves connection groups to the configuration file
@@ -761,7 +745,7 @@ impl ConfigManager {
         let path = self.config_dir.join(GROUPS_FILE);
         let file = GroupsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            groups: groups.to_vec(),
+            groups: std::borrow::Cow::Borrowed(groups),
         };
         self.save_toml_file(&path, &file)
     }
@@ -778,9 +762,232 @@ impl ConfigManager {
         let path = self.config_dir.join(GROUPS_FILE);
         let file = GroupsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            groups: groups.to_vec(),
+            groups: std::borrow::Cow::Borrowed(groups),
         };
         self.save_toml_file_async(&path, &file).await
+    }
+
+    // ========== Merged saves ==========
+
+    /// Saves the connections after merging them with what is on disk now.
+    ///
+    /// [`Self::save_connections`] replaces the file with the caller's list, which
+    /// drops anything another process (a `rustconn-cli add`) wrote since this one
+    /// loaded. This takes the write locks and `base`, asks `mine` for the list to
+    /// save, reads the file, merges the two against `base` (see
+    /// [`super::merge::merge_three_way`]) and writes the result unless it equals
+    /// the file. On success `base` becomes the list that was saved: the state this
+    /// process has acted on.
+    ///
+    /// `mine` runs once `base` is held, so the list it returns and `base` agree
+    /// even when a reload ran just before. It may return `None` when there is
+    /// nothing to save, and then nothing is written.
+    ///
+    /// A file that cannot be read is replaced by the list, as a plain save does.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be serialized, locked or written.
+    pub fn save_connections_merged(
+        &self,
+        base: &SharedBase<Connection>,
+        mine: impl FnOnce() -> Option<Vec<Connection>>,
+    ) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(CONNECTIONS_FILE);
+        self.merge_save_list(&path, base, mine, Self::load_connections, |merged| {
+            Self::render_toml(&ConnectionsFile {
+                written_by: Some(RUNNING_VERSION.to_owned()),
+                connections: std::borrow::Cow::Borrowed(merged),
+            })
+        })
+    }
+
+    /// Like [`Self::save_connections_merged`], off the async runtime's threads.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error as [`Self::save_connections_merged`] does, or
+    /// [`ConfigError::Write`] if the blocking task could not be joined.
+    pub async fn save_connections_merged_async(
+        &self,
+        base: SharedBase<Connection>,
+        mine: impl FnOnce() -> Option<Vec<Connection>> + Send + 'static,
+    ) -> ConfigResult<()> {
+        let manager = self.clone();
+        tokio::task::spawn_blocking(move || manager.save_connections_merged(&base, mine))
+            .await
+            .map_err(|e| ConfigError::Write(format!("Config write task failed: {e}")))?
+    }
+
+    /// Saves the groups after merging them with the file; see
+    /// [`Self::save_connections_merged`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be serialized, locked or written.
+    pub fn save_groups_merged(
+        &self,
+        base: &SharedBase<ConnectionGroup>,
+        mine: impl FnOnce() -> Option<Vec<ConnectionGroup>>,
+    ) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(GROUPS_FILE);
+        self.merge_save_list(&path, base, mine, Self::load_groups, |merged| {
+            Self::render_toml(&GroupsFile {
+                written_by: Some(RUNNING_VERSION.to_owned()),
+                groups: std::borrow::Cow::Borrowed(merged),
+            })
+        })
+    }
+
+    /// Like [`Self::save_groups_merged`], off the async runtime's threads.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error as [`Self::save_groups_merged`] does, or
+    /// [`ConfigError::Write`] if the blocking task could not be joined.
+    pub async fn save_groups_merged_async(
+        &self,
+        base: SharedBase<ConnectionGroup>,
+        mine: impl FnOnce() -> Option<Vec<ConnectionGroup>> + Send + 'static,
+    ) -> ConfigResult<()> {
+        let manager = self.clone();
+        tokio::task::spawn_blocking(move || manager.save_groups_merged(&base, mine))
+            .await
+            .map_err(|e| ConfigError::Write(format!("Config write task failed: {e}")))?
+    }
+
+    /// Serializes `file` as the pretty TOML every config file uses.
+    fn render_toml<T: serde::Serialize>(file: &T) -> ConfigResult<String> {
+        toml::to_string_pretty(file)
+            .map_err(|e| ConfigError::Serialize(format!("Failed to serialize: {e}")))
+    }
+
+    /// The read-merge-write behind the `save_*_merged` methods.
+    ///
+    /// `base` stays locked from before `mine` runs to after the write, so a reload
+    /// that looks at it (see `ConnectionManager::reload_from_disk`) either sees
+    /// the state before this save or the one after, never between.
+    fn merge_save_list<T: Mergeable>(
+        &self,
+        path: &Path,
+        base: &SharedBase<T>,
+        mine: impl FnOnce() -> Option<Vec<T>>,
+        read: impl FnOnce(&Self) -> ConfigResult<Vec<T>>,
+        render: impl FnOnce(&[T]) -> ConfigResult<String>,
+    ) -> ConfigResult<()> {
+        let mut base_guard = base
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let Some(mine) = mine() else {
+            return Ok(());
+        };
+
+        self.with_write_lock(|manager| {
+            let theirs = match read(manager) {
+                Ok(theirs) => Some(theirs),
+                Err(e) => {
+                    tracing::warn!(
+                        file = %path.display(),
+                        error = %e,
+                        "Could not read the file to merge with; replacing it with this process's copy"
+                    );
+                    None
+                }
+            };
+            let merged = match &theirs {
+                Some(theirs) => merge_three_way(&base_guard, &mine, theirs),
+                None => mine.clone(),
+            };
+            // An unchanged file is left alone: a rewrite would wake every
+            // watcher for nothing.
+            if theirs.as_deref() == Some(merged.as_slice()) && path.exists() {
+                return Ok(());
+            }
+            let content = render(&merged)?;
+            manager.write_unlocked(path, &content)
+        })?;
+
+        *base_guard = mine;
+        drop(base_guard);
+        Ok(())
+    }
+
+    /// Saves the trash after merging it with the file; see
+    /// [`Self::save_connections_merged`]. `mine` returns the trashed connections
+    /// and the trashed groups.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be serialized, locked or written.
+    pub fn save_trash_merged(
+        &self,
+        base_connections: &SharedBase<(Connection, chrono::DateTime<chrono::Utc>)>,
+        base_groups: &SharedBase<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+        mine: impl FnOnce() -> Option<TrashLists>,
+    ) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(TRASH_FILE);
+        let mut base_conn_guard = base_connections
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut base_group_guard = base_groups
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let Some((connections, groups)) = mine() else {
+            return Ok(());
+        };
+
+        self.with_write_lock(|manager| {
+            let theirs = manager.load_trash().ok();
+            let (merged_connections, merged_groups) = match &theirs {
+                Some((their_conns, their_groups)) => (
+                    merge_three_way(&base_conn_guard, &connections, their_conns),
+                    merge_three_way(&base_group_guard, &groups, their_groups),
+                ),
+                None => (connections.clone(), groups.clone()),
+            };
+            if let Some((their_conns, their_groups)) = &theirs
+                && *their_conns == merged_connections
+                && *their_groups == merged_groups
+                && path.exists()
+            {
+                return Ok(());
+            }
+            let content = Self::render_toml(&TrashFile {
+                written_by: Some(RUNNING_VERSION.to_owned()),
+                connections: std::borrow::Cow::Borrowed(merged_connections.as_slice()),
+                groups: std::borrow::Cow::Borrowed(merged_groups.as_slice()),
+            })?;
+            manager.write_unlocked(&path, &content)
+        })?;
+
+        *base_conn_guard = connections;
+        *base_group_guard = groups;
+        drop(base_conn_guard);
+        drop(base_group_guard);
+        Ok(())
+    }
+
+    /// Like [`Self::save_trash_merged`], off the async runtime's threads.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error as [`Self::save_trash_merged`] does, or
+    /// [`ConfigError::Write`] if the blocking task could not be joined.
+    pub async fn save_trash_merged_async(
+        &self,
+        base_connections: SharedBase<(Connection, chrono::DateTime<chrono::Utc>)>,
+        base_groups: SharedBase<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+        mine: impl FnOnce() -> Option<TrashLists> + Send + 'static,
+    ) -> ConfigResult<()> {
+        let manager = self.clone();
+        tokio::task::spawn_blocking(move || {
+            manager.save_trash_merged(&base_connections, &base_groups, mine)
+        })
+        .await
+        .map_err(|e| ConfigError::Write(format!("Config write task failed: {e}")))?
     }
 
     // ========== Snippets ==========
@@ -794,8 +1001,12 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_snippets(&self) -> ConfigResult<Vec<Snippet>> {
         let path = self.config_dir.join(SNIPPETS_FILE);
-        self.load_marked_toml_file::<SnippetsFile>(&path)
-            .map(|f| f.snippets)
+        let snippets = self
+            .load_marked_toml_file::<SnippetsFile>(&path)?
+            .snippets
+            .into_owned();
+        warn_invalid("snippet", &Self::validate_snippets(&snippets));
+        Ok(snippets)
     }
 
     /// Saves snippets to the configuration file
@@ -810,7 +1021,7 @@ impl ConfigManager {
         let path = self.config_dir.join(SNIPPETS_FILE);
         let file = SnippetsFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            snippets: snippets.to_vec(),
+            snippets: std::borrow::Cow::Borrowed(snippets),
         };
         self.save_toml_file(&path, &file)
     }
@@ -826,8 +1037,12 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_clusters(&self) -> ConfigResult<Vec<Cluster>> {
         let path = self.config_dir.join(CLUSTERS_FILE);
-        self.load_marked_toml_file::<ClustersFile>(&path)
-            .map(|f| f.clusters)
+        let clusters = self
+            .load_marked_toml_file::<ClustersFile>(&path)?
+            .clusters
+            .into_owned();
+        warn_invalid("cluster", &Self::validate_clusters(&clusters));
+        Ok(clusters)
     }
 
     /// Saves clusters to the configuration file
@@ -842,7 +1057,7 @@ impl ConfigManager {
         let path = self.config_dir.join(CLUSTERS_FILE);
         let file = ClustersFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            clusters: clusters.to_vec(),
+            clusters: std::borrow::Cow::Borrowed(clusters),
         };
         self.save_toml_file(&path, &file)
     }
@@ -858,8 +1073,12 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_templates(&self) -> ConfigResult<Vec<ConnectionTemplate>> {
         let path = self.config_dir.join(TEMPLATES_FILE);
-        self.load_marked_toml_file::<TemplatesFile>(&path)
-            .map(|f| f.templates)
+        let templates = self
+            .load_marked_toml_file::<TemplatesFile>(&path)?
+            .templates
+            .into_owned();
+        warn_invalid("template", &Self::validate_templates(&templates));
+        Ok(templates)
     }
 
     /// Saves templates to the configuration file
@@ -874,7 +1093,7 @@ impl ConfigManager {
         let path = self.config_dir.join(TEMPLATES_FILE);
         let file = TemplatesFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            templates: templates.to_vec(),
+            templates: std::borrow::Cow::Borrowed(templates),
         };
         self.save_toml_file(&path, &file)
     }
@@ -891,7 +1110,7 @@ impl ConfigManager {
     pub fn load_workspace_profiles(&self) -> ConfigResult<Vec<WorkspaceProfile>> {
         let path = self.config_dir.join(WORKSPACE_PROFILES_FILE);
         self.load_marked_toml_file::<WorkspaceProfilesFile>(&path)
-            .map(|f| f.profiles)
+            .map(|f| f.profiles.into_owned())
     }
 
     /// Saves workspace profiles to the configuration file
@@ -906,7 +1125,7 @@ impl ConfigManager {
         let path = self.config_dir.join(WORKSPACE_PROFILES_FILE);
         let file = WorkspaceProfilesFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            profiles: profiles.to_vec(),
+            profiles: std::borrow::Cow::Borrowed(profiles),
         };
         self.save_toml_file(&path, &file)
     }
@@ -923,7 +1142,7 @@ impl ConfigManager {
     pub fn load_history(&self) -> ConfigResult<Vec<ConnectionHistoryEntry>> {
         let path = self.config_dir.join(HISTORY_FILE);
         self.load_marked_toml_file::<HistoryFile>(&path)
-            .map(|f| f.entries)
+            .map(|f| f.entries.into_owned())
     }
 
     /// Saves connection history to the configuration file
@@ -938,7 +1157,7 @@ impl ConfigManager {
         let path = self.config_dir.join(HISTORY_FILE);
         let file = HistoryFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            entries: entries.to_vec(),
+            entries: std::borrow::Cow::Borrowed(entries),
         };
         self.save_toml_file(&path, &file)
     }
@@ -955,7 +1174,7 @@ impl ConfigManager {
     pub fn load_tombstones(&self) -> ConfigResult<Vec<Tombstone>> {
         let path = self.config_dir.join(TOMBSTONES_FILE);
         self.load_marked_toml_file::<TombstonesFile>(&path)
-            .map(|f| f.tombstones)
+            .map(|f| f.tombstones.into_owned())
     }
 
     /// Saves Simple Sync tombstones to the configuration file.
@@ -970,7 +1189,7 @@ impl ConfigManager {
         let path = self.config_dir.join(TOMBSTONES_FILE);
         let file = TombstonesFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            tombstones: tombstones.to_vec(),
+            tombstones: std::borrow::Cow::Borrowed(tombstones),
         };
         self.save_toml_file(&path, &file)
     }
@@ -994,7 +1213,7 @@ impl ConfigManager {
     )> {
         let path = self.config_dir.join(TRASH_FILE);
         let file = self.load_marked_toml_file::<TrashFile>(&path)?;
-        Ok((file.connections, file.groups))
+        Ok((file.connections.into_owned(), file.groups.into_owned()))
     }
 
     /// Saves trash items to the configuration file asynchronously
@@ -1011,8 +1230,8 @@ impl ConfigManager {
         let path = self.config_dir.join(TRASH_FILE);
         let file = TrashFile {
             written_by: Some(RUNNING_VERSION.to_owned()),
-            connections: connections.to_vec(),
-            groups: groups.to_vec(),
+            connections: std::borrow::Cow::Borrowed(connections),
+            groups: std::borrow::Cow::Borrowed(groups),
         };
         self.save_toml_file_async(&path, &file).await
     }
@@ -1466,6 +1685,15 @@ impl ConfigManager {
     }
 }
 
+/// Logs the entries a `validate_*` pass flagged. Warning only: the loaded data
+/// is never filtered, so a config that an older version wrote (an empty name, a
+/// port of 0) still opens exactly as it was saved and the user can fix it.
+fn warn_invalid(kind: &str, problems: &[(usize, ConfigError)]) {
+    for (index, error) in problems {
+        tracing::warn!(kind, index, %error, "Loaded {kind} fails validation; kept unchanged");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::TempDir;
@@ -1477,6 +1705,48 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
         (manager, temp_dir)
+    }
+
+    #[test]
+    fn test_invalid_entries_load_unchanged() {
+        let (manager, temp) = create_test_manager();
+
+        // Name, host and port that validation rejects, as an old config may hold.
+        let mut conn = Connection::new(
+            String::new(),
+            String::new(),
+            0,
+            ProtocolConfig::Ssh(SshConfig::default()),
+        );
+        conn.name = String::new();
+        let group = ConnectionGroup::new(String::new());
+        manager
+            .save_connections(std::slice::from_ref(&conn))
+            .unwrap();
+        manager.save_groups(std::slice::from_ref(&group)).unwrap();
+
+        let conns_file = temp.path().join(CONNECTIONS_FILE);
+        let groups_file = temp.path().join(GROUPS_FILE);
+        let before = (
+            fs::read(&conns_file).unwrap(),
+            fs::read(&groups_file).unwrap(),
+        );
+
+        assert_eq!(
+            ConfigManager::validate_connections(&[conn.clone()]).len(),
+            1
+        );
+        let loaded = manager.load_connections().unwrap();
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].id, conn.id);
+        assert!(loaded[0].name.is_empty() && loaded[0].port == 0);
+        let loaded_groups = manager.load_groups().unwrap();
+        assert_eq!(loaded_groups.len(), 1);
+        assert_eq!(loaded_groups[0].id, group.id);
+
+        // Loading must not rewrite or remove anything on disk.
+        assert_eq!(fs::read(&conns_file).unwrap(), before.0);
+        assert_eq!(fs::read(&groups_file).unwrap(), before.1);
     }
 
     #[test]
@@ -1724,11 +1994,11 @@ mod tests {
             .open(&lock_path)
             .unwrap();
         // try_lock_exclusive should fail because lock1 is held
-        assert!(fs2::FileExt::try_lock_exclusive(&lock_file2).is_err());
+        assert!(lock_file2.try_lock().is_err());
 
         // Drop lock1 — now lock2 should succeed
         drop(lock1);
-        assert!(fs2::FileExt::try_lock_exclusive(&lock_file2).is_ok());
+        assert!(lock_file2.try_lock().is_ok());
     }
 
     #[test]

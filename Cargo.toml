@@ -12,7 +12,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.24.11"
+version = "0.25.0"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -39,7 +39,7 @@ futures = "0.3"
 # `lock-events`, Linux/BSD only). Already in the graph through ashpd, ksni and
 # oo7. `tokio`: the listener drives it on its own tokio runtime;
 # `default-features = false` drops the `async-io` executor nothing here uses.
-zbus = { version = "5", default-features = false, features = ["tokio"] }
+zbus = { version = "6", default-features = false, features = ["tokio", "proxy"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -77,7 +77,7 @@ hex = "0.4"
 # macOS (see rustconn-core target table). default-features off drops the
 # bundled default crypto/runtime selection; we opt into tokio + native_crypto
 # (pure-Rust, no OpenSSL) + tracing explicitly.
-oo7 = { version = "0.6", default-features = false, features = ["tokio", "native_crypto", "tracing"] }
+oo7 = { version = "0.7", default-features = false, features = ["tokio", "native_crypto", "tracing"] }
 
 # HTTP client and archive handling (for CLI download in Flatpak)
 # native-tls instead of rustls-tls: minimises aws-lc-sys surface.
@@ -107,6 +107,13 @@ unicode-segmentation = "1.13"
 # between them. `setlocale` is `unsafe` as of 0.8 (RUSTSEC-2026-0244) and is
 # therefore called only from rustconn-locale-sys; rustconn uses the safe rest.
 gettext-rs = { version = "0.8", features = ["gettext-system"] }
+
+# POSIX bindings. nix features are additive: each crate adds the ones it uses
+# (core: fs/signal/process/user, gui: signal/process, pty-sys: term).
+nix = "0.31.2"
+libc = "0.2"
+# MPTCP (Multipath TCP) socket creation in rustconn-core — safe API
+socket2 = { version = "0.6", features = ["all"] }
 
 # Testing
 proptest = "1.10"

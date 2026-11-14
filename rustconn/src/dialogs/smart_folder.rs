@@ -186,6 +186,7 @@ impl SmartFolderDialog {
             .items(&[any_group_label.as_str()])
             .selected(0)
             .build();
+        crate::dialogs::widgets::enable_string_search(&group_dropdown);
         filter_group.add(&group_row);
 
         content.append(&filter_group);

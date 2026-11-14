@@ -567,6 +567,7 @@ fn start_embedded_rdp_session(
     // than the viewer widget because both sit on the same monitor and the
     // external client is placed there too.
     embedded_config.external_display_mode = rdp_config.external_display_mode;
+    embedded_config.external_monitor_ids = rdp_config.monitor_ids.clone();
     embedded_config.external_resolution = rdp_config.resolution.clone();
     embedded_config.color_depth = rdp_config.color_depth;
     embedded_config.system_scale_percent = crate::utils::active_display_scale_percent();
@@ -987,6 +988,7 @@ fn start_external_rdp_session(
         password: (!password.is_empty()).then(|| secrecy::SecretString::from(password.to_string())),
         domain: (!domain.is_empty()).then(|| domain.to_string()),
         display_mode: rdp_config.external_display_mode,
+        monitor_ids: rdp_config.monitor_ids.clone(),
         resolution: rdp_config.resolution.clone(),
         scale_override: rdp_config.scale_override,
         system_scale_percent: crate::utils::active_display_scale_percent(),

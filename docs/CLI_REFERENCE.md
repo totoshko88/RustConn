@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.24.11** | Command-line interface for RustConn connection management
+**Version 0.25.0** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -53,7 +53,7 @@ Every `rustconn-cli` command accepts these flags:
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--config <PATH>` | `-c` | Path to configuration directory (overrides default and `RUSTCONN_CONFIG_DIR`) |
+| `--config <PATH>` | — | Path to configuration directory (overrides default and `RUSTCONN_CONFIG_DIR`). Long form only since 0.25.0: `-c` is the subcommands' `--connection` / `--command` |
 | `--verbose` | `-v` | Increase log verbosity (`-v` info, `-vv` debug, `-vvv` trace) |
 | `--quiet` | `-q` | Suppress all output except errors |
 | `--no-color` | — | Disable colored output (also respects `NO_COLOR` env var) |
@@ -687,6 +687,8 @@ rustconn-cli import -f virt-viewer vm.vv
 rustconn-cli import -f libvirt domain.xml
 rustconn-cli import -f secure-crt ~/securecrt-sessions/
 rustconn-cli import -f csv connections.csv
+rustconn-cli import -f putty sessions.reg          # PuTTY / KiTTY Registry export
+rustconn-cli import -f mremoteng confCons.xml
 rustconn-cli import -f ssh-config --auto             # Auto-detect sources
 rustconn-cli import -f ssh-config --dry-run file     # Preview without saving
 ```
@@ -698,7 +700,7 @@ rustconn-cli import -f ssh-config --dry-run file     # Preview without saving
 
 The `--auto` flag scans default locations (`~/.config/asbru-cm/`, `~/.local/share/remmina/`, `~/.ssh/config`) and imports from all detected sources. Duplicates (same name + host) are skipped.
 
-Additional import formats: `rdp` (Microsoft RDP files), `rdm` (Remote Desktop Manager), `virt-viewer` (`.vv` files), `libvirt` (GNOME Boxes / virsh XML), `secure-crt` (SecureCRT `.ini` session directory). Passwords are never included in import/export files — re-enter them after importing.
+Additional import formats: `rdp` (Microsoft RDP files), `rdm` (Remote Desktop Manager), `virt-viewer` (`.vv` files), `libvirt` (GNOME Boxes / virsh XML), `secure-crt` (SecureCRT `.ini` session directory), `putty` (PuTTY / KiTTY sessions exported from the Windows Registry as `.reg`), `mremoteng` (mRemoteNG `confCons.xml`; a fully encrypted file is refused with an error). Passwords are never included in import/export files — re-enter them after importing.
 
 MobaXterm import maps SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH and Browser (→ Web) session types. Rsh/Rlogin is imported as Telnet, and FTP as SFTP (RustConn has no FTP client, so check the port — SFTP uses 22 — and credentials before connecting). Session types with no RustConn equivalent (XDMCP, file browser, local shell, AWS S3, WSL) are reported as skipped. A Serial session keeps its baud rate and framing but carries the Windows COM port name verbatim, so retarget it to a `/dev/tty*` path before connecting.
 
@@ -772,7 +774,7 @@ Snippets are reusable command templates with variable substitution. Variables us
 | `snippet add` | Create a snippet (`--name`, `--command`, `--description`, `--category`, `--tags`, `--confirm`) |
 | `snippet edit <name>` | Edit a snippet (`--new-name`, `--command`, `--description`, `--category`, `--tags`, `--confirm [<bool>]`) |
 | `snippet delete <name>` | Delete a snippet |
-| `snippet run <name>` | Execute with variable substitution (`--var key=value`, `--execute`, `--force`) |
+| `snippet run <name>` | Execute with variable substitution (`--var key=value`, `--execute`, `--force`). `--var` has no short form: `-v` is `--verbose` |
 
 ```bash
 rustconn-cli snippet list
@@ -861,18 +863,17 @@ Clusters group connections for broadcast command execution (send the same input 
 |------------|-------------|
 | `cluster list` | List all clusters (`--format`); the table and CSV count resolved members — explicit plus auto-membership matches |
 | `cluster show <name>` | Show cluster, its auto-membership pattern and its resolved connections; pattern matches are marked `(auto)` |
-| `cluster create` | Create a cluster (`--name`, `--connections`, `--broadcast`) |
-| `cluster edit <name>` | Edit a cluster (`--new-name`, `--broadcast true/false`) |
+| `cluster create` | Create a cluster (`--name`, `--connections`; `--broadcast` is a hidden no-op since 0.14.8) |
+| `cluster edit <name>` | Edit a cluster (`--new-name`; `--broadcast` is a hidden no-op since 0.14.8) |
 | `cluster delete <name>` | Delete a cluster |
 | `cluster add-connection` | Add connection (`-C cluster -c connection`) |
 | `cluster remove-connection` | Remove connection (`-C cluster -c connection`) |
 
 ```bash
 rustconn-cli cluster list
-rustconn-cli cluster create --name "DB Cluster" --broadcast
+rustconn-cli cluster create --name "DB Cluster"
 rustconn-cli cluster create --name "Mixed" --connections "DB-01,DB-02,Web-01"
 rustconn-cli cluster edit "DB Cluster" --new-name "Database Cluster"
-rustconn-cli cluster edit "DB Cluster" --broadcast false
 rustconn-cli cluster add-connection -C "DB Cluster" -c "DB-01"
 rustconn-cli cluster delete "Old Cluster"
 ```
@@ -1072,6 +1073,26 @@ rustconn-cli completions fish > ~/.config/fish/completions/rustconn-cli.fish
 ```
 
 Supported shells: `bash`, `zsh`, `fish`, `elvish`, `powershell`.
+
+### codec — Manage optional media codecs
+
+| Subcommand | Description |
+|------------|-------------|
+| `codec download-h264` | Download Cisco's OpenH264 binary for H.264 RDP GFX decoding (`--accept-cisco-license`) |
+
+```bash
+rustconn-cli codec download-h264                          # Prints URL, target path and licence; downloads nothing
+rustconn-cli codec download-h264 --accept-cisco-license   # Downloads, verifies SHA-256, caches
+```
+
+The embedded RDP client only accepts Cisco's own published OpenH264 binary, so a
+distribution's `libopenh264` is refused. Without `--accept-cisco-license` the
+command only explains what it would do. With it, the pinned binary is downloaded
+from `ciscobinary.openh264.org`, checked against its SHA-256 and stored in the
+user cache (`~/.cache/rustconn/openh264/`). If a valid copy is already there,
+nothing is downloaded. Supported on x86_64, aarch64 and armv7 Linux and on
+x86_64 and aarch64 macOS; other platforms exit with an error. The GUI has the
+same action under **Settings → Connection → Media Codecs**.
 
 ### man-page — Generate the man page
 

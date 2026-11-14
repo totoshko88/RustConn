@@ -206,6 +206,7 @@ impl ConnectionDialog {
             rdp_load_balance_entry,
             rdp_auto_reconnect_check,
             rdp_keyboard_hook_dropdown,
+            rdp_monitors_entry,
         ) = crate::dialogs::connection::rdp::create_rdp_options();
         protocol_stack.add_named(&rdp_box, Some("rdp"));
 
@@ -681,6 +682,7 @@ impl ConnectionDialog {
             &rdp_load_balance_entry,
             &rdp_auto_reconnect_check,
             &rdp_keyboard_hook_dropdown,
+            &rdp_monitors_entry,
             &rdp_kerberos_check,
             &rdp_kdc_address_entry,
             &rdp_jump_host_dropdown,
@@ -955,6 +957,7 @@ impl ConnectionDialog {
             rdp_load_balance_entry,
             rdp_auto_reconnect_check,
             rdp_keyboard_hook_dropdown,
+            rdp_monitors_entry,
             rdp_kerberos_check,
             rdp_kdc_address_entry,
             rdp_jump_host_dropdown,

@@ -83,83 +83,25 @@ impl AppState {
         self.connection_manager.restore_group(id)
     }
 
-    /// Permanently removes a soft-deleted connection and its vault credential.
-    ///
-    /// Runs when the Undo window for the deletion closes. Until 0.19.19 nothing
-    /// ever called [`empty_trash`](Self::empty_trash) from the GUI, so vault
-    /// credentials outlived every deleted connection (issue #263).
-    ///
-    /// A no-op when the ID is no longer in the trash — which is exactly what
-    /// happens after the user hits Undo, because `restore_connection` takes the
-    /// entry out of the trash before the toast dismisses. The restored
-    /// connection therefore keeps its password.
-    pub fn purge_deleted_connection(&mut self, id: Uuid) {
-        let Some(conn) = self.connection_manager.get_trash_connection(id).cloned() else {
-            return;
-        };
-        self.spawn_trashed_credential_cleanup(std::slice::from_ref(&conn), &[]);
-        if let Err(e) = self.connection_manager.purge_trash_connection(id) {
-            tracing::warn!(connection = %id, error = %e, "Failed to purge trashed connection");
-        }
-    }
-
-    /// Permanently removes a soft-deleted group, its subtree, and their vault
-    /// credentials.
-    ///
-    /// A cascade delete moves the group, its descendant groups and all their
-    /// connections into the trash, so the whole subtree is purged together —
-    /// otherwise the connections would stay in the trash forever with live
-    /// credentials. A no-op when the group is no longer in the trash.
-    pub fn purge_deleted_group(&mut self, id: Uuid) {
-        if self.connection_manager.get_trash_group(id).is_none() {
-            return;
-        }
-
-        let trashed_groups: Vec<ConnectionGroup> = self
-            .connection_manager
-            .list_trash_groups()
-            .into_iter()
-            .cloned()
-            .collect();
-        let subtree_ids = rustconn_core::models::collect_descendant_group_ids(id, &trashed_groups);
-
-        let trashed_conns: Vec<Connection> = self
-            .connection_manager
-            .list_trash_connections()
-            .into_iter()
-            .filter(|c| c.group_id.is_some_and(|gid| subtree_ids.contains(&gid)))
-            .cloned()
-            .collect();
-        let subtree_groups: Vec<ConnectionGroup> = trashed_groups
-            .iter()
-            .filter(|g| subtree_ids.contains(&g.id))
-            .cloned()
-            .collect();
-
-        self.spawn_trashed_credential_cleanup(&trashed_conns, &subtree_groups);
-
-        for conn_id in trashed_conns.iter().map(|c| c.id) {
-            if let Err(e) = self.connection_manager.purge_trash_connection(conn_id) {
-                tracing::warn!(connection = %conn_id, error = %e, "Failed to purge trashed connection");
-            }
-        }
-        for group_id in &subtree_ids {
-            if let Err(e) = self.connection_manager.purge_trash_group(*group_id) {
-                tracing::warn!(group = %group_id, error = %e, "Failed to purge trashed group");
-            }
-        }
-    }
-
     /// Deletes vault credentials for trashed items on a background thread.
     ///
     /// Vault deletion spawns `keepassxc-cli` or makes D-Bus round-trips, so it
     /// must not run on the GTK main thread. Failures are logged only: the trash
     /// entry is going away regardless, and a stale vault entry is recoverable by
     /// hand while a blocked purge is not.
+    ///
+    /// `on_done` runs on the main thread once the worker has finished, or at
+    /// once when there is nothing to delete.
+    ///
+    /// `keepers` are the connections whose credential must survive: a doomed
+    /// connection that resolves to the same vault key as one of them keeps its
+    /// entry (see [`crate::vault_ops::live_connection_sharing_vault_key`]).
     fn spawn_trashed_credential_cleanup(
         &self,
         connections: &[Connection],
         groups: &[ConnectionGroup],
+        keepers: Vec<Connection>,
+        on_done: impl FnOnce() + 'static,
     ) {
         use rustconn_core::models::PasswordSource;
 
@@ -175,6 +117,7 @@ impl AppState {
             .collect();
 
         if vault_conns.is_empty() && vault_groups.is_empty() {
+            on_done();
             return;
         }
 
@@ -190,15 +133,12 @@ impl AppState {
                 .cloned(),
         );
         let settings = self.settings.clone();
-        // A live connection can resolve to the same key as a trashed one — Group
-        // Sync leaves exactly that pair behind — and its entry must survive.
-        let live = self.connection_manager.list_connections_owned();
 
         crate::utils::spawn_blocking_with_callback(
             move || {
                 for conn in &vault_conns {
                     if let Err(e) =
-                        delete_trashed_vault_credential(&settings, &hierarchy, conn, &live)
+                        delete_trashed_vault_credential(&settings, &hierarchy, conn, &keepers)
                     {
                         tracing::warn!(
                             connection_name = %conn.name,
@@ -217,119 +157,129 @@ impl AppState {
                     }
                 }
             },
-            |()| {},
+            move |()| on_done(),
         );
     }
 
-    /// Permanently empties the trash, cleaning up vault credentials first.
+    /// Permanently empties the trash and deletes its vault credentials.
     ///
     /// Connections and groups with `PasswordSource::Vault` have their
-    /// credentials deleted from the configured backend before the trash
-    /// entries are removed. Credential cleanup failures are logged but
+    /// credentials deleted from the configured backend on a worker thread, so
+    /// the window stays responsive; `on_credentials_done` runs on the main
+    /// thread when that ends. Credential cleanup failures are logged but
     /// do not prevent the trash from being emptied.
     ///
     /// Also removes webkit session data directories for Web connections
     /// (`~/.local/share/rustconn/webkit/<uuid>/` and `~/.cache/rustconn/webkit/<uuid>/`).
-    pub fn empty_trash(&mut self) -> ConfigResult<()> {
-        use rustconn_core::models::PasswordSource;
-
-        let settings = self.settings.clone();
-        let groups: Vec<rustconn_core::models::ConnectionGroup> = self
-            .connection_manager
-            .list_groups()
-            .into_iter()
-            .cloned()
-            .collect();
-
-        // Collect vault connections from trash for credential cleanup
-        let vault_connections: Vec<rustconn_core::models::Connection> = self
+    pub fn empty_trash(
+        &mut self,
+        on_credentials_done: impl FnOnce() + 'static,
+    ) -> ConfigResult<()> {
+        let trashed_conns: Vec<Connection> = self
             .connection_manager
             .list_trash_connections()
             .into_iter()
-            .filter(|c| c.password_source == PasswordSource::Vault)
             .cloned()
             .collect();
-
-        // Collect all trashed connection IDs for webkit session cleanup
-        #[cfg(feature = "web-embedded")]
-        let trashed_connection_ids: Vec<uuid::Uuid> = self
-            .connection_manager
-            .list_trash_connections()
-            .iter()
-            .map(|c| c.id)
-            .collect();
-
-        // Collect vault groups from trash for credential cleanup
-        let vault_groups: Vec<rustconn_core::models::ConnectionGroup> = self
+        let trashed_groups: Vec<ConnectionGroup> = self
             .connection_manager
             .list_trash_groups()
             .into_iter()
-            .filter(|g| g.password_source.as_ref() == Some(&PasswordSource::Vault))
             .cloned()
             .collect();
+        let trashed_ids: Vec<uuid::Uuid> = trashed_conns.iter().map(|c| c.id).collect();
 
-        // Clean up credentials (best-effort, log failures). An entry a live
-        // connection still resolves to is kept: see
-        // `delete_trashed_vault_credential`.
+        // Each vault deletion spawns `keepassxc-cli` or waits on D-Bus (about
+        // 0.7 s apiece with a KeePass file), so a full trash used to freeze the
+        // window for the sum of them. The cleanup runs on a worker thread and
+        // `on_credentials_done` runs on the main thread when it ends. The lists
+        // and the group hierarchy are copied here, before the entries leave the
+        // trash.
+        //
+        // A live connection can resolve to the same key as a trashed one — Group
+        // Sync leaves exactly that pair behind — and its entry must survive.
         let live = self.connection_manager.list_connections_owned();
-        for conn in &vault_connections {
-            if let Err(e) = delete_trashed_vault_credential(&settings, &groups, conn, &live) {
-                tracing::warn!(
-                    connection_name = %conn.name,
-                    error = %e,
-                    "Failed to clean up vault credential on permanent delete"
-                );
-            }
-        }
-        for group in &vault_groups {
-            if let Err(e) = delete_group_vault_credential(&settings, &groups, group) {
-                tracing::warn!(
-                    group_name = %group.name,
-                    error = %e,
-                    "Failed to clean up group vault credential on permanent delete"
-                );
-            }
-        }
+        self.spawn_trashed_credential_cleanup(
+            &trashed_conns,
+            &trashed_groups,
+            live,
+            on_credentials_done,
+        );
 
-        // Remove webkit session data/cache directories for permanently deleted connections
-        #[cfg(feature = "web-embedded")]
-        {
-            let dirs_to_remove: Vec<(std::path::PathBuf, std::path::PathBuf)> =
-                trashed_connection_ids
-                    .iter()
-                    .map(|conn_id| {
-                        (
-                            crate::embedded_web::session_data_dir(conn_id),
-                            crate::embedded_web::session_cache_dir(conn_id),
-                        )
-                    })
-                    .collect();
-            // Move directory removal off the main thread to avoid blocking UI
-            std::thread::spawn(move || {
-                for (data_dir, cache_dir) in dirs_to_remove {
-                    if data_dir.exists()
-                        && let Err(e) = std::fs::remove_dir_all(&data_dir)
-                    {
-                        tracing::warn!(
-                            path = %data_dir.display(),
-                            error = %e,
-                            "Failed to remove webkit session data directory"
-                        );
-                    }
-                    if cache_dir.exists()
-                        && let Err(e) = std::fs::remove_dir_all(&cache_dir)
-                    {
-                        tracing::warn!(
-                            path = %cache_dir.display(),
-                            error = %e,
-                            "Failed to remove webkit session cache directory"
-                        );
-                    }
+        remove_webkit_session_dirs(&trashed_ids);
+
+        let result = self.connection_manager.empty_trash();
+        if result.is_ok() {
+            for id in trashed_ids {
+                self.workspace_on_connection_deleted(id);
+            }
+        }
+        result
+    }
+
+    /// Permanently removes one entry from the trash and deletes its vault
+    /// credential, the single-item counterpart of
+    /// [`empty_trash`](Self::empty_trash).
+    ///
+    /// Only that entry goes: a trashed group's trashed connections stay in the
+    /// trash. The credential is kept when a live connection — or another
+    /// connection still in the trash, which can be restored — resolves to the
+    /// same vault key ([`single_purge_credential_keepers`]). The deletion runs on
+    /// a worker thread; `on_credentials_done` runs on the main thread when it
+    /// ends, or at once when the entry is not in the trash.
+    ///
+    /// Returns `true` when the entry was removed, `false` when it was no longer
+    /// in the trash (restored or purged meanwhile).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if persisting the trash fails.
+    pub fn purge_trash_item(
+        &mut self,
+        kind: crate::sidebar::trash::TrashKind,
+        id: Uuid,
+        on_credentials_done: impl FnOnce() + 'static,
+    ) -> ConfigResult<bool> {
+        use crate::sidebar::trash::TrashKind;
+
+        match kind {
+            TrashKind::Connection => {
+                let Some(conn) = self.connection_manager.get_trash_connection(id).cloned() else {
+                    on_credentials_done();
+                    return Ok(false);
+                };
+                let keepers = single_purge_credential_keepers(
+                    self.connection_manager.list_connections_owned(),
+                    &self.connection_manager.list_trash_connections(),
+                    id,
+                );
+                self.spawn_trashed_credential_cleanup(
+                    std::slice::from_ref(&conn),
+                    &[],
+                    keepers,
+                    on_credentials_done,
+                );
+                remove_webkit_session_dirs(&[id]);
+                let removed = self.connection_manager.purge_trash_connection(id)?;
+                if removed {
+                    self.workspace_on_connection_deleted(id);
                 }
-            });
+                Ok(removed)
+            }
+            TrashKind::Group => {
+                let Some(group) = self.connection_manager.get_trash_group(id).cloned() else {
+                    on_credentials_done();
+                    return Ok(false);
+                };
+                self.spawn_trashed_credential_cleanup(
+                    &[],
+                    std::slice::from_ref(&group),
+                    Vec::new(),
+                    on_credentials_done,
+                );
+                self.connection_manager.purge_trash_group(id)
+            }
         }
-
-        self.connection_manager.empty_trash()
     }
 
     /// Generates a unique group name among siblings by appending a number if needed
@@ -416,6 +366,38 @@ impl AppState {
     /// Returns an owned copy of all connections in a single allocation
     pub fn list_connections_owned(&self) -> Vec<Connection> {
         self.connection_manager.list_connections_owned()
+    }
+
+    /// Everything in the trash, for the sidebar's Trash row.
+    #[must_use]
+    pub fn trash_entries(&self) -> Vec<crate::sidebar::trash::TrashEntry> {
+        use crate::sidebar::trash::{TrashEntry, TrashKind, sort_entries};
+        let mut entries: Vec<TrashEntry> = self
+            .connection_manager
+            .list_trash_groups()
+            .into_iter()
+            .map(|g| TrashEntry {
+                kind: TrashKind::Group,
+                id: g.id,
+                name: g.name.clone(),
+                protocol: String::new(),
+                host: String::new(),
+            })
+            .collect();
+        entries.extend(
+            self.connection_manager
+                .list_trash_connections()
+                .into_iter()
+                .map(|c| TrashEntry {
+                    kind: TrashKind::Connection,
+                    id: c.id,
+                    name: c.name.clone(),
+                    protocol: crate::window::types::get_protocol_string(&c.protocol_config),
+                    host: c.host.clone(),
+                }),
+        );
+        sort_entries(&mut entries);
+        entries
     }
 
     /// Gets connections by group
@@ -805,4 +787,102 @@ impl AppState {
     }
 
     // ========== Session Operations ==========
+}
+
+/// The connections whose vault credential must survive when the trashed
+/// connection `purged` alone is deleted for good.
+///
+/// Emptying the whole trash only has to spare live connections. Deleting one
+/// entry must also spare the connections left in the trash: they can still be
+/// restored, and one that shares the purged entry's name, group and protocol
+/// resolves to the same vault entry.
+fn single_purge_credential_keepers(
+    mut live: Vec<Connection>,
+    trashed: &[&Connection],
+    purged: Uuid,
+) -> Vec<Connection> {
+    live.extend(
+        trashed
+            .iter()
+            .filter(|c| c.id != purged)
+            .map(|c| (*c).clone()),
+    );
+    live
+}
+
+/// Removes the webkit session data and cache directories of connections that
+/// are deleted for good, on a background thread.
+#[cfg(feature = "web-embedded")]
+fn remove_webkit_session_dirs(connection_ids: &[Uuid]) {
+    let dirs_to_remove: Vec<(std::path::PathBuf, std::path::PathBuf)> = connection_ids
+        .iter()
+        .map(|conn_id| {
+            (
+                crate::embedded_web::session_data_dir(conn_id),
+                crate::embedded_web::session_cache_dir(conn_id),
+            )
+        })
+        .collect();
+    // Move directory removal off the main thread to avoid blocking UI
+    std::thread::spawn(move || {
+        for (data_dir, cache_dir) in dirs_to_remove {
+            if data_dir.exists()
+                && let Err(e) = std::fs::remove_dir_all(&data_dir)
+            {
+                tracing::warn!(
+                    path = %data_dir.display(),
+                    error = %e,
+                    "Failed to remove webkit session data directory"
+                );
+            }
+            if cache_dir.exists()
+                && let Err(e) = std::fs::remove_dir_all(&cache_dir)
+            {
+                tracing::warn!(
+                    path = %cache_dir.display(),
+                    error = %e,
+                    "Failed to remove webkit session cache directory"
+                );
+            }
+        }
+    });
+}
+
+/// Without the embedded browser there are no webkit session directories.
+#[cfg(not(feature = "web-embedded"))]
+const fn remove_webkit_session_dirs(_connection_ids: &[Uuid]) {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ssh(name: &str) -> Connection {
+        Connection::new(
+            name.to_string(),
+            "10.0.0.1".to_string(),
+            22,
+            rustconn_core::models::ProtocolConfig::Ssh(rustconn_core::models::SshConfig::default()),
+        )
+    }
+
+    #[test]
+    fn single_purge_spares_live_and_the_rest_of_the_trash() {
+        let live = ssh("live");
+        let purged = ssh("web");
+        // Same name, group and protocol as `purged`: the same vault entry.
+        let trashed_twin = ssh("web");
+        let trash = [&purged, &trashed_twin];
+
+        let keepers = single_purge_credential_keepers(vec![live.clone()], &trash, purged.id);
+        let ids: Vec<Uuid> = keepers.iter().map(|c| c.id).collect();
+
+        assert_eq!(ids, vec![live.id, trashed_twin.id]);
+    }
+
+    #[test]
+    fn single_purge_never_keeps_the_purged_connection_itself() {
+        let purged = ssh("web");
+        let keepers = single_purge_credential_keepers(Vec::new(), &[&purged], purged.id);
+        assert!(keepers.is_empty());
+    }
 }

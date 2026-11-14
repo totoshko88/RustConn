@@ -74,6 +74,12 @@ never a macOS-only crate. A pre-write hook blocks both violations; do not rely o
 - Intermediate `expose_secret().to_string()` → wrap in `zeroize::Zeroizing::new()`
 - Secrets to external CLIs → stdin pipe, **never** `Command::arg(password)`
 - Never log or format a secret into an error message
+- Documented exceptions (each argued at its call site; add none without one):
+  Passbolt resource password on argv (`go-passbolt-cli` has no other channel
+  for `--password`; the account passphrase goes by env); RDP gateway password
+  moved, not `Zeroizing`-wrapped, into `ZeroizingGatewayTarget`
+  (`rdp_client/client/connection.rs`), because `ironrdp-mstsgu` needs an owned
+  `String`
 - Errors → `thiserror::Error`. No `unwrap()`/`expect()` outside tests
 - Logging → `tracing`, never `println!`/`eprintln!`
 - Every user-facing string in `rustconn` → `i18n()` / `i18n_f()` with `{}`

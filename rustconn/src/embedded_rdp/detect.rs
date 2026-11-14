@@ -231,12 +231,6 @@ pub fn freerdp_version(binary: &str) -> Option<FreeRdpVersion> {
     freerdp_version_with_cancel(binary, None)
 }
 
-/// Resolves the args-file syntax before a credential file is created.
-#[must_use]
-pub fn resolve_args_from_form(binary: &str) -> ArgsFromForm {
-    resolve_args_from_form_with_cancel(binary, None)
-}
-
 pub(crate) fn resolve_args_from_form_with_cancel(
     binary: &str,
     cancellation: Option<&AtomicBool>,
@@ -251,12 +245,6 @@ pub fn args_from_argument_for_form(form: ArgsFromForm, path: &std::path::Path) -
         ArgsFromForm::FilePrefix => format!("/args-from:file:{}", path.display()),
         ArgsFromForm::BarePath => format!("/args-from:{}", path.display()),
     }
-}
-
-/// Builds an args-file switch for callers that did not pre-resolve the form.
-#[must_use]
-pub fn args_from_argument(binary: &str, path: &std::path::Path) -> String {
-    args_from_argument_for_form(resolve_args_from_form(binary), path)
 }
 
 fn command_succeeds_with_timeout(
@@ -419,14 +407,6 @@ pub fn select_embedded_wlfreerdp() -> FreeRdpSelection {
 pub fn detect_wlfreerdp() -> bool {
     rustconn_core::protocol::is_wayland_session()
         && matches!(select_embedded_wlfreerdp(), FreeRdpSelection::Supported(_))
-}
-
-/// Detects the best FreeRDP binary for RemoteApp sessions.
-#[must_use]
-pub fn detect_best_freerdp_for_remoteapp() -> Option<String> {
-    let candidates = remoteapp_freerdp_candidates(rustconn_core::flatpak::is_flatpak());
-    select_freerdp_client(candidates, |binary| probe_freerdp_candidate(binary, None))
-        .into_supported()
 }
 
 /// Every FreeRDP client binary RustConn knows how to launch, newest-first.
@@ -621,12 +601,6 @@ fn host_binary_exists(name: &str, cancellation: Option<&AtomicBool>) -> bool {
         BINARY_DETECTION_TIMEOUT,
         cancellation,
     )
-}
-
-/// Detects any FreeRDP client available for external mode.
-#[must_use]
-pub fn detect_xfreerdp() -> Option<String> {
-    detect_best_freerdp()
 }
 
 /// Checks if the native IronRDP client is compiled in.

@@ -21,7 +21,7 @@ path = "src/main.rs"
 # keys RustConn added on screen lock and suspend is a security behaviour, not an
 # option a packaging channel should be able to drop. Its D-Bus listener is a
 # no-op on macOS, where rustconn-lock-sys below is the source.
-rustconn-core = { path = "../rustconn-core", version = "0.24.11", default-features = false, features = ["lock-events"] }
+rustconn-core = { path = "../rustconn-core", version = "0.25.0", default-features = false, features = ["lock-events"] }
 tokio = { workspace = true }
 # Event-driven tray message delivery to the GTK main loop (no polling)
 async-channel = { workspace = true }
@@ -41,7 +41,7 @@ dirs = { workspace = true }
 # Requires libdbus-1-dev on Ubuntu/Debian or dbus-devel on Fedora
 ksni = { version = "0.3", features = ["blocking"], optional = true }
 # SVG rendering for tray icon (renders SVG to ARGB32 pixmap)
-resvg = { version = "0.49", optional = true }
+resvg = { version = "0.50", optional = true }
 # macOS tray icon via NSStatusItem (cross-platform crate, used only on macOS)
 #
 # `default-features = false` on both, and it is not a micro-optimisation. The
@@ -75,15 +75,15 @@ tracing-subscriber = { workspace = true }
 cpal = { version = "0.18", optional = true }
 serde = { workspace = true, features = ["derive"] }
 shell-words = "1"
-nix = { version = "0.31", features = ["signal", "process"] }
+nix = { workspace = true, features = ["signal", "process"] }
 # PTY creation, sizing and controlling-terminal setup for every session's
 # child. Lives in its own crate because `unsafe` is forbidden here.
-rustconn-pty-sys = { path = "../rustconn-pty-sys", version = "0.24.11" }
+rustconn-pty-sys = { path = "../rustconn-pty-sys", version = "0.25.0" }
 # The startup `setlocale` call, guarded so it can only run from the startup
 # thread, before this program has spawned any thread of its own, and before the
 # window is sealed. Same reason for the separate crate: `setlocale` is `unsafe`
 # in gettext-rs 0.8 and `unsafe` is forbidden here.
-rustconn-locale-sys = { path = "../rustconn-locale-sys", version = "0.24.11" }
+rustconn-locale-sys = { path = "../rustconn-locale-sys", version = "0.25.0" }
 # The startup `GSK_RENDERER` and `LANGUAGE` writes, guarded the same way.
 # Neither GTK nor gettext offers an API for these, so the environment is the only
 # interface, and `std::env::set_var` is `unsafe` in edition 2024 while `unsafe`
@@ -91,20 +91,20 @@ rustconn-locale-sys = { path = "../rustconn-locale-sys", version = "0.24.11" }
 # guest-VM (#274) and Flatpak language (#158) paths all go through it, and an
 # unconditional dependency is what gets the guard compiled and its contract
 # tests run on every job rather than on the one macOS job alone.
-rustconn-env-sys = { path = "../rustconn-env-sys", version = "0.24.11" }
+rustconn-env-sys = { path = "../rustconn-env-sys", version = "0.25.0" }
 # The macOS Dock tile image, for launches LaunchServices cannot find an icon for
 # (a bare binary from a shell, or an .app whose CFBundleExecutable execs a binary
 # outside the bundle). `-[NSApplication setApplicationIconImage:]` is the only
 # interface that works there, GDK exposes no Dock API, and `unsafe` is forbidden
 # here. Unconditional for the same reason as the three above; the AppKit bindings
 # it needs are target-gated inside that crate, since they build nowhere else.
-rustconn-dock-sys = { path = "../rustconn-dock-sys", version = "0.24.11" }
+rustconn-dock-sys = { path = "../rustconn-dock-sys", version = "0.25.0" }
 # The macOS screen-lock and sleep notifications, fed into rustconn-core's
 # `lock_events` so the SSH keys RustConn added are removed there too. Observing
 # them takes `unsafe` objc2 calls, forbidden here. Unconditional like the four
 # above, so the bridge in app.rs compiles on every platform; the AppKit bindings
 # are target-gated inside that crate.
-rustconn-lock-sys = { path = "../rustconn-lock-sys", version = "0.24.11" }
+rustconn-lock-sys = { path = "../rustconn-lock-sys", version = "0.25.0" }
 # WebKitGTK 6.0 bindings for embedded web browser (Linux only)
 webkit6 = { version = "0.6", optional = true }
 

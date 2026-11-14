@@ -16,7 +16,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_bytes};
 use crate::error::ImportError;
 use crate::models::{Connection, ProtocolConfig, SshConfig, TelnetConfig};
 
@@ -320,14 +320,64 @@ impl ImportSource for PuttyImporter {
     }
 
     fn import_from_path(&self, path: &Path) -> Result<ImportResult, ImportError> {
-        let content = read_import_file(path, SOURCE_NAME)?;
+        let bytes = read_import_bytes(path, SOURCE_NAME)?;
+        let content = decode_reg_text(&bytes).ok_or_else(|| ImportError::ParseError {
+            source_name: SOURCE_NAME.to_string(),
+            reason: format!("{} is not UTF-8 or UTF-16 text", path.display()),
+        })?;
         Ok(self.parse_reg(&content))
+    }
+}
+
+/// Decodes the text of a `.reg` file.
+///
+/// `regedit` writes UTF-16 little-endian with a byte-order mark; a hand-edited
+/// or converted file is usually UTF-8, with or without one. `None` when the
+/// bytes are neither.
+fn decode_reg_text(bytes: &[u8]) -> Option<String> {
+    let utf16 = |rest: &[u8], from: fn([u8; 2]) -> u16| -> Option<String> {
+        let (pairs, tail) = rest.as_chunks::<2>();
+        if !tail.is_empty() {
+            return None;
+        }
+        let units: Vec<u16> = pairs.iter().map(|pair| from(*pair)).collect();
+        String::from_utf16(&units).ok()
+    };
+    match bytes {
+        [0xFF, 0xFE, rest @ ..] => utf16(rest, u16::from_le_bytes),
+        [0xFE, 0xFF, rest @ ..] => utf16(rest, u16::from_be_bytes),
+        [0xEF, 0xBB, 0xBF, rest @ ..] => String::from_utf8(rest.to_vec()).ok(),
+        _ => String::from_utf8(bytes.to_vec()).ok(),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn decode_reg_text_reads_regedit_utf16_le_with_bom() {
+        let mut bytes = vec![0xFF, 0xFE];
+        for unit in "Windows Registry Editor Version 5.00\r\n".encode_utf16() {
+            bytes.extend_from_slice(&unit.to_le_bytes());
+        }
+        assert_eq!(
+            decode_reg_text(&bytes).as_deref(),
+            Some("Windows Registry Editor Version 5.00\r\n")
+        );
+    }
+
+    #[test]
+    fn decode_reg_text_reads_utf8_with_and_without_bom() {
+        assert_eq!(decode_reg_text(b"abc").as_deref(), Some("abc"));
+        assert_eq!(decode_reg_text(b"\xEF\xBB\xBFabc").as_deref(), Some("abc"));
+    }
+
+    #[test]
+    fn decode_reg_text_refuses_other_bytes() {
+        assert_eq!(decode_reg_text(&[0xFF, 0xFE, 0x41]), None);
+        assert_eq!(decode_reg_text(&[0xC3, 0x28]), None);
+    }
 
     #[test]
     fn parses_ssh_session_with_key_and_forwarding() {

@@ -116,59 +116,6 @@ pub fn add_css_provider(provider: &gtk4::CssProvider, priority: u32) -> bool {
     }
 }
 
-/// Removes a CSS provider from the default display if available
-///
-/// # Arguments
-///
-/// * `provider` - The CSS provider to remove
-///
-/// # Returns
-///
-/// `true` if the provider was removed, `false` if no display was available.
-pub fn remove_css_provider(provider: &gtk4::CssProvider) -> bool {
-    if let Some(display) = get_display() {
-        gtk4::style_context_remove_provider_for_display(&display, provider);
-        true
-    } else {
-        false
-    }
-}
-
-/// Sets accessible properties on a widget
-///
-/// Helper function to set common accessibility properties in a consistent way.
-///
-/// # Arguments
-///
-/// * `widget` - The widget to update
-/// * `label` - The accessible label (read by screen readers)
-/// * `description` - Optional description providing more context
-pub fn set_accessible_properties(
-    widget: &impl gtk4::prelude::AccessibleExtManual,
-    label: &str,
-    description: Option<&str>,
-) {
-    let mut properties = vec![gtk4::accessible::Property::Label(label)];
-
-    if let Some(desc) = description {
-        properties.push(gtk4::accessible::Property::Description(desc));
-    }
-
-    widget.update_property(&properties);
-}
-
-/// Sets an accessible label on a widget
-///
-/// Shorthand for setting just the accessible label.
-///
-/// # Arguments
-///
-/// * `widget` - The widget to update
-/// * `label` - The accessible label
-pub fn set_accessible_label(widget: &impl gtk4::prelude::AccessibleExtManual, label: &str) {
-    widget.update_property(&[gtk4::accessible::Property::Label(label)]);
-}
-
 /// Sets a `LabelledBy` accessibility relation from `target` to `label_widget`.
 ///
 /// The labelling widget is upcast through [`gtk4::Widget`] instead of directly
@@ -191,13 +138,6 @@ pub fn set_labelled_by(
         .upcast_ref()])]);
 }
 
-/// Regex pattern for extracting variable names from templates
-///
-/// Matches patterns like `${variable_name}` and captures the variable name.
-///
-/// Re-exported from [`rustconn_core::variables::VARIABLE_REGEX`].
-pub use rustconn_core::variables::VARIABLE_REGEX as VARIABLE_PATTERN;
-
 /// Extracts variable names from a template string
 ///
 /// Finds all `${variable_name}` patterns and returns the variable names.
@@ -217,64 +157,6 @@ pub use rustconn_core::variables::VARIABLE_REGEX as VARIABLE_PATTERN;
 #[must_use]
 pub fn extract_variables(template: &str) -> Vec<String> {
     rustconn_core::variables::extract_variable_names(template)
-}
-
-/// Formats a duration in a human-readable way
-///
-/// # Arguments
-///
-/// * `seconds` - Duration in seconds
-///
-/// # Returns
-///
-/// A human-readable string like "2h 30m" or "45s".
-#[must_use]
-pub fn format_duration(seconds: u64) -> String {
-    if seconds < 60 {
-        format!("{seconds}s")
-    } else if seconds < 3600 {
-        let minutes = seconds / 60;
-        let secs = seconds % 60;
-        if secs == 0 {
-            format!("{minutes}m")
-        } else {
-            format!("{minutes}m {secs}s")
-        }
-    } else {
-        let hours = seconds / 3600;
-        let minutes = (seconds % 3600) / 60;
-        if minutes == 0 {
-            format!("{hours}h")
-        } else {
-            format!("{hours}h {minutes}m")
-        }
-    }
-}
-
-/// Formats a byte count in a human-readable way
-///
-/// # Arguments
-///
-/// * `bytes` - Number of bytes
-///
-/// # Returns
-///
-/// A human-readable string like "1.5 MB" or "256 KB".
-#[must_use]
-pub fn format_bytes(bytes: u64) -> String {
-    const KB: u64 = 1024;
-    const MB: u64 = KB * 1024;
-    const GB: u64 = MB * 1024;
-
-    if bytes < KB {
-        format!("{bytes} B")
-    } else if bytes < MB {
-        format!("{:.1} KB", bytes as f64 / KB as f64)
-    } else if bytes < GB {
-        format!("{:.1} MB", bytes as f64 / MB as f64)
-    } else {
-        format!("{:.2} GB", bytes as f64 / GB as f64)
-    }
 }
 
 /// Spawns a blocking operation in a background thread and calls a callback on completion
@@ -318,25 +200,21 @@ where
     F: FnOnce() -> T + Send + 'static,
     C: FnOnce(T) + 'static,
 {
-    let (tx, rx) = std::sync::mpsc::channel();
+    // A oneshot future instead of a 16 ms polling timer: the main loop wakes
+    // only when the worker finishes. shortcut: if the worker panics the
+    // callback is not called (its signature takes `T`, not `Option<T>`), same as
+    // before; upgrade by moving callers to `spawn_blocking_with_timeout`.
+    let (tx, rx) = tokio::sync::oneshot::channel();
 
     std::thread::spawn(move || {
-        let result = operation();
-        let _ = tx.send(result);
+        let _ = tx.send(operation());
     });
 
-    let callback = std::cell::Cell::new(Some(callback));
-    // Poll at 16ms (~60fps) for the result from the background thread
-    gtk4::glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
-        match rx.try_recv() {
-            Ok(result) => {
-                if let Some(cb) = callback.take() {
-                    cb(result);
-                }
-                gtk4::glib::ControlFlow::Break
-            }
-            Err(std::sync::mpsc::TryRecvError::Empty) => gtk4::glib::ControlFlow::Continue,
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => gtk4::glib::ControlFlow::Break,
+    gtk4::glib::spawn_future_local(async move {
+        if let Ok(result) = rx.await {
+            callback(result);
+        } else {
+            tracing::warn!("Background operation ended without a result (panic?)");
         }
     });
 }
@@ -357,53 +235,23 @@ where
     F: FnOnce() -> T + Send + 'static,
     C: FnOnce(Option<T>) + 'static,
 {
-    let (tx, rx) = std::sync::mpsc::channel();
-    let start = std::time::Instant::now();
+    let (tx, rx) = tokio::sync::oneshot::channel();
 
     std::thread::spawn(move || {
-        let result = operation();
-        let _ = tx.send(result);
+        let _ = tx.send(operation());
     });
 
-    let callback = std::rc::Rc::new(std::cell::RefCell::new(Some(
-        Box::new(callback) as Box<dyn FnOnce(Option<T>)>
-    )));
-
-    // Poll at 16ms for result or timeout
-    gtk4::glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
-        // Check if callback was already consumed
-        if callback.borrow().is_none() {
-            return gtk4::glib::ControlFlow::Break;
-        }
-
-        // Try to receive result from background thread
-        match rx.try_recv() {
-            Ok(result) => {
-                if let Some(cb) = callback.borrow_mut().take() {
-                    cb(Some(result));
-                }
-                return gtk4::glib::ControlFlow::Break;
+    gtk4::glib::spawn_future_local(async move {
+        // `Err` from the channel = the worker panicked; `Err` from the timeout
+        // = it took too long (the thread keeps running, its result is dropped).
+        match gtk4::glib::future_with_timeout(timeout, rx).await {
+            Ok(Ok(result)) => callback(Some(result)),
+            Ok(Err(_)) => callback(None),
+            Err(_) => {
+                tracing::warn!("Background operation timed out after {:?}", timeout);
+                callback(None);
             }
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                // Thread panicked or dropped sender without sending
-                if let Some(cb) = callback.borrow_mut().take() {
-                    cb(None);
-                }
-                return gtk4::glib::ControlFlow::Break;
-            }
-            Err(std::sync::mpsc::TryRecvError::Empty) => {}
         }
-
-        // Check timeout
-        if start.elapsed() > timeout {
-            tracing::warn!("Background operation timed out after {:?}", timeout);
-            if let Some(cb) = callback.borrow_mut().take() {
-                cb(None);
-            }
-            return gtk4::glib::ControlFlow::Break;
-        }
-
-        gtk4::glib::ControlFlow::Continue
     });
 }
 
@@ -549,49 +397,6 @@ pub fn stride_to_i32(stride: u32) -> i32 {
     )]
     let result = stride.min(i32::MAX as u32) as i32;
     result
-}
-
-/// Calculates the absolute difference between two dimensions
-///
-/// Used for resize threshold calculations where we need to compare
-/// current and target dimensions regardless of which is larger.
-///
-/// # Arguments
-///
-/// * `a` - First dimension
-/// * `b` - Second dimension
-///
-/// # Returns
-///
-/// The absolute difference as u32.
-#[must_use]
-pub const fn dimension_diff(a: u32, b: u32) -> u32 {
-    a.abs_diff(b)
-}
-
-/// Converts a progress ratio to percentage (0-100)
-///
-/// Used for progress bar calculations.
-///
-/// # Arguments
-///
-/// * `current` - Current progress value
-/// * `total` - Total value (must be > 0)
-///
-/// # Returns
-///
-/// Percentage as f64 clamped to 0.0-100.0 range.
-///
-/// # Safety Justification
-///
-/// The `cast_precision_loss` warning is suppressed because precision loss
-/// is acceptable for progress display purposes.
-#[must_use]
-pub fn progress_percentage(current: u64, total: u64) -> f64 {
-    if total == 0 {
-        return 0.0;
-    }
-    ((current as f64 / total as f64) * 100.0).clamp(0.0, 100.0)
 }
 
 /// Converts a progress ratio to a 0.0-1.0 fraction
@@ -771,21 +576,6 @@ mod tests {
     }
 
     #[test]
-    fn test_dimension_diff() {
-        assert_eq!(dimension_diff(100, 50), 50);
-        assert_eq!(dimension_diff(50, 100), 50);
-        assert_eq!(dimension_diff(100, 100), 0);
-    }
-
-    #[test]
-    fn test_progress_percentage() {
-        assert!((progress_percentage(50, 100) - 50.0).abs() < f64::EPSILON);
-        assert!((progress_percentage(0, 100) - 0.0).abs() < f64::EPSILON);
-        assert!((progress_percentage(100, 100) - 100.0).abs() < f64::EPSILON);
-        assert!((progress_percentage(0, 0) - 0.0).abs() < f64::EPSILON); // edge case
-    }
-
-    #[test]
     fn test_progress_fraction() {
         assert!((progress_fraction(50, 100) - 0.5).abs() < f64::EPSILON);
         assert!((progress_fraction(0, 100) - 0.0).abs() < f64::EPSILON);
@@ -814,20 +604,47 @@ mod tests {
         assert_eq!(vars, Vec::<String>::new());
     }
 
-    #[test]
-    fn test_format_duration() {
-        assert_eq!(format_duration(30), "30s");
-        assert_eq!(format_duration(60), "1m");
-        assert_eq!(format_duration(90), "1m 30s");
-        assert_eq!(format_duration(3600), "1h");
-        assert_eq!(format_duration(3660), "1h 1m");
+    /// Runs `ctx` until `done` is set or a few seconds pass.
+    fn run_until(ctx: &gtk4::glib::MainContext, done: &std::rc::Rc<std::cell::Cell<bool>>) {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !done.get() && std::time::Instant::now() < deadline {
+            ctx.iteration(false);
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        }
     }
 
     #[test]
-    fn test_format_bytes() {
-        assert_eq!(format_bytes(500), "500 B");
-        assert_eq!(format_bytes(1024), "1.0 KB");
-        assert_eq!(format_bytes(1536), "1.5 KB");
-        assert_eq!(format_bytes(1_048_576), "1.0 MB");
+    fn spawn_blocking_callbacks_run_on_main_context() {
+        let ctx = gtk4::glib::MainContext::new();
+        ctx.with_thread_default(|| {
+            let done = std::rc::Rc::new(std::cell::Cell::new(false));
+            let got = std::rc::Rc::new(std::cell::Cell::new(None));
+            let (d, g) = (done.clone(), got.clone());
+            spawn_blocking_with_callback(
+                || 41 + 1,
+                move |v| {
+                    g.set(Some(v));
+                    d.set(true);
+                },
+            );
+            run_until(&ctx, &done);
+            assert_eq!(got.get(), Some(42));
+
+            // A panicking worker reports `None` through the timeout variant.
+            let done = std::rc::Rc::new(std::cell::Cell::new(false));
+            let got = std::rc::Rc::new(std::cell::Cell::new(Some(0)));
+            let (d, g) = (done.clone(), got.clone());
+            spawn_blocking_with_timeout(
+                || -> i32 { panic!("worker panic (expected in test)") },
+                std::time::Duration::from_secs(3),
+                move |v| {
+                    g.set(v);
+                    d.set(true);
+                },
+            );
+            run_until(&ctx, &done);
+            assert!(done.get() && got.get().is_none());
+        })
+        .expect("set thread-default context");
     }
 }

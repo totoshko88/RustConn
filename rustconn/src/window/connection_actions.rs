@@ -70,6 +70,28 @@ impl MainWindow {
         });
         window.add_action(&new_conn_in_group_action);
 
+        // New subgroup: the new-group dialog with the selected group as parent
+        let new_subgroup_action = gio::SimpleAction::new("new-subgroup", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        new_subgroup_action.connect_activate(move |_, _| {
+            let Some(win) = window_weak.upgrade() else {
+                return;
+            };
+            // Not a group (or nothing selected): the dialog opens at root level.
+            let parent_id = sidebar_clone
+                .get_selected_item()
+                .and_then(|item| uuid::Uuid::parse_str(&item.id()).ok());
+            connection_dialogs::show_new_group_dialog_with_parent(
+                win.upcast_ref(),
+                state_clone.clone(),
+                sidebar_clone.clone(),
+                parent_id,
+            );
+        });
+        window.add_action(&new_subgroup_action);
+
         // Connect all connections in a group (including nested subgroups)
         let connect_all_action = gio::SimpleAction::new("connect-all-in-group", None);
         let state_clone = state.clone();

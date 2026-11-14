@@ -241,9 +241,6 @@ pub struct HistorySettings {
     /// Number of days to retain history
     #[serde(default = "default_retention_days")]
     pub retention_days: u32,
-    /// Whether to track quick connect sessions
-    #[serde(default = "default_true")]
-    pub track_quick_connect: bool,
 }
 
 const fn default_true() -> bool {
@@ -264,7 +261,6 @@ impl Default for HistorySettings {
             enabled: true,
             max_entries: default_max_entries(),
             retention_days: default_retention_days(),
-            track_quick_connect: true,
         }
     }
 }
@@ -272,6 +268,18 @@ impl Default for HistorySettings {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn history_settings_load_a_config_with_the_retired_key() {
+        // `track_quick_connect` was never read; configs that still hold it must load.
+        let s: HistorySettings = toml::from_str(
+            "enabled = false\nmax_entries = 5\nretention_days = 7\ntrack_quick_connect = false\n",
+        )
+        .unwrap();
+        assert!(!s.enabled);
+        assert_eq!(s.max_entries, 5);
+        assert_eq!(s.retention_days, 7);
+    }
 
     #[test]
     fn test_history_entry_creation() {

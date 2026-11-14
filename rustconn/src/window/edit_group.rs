@@ -218,6 +218,12 @@ pub fn show_edit_group_dialog(
         .model(&string_list)
         .selected(preselected_index)
         .build();
+    // Substring search finds `name` inside the indented `    └ name` label, so
+    // the expression can read the displayed string; no plain-name property.
+    // A ComboRow's expression also feeds its default factory, so a stripped
+    // name there would drop the indent. Baseline (no `adw-1-6`) builds keep
+    // prefix matching; see `enable_combo_row_search`.
+    crate::dialogs::widgets::enable_combo_row_search(&parent_row);
     details_group.add(&parent_row);
 
     identity_content.append(&details_group);

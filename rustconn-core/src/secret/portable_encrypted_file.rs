@@ -442,53 +442,6 @@ pub(crate) fn read_store(path: &Path) -> SecretResult<Option<PortableStoreFile>>
     Ok(Some(store))
 }
 
-/// Computes a unique sibling temp path for an atomic write.
-///
-/// The suffix is random rather than a fixed `.tmp` because this file lives in a
-/// directory the user shares with a sync client and possibly with other people.
-/// A predictable sibling name is a name an attacker can pre-create as a symlink,
-/// and it is also the name a second RustConn process would pick, so the two
-/// would clobber each other mid-write. Paired with `create_new` in
-/// [`create_temp_file`], a random name means the open fails rather than
-/// following or truncating anything that is already there.
-///
-/// # Errors
-/// Returns [`SecretError::StoreFailed`] if the RNG is unavailable.
-fn tmp_path(path: &Path) -> SecretResult<PathBuf> {
-    let mut suffix = [0u8; 8];
-    fill_random(&mut suffix).map_err(SecretError::StoreFailed)?;
-
-    let mut name = path.file_name().map_or_else(
-        || std::ffi::OsString::from(PORTABLE_STORE_FILE_NAME),
-        ToOwned::to_owned,
-    );
-    name.push(format!(".{}.tmp", data_encoding::HEXLOWER.encode(&suffix)));
-    Ok(path.with_file_name(name))
-}
-
-/// Creates the temp file with owner-only permissions already in place.
-///
-/// `create_new` refuses an existing path, so a pre-planted symlink or a leftover
-/// temp is an error rather than a redirected write. On unix the mode is set in
-/// the `open` call itself: doing it afterwards leaves a window in which the file
-/// is world-readable, and what lands in that window is the `kdf_salt` and
-/// `wrapped_key` — precisely the material an offline passphrase attack needs.
-///
-/// # Errors
-/// Returns [`SecretError::StoreFailed`] if the file cannot be created.
-fn create_temp_file(tmp: &Path) -> SecretResult<std::fs::File> {
-    let mut options = std::fs::OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(STORE_FILE_MODE);
-    }
-    options
-        .open(tmp)
-        .map_err(|e| SecretError::StoreFailed(format!("cannot create portable store temp: {e}")))
-}
-
 /// Atomically writes the store: temp file + `0600` + `fsync` + `rename`.
 ///
 /// The `fsync` matters more here than for the machine-bound store: this file is
@@ -501,8 +454,6 @@ fn create_temp_file(tmp: &Path) -> SecretResult<std::fs::File> {
 /// Returns [`SecretError::StoreFailed`] if any directory creation,
 /// serialization, write, sync, permission or rename step fails.
 pub(crate) fn write_store_atomic(path: &Path, store: &PortableStoreFile) -> SecretResult<()> {
-    use std::io::Write;
-
     let parent = path.parent().filter(|p| !p.as_os_str().is_empty());
     if let Some(dir) = parent {
         std::fs::create_dir_all(dir).map_err(|e| {
@@ -514,40 +465,12 @@ pub(crate) fn write_store_atomic(path: &Path, store: &PortableStoreFile) -> Secr
     let json = serde_json::to_vec_pretty(store)
         .map_err(|e| SecretError::StoreFailed(format!("cannot serialize portable store: {e}")))?;
 
-    let tmp = tmp_path(path)?;
-    // Every failure past this point leaves a temp file behind, so each arm
-    // removes it: the name is random, so a leftover would never be reused and
-    // would accumulate in a directory the user syncs.
-    let write_result = (|| -> SecretResult<()> {
-        let mut file = create_temp_file(&tmp)?;
-        file.write_all(&json)
-            .map_err(|e| SecretError::StoreFailed(format!("cannot write portable store: {e}")))?;
-        file.sync_all()
-            .map_err(|e| SecretError::StoreFailed(format!("cannot flush portable store: {e}")))?;
-        Ok(())
-    })();
-    if let Err(e) = write_result {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(e);
-    }
-    std::fs::rename(&tmp, path).map_err(|e| {
-        let _ = std::fs::remove_file(&tmp);
-        SecretError::StoreFailed(format!("cannot finalize portable store: {e}"))
-    })?;
-    // No chmod on the destination afterwards. `rename` gives the name to the
-    // temp file's inode, which was created 0600, so the mode is already right no
-    // matter what the previous file's was — and a `set_permissions` by *path*
-    // here would follow whatever the path resolves to a moment later, which in a
-    // sync folder is not guaranteed to still be this file.
-
-    // Persist the rename itself. A missing directory handle is not fatal — the
-    // data is already synced — so this is best effort.
-    if let Some(dir) = parent
-        && let Ok(handle) = std::fs::File::open(dir)
-    {
-        let _ = handle.sync_all();
-    }
-    Ok(())
+    // Owner-only from creation (no chmod afterwards: a `set_permissions` by path
+    // could follow whatever the path resolves to a moment later, which in a sync
+    // folder is not guaranteed to be this file), fsynced, parent directory
+    // synced, temp removed on failure.
+    crate::fs_atomic::atomic_write(path, &json, STORE_FILE_MODE)
+        .map_err(|e| SecretError::StoreFailed(format!("cannot write portable store: {e}")))
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1896,22 +1819,6 @@ mod tests {
         assert!(
             leftovers.is_empty(),
             "atomic write left temp files behind: {leftovers:?}"
-        );
-    }
-
-    #[test]
-    fn temp_paths_are_unique_per_call() {
-        let path = PathBuf::from("/tmp/portable.enc");
-        let first = tmp_path(&path).expect("first");
-        let second = tmp_path(&path).expect("second");
-        assert_ne!(
-            first, second,
-            "a predictable temp name is a symlink target and a collision between processes"
-        );
-        assert_eq!(
-            first.parent(),
-            path.parent(),
-            "temp stays in the same directory"
         );
     }
 

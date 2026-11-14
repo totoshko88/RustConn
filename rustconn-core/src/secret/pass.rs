@@ -151,6 +151,9 @@ impl PassBackend {
     /// Sets up the Command with optional PASSWORD_STORE_DIR
     fn setup_command(&self) -> Command {
         let mut cmd = Command::new(&self.program);
+        // The caller bounds each call with a timeout and drops the future; without
+        // this, `pass`/`gpg` would stay behind waiting on pinentry.
+        cmd.kill_on_drop(true);
         cmd.env("PATH", crate::cli_download::get_extended_path());
         if let Some(ref dir) = self.store_dir {
             cmd.env("PASSWORD_STORE_DIR", dir);
@@ -449,18 +452,8 @@ impl SecretBackend for PassBackend {
     }
 
     async fn is_available(&self) -> bool {
-        // Check if pass is available
-        let mut cmd = Command::new("pass");
-        cmd.env("PATH", crate::cli_download::get_extended_path());
-        if let Some(ref dir) = self.store_dir {
-            cmd.env("PASSWORD_STORE_DIR", dir);
-        }
-
-        cmd.arg("--version")
-            .output()
-            .await
-            .map(|o| o.status.success())
-            .unwrap_or(false)
+        // In-process PATH lookup: no process spawn per secret operation.
+        crate::which::is_available("pass")
     }
 
     fn backend_id(&self) -> &'static str {

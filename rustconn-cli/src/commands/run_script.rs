@@ -1,18 +1,18 @@
 //! Run a local script: bash on SSH connections, PowerShell on WinRM ones.
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
-use rustconn_core::config::{AppSettings, NetworkSettings};
+use rustconn_core::config::{AppSettings, NetworkSettings, SecretSettings};
 use rustconn_core::connection::gateway_failover::{gateway_probes_by, probe_gateways, use_gateway};
 use rustconn_core::connection::jump_chain::{JumpChain, resolve_jump_chain};
 use rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path;
 use rustconn_core::jump_route::{
-    JumpRoute, JumpRouteRequest, TunnelHopsRequest, hops_are_plain, jump_route, plain_path,
-    tunnel_hop_args,
+    JumpHop, JumpRoute, JumpRouteRequest, TunnelHopsRequest, hops_are_plain, jump_route,
+    plain_path, tunnel_hop_args,
 };
 use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource, ProtocolConfig};
 use rustconn_core::remote_script::{
@@ -326,7 +326,10 @@ struct Passwords<'a> {
     groups: &'a [ConnectionGroup],
     /// Built on first use: making it reaches for the backends and warns about
     /// missing ones, which a run on keys alone has no reason to hear about.
-    backend: Option<(tokio::runtime::Runtime, CredentialResolver)>,
+    runtime: Option<tokio::runtime::Runtime>,
+    /// One resolver per KeePass database (issue #411): `None` is the global
+    /// one from Settings → Secrets, `Some` a connection's or group's own file.
+    resolvers: HashMap<Option<PathBuf>, CredentialResolver>,
     known: HashMap<Uuid, Option<SecretString>>,
     /// `--same-password`: the first answer is used for every host set to ask.
     same_password: bool,
@@ -340,7 +343,8 @@ impl<'a> Passwords<'a> {
         Self {
             settings,
             groups,
-            backend: None,
+            runtime: None,
+            resolvers: HashMap::new(),
             known: HashMap::new(),
             same_password,
             shared_asked: false,
@@ -421,17 +425,25 @@ impl<'a> Passwords<'a> {
     /// A password that cannot be read is reported and left out, so that host
     /// tries its keys and fails on its own instead of stopping the whole run.
     fn saved(&mut self, connection: &Connection) -> Option<SecretString> {
-        if self.backend.is_none() {
+        if self.runtime.is_none() {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
                 .inspect_err(|error| eprintln!("Cannot read saved passwords: {error}"))
                 .ok()?;
-            let manager = Arc::new(SecretManager::build_from_settings(&self.settings.secrets));
-            let resolver = CredentialResolver::new(manager, self.settings.secrets.clone());
-            self.backend = Some((runtime, resolver));
+            self.runtime = Some(runtime);
         }
-        let (runtime, resolver) = self.backend.as_ref()?;
+        let database = database_override(connection, self.groups);
+        let settings = self.settings;
+        let resolver = self
+            .resolvers
+            .entry(database)
+            .or_insert_with_key(|database| {
+                let secrets = secrets_for_database(&settings.secrets, database.as_deref());
+                let manager = Arc::new(SecretManager::build_from_settings(&secrets));
+                CredentialResolver::new(manager, secrets)
+            });
+        let runtime = self.runtime.as_ref()?;
         let lookup = resolver.resolve_with_hierarchy(connection, self.groups);
         match within(runtime, CREDENTIAL_LOOKUP_TIMEOUT, lookup) {
             Some(Ok(credentials)) => credentials
@@ -457,6 +469,32 @@ impl<'a> Passwords<'a> {
 
 /// How long one saved-password lookup may take, as in the GUI.
 const CREDENTIAL_LOOKUP_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// The KeePass database a connection's saved password is read from, when it is
+/// not the global one (issue #411).
+///
+/// A Vault password lives in the connection's own `.kdbx`, else its nearest
+/// group's, the order the GUI reads and saves in. An inherited password is the
+/// group's own credential, so it lives in the group's database even when the
+/// connection names a file of its own. `None` means the global database.
+fn database_override(connection: &Connection, groups: &[ConnectionGroup]) -> Option<PathBuf> {
+    match connection.password_source {
+        PasswordSource::Inherit => {
+            rustconn_core::secret::resolve_group_kdbx_path_override(connection.group_id, groups)
+        }
+        _ => rustconn_core::secret::resolve_kdbx_path_override(connection, groups),
+    }
+}
+
+/// The secret settings with `database` as the KeePass file, as the GUI opens
+/// a per-connection database: same password, key file and backend, other file.
+fn secrets_for_database(secrets: &SecretSettings, database: Option<&Path>) -> SecretSettings {
+    let mut secrets = secrets.clone();
+    if let Some(database) = database {
+        secrets.kdbx_path = Some(database.to_path_buf());
+    }
+    secrets
+}
 
 /// Runs `lookup` on `runtime` for at most `limit`; `None` when it took longer.
 fn within<T>(
@@ -741,9 +779,18 @@ fn plain_jump_route(
         .iter()
         .position(|arg| arg == "-i")
         .and_then(|position| session_args.get(position + 1));
+    // `chain.hops` has the length; a short `hop_passwords` leaves the rest without one.
+    let hops: Vec<JumpHop> = chain
+        .hops
+        .iter()
+        .zip(hop_passwords.iter().cloned().chain(std::iter::repeat(None)))
+        .map(|(spec, password)| JumpHop {
+            spec: spec.clone(),
+            password,
+        })
+        .collect();
     jump_route(&JumpRouteRequest {
-        hops: &chain.hops,
-        hop_passwords,
+        hops: &hops,
         first_hop_identity: first_hop_identity.as_deref().and_then(plain_path),
         target_identity: target_identity.map(String::as_str).and_then(plain_path),
         deeper_hop_identity: None,
@@ -874,6 +921,79 @@ mod tests {
 
     fn secret() -> Option<SecretString> {
         Some(SecretString::from("hunter2".to_string()))
+    }
+
+    mod database {
+        use std::path::{Path, PathBuf};
+
+        use rustconn_core::config::SecretSettings;
+        use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource};
+
+        use super::super::{database_override, secrets_for_database};
+
+        /// `Prod` with its own database, `Web` under it, and a connection in `Web`.
+        fn fixture() -> (Vec<ConnectionGroup>, Connection) {
+            let mut prod = ConnectionGroup::new("Prod".to_string());
+            prod.kdbx_path_override = Some(PathBuf::from("/vaults/prod.kdbx"));
+            let web = ConnectionGroup::with_parent("Web".to_string(), prod.id);
+            let mut conn = Connection::new_ssh("web1".to_string(), "web1".to_string(), 22);
+            conn.group_id = Some(web.id);
+            conn.password_source = PasswordSource::Vault;
+            (vec![prod, web], conn)
+        }
+
+        #[test]
+        fn a_vault_password_reads_the_inherited_group_database() {
+            let (groups, conn) = fixture();
+            assert_eq!(
+                database_override(&conn, &groups),
+                Some(PathBuf::from("/vaults/prod.kdbx"))
+            );
+        }
+
+        #[test]
+        fn the_connections_own_database_wins_for_vault() {
+            let (groups, mut conn) = fixture();
+            conn.kdbx_path_override = Some(PathBuf::from("/vaults/web1.kdbx"));
+            assert_eq!(
+                database_override(&conn, &groups),
+                Some(PathBuf::from("/vaults/web1.kdbx"))
+            );
+        }
+
+        #[test]
+        fn an_inherited_password_reads_the_groups_database() {
+            let (groups, mut conn) = fixture();
+            conn.kdbx_path_override = Some(PathBuf::from("/vaults/web1.kdbx"));
+            conn.password_source = PasswordSource::Inherit;
+            assert_eq!(
+                database_override(&conn, &groups),
+                Some(PathBuf::from("/vaults/prod.kdbx"))
+            );
+        }
+
+        #[test]
+        fn nothing_set_means_the_global_database() {
+            let conn = Connection::new_ssh("solo".to_string(), "solo".to_string(), 22);
+            assert_eq!(database_override(&conn, &[]), None);
+        }
+
+        #[test]
+        fn only_the_file_changes() {
+            let global = SecretSettings {
+                kdbx_enabled: true,
+                kdbx_path: Some(PathBuf::from("/vaults/global.kdbx")),
+                ..SecretSettings::default()
+            };
+            let own = secrets_for_database(&global, Some(Path::new("/vaults/prod.kdbx")));
+            assert_eq!(own.kdbx_path, Some(PathBuf::from("/vaults/prod.kdbx")));
+            assert!(own.kdbx_enabled);
+            assert_eq!(own.preferred_backend, global.preferred_backend);
+            assert_eq!(
+                secrets_for_database(&global, None).kdbx_path,
+                global.kdbx_path
+            );
+        }
     }
 
     #[test]

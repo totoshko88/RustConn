@@ -2,6 +2,7 @@
 //!
 //! Client detection is performed asynchronously to avoid blocking the UI thread.
 
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -150,59 +151,114 @@ pub fn create_clients_page() -> adw::PreferencesPage {
         page.add(&codec_group);
     }
 
-    // Schedule async detection
-    let core_group_clone = core_group.clone();
-    let zerotrust_group_clone = zerotrust_group.clone();
-    let k8s_group_clone = k8s_group.clone();
-    let ssh_row_clone = ssh_row.clone();
-    let rdp_row_clone = rdp_row.clone();
-    let vnc_row_clone = vnc_row.clone();
-    let spice_row_clone = spice_row.clone();
-    let waypipe_row_clone = waypipe_row.clone();
-    let kubectl_row_clone = kubectl_row.clone();
-    let zerotrust_rows = Rc::new(zerotrust_rows);
-    let zerotrust_rows_clone = zerotrust_rows.clone();
+    // Every detectable row with its group, in detection order: core clients,
+    // then Zero Trust, then kubectl. Refresh swaps the rows in place.
+    let mut slots: Vec<(adw::PreferencesGroup, adw::ActionRow)> = Vec::new();
+    for row in [&ssh_row, &rdp_row, &vnc_row, &spice_row, &waypipe_row] {
+        slots.push((core_group.clone(), row.clone()));
+    }
+    for row in &zerotrust_rows {
+        slots.push((zerotrust_group.clone(), row.clone()));
+    }
+    slots.push((k8s_group.clone(), kubectl_row.clone()));
+    let slots = Rc::new(RefCell::new(slots));
 
+    // Refresh button: re-runs detection past the 5-minute cache, so a client
+    // installed while the dialog is open shows up without reopening it.
+    let refresh_label = i18n("Refresh client detection");
+    let refresh_button = Button::builder()
+        .icon_name("view-refresh-symbolic")
+        .tooltip_text(refresh_label.as_str())
+        .valign(Align::Center)
+        .css_classes(["flat"])
+        .build();
+    refresh_button.update_property(&[gtk4::accessible::Property::Label(&refresh_label)]);
+    core_group.set_header_suffix(Some(&refresh_button));
+    {
+        let slots = slots.clone();
+        refresh_button.connect_clicked(move |button| {
+            button.set_sensitive(false);
+            reset_to_loading(&slots);
+            start_detection(&slots, true, button.clone());
+        });
+    }
+
+    start_detection(&slots, false, refresh_button);
+
+    page
+}
+
+/// Swaps every tracked row for a "Checking…" placeholder.
+fn reset_to_loading(slots: &Rc<RefCell<Vec<(adw::PreferencesGroup, adw::ActionRow)>>>) {
+    // Rows of one group are removed first, then re-added in order: adding
+    // appends, so the order only holds when a whole group is redone together.
+    let mut slots = slots.borrow_mut();
+    for (group, row) in slots.iter() {
+        group.remove(row);
+    }
+    for (group, row) in slots.iter_mut() {
+        let loading = create_loading_row(&row.title());
+        group.add(&loading);
+        *row = loading;
+    }
+}
+
+/// Runs detection on an OS thread and swaps the results into the rows.
+///
+/// `refresh` skips the 5-minute cache of the core clients. `button` is
+/// re-enabled when the results have landed.
+fn start_detection(
+    slots: &Rc<RefCell<Vec<(adw::PreferencesGroup, adw::ActionRow)>>>,
+    refresh: bool,
+    button: Button,
+) {
     // Run detection on a real OS thread so the GTK main loop stays idle
     // and can render frames while detection runs in the background.
     // GTK widgets are not Send, so we use a channel to pass results back.
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        let result = detect_all_clients();
+        let result = detect_all_clients(refresh);
         let _ = tx.send(result);
     });
 
+    let slots = slots.clone();
     // Poll the channel from the main thread; GTK widgets stay here.
     // 50 ms timeout instead of `idle_add_local`: an idle source never sleeps, so
     // it would spin the main loop at full speed until detection finishes.
     glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
         match rx.try_recv() {
             Ok((core_clients, zerotrust_clients, k8s_clients)) => {
+                let mut slots = slots.borrow_mut();
+                // Core clients are slots 0..5, Zero Trust follows, kubectl is last.
+                let zerotrust_start = 5;
+                let k8s_index = slots.len() - 1;
                 if core_clients.len() >= 5 {
-                    update_client_row(&core_group_clone, &ssh_row_clone, &core_clients[0]);
-                    update_client_row(&core_group_clone, &rdp_row_clone, &core_clients[1]);
-                    update_client_row(&core_group_clone, &vnc_row_clone, &core_clients[2]);
-                    update_client_row(&core_group_clone, &spice_row_clone, &core_clients[3]);
-                    update_client_row(&core_group_clone, &waypipe_row_clone, &core_clients[4]);
-                }
-
-                for (i, client) in zerotrust_clients.iter().enumerate() {
-                    if i < zerotrust_rows_clone.len() {
-                        update_client_row(&zerotrust_group_clone, &zerotrust_rows_clone[i], client);
+                    for (i, client) in core_clients.iter().take(5).enumerate() {
+                        replace_slot(&mut slots[i], client);
                     }
                 }
-
-                if let Some(kubectl_info) = k8s_clients.first() {
-                    update_client_row(&k8s_group_clone, &kubectl_row_clone, kubectl_info);
+                for (i, client) in zerotrust_clients.iter().enumerate() {
+                    if zerotrust_start + i < k8s_index {
+                        replace_slot(&mut slots[zerotrust_start + i], client);
+                    }
                 }
+                if let Some(kubectl_info) = k8s_clients.first() {
+                    replace_slot(&mut slots[k8s_index], kubectl_info);
+                }
+                button.set_sensitive(true);
                 glib::ControlFlow::Break
             }
             Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                button.set_sensitive(true);
+                glib::ControlFlow::Break
+            }
         }
     });
+}
 
-    page
+fn replace_slot(slot: &mut (adw::PreferencesGroup, adw::ActionRow), client: &ClientInfo) {
+    slot.1 = update_client_row(&slot.0, &slot.1, client);
 }
 
 /// Creates a loading placeholder row with spinner
@@ -436,7 +492,11 @@ fn start_h264_download(download_button: &Button, spinner: &Spinner, status_label
 }
 
 /// Updates a row with detected client info
-fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client: &ClientInfo) {
+fn update_client_row(
+    group: &adw::PreferencesGroup,
+    row: &adw::ActionRow,
+    client: &ClientInfo,
+) -> adw::ActionRow {
     // Remove spinner prefix
     if let Some(prefix) = row.first_child()
         && let Some(box_widget) = prefix.downcast_ref::<gtk4::Box>()
@@ -540,6 +600,7 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
     } else {
         group.add(&new_row);
     }
+    new_row
 }
 
 /// Gets the position of a row in a group
@@ -574,10 +635,10 @@ fn insert_row_at_position(group: &adw::PreferencesGroup, row: &adw::ActionRow, _
 }
 
 /// Detects all clients in a background thread with parallelized CLI checks
-fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>, Vec<ClientInfo>) {
+fn detect_all_clients(refresh: bool) -> (Vec<ClientInfo>, Vec<ClientInfo>, Vec<ClientInfo>) {
     // Run core and zero trust detection in parallel
     std::thread::scope(|s| {
-        let core_handle = s.spawn(detect_core_clients);
+        let core_handle = s.spawn(move || detect_core_clients(refresh));
         let zt_handle = s.spawn(detect_zerotrust_clients);
         let k8s_handle = s.spawn(detect_k8s_clients);
 
@@ -589,8 +650,12 @@ fn detect_all_clients() -> (Vec<ClientInfo>, Vec<ClientInfo>, Vec<ClientInfo>) {
 }
 
 /// Detects core protocol clients (SSH, RDP, VNC, SPICE, Waypipe)
-fn detect_core_clients() -> Vec<ClientInfo> {
-    let detection_result = ClientDetectionResult::detect_all();
+fn detect_core_clients(refresh: bool) -> Vec<ClientInfo> {
+    let detection_result = if refresh {
+        ClientDetectionResult::refresh_cached()
+    } else {
+        ClientDetectionResult::detect_cached()
+    };
 
     let mut core_clients = Vec::with_capacity(5);
 
@@ -983,25 +1048,16 @@ fn get_version_with_env(
         }
     }
 
-    let mut child = cmd.spawn().ok()?;
-
-    let start = std::time::Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(_status)) => break,
-            Ok(None) => {
-                if start.elapsed() >= VERSION_CHECK_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Some("installed (timeout)".to_string());
-                }
-                std::thread::sleep(std::time::Duration::from_millis(50));
+    let child = cmd.spawn().ok()?;
+    let output =
+        match rustconn_core::proc::wait_bounded(child, VERSION_CHECK_TIMEOUT, "client --version")
+            .ok()?
+        {
+            rustconn_core::proc::Waited::Exited(output) => output,
+            rustconn_core::proc::Waited::TimedOut => {
+                return Some("installed (timeout)".to_string());
             }
-            Err(_) => return None,
-        }
-    }
-
-    let output = child.wait_with_output().ok()?;
+        };
 
     // 126/127 is the shell saying the command could not be run at all — a
     // wrapper script whose target is gone (`/usr/local/bin/tailscale` left
@@ -1045,7 +1101,7 @@ const fn is_unrunnable_exit(code: Option<i32>) -> bool {
 /// outlive the program it launches. Used to mark such a client "Not found"
 /// instead of installed with an error message for a version.
 fn is_runnable(command_path: &std::path::Path, version_arg: &str) -> bool {
-    let Ok(mut child) = std::process::Command::new(command_path)
+    let Ok(child) = std::process::Command::new(command_path)
         .arg(version_arg)
         .env("PATH", rustconn_core::cli_download::get_extended_path())
         .stdout(std::process::Stdio::null())
@@ -1054,19 +1110,13 @@ fn is_runnable(command_path: &std::path::Path, version_arg: &str) -> bool {
     else {
         return false;
     };
-    let start = std::time::Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) => return !is_unrunnable_exit(status.code()),
-            // Still running means it started; a slow CLI is not a broken one.
-            Ok(None) if start.elapsed() >= VERSION_CHECK_TIMEOUT => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return true;
-            }
-            Ok(None) => std::thread::sleep(std::time::Duration::from_millis(50)),
-            Err(_) => return false,
+    match rustconn_core::proc::wait_bounded(child, VERSION_CHECK_TIMEOUT, "client runnable check") {
+        Ok(rustconn_core::proc::Waited::Exited(output)) => {
+            !is_unrunnable_exit(output.status.code())
         }
+        // Still running means it started; a slow CLI is not a broken one.
+        Ok(rustconn_core::proc::Waited::TimedOut) => true,
+        Err(_) => false,
     }
 }
 

@@ -682,6 +682,15 @@ impl SplitViewBridge {
         None
     }
 
+    /// Returns true when `pane_uuid` is a known pane with no session in it.
+    #[must_use]
+    pub fn is_pane_empty(&self, pane_uuid: Uuid) -> bool {
+        let Some(&panel_id) = self.uuid_panel_map.borrow().get(&pane_uuid) else {
+            return false;
+        };
+        self.adapter.borrow().get_panel_session(panel_id).is_none()
+    }
+
     /// Returns the focused pane UUID
     #[must_use]
     pub fn focused_pane_id(&self) -> Option<Uuid> {

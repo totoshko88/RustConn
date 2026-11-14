@@ -69,10 +69,10 @@ impl LibvirtDaemonImporter {
         &self.uri
     }
 
-    /// Checks whether `virsh` is available on `$PATH`.
+    /// Checks whether `virsh` is available on `$PATH` (in-process lookup, no spawn).
     #[must_use]
     pub fn is_virsh_available() -> bool {
-        Command::new("virsh").arg("--version").output().is_ok()
+        crate::which::is_available("virsh")
     }
 
     /// Lists all domain names (defined + running) via `virsh list`.
@@ -202,6 +202,14 @@ impl ImportSource for LibvirtDaemonImporter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_virsh_availability_matches_path_lookup() {
+        assert_eq!(
+            LibvirtDaemonImporter::is_virsh_available(),
+            crate::which::is_available("virsh")
+        );
+    }
 
     #[test]
     fn test_default_uri() {

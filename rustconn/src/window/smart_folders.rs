@@ -3,8 +3,8 @@
 //! Registers actions for creating, editing, and deleting smart folders
 //! from the sidebar UI.
 
+use gtk4::gio;
 use gtk4::prelude::*;
-use gtk4::{gio, glib};
 use libadwaita as adw;
 
 use super::MainWindow;
@@ -211,19 +211,5 @@ impl MainWindow {
             }
         });
         window.add_action(&toggle_action);
-
-        // --- Select item by ID (used by smart folder context menu) ---
-        let select_by_id_action =
-            gio::SimpleAction::new("select-item-by-id", Some(glib::VariantTy::STRING));
-        let sidebar_clone = sidebar.clone();
-        select_by_id_action.connect_activate(move |_, param| {
-            if let Some(param) = param
-                && let Some(id_str) = param.get::<String>()
-                && let Ok(item_id) = uuid::Uuid::parse_str(&id_str)
-            {
-                sidebar_clone.select_item_by_id(item_id);
-            }
-        });
-        window.add_action(&select_by_id_action);
     }
 }
