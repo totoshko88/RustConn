@@ -4259,12 +4259,16 @@ impl MainWindow {
                 }
             }
             rustconn_core::search::command_palette::CommandPaletteAction::GtkAction(name) => {
-                if let Some(win) = window_weak.upgrade() {
-                    gio::ActionGroup::activate_action(
-                        win.upcast_ref::<gio::ActionGroup>(),
-                        &name,
-                        None,
-                    );
+                // The palette names actions with their prefix (`win.unsplit`,
+                // `app.shortcuts`). Only the widget lookup resolves a prefix;
+                // the window's own `gio::ActionGroup` knows bare names, so a
+                // prefixed name sent there found no action and did nothing. A
+                // disabled action (Remove Split on a tab without a split) is
+                // found and ignored.
+                if let Some(win) = window_weak.upgrade()
+                    && let Err(err) = gtk4::prelude::WidgetExt::activate_action(&win, &name, None)
+                {
+                    tracing::warn!(action = %name, %err, "command palette: no such action");
                 }
             }
             other => {

@@ -268,10 +268,12 @@ impl PanelPlacement {
 
 /// Enables `win.unsplit` only while the active tab holds a split layout.
 ///
-/// The header bar's Remove Split button follows the action: it is shown while
-/// the action is enabled, so it appears with the first split and goes away with
-/// the last pane. Called whenever a layout changes and whenever another tab is
-/// selected.
+/// Everything that reaches `win.unsplit` follows this state: `Ctrl+Shift+J`,
+/// the "Remove Split" entries of the tab menu (`tab.unsplit` selects its page,
+/// then activates this action) and the pane menu (bound to it directly), the
+/// command palette and scripts. A disabled
+/// action ignores activation, so none of them can act on a tab without a split.
+/// Called whenever a layout changes and whenever another tab is selected.
 fn refresh_unsplit_action(
     window: &adw::ApplicationWindow,
     notebook: &SharedNotebook,
@@ -537,8 +539,8 @@ impl MainWindow {
         }
 
         // Helper closure that refreshes the broadcast toggle button state and
-        // whether `win.unsplit` (the header bar's Remove Split button) is
-        // enabled. Cloned into every callback that may change a split's
+        // whether `win.unsplit` (Ctrl+Shift+J, the menus' and the command
+        // palette's Remove Split) is enabled. Cloned into every callback that may change a split's
         // session count (split, unsplit, close pane, move to panel) so both
         // reflect the active tab's split layout. Workspace restore and "Split
         // with Other Tabs…" split through `win.split-*`, so they land here too;
@@ -1217,8 +1219,8 @@ impl MainWindow {
             tracing::info!(owner = %owner, "split layout removed, sessions returned to tabs");
             refresh_broadcast_unsplit();
         });
-        // Disabled until a tab is split: the header bar button bound to this
-        // action is shown only while it is enabled.
+        // Disabled until a tab is split, so Ctrl+Shift+J and the command
+        // palette do nothing on a tab without one.
         unsplit_action.set_enabled(false);
         window.add_action(&unsplit_action);
         {
