@@ -9540,7 +9540,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:478
 msgid "Hide hover controls in split panes"
-msgstr "Ховати елементи керування при наведенні в панелях поділу"
+msgstr "Ховай елементи керування при наведенні в розділених панелях"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:480
 msgid ""
@@ -12526,7 +12526,7 @@ msgstr "Працює в зовнішньому вікні"
 
 #: rustconn/src/sidebar/view.rs:324 rustconn/src/sidebar/view.rs:326
 msgid "Part of a split view"
-msgstr "Частина розділеного перегляду"
+msgstr "Частина розділеного вигляду"
 
 #: rustconn/src/sidebar/view.rs:512
 msgid "Trash, {} deleted items"
