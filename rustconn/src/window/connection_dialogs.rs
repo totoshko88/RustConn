@@ -471,6 +471,7 @@ pub fn show_new_group_dialog_with_parent(
         .selected(preselected_index)
         .valign(gtk4::Align::Center)
         .build();
+    crate::dialogs::widgets::enable_string_search(&parent_dropdown);
 
     let parent_row = adw::ActionRow::builder()
         .title(i18n("Parent"))

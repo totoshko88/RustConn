@@ -1250,6 +1250,7 @@ pub fn show_move_selected_to_group_dialog(
         .selected(0)
         .hexpand(true)
         .build();
+    crate::dialogs::widgets::enable_string_search(&group_dropdown);
 
     content.append(&group_dropdown);
 

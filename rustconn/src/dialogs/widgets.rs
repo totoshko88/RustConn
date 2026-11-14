@@ -708,17 +708,40 @@ impl SpinRowBuilder {
 /// property expression reading the `string` of each `StringObject` and turns
 /// search on, so typing filters a long connection list to the matching entries.
 ///
+/// Matching is case-insensitive **substring**, not GTK's default prefix: group
+/// pickers list full paths (`Import/Dev/AimSmarter/RubyStudio`), and a prefix
+/// match never finds `RubyStudio` there.
+///
 /// Call it on any dropdown whose model is a [`StringList`] and whose list can
 /// grow long — the jump-host / tunnel pickers, where a user may have hundreds of
-/// connections.
+/// connections, and every group picker.
 pub fn enable_string_search(dropdown: &DropDown) {
-    let expression = gtk4::PropertyExpression::new(
+    dropdown.set_expression(Some(string_object_expression()));
+    dropdown.set_enable_search(true);
+    // `search-match-mode` is GTK 4.12; the crate's floor is `v4_14`.
+    dropdown.set_search_match_mode(gtk4::StringFilterMatchMode::Substring);
+}
+/// [`enable_string_search`] for a `StringList`-backed [`adw::ComboRow`].
+///
+/// A ComboRow needs the same expression before `set_enable_search` filters
+/// anything. Substring matching needs `ComboRow::set_search_match_mode`,
+/// which is libadwaita 1.6, so it is behind `adw-1-6`.
+// ponytail: a baseline (libadwaita 1.5) build keeps the ComboRow's prefix
+// match, so an indented `└ name` label is not found by typing `name`; drop the
+// cfg when `adw-1-6` is retired.
+pub fn enable_combo_row_search(row: &adw::ComboRow) {
+    row.set_expression(Some(string_object_expression()));
+    row.set_enable_search(true);
+    #[cfg(feature = "adw-1-6")]
+    row.set_search_match_mode(gtk4::StringFilterMatchMode::Substring);
+}
+/// Expression reading the `string` property of each `StringObject`.
+fn string_object_expression() -> gtk4::PropertyExpression {
+    gtk4::PropertyExpression::new(
         gtk4::StringObject::static_type(),
         None::<gtk4::Expression>,
         "string",
-    );
-    dropdown.set_expression(Some(expression));
-    dropdown.set_enable_search(true);
+    )
 }
 
 /// Builder for creating `adw::ActionRow` with a `DropDown` suffix.

@@ -427,6 +427,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         .model(&group_list)
         .valign(gtk4::Align::Center)
         .build();
+    crate::dialogs::widgets::enable_string_search(&group_dropdown);
     let group_action_row = adw::ActionRow::builder().title(i18n("Group")).build();
     group_action_row.add_suffix(&group_dropdown);
     org_group.add(&group_action_row);

@@ -281,6 +281,7 @@ impl ExportDialog {
 
         let group_filter_list = StringList::new(&[&i18n("All connections")]);
         let group_filter_dropdown = DropDown::new(Some(group_filter_list), gtk4::Expression::NONE);
+        crate::dialogs::widgets::enable_string_search(&group_filter_dropdown);
         group_filter_dropdown.set_selected(0);
         group_filter_dropdown.set_valign(gtk4::Align::Center);
 
