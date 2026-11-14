@@ -15942,3 +15942,7 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connexion;terminal;distant;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Le cluster a été enregistré avec succès."
+
+#: rustconn/src/window/ui.rs:123
+msgid "Remove Split (Ctrl+Shift+J)"
+msgstr "Retirer le fractionnement (Ctrl+Maj+J)"

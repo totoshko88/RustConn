@@ -15665,3 +15665,7 @@ msgstr ""
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Đã lưu cụm thành công."
+
+#: rustconn/src/window/ui.rs:123
+msgid "Remove Split (Ctrl+Shift+J)"
+msgstr "Bỏ chia (Ctrl+Shift+J)"

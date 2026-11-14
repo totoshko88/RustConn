@@ -15720,3 +15720,7 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;з'єднок;термінал;�
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Кластер успішно збережено."
+
+#: rustconn/src/window/ui.rs:123
+msgid "Remove Split (Ctrl+Shift+J)"
+msgstr "Вилучи розділений вигляд (Ctrl+Shift+J)"
