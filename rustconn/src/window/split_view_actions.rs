@@ -496,10 +496,14 @@ impl MainWindow {
             }
         }
 
-        // Helper closure that refreshes the broadcast toggle button state.
-        // Cloned into every callback that may change a split's session count
-        // (split, unsplit, close pane, move to panel) so the toggle accurately
-        // reflects the active tab's split layout.
+        // Helper closure that refreshes the broadcast toggle button state and
+        // whether `win.unsplit` (the header bar's Remove Split button) is
+        // enabled. Cloned into every callback that may change a split's
+        // session count (split, unsplit, close pane, move to panel) so both
+        // reflect the active tab's split layout. Workspace restore and "Split
+        // with Other Tabs…" split through `win.split-*`, so they land here too;
+        // closing or moving a tab changes the selected page, which the
+        // `selected_page_notify` handler next to `win.unsplit` covers.
         //
         // It also drives a one-shot discoverability toast: the very first
         // time a split has ≥2 active panels in this app session we tell the

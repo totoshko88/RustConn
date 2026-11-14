@@ -129,6 +129,7 @@ pub fn create_header_bar() -> (
         .build();
     header_bar.pack_end(&unsplit_button);
 
+    // Shell button — prominent, icon + label, accent color, leftmost in right group
     let shell_button = Button::new();
     let shell_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
     let shell_icon = gtk4::Image::from_icon_name("utilities-terminal-symbolic");
@@ -235,6 +236,7 @@ pub fn create_header_bar() -> (
         &settings_button,
         &split_horizontal_button,
         &split_vertical_button,
+        &unsplit_button,
     ] {
         button.add_css_class("header-icon-button");
     }

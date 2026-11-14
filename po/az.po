@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 23:55+0200\n"
+"POT-Creation-Date: 2026-11-14 15:45+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -55,13 +55,13 @@ msgstr "OK"
 #: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:355
 #: rustconn/src/window/clusters.rs:410
-#: rustconn/src/window/connection_dialogs.rs:981
-#: rustconn/src/window/edit_group.rs:2040
-#: rustconn/src/window/edit_group.rs:2089
+#: rustconn/src/window/connection_dialogs.rs:982
+#: rustconn/src/window/edit_group.rs:2046
+#: rustconn/src/window/edit_group.rs:2095
 #: rustconn/src/window/group_broadcast.rs:379
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:453
-#: rustconn/src/window/mod.rs:3660 rustconn/src/window/mod.rs:3724
-#: rustconn/src/window/mod.rs:4736 rustconn/src/window/mod.rs:5784
+#: rustconn/src/window/mod.rs:3679 rustconn/src/window/mod.rs:3743
+#: rustconn/src/window/mod.rs:4755 rustconn/src/window/mod.rs:5803
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
 #: rustconn/src/window/operations.rs:972 rustconn/src/window/operations.rs:1151
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -88,7 +88,7 @@ msgstr "Saxlama"
 #: rustconn/src/dialogs/smart_folder.rs:84 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2786
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1032
+#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1055
 #: rustconn/src/sidebar/saved_searches.rs:221
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
 #: rustconn/src/window/workspaces.rs:555
@@ -226,21 +226,21 @@ msgstr "Sessiyanın bağlantısı kəsildi"
 msgid "Move to Main Window"
 msgstr "Əsas pəncərəyə köçür"
 
-#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:326
+#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:340
 msgid "Settings…"
 msgstr "Tənzimləmələr…"
 
-#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:344
+#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:358
 msgid "Keyboard Shortcuts…"
 msgstr "Klaviatura qısayolları…"
 
 #: rustconn/src/detached_window.rs:477 rustconn/src/dialogs/shortcuts.rs:183
-#: rustconn/src/window/ui.rs:345
+#: rustconn/src/window/ui.rs:359
 msgid "Help"
 msgstr "Kömək"
 
 #: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:331
-#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:346
+#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
 msgid "About RustConn"
 msgstr "RustConn haqqında"
 
@@ -263,10 +263,10 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "‘{}’ bağlanmazdan əvvəl aşağıdakılar lazımdır."
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1037
+#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1060
 #: rustconn/src/sidebar_ui.rs:419 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5785
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5804
 msgid "Connect"
 msgstr "Qoşul"
 
@@ -278,7 +278,7 @@ msgstr "Makro məlumatlarını daxil edin"
 msgid "The command macro ‘{}’ needs the following before it can be sent."
 msgstr "‘{}’ əmr makrosu göndərilməzdən əvvəl aşağıdakılar lazımdır."
 
-#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1038
+#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1061
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/dialogs/wol.rs:46
 #: rustconn/src/window/sessions.rs:337
 msgid "Send"
@@ -322,7 +322,7 @@ msgstr "Yeni klaster"
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:1033
+#: rustconn/src/dialogs/widgets.rs:1056
 #: rustconn/src/window/connection_dialogs.rs:386
 #: rustconn/src/window/connection_dialogs.rs:387
 #: rustconn/src/window/operations.rs:592
@@ -337,7 +337,7 @@ msgstr "Klaster məlumatları"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:916
 #: rustconn/src/dialogs/connection/general_tab.rs:103
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:104
-#: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/settings/mod.rs:2015
+#: rustconn/src/dialogs/export.rs:384 rustconn/src/dialogs/settings/mod.rs:2015
 #: rustconn/src/dialogs/smart_folder.rs:122 rustconn/src/dialogs/snippet.rs:193
 #: rustconn/src/dialogs/template.rs:512
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:78
@@ -776,7 +776,7 @@ msgstr "Vurğulama qaydası yoxdur"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:638
 #: rustconn/src/dialogs/connection/automation_tab.rs:174
 #: rustconn/src/dialogs/settings/mod.rs:385
-#: rustconn/src/window/edit_group.rs:1331
+#: rustconn/src/window/edit_group.rs:1337
 msgid "Add Rule"
 msgstr "Qayda əlavə et"
 
@@ -843,8 +843,8 @@ msgstr "Qlobal ayardan istifadə et"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:827
 #: rustconn/src/dialogs/connection/dialog/rows.rs:450
-#: rustconn/src/dialogs/settings/ui_tab.rs:663
-#: rustconn/src/window/edit_group.rs:2371
+#: rustconn/src/dialogs/settings/ui_tab.rs:658
+#: rustconn/src/window/edit_group.rs:2377
 msgid "Enabled"
 msgstr "Aktiv"
 
@@ -888,8 +888,8 @@ msgstr "Qaydanı aktivləşdir"
 #: rustconn/src/dialogs/connection/dialog/rows.rs:288
 #: rustconn/src/dialogs/connection/dialog/rows.rs:290
 #: rustconn/src/dialogs/settings/mod.rs:1996
-#: rustconn/src/window/edit_group.rs:2207
-#: rustconn/src/window/edit_group.rs:2209
+#: rustconn/src/window/edit_group.rs:2213
+#: rustconn/src/window/edit_group.rs:2215
 msgid "Delete rule"
 msgstr "Qaydanı sil"
 
@@ -899,17 +899,17 @@ msgid "Delete highlight rule"
 msgstr "Vurğulama qaydasını sil"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:103
-#: rustconn/src/window/edit_group.rs:1222
+#: rustconn/src/window/edit_group.rs:1228
 msgid "Expect Rules"
 msgstr "Gözləmə qaydaları"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:104
-#: rustconn/src/window/edit_group.rs:1223
+#: rustconn/src/window/edit_group.rs:1229
 msgid "Auto-respond to terminal patterns (priority order)"
 msgstr "Terminal nümunələrinə avtomatik cavab ver (prioritet sırası)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:115
-#: rustconn/src/window/edit_group.rs:1232
+#: rustconn/src/window/edit_group.rs:1238
 msgid ""
 "Responses support ${password}, ${username}, and ${VARIABLE_NAME} "
 "placeholders resolved at connection time"
@@ -918,22 +918,22 @@ msgstr ""
 "{VARIABLE_NAME} yer tutucularını dəstəkləyir"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:128
-#: rustconn/src/window/edit_group.rs:1245
+#: rustconn/src/window/edit_group.rs:1251
 msgid "No expect rules"
 msgstr "Gözləmə qaydası yoxdur"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:139
-#: rustconn/src/window/edit_group.rs:1261
+#: rustconn/src/window/edit_group.rs:1267
 msgid "From Template"
 msgstr "Şablondan"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:140
-#: rustconn/src/window/edit_group.rs:1262
+#: rustconn/src/window/edit_group.rs:1268
 msgid "Add rules from a built-in template"
 msgstr "Daxili şablondan qaydalar əlavə et"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:185
-#: rustconn/src/window/edit_group.rs:1496
+#: rustconn/src/window/edit_group.rs:1502
 msgid "Auto-run Scripts"
 msgstr "Avtomatik skriptlər"
 
@@ -945,13 +945,13 @@ msgstr ""
 "skriptlər"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:196
-#: rustconn/src/window/edit_group.rs:1506
+#: rustconn/src/window/edit_group.rs:1512
 msgid "No auto-run scripts"
 msgstr "Avtomatik skript yoxdur"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:202
-#: rustconn/src/window/edit_group.rs:1468
-#: rustconn/src/window/edit_group.rs:1511
+#: rustconn/src/window/edit_group.rs:1474
+#: rustconn/src/window/edit_group.rs:1517
 msgid "Add Script"
 msgstr "Skript əlavə et"
 
@@ -976,7 +976,7 @@ msgid "Add Macro"
 msgstr "Makro əlavə et"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:246
-#: rustconn/src/window/edit_group.rs:1377
+#: rustconn/src/window/edit_group.rs:1383
 msgid "Pattern Tester"
 msgstr "Nümunə sınağı"
 
@@ -989,18 +989,18 @@ msgid "Test text against patterns"
 msgstr "Mətni nümunələrə qarşı sına"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:257
-#: rustconn/src/window/edit_group.rs:1394
+#: rustconn/src/window/edit_group.rs:1400
 msgid "Test Input"
 msgstr "Sınaq girişi"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:262
-#: rustconn/src/window/edit_group.rs:1388
-#: rustconn/src/window/edit_group.rs:1409
+#: rustconn/src/window/edit_group.rs:1394
+#: rustconn/src/window/edit_group.rs:1415
 msgid "Enter text to test"
 msgstr "Sınamaq üçün mətn daxil edin"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:268
-#: rustconn/src/window/edit_group.rs:1398
+#: rustconn/src/window/edit_group.rs:1404
 msgid "Result"
 msgstr "Nəticə"
 
@@ -1134,7 +1134,7 @@ msgid "e.g., ChromaTerm for syntax highlighting"
 msgstr "məs., sintaksis vurğulaması üçün ChromaTerm"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:545
-#: rustconn/src/window/edit_group.rs:2041
+#: rustconn/src/window/edit_group.rs:2047
 msgid "Enable"
 msgstr "Aktivləşdir"
 
@@ -1157,15 +1157,15 @@ msgstr "Əmrə ötürüləcək boşluqla ayrılmış arqumentlər"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:622
 #: rustconn/src/dialogs/connection/automation_tab.rs:624
-#: rustconn/src/window/edit_group.rs:2676
-#: rustconn/src/window/edit_group.rs:2680
+#: rustconn/src/window/edit_group.rs:2682
+#: rustconn/src/window/edit_group.rs:2686
 msgid "Delete script from the library"
 msgstr "Skripti kitabxanadan sil"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:630
 #: rustconn/src/dialogs/connection/automation_tab.rs:632
-#: rustconn/src/window/edit_group.rs:2687
-#: rustconn/src/window/edit_group.rs:2691
+#: rustconn/src/window/edit_group.rs:2693
+#: rustconn/src/window/edit_group.rs:2697
 msgid "Remove from this list"
 msgstr "Bu siyahıdan çıxar"
 
@@ -1337,7 +1337,7 @@ msgid "No keys loaded"
 msgstr "Açar yüklənməyib"
 
 #: rustconn/src/dialogs/connection/dialog/agent_variables.rs:151
-#: rustconn/src/window/edit_group.rs:347
+#: rustconn/src/window/edit_group.rs:353
 msgid "(no secret variables)"
 msgstr "(gizli dəyişən yoxdur)"
 
@@ -1364,8 +1364,8 @@ msgid "Logging"
 msgstr "Jurnal"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:420
-#: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:1146
-#: rustconn/src/window/edit_group.rs:1637
+#: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:1152
+#: rustconn/src/window/edit_group.rs:1643
 msgid "Automation"
 msgstr "Avtomatlaşdırma"
 
@@ -1547,7 +1547,7 @@ msgid "Script Test Successful"
 msgstr "Skript sınağı uğurlu oldu"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1558
-#: rustconn/src/dialogs/export.rs:322
+#: rustconn/src/dialogs/export.rs:323
 msgid "Output"
 msgstr "Çıxış"
 
@@ -1576,7 +1576,7 @@ msgstr "Bağlantını sına"
 #: rustconn/src/dialogs/connection/dialog/construction.rs:269
 #: rustconn/src/dialogs/connection/general_tab.rs:144
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
-#: rustconn/src/dialogs/export.rs:401 rustconn/src/dialogs/template.rs:194
+#: rustconn/src/dialogs/export.rs:402 rustconn/src/dialogs/template.rs:194
 #: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1785
 #: rustconn/src/window/edit_dialogs.rs:834
 msgid "Protocol"
@@ -1598,7 +1598,7 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:108
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:777
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:783
-#: rustconn/src/dialogs/export.rs:389 rustconn/src/dialogs/template.rs:549
+#: rustconn/src/dialogs/export.rs:390 rustconn/src/dialogs/template.rs:549
 #: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1792
 #: rustconn/src/window/copy_field_actions.rs:79
 #: rustconn/src/window/edit_dialogs.rs:842
@@ -1732,7 +1732,7 @@ msgstr ""
 "Axtarış açarı: {}"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:45
-#: rustconn/src/window/edit_group.rs:773 rustconn/src/window/key_setup.rs:377
+#: rustconn/src/window/edit_group.rs:779 rustconn/src/window/key_setup.rs:377
 msgid "Select SSH Key"
 msgstr "SSH açarı seç"
 
@@ -1753,7 +1753,7 @@ msgstr "(Kök)"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1082
 #: rustconn/src/dialogs/connection/ssh.rs:682
-#: rustconn/src/window/edit_group.rs:867
+#: rustconn/src/window/edit_group.rs:873
 msgid "Connect via another SSH connection"
 msgstr "Başqa SSH bağlantısı vasitəsilə qoşul"
 
@@ -1859,52 +1859,52 @@ msgid "Protected value (masked)"
 msgstr "Qorunan dəyər (maskalanmış)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:275
-#: rustconn/src/window/edit_group.rs:2195
+#: rustconn/src/window/edit_group.rs:2201
 msgid "Move up (higher priority)"
 msgstr "Yuxarı köçür (daha yüksək prioritet)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:277
-#: rustconn/src/window/edit_group.rs:2197
+#: rustconn/src/window/edit_group.rs:2203
 msgid "Move rule up"
 msgstr "Qaydanı yuxarı köçür"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:281
-#: rustconn/src/window/edit_group.rs:2201
+#: rustconn/src/window/edit_group.rs:2207
 msgid "Move down (lower priority)"
 msgstr "Aşağı köçür (daha aşağı prioritet)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:284
-#: rustconn/src/window/edit_group.rs:2203
+#: rustconn/src/window/edit_group.rs:2209
 msgid "Move rule down"
 msgstr "Qaydanı aşağı köçür"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:299
-#: rustconn/src/window/edit_group.rs:2218
+#: rustconn/src/window/edit_group.rs:2224
 msgid "Pattern:"
 msgstr "Nümunə:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:305
-#: rustconn/src/window/edit_group.rs:2224
+#: rustconn/src/window/edit_group.rs:2230
 msgid "Regex pattern (e.g., password:\\s*$)"
 msgstr "Regex nümunəsi (məs., password:\\s*$)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:306
-#: rustconn/src/window/edit_group.rs:2225
+#: rustconn/src/window/edit_group.rs:2231
 msgid "Regular expression to match against terminal output"
 msgstr "Terminal çıxışına uyğunlaşdırılacaq requlyar ifadə"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:315
-#: rustconn/src/window/edit_group.rs:2234
+#: rustconn/src/window/edit_group.rs:2240
 msgid "Response:"
 msgstr "Cavab:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:321
-#: rustconn/src/window/edit_group.rs:2240
+#: rustconn/src/window/edit_group.rs:2246
 msgid "Text to send (e.g., ${password}\\n)"
 msgstr "Göndəriləcək mətn (məs., ${password}\\n)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:323
-#: rustconn/src/window/edit_group.rs:2242
+#: rustconn/src/window/edit_group.rs:2248
 msgid ""
 "Response to send when pattern matches. Use ${password}, ${username}, or $"
 "{VAR_NAME} for variables."
@@ -1913,78 +1913,78 @@ msgstr ""
 "{username} və ya ${VAR_NAME} istifadə edin."
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:331
-#: rustconn/src/window/edit_group.rs:2250
+#: rustconn/src/window/edit_group.rs:2256
 msgid "Insert a variable placeholder"
 msgstr "Dəyişən yer tutucusu əlavə et"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:334
-#: rustconn/src/window/edit_group.rs:2252
+#: rustconn/src/window/edit_group.rs:2258
 msgid "Insert variable"
 msgstr "Dəyişən əlavə et"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:345
-#: rustconn/src/window/edit_group.rs:2264
+#: rustconn/src/window/edit_group.rs:2270
 msgid "Built-in"
 msgstr "Daxili"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:352
-#: rustconn/src/window/edit_group.rs:2271
+#: rustconn/src/window/edit_group.rs:2277
 msgid "Connection password"
 msgstr "Bağlantı parolu"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:353
-#: rustconn/src/window/edit_group.rs:2272
+#: rustconn/src/window/edit_group.rs:2278
 msgid "Connection username"
 msgstr "Bağlantı istifadəçi adı"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:354
-#: rustconn/src/window/edit_group.rs:2273
+#: rustconn/src/window/edit_group.rs:2279
 msgid "Connection host"
 msgstr "Bağlantı hostu"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:355
-#: rustconn/src/window/edit_group.rs:2274
+#: rustconn/src/window/edit_group.rs:2280
 msgid "Connection port"
 msgstr "Bağlantı portu"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:383
 #: rustconn/src/dialogs/password_generator.rs:225
-#: rustconn/src/window/edit_group.rs:2304
+#: rustconn/src/window/edit_group.rs:2310
 msgid "Special"
 msgstr "Xüsusi"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:393
-#: rustconn/src/window/edit_group.rs:2314
+#: rustconn/src/window/edit_group.rs:2320
 msgid "Newline (Enter key)"
 msgstr "Sətir keçidi (Enter düyməsi)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:424
-#: rustconn/src/window/edit_group.rs:2345
+#: rustconn/src/window/edit_group.rs:2351
 msgid "Priority:"
 msgstr "Prioritet:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:433
-#: rustconn/src/window/edit_group.rs:2354
+#: rustconn/src/window/edit_group.rs:2360
 msgid "Higher priority rules are checked first"
 msgstr "Daha yüksək prioritetli qaydalar əvvəl yoxlanılır"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:437
-#: rustconn/src/window/edit_group.rs:2358
+#: rustconn/src/window/edit_group.rs:2364
 msgid "Timeout:"
 msgstr "Fasilə:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:446
-#: rustconn/src/window/edit_group.rs:2367
+#: rustconn/src/window/edit_group.rs:2373
 msgid "Timeout in milliseconds (0 = no timeout)"
 msgstr "Millisaniyə ilə fasilə (0 = fasilə yoxdur)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:455
-#: rustconn/src/window/edit_group.rs:2375
+#: rustconn/src/window/edit_group.rs:2381
 msgid "One-shot"
 msgstr "Bir dəfəlik"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:457
-#: rustconn/src/window/edit_group.rs:2377
+#: rustconn/src/window/edit_group.rs:2383
 msgid "Fire only once, then remove the rule"
 msgstr "Yalnız bir dəfə işlə, sonra qaydanı sil"
 
@@ -2100,7 +2100,7 @@ msgid "(Inherited from global - override value below)"
 msgstr "(Qlobaldan miras alınıb - dəyəri aşağıda üstələyin)"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:94
-#: rustconn/src/window/edit_group.rs:1593
+#: rustconn/src/window/edit_group.rs:1599
 msgid "Identity"
 msgstr "Kimlik"
 
@@ -2159,7 +2159,7 @@ msgstr "SSH, Well-Known"
 #: rustconn/src/dialogs/connection/general_tab.rs:181
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:78
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:113
-#: rustconn/src/dialogs/export.rs:395 rustconn/src/dialogs/template.rs:558
+#: rustconn/src/dialogs/export.rs:396 rustconn/src/dialogs/template.rs:558
 #: rustconn/src/dialogs/wol.rs:93 rustconn/src/window/edit_dialogs.rs:853
 msgid "Port"
 msgstr "Port"
@@ -2194,12 +2194,12 @@ msgstr "Autentifikasiya"
 #: rustconn/src/dialogs/connection/general_tab.rs:249
 #: rustconn/src/dialogs/connection/web.rs:148
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
-#: rustconn/src/dialogs/export.rs:407 rustconn/src/dialogs/template.rs:565
+#: rustconn/src/dialogs/export.rs:408 rustconn/src/dialogs/template.rs:565
 #: rustconn/src/split_view/bridge.rs:1800
-#: rustconn/src/window/connection_dialogs.rs:497
+#: rustconn/src/window/connection_dialogs.rs:498
 #: rustconn/src/window/copy_field_actions.rs:82
 #: rustconn/src/window/edit_dialogs.rs:862
-#: rustconn/src/window/edit_group.rs:241
+#: rustconn/src/window/edit_group.rs:247
 msgid "Username"
 msgstr "İstifadəçi adı"
 
@@ -2223,8 +2223,8 @@ msgstr "Domeni seçilmiş qrupdan yüklə"
 #: rustconn/src/dialogs/connection/general_tab.rs:272
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:129
 #: rustconn/src/dialogs/template.rs:569
-#: rustconn/src/window/connection_dialogs.rs:720
-#: rustconn/src/window/edit_group.rs:555
+#: rustconn/src/window/connection_dialogs.rs:721
+#: rustconn/src/window/edit_group.rs:561
 msgid "Domain"
 msgstr "Domen"
 
@@ -2233,40 +2233,40 @@ msgid "Windows authentication"
 msgstr "Windows autentifikasiyası"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:281
-#: rustconn/src/window/connection_dialogs.rs:502
-#: rustconn/src/window/edit_group.rs:248
+#: rustconn/src/window/connection_dialogs.rs:503
+#: rustconn/src/window/edit_group.rs:254
 msgid "Prompt"
 msgstr "Sor"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:282
-#: rustconn/src/window/connection_dialogs.rs:503
-#: rustconn/src/window/edit_group.rs:249
+#: rustconn/src/window/connection_dialogs.rs:504
+#: rustconn/src/window/edit_group.rs:255
 msgid "Vault"
 msgstr "Anbar"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:283
 #: rustconn/src/dialogs/connection/general_tab.rs:354
-#: rustconn/src/window/connection_dialogs.rs:504
-#: rustconn/src/window/edit_group.rs:250 rustconn/src/window/edit_group.rs:319
+#: rustconn/src/window/connection_dialogs.rs:505
+#: rustconn/src/window/edit_group.rs:256 rustconn/src/window/edit_group.rs:325
 msgid "Variable"
 msgstr "Dəyişən"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:284
-#: rustconn/src/window/connection_dialogs.rs:505
-#: rustconn/src/window/edit_group.rs:251
+#: rustconn/src/window/connection_dialogs.rs:506
+#: rustconn/src/window/edit_group.rs:257
 msgid "Inherit"
 msgstr "Miras al"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:285
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:439
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:276
-#: rustconn/src/window/connection_dialogs.rs:506
-#: rustconn/src/window/edit_group.rs:252 rustconn/src/window/edit_group.rs:707
+#: rustconn/src/window/connection_dialogs.rs:507
+#: rustconn/src/window/edit_group.rs:258 rustconn/src/window/edit_group.rs:713
 msgid "None"
 msgstr "Heç biri"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:286
-#: rustconn/src/window/edit_group.rs:1074
+#: rustconn/src/window/edit_group.rs:1080
 msgid "Script"
 msgstr "Skript"
 
@@ -2276,8 +2276,8 @@ msgstr "Parol mənbəyi"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:303
 #: rustconn/src/dialogs/variable_setup.rs:73
-#: rustconn/src/window/connection_dialogs.rs:543
-#: rustconn/src/window/edit_group.rs:296
+#: rustconn/src/window/connection_dialogs.rs:544
+#: rustconn/src/window/edit_group.rs:302
 msgid "Value"
 msgstr "Dəyər"
 
@@ -2293,12 +2293,12 @@ msgstr "Etimadnamə həllini sına"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:344
 #: rustconn/src/dialogs/connection/general_tab.rs:349
-#: rustconn/src/window/edit_group.rs:310 rustconn/src/window/edit_group.rs:315
+#: rustconn/src/window/edit_group.rs:316 rustconn/src/window/edit_group.rs:321
 msgid "Manage global variables"
 msgstr "Qlobal dəyişənləri idarə et"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:355
-#: rustconn/src/window/edit_group.rs:320
+#: rustconn/src/window/edit_group.rs:326
 msgid "Create secret variables in Tools → Variables"
 msgstr "Alətlər → Dəyişənlər bölməsində gizli dəyişənlər yaradın"
 
@@ -2312,12 +2312,12 @@ msgstr "Skript əmrini sına"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:396
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2226
-#: rustconn/src/window/edit_group.rs:571
+#: rustconn/src/window/edit_group.rs:577
 msgid "KeePass Database"
 msgstr "KeePass verilənlər bazası"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:398
-#: rustconn/src/window/edit_group.rs:567
+#: rustconn/src/window/edit_group.rs:573
 msgid ""
 "Leave empty to use the database of the enclosing group, or the global one."
 msgstr ""
@@ -2334,35 +2334,35 @@ msgid "tag1, tag2, …"
 msgstr "tag1, tag2, …"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:419
-#: rustconn/src/dialogs/export.rs:419 rustconn/src/dialogs/snippet.rs:214
+#: rustconn/src/dialogs/export.rs:420 rustconn/src/dialogs/snippet.rs:214
 #: rustconn/src/dialogs/template.rs:573
 msgid "Tags"
 msgstr "Etiketlər"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:430
-#: rustconn/src/dialogs/export.rs:288 rustconn/src/dialogs/export.rs:413
+#: rustconn/src/dialogs/connection/general_tab.rs:431
+#: rustconn/src/dialogs/export.rs:289 rustconn/src/dialogs/export.rs:414
 #: rustconn/src/window/batch_edit.rs:115
 msgid "Group"
 msgstr "Qrup"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:451
-#: rustconn/src/dialogs/export.rs:425 rustconn/src/dialogs/snippet.rs:200
+#: rustconn/src/dialogs/connection/general_tab.rs:452
+#: rustconn/src/dialogs/export.rs:426 rustconn/src/dialogs/snippet.rs:200
 #: rustconn/src/dialogs/template.rs:516
-#: rustconn/src/window/connection_dialogs.rs:727
-#: rustconn/src/window/edit_group.rs:1560
+#: rustconn/src/window/connection_dialogs.rs:728
+#: rustconn/src/window/edit_group.rs:1566
 msgid "Description"
 msgstr "Təsvir"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:548
+#: rustconn/src/dialogs/connection/general_tab.rs:549
 msgid "Well-Known"
 msgstr "Well-Known"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:550
+#: rustconn/src/dialogs/connection/general_tab.rs:551
 msgid "Registered"
 msgstr "Qeydiyyatdan keçmiş"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:552
-#: rustconn/src/window/edit_group.rs:1628
+#: rustconn/src/dialogs/connection/general_tab.rs:553
+#: rustconn/src/window/edit_group.rs:1634
 msgid "Dynamic"
 msgstr "Dinamik"
 
@@ -2421,7 +2421,7 @@ msgid "Container name (optional for single-container)"
 msgstr "Konteyner adı (tək konteyner üçün istəyə bağlı)"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:94
-#: rustconn/src/window/ui.rs:124
+#: rustconn/src/window/ui.rs:137
 msgid "Shell"
 msgstr "Shell"
 
@@ -2751,7 +2751,7 @@ msgstr "Printer yönləndirməsi"
 msgid "Share your local printer with the remote session"
 msgstr "Lokal printerinizi uzaq sessiya ilə paylaşın"
 
-#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5758
+#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5777
 msgid "Microphone"
 msgstr "Mikrofon"
 
@@ -2759,7 +2759,7 @@ msgstr "Mikrofon"
 msgid "Send the local microphone to the remote session"
 msgstr "Lokal mikrofonu uzaq sessiyaya göndər"
 
-#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5761
+#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5780
 msgid "Smart Cards"
 msgstr "Smart kartlar"
 
@@ -3089,7 +3089,7 @@ msgstr "Bağlantı istifadəçi adından fərqlidirsə"
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:442
 #: rustconn/src/dialogs/widgets.rs:434 rustconn/src/window/edit_dialogs.rs:809
-#: rustconn/src/window/edit_group.rs:813
+#: rustconn/src/window/edit_group.rs:819
 msgid "(None)"
 msgstr "(Yoxdur)"
 
@@ -3108,7 +3108,7 @@ msgstr "(Yoxdur)"
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:102
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:119
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:90
-#: rustconn/src/window/edit_group.rs:851 rustconn/src/window/edit_group.rs:866
+#: rustconn/src/window/edit_group.rs:857 rustconn/src/window/edit_group.rs:872
 msgid "Jump Host"
 msgstr "Keçid hostu"
 
@@ -3692,23 +3692,23 @@ msgstr "Hər sətirdə bir regex; boş = daxili nümunələr"
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:107
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:337
 #: rustconn/src/dialogs/template.rs:631
-#: rustconn/src/window/connection_dialogs.rs:516
+#: rustconn/src/window/connection_dialogs.rs:517
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
-#: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:447
+#: rustconn/src/window/edit_group.rs:275 rustconn/src/window/edit_group.rs:714
+#: rustconn/src/window/edit_group.rs:737 rustconn/src/window/mc_launch.rs:447
 msgid "Password"
 msgstr "Parol"
 
 #: rustconn/src/dialogs/connection/ssh.rs:386
-#: rustconn/src/dialogs/template.rs:632 rustconn/src/window/edit_group.rs:709
-#: rustconn/src/window/edit_group.rs:732
+#: rustconn/src/dialogs/template.rs:632 rustconn/src/window/edit_group.rs:715
+#: rustconn/src/window/edit_group.rs:738
 msgid "Public Key"
 msgstr "Açıq açar"
 
 #: rustconn/src/dialogs/connection/ssh.rs:387
-#: rustconn/src/dialogs/template.rs:633 rustconn/src/window/edit_group.rs:711
-#: rustconn/src/window/edit_group.rs:734
+#: rustconn/src/dialogs/template.rs:633 rustconn/src/window/edit_group.rs:717
+#: rustconn/src/window/edit_group.rs:740
 msgid "Keyboard Interactive"
 msgstr "Klaviatura ilə qarşılıqlı"
 
@@ -3721,7 +3721,7 @@ msgstr "SSH agenti"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5764
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5783
 msgid "Security Key (FIDO2)"
 msgstr "Təhlükəsizlik açarı (FIDO2)"
 
@@ -3749,8 +3749,8 @@ msgid "File"
 msgstr "Fayl"
 
 #: rustconn/src/dialogs/connection/ssh.rs:407
-#: rustconn/src/dialogs/template.rs:653 rustconn/src/window/edit_group.rs:710
-#: rustconn/src/window/edit_group.rs:733
+#: rustconn/src/dialogs/template.rs:653 rustconn/src/window/edit_group.rs:716
+#: rustconn/src/window/edit_group.rs:739
 msgid "Agent"
 msgstr "Agent"
 
@@ -3986,7 +3986,7 @@ msgid "Key=Value, comma-separated (-o flags)"
 msgstr "Key=Value, vergüllə ayrılmış (-o bayraqları)"
 
 #: rustconn/src/dialogs/connection/ssh.rs:889
-#: rustconn/src/window/edit_group.rs:919
+#: rustconn/src/window/edit_group.rs:925
 msgid "SSH Agent Socket"
 msgstr "SSH agent soketi"
 
@@ -4598,7 +4598,7 @@ msgstr ""
 "{host}, ${port}, ${username} və ${name} bağlantının özündən gəlir"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:68
-#: rustconn/src/dialogs/export.rs:763
+#: rustconn/src/dialogs/export.rs:764
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:74
 msgid "Summary"
 msgstr "Xülasə"
@@ -4761,7 +4761,7 @@ msgstr "Şablonlarınız"
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
 #: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:570
 #: rustconn/src/sidebar_ui.rs:650 rustconn/src/sidebar_ui.rs:1358
-#: rustconn/src/split_view/bridge.rs:2039 rustconn/src/window/ui.rs:257
+#: rustconn/src/split_view/bridge.rs:2039 rustconn/src/window/ui.rs:271
 msgid "New Connection"
 msgstr "Yeni bağlantı"
 
@@ -4807,7 +4807,7 @@ msgstr "Portativ faylın keçid ifadəsi"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1036
+#: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1059
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4927,17 +4927,17 @@ msgstr "Köçürmə dayandırıldı"
 #: rustconn/src/dialogs/credential_transfer.rs:643
 #: rustconn/src/dialogs/credential_transfer.rs:652
 #: rustconn/src/dialogs/credential_transfer.rs:719
-#: rustconn/src/dialogs/export.rs:1163 rustconn/src/dialogs/history.rs:340
+#: rustconn/src/dialogs/export.rs:1164 rustconn/src/dialogs/history.rs:340
 #: rustconn/src/dialogs/import/sources.rs:708
 #: rustconn/src/dialogs/key_setup.rs:1037
 #: rustconn/src/dialogs/portable_passphrase_change.rs:376
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:506
+#: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/sidebar_ui.rs:506
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4737
+#: rustconn/src/window/mod.rs:4756
 msgid "Close"
 msgstr "Bağla"
 
@@ -4971,12 +4971,12 @@ msgid "Export Connections"
 msgstr "Bağlantıları ixrac et"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/dialogs/widgets.rs:1034
+#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/dialogs/widgets.rs:1057
 msgid "Export"
 msgstr "İxrac"
 
 #: rustconn/src/dialogs/export.rs:188 rustconn/src/dialogs/export.rs:282
-#: rustconn/src/dialogs/export.rs:539
+#: rustconn/src/dialogs/export.rs:540
 msgid "All connections"
 msgstr "Bütün bağlantılar"
 
@@ -5002,7 +5002,7 @@ msgstr "Ansible inventarı"
 msgid "Asbru-CM"
 msgstr "Asbru-CM"
 
-#: rustconn/src/dialogs/export.rs:255 rustconn/src/dialogs/export.rs:888
+#: rustconn/src/dialogs/export.rs:255 rustconn/src/dialogs/export.rs:889
 msgid "CSV (*.csv)"
 msgstr "CSV (*.csv)"
 
@@ -5029,7 +5029,7 @@ msgstr "Royal TS (.rtsz)"
 msgid "SecureCRT (.ini)"
 msgstr "SecureCRT (.ini)"
 
-#: rustconn/src/dialogs/export.rs:261 rustconn/src/dialogs/export.rs:862
+#: rustconn/src/dialogs/export.rs:261 rustconn/src/dialogs/export.rs:863
 #: rustconn/src/dialogs/import/sources.rs:148
 #: rustconn/src/dialogs/import/sources.rs:249
 msgid "SSH Config"
@@ -5051,15 +5051,15 @@ msgstr "İxrac əhatəsi"
 msgid "Choose which connections to export"
 msgstr "Hansı bağlantıların ixrac ediləcəyini seçin"
 
-#: rustconn/src/dialogs/export.rs:289
+#: rustconn/src/dialogs/export.rs:290
 msgid "Export all or a specific group"
 msgstr "Hamısını və ya müəyyən qrupu ixrac et"
 
-#: rustconn/src/dialogs/export.rs:298
+#: rustconn/src/dialogs/export.rs:299
 msgid "Output Location"
 msgstr "Çıxış yeri"
 
-#: rustconn/src/dialogs/export.rs:305
+#: rustconn/src/dialogs/export.rs:306
 msgid ""
 "Remmina, SecureCRT and RDP Files export to a directory (one file per "
 "connection).\n"
@@ -5069,37 +5069,37 @@ msgstr ""
 "fayl).\n"
 "Digər formatlar tək fayla ixrac edir."
 
-#: rustconn/src/dialogs/export.rs:311
+#: rustconn/src/dialogs/export.rs:312
 msgid "Select output file or directory…"
 msgstr "Çıxış faylını və ya qovluğunu seç…"
 
-#: rustconn/src/dialogs/export.rs:317
+#: rustconn/src/dialogs/export.rs:318
 msgid "Browse…"
 msgstr "Seç…"
 
-#: rustconn/src/dialogs/export.rs:323
+#: rustconn/src/dialogs/export.rs:324
 msgid "Destination path"
 msgstr "Təyinat yolu"
 
-#: rustconn/src/dialogs/export.rs:333
+#: rustconn/src/dialogs/export.rs:334
 #: rustconn/src/dialogs/password_generator.rs:243
 #: rustconn/src/dialogs/tunnel_builder/step_forwards.rs:164
 msgid "Options"
 msgstr "Seçimlər"
 
-#: rustconn/src/dialogs/export.rs:338
+#: rustconn/src/dialogs/export.rs:339
 msgid "Include group hierarchy"
 msgstr "Qrup iyerarxiyasını daxil et"
 
-#: rustconn/src/dialogs/export.rs:339
+#: rustconn/src/dialogs/export.rs:340
 msgid "Preserve folder structure"
 msgstr "Qovluq strukturunu qoru"
 
-#: rustconn/src/dialogs/export.rs:349
+#: rustconn/src/dialogs/export.rs:350
 msgid "Credentials Storage"
 msgstr "Etimad məlumatlarının saxlanması"
 
-#: rustconn/src/dialogs/export.rs:350
+#: rustconn/src/dialogs/export.rs:351
 msgid ""
 "Passwords are stored in your password manager and not included in exports. "
 "Export your credential structure separately if needed."
@@ -5107,146 +5107,146 @@ msgstr ""
 "Parollar parol menecerinizdə saxlanılır və ixraca daxil edilmir. Lazım "
 "gələrsə, etimad məlumatı strukturunuzu ayrıca ixrac edin."
 
-#: rustconn/src/dialogs/export.rs:361
+#: rustconn/src/dialogs/export.rs:362
 msgid "CSV Options"
 msgstr "CSV seçimləri"
 
-#: rustconn/src/dialogs/export.rs:362
+#: rustconn/src/dialogs/export.rs:363
 msgid "Configure CSV export settings"
 msgstr "CSV ixrac tənzimləmələrini konfiqurasiya edin"
 
-#: rustconn/src/dialogs/export.rs:368
+#: rustconn/src/dialogs/export.rs:369
 msgid "Comma"
 msgstr "Vergül"
 
-#: rustconn/src/dialogs/export.rs:368
+#: rustconn/src/dialogs/export.rs:369
 msgid "Semicolon"
 msgstr "Nöqtəli vergül"
 
-#: rustconn/src/dialogs/export.rs:368
+#: rustconn/src/dialogs/export.rs:369
 msgid "Tab"
 msgstr "Tab"
 
-#: rustconn/src/dialogs/export.rs:375
+#: rustconn/src/dialogs/export.rs:376
 msgid "Delimiter"
 msgstr "Ayırıcı"
 
-#: rustconn/src/dialogs/export.rs:376
+#: rustconn/src/dialogs/export.rs:377
 msgid "Field separator character"
 msgstr "Sahə ayırıcı simvolu"
 
-#: rustconn/src/dialogs/export.rs:462
+#: rustconn/src/dialogs/export.rs:463
 msgid "Exporting…"
 msgstr "İxrac edilir…"
 
-#: rustconn/src/dialogs/export.rs:476
+#: rustconn/src/dialogs/export.rs:477
 msgid "Preparing export…"
 msgstr "İxrac hazırlanır…"
 
-#: rustconn/src/dialogs/export.rs:489
+#: rustconn/src/dialogs/export.rs:490
 msgid "Export Complete"
 msgstr "İxrac tamamlandı"
 
-#: rustconn/src/dialogs/export.rs:504 rustconn/src/dialogs/import/mod.rs:204
+#: rustconn/src/dialogs/export.rs:505 rustconn/src/dialogs/import/mod.rs:204
 msgid "Details"
 msgstr "Təfərrüatlar"
 
-#: rustconn/src/dialogs/export.rs:725
+#: rustconn/src/dialogs/export.rs:726
 msgid "Successfully exported {} connection(s) to {} format."
 msgstr "{} bağlantı {} formatına uğurla ixrac edildi."
 
-#: rustconn/src/dialogs/export.rs:737
+#: rustconn/src/dialogs/export.rs:738
 msgid "{} connection(s) were skipped (unsupported protocol)."
 msgstr "{} bağlantı keçildi (dəstəklənməyən protokol)."
 
-#: rustconn/src/dialogs/export.rs:754
+#: rustconn/src/dialogs/export.rs:755
 msgid "Output files:"
 msgstr "Çıxış faylları:"
 
-#: rustconn/src/dialogs/export.rs:767
+#: rustconn/src/dialogs/export.rs:768
 msgid "Exported"
 msgstr "İxrac edildi"
 
-#: rustconn/src/dialogs/export.rs:770
+#: rustconn/src/dialogs/export.rs:771
 msgid "Skipped"
 msgstr "Keçildi"
 
-#: rustconn/src/dialogs/export.rs:780 rustconn/src/dialogs/import/mod.rs:476
+#: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:476
 msgid "Warnings ({}):"
 msgstr "Xəbərdarlıqlar ({}):"
 
-#: rustconn/src/dialogs/export.rs:788
+#: rustconn/src/dialogs/export.rs:789
 msgid "No connections were exported."
 msgstr "Heç bir bağlantı ixrac edilmədi."
 
-#: rustconn/src/dialogs/export.rs:825
+#: rustconn/src/dialogs/export.rs:826
 msgid "Select Export Directory"
 msgstr "İxrac qovluğunu seç"
 
-#: rustconn/src/dialogs/export.rs:843
+#: rustconn/src/dialogs/export.rs:844
 msgid "Select Export File"
 msgstr "İxrac faylını seç"
 
-#: rustconn/src/dialogs/export.rs:858
+#: rustconn/src/dialogs/export.rs:859
 msgid "Ansible Inventory (*.ini, *.yml)"
 msgstr "Ansible inventarı (*.ini, *.yml)"
 
-#: rustconn/src/dialogs/export.rs:867
+#: rustconn/src/dialogs/export.rs:868
 msgid "Asbru-CM YAML (*.yml)"
 msgstr "Asbru-CM YAML (*.yml)"
 
-#: rustconn/src/dialogs/export.rs:872
+#: rustconn/src/dialogs/export.rs:873
 msgid "Remmina (*.remmina)"
 msgstr "Remmina (*.remmina)"
 
-#: rustconn/src/dialogs/export.rs:876
+#: rustconn/src/dialogs/export.rs:877
 #: rustconn/src/dialogs/import/sources.rs:582
 msgid "RustConn Native (*.rcn)"
 msgstr "RustConn yerli (*.rcn)"
 
-#: rustconn/src/dialogs/export.rs:880
+#: rustconn/src/dialogs/export.rs:881
 msgid "Royal TS (*.rtsz)"
 msgstr "Royal TS (*.rtsz)"
 
-#: rustconn/src/dialogs/export.rs:884
+#: rustconn/src/dialogs/export.rs:885
 #: rustconn/src/dialogs/import/sources.rs:928
 msgid "MobaXterm Sessions (*.mxtsessions)"
 msgstr "MobaXterm sessiyaları (*.mxtsessions)"
 
-#: rustconn/src/dialogs/export.rs:893
+#: rustconn/src/dialogs/export.rs:894
 msgid "SecureCRT Sessions (*.ini)"
 msgstr "SecureCRT sessiyaları (*.ini)"
 
-#: rustconn/src/dialogs/export.rs:898
+#: rustconn/src/dialogs/export.rs:899
 #: rustconn/src/dialogs/import/sources.rs:1375
 msgid "RDP Files (*.rdp)"
 msgstr "RDP faylları (*.rdp)"
 
-#: rustconn/src/dialogs/export.rs:935
+#: rustconn/src/dialogs/export.rs:936
 msgid "Select output directory…"
 msgstr "Çıxış qovluğunu seç…"
 
-#: rustconn/src/dialogs/export.rs:937
+#: rustconn/src/dialogs/export.rs:938
 msgid "Select output file…"
 msgstr "Çıxış faylını seç…"
 
-#: rustconn/src/dialogs/export.rs:998
+#: rustconn/src/dialogs/export.rs:999
 msgid "Select an output file or directory"
 msgstr "Çıxış faylını və ya qovluğunu seçin"
 
-#: rustconn/src/dialogs/export.rs:1054
+#: rustconn/src/dialogs/export.rs:1055
 msgid "Exporting to {}…"
 msgstr "{} yerinə ixrac edilir…"
 
-#: rustconn/src/dialogs/export.rs:1109
+#: rustconn/src/dialogs/export.rs:1110
 msgid "Writing output files…"
 msgstr "Çıxış faylları yazılır…"
 
-#: rustconn/src/dialogs/export.rs:1139
+#: rustconn/src/dialogs/export.rs:1140
 msgid "Export complete"
 msgstr "İxrac tamamlandı"
 
-#: rustconn/src/dialogs/export.rs:1150 rustconn/src/dialogs/import/mod.rs:581
+#: rustconn/src/dialogs/export.rs:1151 rustconn/src/dialogs/import/mod.rs:581
 #: rustconn/src/dialogs/import/mod.rs:894
 #: rustconn/src/dialogs/import/sources.rs:353
 #: rustconn/src/dialogs/import/sources.rs:445
@@ -5263,19 +5263,19 @@ msgstr "İxrac tamamlandı"
 #: rustconn/src/dialogs/import/sources.rs:1427
 #: rustconn/src/dialogs/import/sources.rs:1543
 #: rustconn/src/dialogs/import/sources.rs:1697
-#: rustconn/src/dialogs/widgets.rs:1040
+#: rustconn/src/dialogs/widgets.rs:1063
 msgid "Done"
 msgstr "Hazır"
 
-#: rustconn/src/dialogs/export.rs:1155 rustconn/src/dialogs/recording.rs:698
+#: rustconn/src/dialogs/export.rs:1156 rustconn/src/dialogs/recording.rs:698
 msgid "Export failed"
 msgstr "İxrac uğursuz oldu"
 
-#: rustconn/src/dialogs/export.rs:1156
+#: rustconn/src/dialogs/export.rs:1157
 msgid "Export Failed"
 msgstr "İxrac uğursuz oldu"
 
-#: rustconn/src/dialogs/export.rs:1158
+#: rustconn/src/dialogs/export.rs:1159
 msgid ""
 "Could not write the export file: {}. Check destination permissions and free "
 "disk space."
@@ -5426,8 +5426,8 @@ msgstr "Bütün bağlantı tarixçəsi qeydləri birdəfəlik silinəcək."
 
 #: rustconn/src/dialogs/history.rs:200
 #: rustconn/src/embedded_web/navigation.rs:508
-#: rustconn/src/terminal/playback.rs:255 rustconn/src/window/edit_group.rs:688
-#: rustconn/src/window/edit_group.rs:1182
+#: rustconn/src/terminal/playback.rs:255 rustconn/src/window/edit_group.rs:694
+#: rustconn/src/window/edit_group.rs:1188
 msgid "Clear"
 msgstr "Təmizlə"
 
@@ -5461,8 +5461,8 @@ msgstr "Bağlantıları idxal et"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1035
-#: rustconn/src/split_view/bridge.rs:2053 rustconn/src/window/edit_group.rs:970
+#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1058
+#: rustconn/src/split_view/bridge.rs:2053 rustconn/src/window/edit_group.rs:976
 msgid "Import"
 msgstr "İdxal"
 
@@ -5881,8 +5881,8 @@ msgstr "RustConn yerli faylını seç"
 
 #: rustconn/src/dialogs/import/sources.rs:678
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:38
-#: rustconn/src/window/edit_group.rs:972 rustconn/src/window/edit_group.rs:1023
-#: rustconn/src/window/edit_group.rs:1612
+#: rustconn/src/window/edit_group.rs:978 rustconn/src/window/edit_group.rs:1029
+#: rustconn/src/window/edit_group.rs:1618
 msgid "Cloud Sync"
 msgstr "Bulud sinxronizasiyası"
 
@@ -5895,7 +5895,7 @@ msgstr ""
 "'{}' qrupu İdxal rejimində yaradılacaq."
 
 #: rustconn/src/dialogs/import/sources.rs:704
-#: rustconn/src/window/connection_dialogs.rs:1072
+#: rustconn/src/window/connection_dialogs.rs:1073
 msgid "Import Failed"
 msgstr "İdxal uğursuz oldu"
 
@@ -6354,7 +6354,7 @@ msgid "No keys found. Choose a key file."
 msgstr "Açar tapılmadı. Açar faylı seçin."
 
 #: rustconn/src/dialogs/key_setup.rs:546 rustconn/src/dialogs/key_setup.rs:548
-#: rustconn/src/window/edit_group.rs:753 rustconn/src/window/edit_group.rs:755
+#: rustconn/src/window/edit_group.rs:759 rustconn/src/window/edit_group.rs:761
 msgid "Select SSH key file"
 msgstr "SSH açar faylını seç"
 
@@ -7073,10 +7073,10 @@ msgstr "İdxal uğursuz oldu"
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:288 rustconn/src/toast.rs:110
 #: rustconn/src/toast.rs:325 rustconn/src/toast.rs:355
 #: rustconn/src/window/clusters.rs:553
-#: rustconn/src/window/connection_dialogs.rs:927
+#: rustconn/src/window/connection_dialogs.rs:928
 #: rustconn/src/window/edit_dialogs.rs:407
 #: rustconn/src/window/edit_dialogs.rs:511
-#: rustconn/src/window/edit_group.rs:1965
+#: rustconn/src/window/edit_group.rs:1971
 msgid "Error"
 msgstr "Xəta"
 
@@ -7120,8 +7120,8 @@ msgid "Run"
 msgstr "İşə sal"
 
 #: rustconn/src/dialogs/script.rs:246 rustconn/src/dialogs/script.rs:248
-#: rustconn/src/window/edit_group.rs:2608
-#: rustconn/src/window/edit_group.rs:2611
+#: rustconn/src/window/edit_group.rs:2614
+#: rustconn/src/window/edit_group.rs:2617
 msgid "Delete script"
 msgstr "Skripti sil"
 
@@ -7403,7 +7403,7 @@ msgid "Choose sync directory"
 msgstr "Sinxronizasiya qovluğunu seçin"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:69
-#: rustconn/src/window/edit_group.rs:2108
+#: rustconn/src/window/edit_group.rs:2114
 msgid "Select Sync Directory"
 msgstr "Sinxronizasiya qovluğunu seç"
 
@@ -8688,13 +8688,13 @@ msgid "Token loaded from keyring"
 msgstr "Token keyring-dən yükləndi"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2654
-#: rustconn/src/dialogs/widgets.rs:977 rustconn/src/dialogs/widgets.rs:982
-#: rustconn/src/dialogs/widgets.rs:994
+#: rustconn/src/dialogs/widgets.rs:1000 rustconn/src/dialogs/widgets.rs:1005
+#: rustconn/src/dialogs/widgets.rs:1017
 msgid "Select KeePass Database"
 msgstr "KeePass verilənlər bazasını seçin"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2660
-#: rustconn/src/dialogs/widgets.rs:990
+#: rustconn/src/dialogs/widgets.rs:1013
 msgid "KeePass Database (*.kdbx)"
 msgstr "KeePass verilənlər bazası (*.kdbx)"
 
@@ -9126,10 +9126,10 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
-#: rustconn/src/dialogs/settings/ui_tab.rs:926
+#: rustconn/src/dialogs/settings/ui_tab.rs:921
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:309
-#: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
+#: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:280
 msgid "Local Shell"
 msgstr "Lokal shell"
 
@@ -9532,67 +9532,67 @@ msgid "Open session automatically"
 msgstr "Sessiyanı avtomatik aç"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:598
-#: rustconn/src/dialogs/settings/ui_tab.rs:926
+#: rustconn/src/dialogs/settings/ui_tab.rs:921
 msgid "Do Nothing"
 msgstr "Heç nə etmə"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:616
+#: rustconn/src/dialogs/settings/ui_tab.rs:611
 msgid "Show Welcome tab"
 msgstr "Xoş gəldin tabını göstər"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:617
+#: rustconn/src/dialogs/settings/ui_tab.rs:612
 msgid "Display Welcome tab when no session opens at startup"
 msgstr "Başlatmada heç bir sessiya açılmadıqda Xoş gəldin tabını göstər"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:627
+#: rustconn/src/dialogs/settings/ui_tab.rs:622
 msgid "System Tray"
 msgstr "Sistem trayı"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:628
+#: rustconn/src/dialogs/settings/ui_tab.rs:623
 msgid "Requires desktop environment with tray support"
 msgstr "Tray dəstəyi olan iş masası mühiti tələb edir"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:633
+#: rustconn/src/dialogs/settings/ui_tab.rs:628
 msgid "Show icon"
 msgstr "İkonu göstər"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:634
+#: rustconn/src/dialogs/settings/ui_tab.rs:629
 msgid "Display icon in system tray"
 msgstr "İkonu sistem trayında göstər"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:639
+#: rustconn/src/dialogs/settings/ui_tab.rs:634
 msgid "Minimize to tray"
 msgstr "Traya kiçilt"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:640
+#: rustconn/src/dialogs/settings/ui_tab.rs:635
 msgid "Hide window instead of closing"
 msgstr "Bağlamaq əvəzinə pəncərəni gizlət"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:657
+#: rustconn/src/dialogs/settings/ui_tab.rs:652
 msgid "Session Restore"
 msgstr "Sessiya bərpası"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:658
+#: rustconn/src/dialogs/settings/ui_tab.rs:653
 msgid "Restore previous connections on startup"
 msgstr "Başlatmada əvvəlki bağlantıları bərpa et"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:664
+#: rustconn/src/dialogs/settings/ui_tab.rs:659
 msgid "Reconnect to previous sessions on startup"
 msgstr "Başlatmada əvvəlki sessiyalara yenidən qoşul"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:669
+#: rustconn/src/dialogs/settings/ui_tab.rs:664
 msgid "Ask first"
 msgstr "Əvvəlcə soruş"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:670
+#: rustconn/src/dialogs/settings/ui_tab.rs:665
 msgid "Prompt before restoring sessions"
 msgstr "Sessiyaları bərpa etməzdən əvvəl soruş"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:675
+#: rustconn/src/dialogs/settings/ui_tab.rs:670
 msgid "Max age"
 msgstr "Maks. yaş"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:676
+#: rustconn/src/dialogs/settings/ui_tab.rs:671
 msgid "Hours before sessions expire"
 msgstr "Sessiyaların bitməsinə qalan saat"
 
@@ -9673,7 +9673,7 @@ msgid "View"
 msgstr "Görünüş"
 
 #: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:338
-#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:347
+#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:361
 msgid "Quit"
 msgstr "Çıx"
 
@@ -9687,13 +9687,13 @@ msgstr "SSH tunel meneceri"
 
 #: rustconn/src/dialogs/shortcuts.rs:192 rustconn/src/sidebar_ui.rs:651
 #: rustconn/src/sidebar_ui.rs:1162 rustconn/src/sidebar_ui.rs:1363
-#: rustconn/src/window/connection_dialogs.rs:378 rustconn/src/window/ui.rs:262
+#: rustconn/src/window/connection_dialogs.rs:378 rustconn/src/window/ui.rs:276
 msgid "New Group"
 msgstr "Yeni qrup"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:649
 #: rustconn/src/sidebar_ui.rs:1381 rustconn/src/split_view/bridge.rs:2046
-#: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
+#: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:279
 msgid "Quick Connect"
 msgstr "Sürətli qoşulma"
 
@@ -9782,7 +9782,7 @@ msgstr "Bölmədən çıxar"
 #: rustconn/src/dialogs/shortcuts.rs:222
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
-#: rustconn/src/terminal/tab_menu.rs:1261
+#: rustconn/src/terminal/tab_menu.rs:1261 rustconn/src/window/ui.rs:125
 msgid "Remove Split"
 msgstr "Bölməni sil"
 
@@ -9857,7 +9857,7 @@ msgstr "Bağlantılar BÜTÜN aktiv süzgəclərə uyğun olmalıdır"
 
 #: rustconn/src/dialogs/smart_folder.rs:144
 #: rustconn/src/dialogs/smart_folder.rs:184
-#: rustconn/src/dialogs/smart_folder.rs:254 rustconn/src/dialogs/snippet.rs:225
+#: rustconn/src/dialogs/smart_folder.rs:255 rustconn/src/dialogs/snippet.rs:225
 msgid "Any"
 msgstr "İstənilən"
 
@@ -10335,7 +10335,7 @@ msgid "All"
 msgstr "Hamısı"
 
 #: rustconn/src/dialogs/template_manager.rs:70 rustconn/src/sidebar/mod.rs:953
-#: rustconn/src/window/edit_group.rs:1604
+#: rustconn/src/window/edit_group.rs:1610
 msgid "SSH"
 msgstr "SSH"
 
@@ -10369,7 +10369,7 @@ msgid "Edit"
 msgstr "Redaktə et"
 
 #: rustconn/src/dialogs/template_manager.rs:118
-#: rustconn/src/dialogs/widgets.rs:1039
+#: rustconn/src/dialogs/widgets.rs:1062
 msgid "Use Template"
 msgstr "Şablondan istifadə et"
 
@@ -10859,15 +10859,15 @@ msgid "variable_name"
 msgstr "variable_name"
 
 #: rustconn/src/dialogs/variables.rs:254 rustconn/src/dialogs/variables.rs:602
-#: rustconn/src/window/connection_dialogs.rs:522
-#: rustconn/src/window/edit_group.rs:275
+#: rustconn/src/window/connection_dialogs.rs:523
+#: rustconn/src/window/edit_group.rs:281
 msgid "Password value"
 msgstr "Parol dəyəri"
 
 #: rustconn/src/dialogs/variables.rs:260 rustconn/src/dialogs/variables.rs:263
-#: rustconn/src/window/connection_dialogs.rs:536
-#: rustconn/src/window/connection_dialogs.rs:540
-#: rustconn/src/window/edit_group.rs:289 rustconn/src/window/edit_group.rs:293
+#: rustconn/src/window/connection_dialogs.rs:537
+#: rustconn/src/window/connection_dialogs.rs:541
+#: rustconn/src/window/edit_group.rs:295 rustconn/src/window/edit_group.rs:299
 msgid "Load password from vault"
 msgstr "Parolu anbardan yüklə"
 
@@ -10938,7 +10938,7 @@ msgstr "Əlavə ediləcək ehtiyat keçid hostu"
 msgid "Add Fallback Jump Host"
 msgstr "Ehtiyat keçid hostu əlavə et"
 
-#: rustconn/src/dialogs/widgets.rs:309 rustconn/src/window/edit_group.rs:872
+#: rustconn/src/dialogs/widgets.rs:309 rustconn/src/window/edit_group.rs:878
 msgid "(unknown connection)"
 msgstr "(naməlum bağlantı)"
 
@@ -10962,15 +10962,15 @@ msgstr "{} aşağı köçür"
 msgid "Remove {}"
 msgstr "{} çıxar"
 
-#: rustconn/src/dialogs/widgets.rs:898
+#: rustconn/src/dialogs/widgets.rs:921
 msgid "Underline colour (#RRGGBB)"
 msgstr "Alt xətt rəngi (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:904
+#: rustconn/src/dialogs/widgets.rs:927
 msgid "Background colour (#RRGGBB)"
 msgstr "Fon rəngi (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:911
+#: rustconn/src/dialogs/widgets.rs:934
 msgid ""
 "Hexadecimal colour such as #00AAFF, drawn as an underline under the match. "
 "Leave empty for none. To recolour the text itself, give the connection an "
@@ -10980,23 +10980,23 @@ msgstr ""
 "biri üçün boş buraxın. Mətnin özünün rəngini dəyişmək üçün bağlantıya "
 "ChromaTerm kimi Çıxış süzgəci verin."
 
-#: rustconn/src/dialogs/widgets.rs:918
+#: rustconn/src/dialogs/widgets.rs:941
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
 msgstr "Hexadecimal rəng, məsələn #402020. Fon olmaması üçün boş buraxın."
 
-#: rustconn/src/dialogs/widgets.rs:1051
+#: rustconn/src/dialogs/widgets.rs:1074
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:1052
+#: rustconn/src/dialogs/widgets.rs:1075
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "Daxili brauzerdə JavaScript icrasını aktivləşdirin və ya deaktiv edin"
 
-#: rustconn/src/dialogs/widgets.rs:1053
+#: rustconn/src/dialogs/widgets.rs:1076
 msgid "Navigation Toolbar"
 msgstr "Naviqasiya paneli"
 
-#: rustconn/src/dialogs/widgets.rs:1055
+#: rustconn/src/dialogs/widgets.rs:1078
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -11004,11 +11004,11 @@ msgstr ""
 "Üzən paneli və onun açma oxunu silmək üçün söndürün. Geri, irəli, yenilə və "
 "miqyas üçün klaviatura qısayolları yenə işləyəcək."
 
-#: rustconn/src/dialogs/widgets.rs:1057
+#: rustconn/src/dialogs/widgets.rs:1080
 msgid "Private / Incognito Mode"
 msgstr "Şəxsi / İnkognito rejimi"
 
-#: rustconn/src/dialogs/widgets.rs:1058
+#: rustconn/src/dialogs/widgets.rs:1081
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "URL-i şəxsi baxış pəncərəsində aç (Firefox, Chrome, Brave)"
 
@@ -11880,7 +11880,7 @@ msgid "RDP session running in external window"
 msgstr "RDP sessiyası xarici pəncərədə işləyir"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3221
+#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3240
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Bağlantı alınmadı"
@@ -12157,7 +12157,7 @@ msgstr "Sürət"
 msgid "Fit to screen"
 msgstr "Ekrana uyğunlaşdır"
 
-#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:338
+#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:352
 msgid "Fullscreen"
 msgstr "Tam ekran"
 
@@ -12305,15 +12305,15 @@ msgstr "Protokola görə süz (süzgəclər aktivdir)"
 msgid "Trash"
 msgstr "Zibil qutusu"
 
-#: rustconn/src/sidebar/mod.rs:2066
+#: rustconn/src/sidebar/mod.rs:2107
 msgid "Open Password Vault (Active)"
 msgstr "Parol anbarını aç (aktiv)"
 
-#: rustconn/src/sidebar/mod.rs:2071
+#: rustconn/src/sidebar/mod.rs:2112
 msgid "Password Vault Not Found"
 msgstr "Parol anbarı tapılmadı"
 
-#: rustconn/src/sidebar/mod.rs:2074
+#: rustconn/src/sidebar/mod.rs:2115
 msgid "Password Vault Disabled"
 msgstr "Parol anbarı deaktivdir"
 
@@ -12628,7 +12628,7 @@ msgstr "Axtar (Ctrl+F)"
 msgid "Toggle search"
 msgstr "Axtarışı aç/bağla"
 
-#: rustconn/src/sidebar_ui.rs:1360 rustconn/src/window/ui.rs:259
+#: rustconn/src/sidebar_ui.rs:1360 rustconn/src/window/ui.rs:273
 msgid "New Connection (Advanced)…"
 msgstr "Yeni bağlantı (qabaqcıl)…"
 
@@ -12640,7 +12640,7 @@ msgstr "İş sahələrini idarə et"
 msgid "Manage Snippets"
 msgstr "Fraqmentləri idarə et"
 
-#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:298
+#: rustconn/src/sidebar_ui.rs:1374 rustconn/src/window/ui.rs:312
 msgid "Tools"
 msgstr "Alətlər"
 
@@ -13116,7 +13116,7 @@ msgstr "Bütün tabları bağla"
 msgid "Info"
 msgstr "Məlumat"
 
-#: rustconn/src/toast.rs:307 rustconn/src/window/batch_edit.rs:240
+#: rustconn/src/toast.rs:307 rustconn/src/window/batch_edit.rs:241
 #: rustconn/src/window/key_setup.rs:868
 msgid "Undo"
 msgstr "Geri al"
@@ -13158,7 +13158,7 @@ msgstr "Sürətli qoşulma…"
 msgid "{} Active Session(s)"
 msgstr "{} aktiv sessiya"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5741
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5760
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Parol ifadəsi portativ faylı açmır"
 
@@ -13280,23 +13280,23 @@ msgstr "Qrup dəyişikliyini tətbiq et"
 msgid "(No Group)"
 msgstr "(Qrup yoxdur)"
 
-#: rustconn/src/window/batch_edit.rs:124
+#: rustconn/src/window/batch_edit.rs:125
 msgid "Apply tags change"
 msgstr "Teq dəyişikliyini tətbiq et"
 
-#: rustconn/src/window/batch_edit.rs:126
+#: rustconn/src/window/batch_edit.rs:127
 msgid "Tags (comma-separated, replaces existing)"
 msgstr "Teqlər (vergüllə ayrılmış, mövcudları əvəz edir)"
 
-#: rustconn/src/window/batch_edit.rs:134
+#: rustconn/src/window/batch_edit.rs:135
 msgid "Apply icon change"
 msgstr "İkon dəyişikliyini tətbiq et"
 
-#: rustconn/src/window/batch_edit.rs:136
+#: rustconn/src/window/batch_edit.rs:137
 msgid "Icon (emoji or GTK icon name, empty clears)"
 msgstr "İkon (emoji və ya GTK ikon adı, boş buraxılsa silinir)"
 
-#: rustconn/src/window/batch_edit.rs:239
+#: rustconn/src/window/batch_edit.rs:240
 msgid "Updated {} connections"
 msgstr "{} bağlantı yeniləndi"
 
@@ -13354,8 +13354,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Jump host əlçatan deyil"
 
-#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3661
-#: rustconn/src/window/mod.rs:3727 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:411 rustconn/src/window/mod.rs:3680
+#: rustconn/src/window/mod.rs:3746 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Buna baxmayaraq qoşul"
 
@@ -13443,89 +13443,89 @@ msgstr "Qrup təfərrüatları"
 msgid "(None - Root Level)"
 msgstr "(Yoxdur - Kök səviyyə)"
 
-#: rustconn/src/window/connection_dialogs.rs:476
+#: rustconn/src/window/connection_dialogs.rs:477
 #: rustconn/src/window/edit_group.rs:216
 msgid "Parent"
 msgstr "Üst qrup"
 
-#: rustconn/src/window/connection_dialogs.rs:477
+#: rustconn/src/window/connection_dialogs.rs:478
 msgid "Optional - leave empty for root level"
 msgstr "İstəyə bağlı - kök səviyyə üçün boş buraxın"
 
-#: rustconn/src/window/connection_dialogs.rs:485
+#: rustconn/src/window/connection_dialogs.rs:486
 msgid "Create Another"
 msgstr "Daha birini yarat"
 
-#: rustconn/src/window/connection_dialogs.rs:493
-#: rustconn/src/window/edit_group.rs:229
+#: rustconn/src/window/connection_dialogs.rs:494
+#: rustconn/src/window/edit_group.rs:235
 msgid "Default Credentials"
 msgstr "Standart kimlik məlumatları"
 
-#: rustconn/src/window/connection_dialogs.rs:494
-#: rustconn/src/window/edit_group.rs:230
+#: rustconn/src/window/connection_dialogs.rs:495
+#: rustconn/src/window/edit_group.rs:236
 msgid "Credentials inherited by connections in this group"
 msgstr "Bu qrupdakı bağlantıların miras aldığı kimlik məlumatları"
 
-#: rustconn/src/window/connection_dialogs.rs:528
-#: rustconn/src/window/edit_group.rs:281
+#: rustconn/src/window/connection_dialogs.rs:529
+#: rustconn/src/window/edit_group.rs:287
 msgid "Show/hide password"
 msgstr "Parolu göstər/gizlət"
 
-#: rustconn/src/window/connection_dialogs.rs:532
-#: rustconn/src/window/edit_group.rs:285
+#: rustconn/src/window/connection_dialogs.rs:533
+#: rustconn/src/window/edit_group.rs:291
 msgid "Toggle password visibility"
 msgstr "Parolun görünməsini dəyiş"
 
-#: rustconn/src/window/connection_dialogs.rs:586
+#: rustconn/src/window/connection_dialogs.rs:587
 msgid "Enter group name first"
 msgstr "Əvvəlcə qrup adını daxil edin"
 
-#: rustconn/src/window/connection_dialogs.rs:614
+#: rustconn/src/window/connection_dialogs.rs:615
 msgid "Vault not configured"
 msgstr "Anbar konfiqurasiya edilməyib"
 
-#: rustconn/src/window/connection_dialogs.rs:656
-#: rustconn/src/window/connection_dialogs.rs:695
-#: rustconn/src/window/connection_dialogs.rs:702
-#: rustconn/src/window/edit_group.rs:497 rustconn/src/window/edit_group.rs:534
-#: rustconn/src/window/edit_group.rs:541
+#: rustconn/src/window/connection_dialogs.rs:657
+#: rustconn/src/window/connection_dialogs.rs:696
+#: rustconn/src/window/connection_dialogs.rs:703
+#: rustconn/src/window/edit_group.rs:503 rustconn/src/window/edit_group.rs:540
+#: rustconn/src/window/edit_group.rs:547
 msgid "No password found for this group"
 msgstr "Bu qrup üçün parol tapılmadı"
 
-#: rustconn/src/window/connection_dialogs.rs:662
-#: rustconn/src/window/connection_dialogs.rs:707
-#: rustconn/src/window/edit_group.rs:503 rustconn/src/window/edit_group.rs:546
+#: rustconn/src/window/connection_dialogs.rs:663
+#: rustconn/src/window/connection_dialogs.rs:708
+#: rustconn/src/window/edit_group.rs:509 rustconn/src/window/edit_group.rs:552
 msgid "Load Error"
 msgstr "Yükləmə xətası"
 
-#: rustconn/src/window/connection_dialogs.rs:716
-#: rustconn/src/window/edit_group.rs:442
+#: rustconn/src/window/connection_dialogs.rs:717
+#: rustconn/src/window/edit_group.rs:448
 msgid "Select Vault to load password"
 msgstr "Parolu yükləmək üçün Anbar seçin"
 
-#: rustconn/src/window/connection_dialogs.rs:728
-#: rustconn/src/window/edit_group.rs:1561
+#: rustconn/src/window/connection_dialogs.rs:729
+#: rustconn/src/window/edit_group.rs:1567
 msgid "Notes, contacts, project info"
 msgstr "Qeydlər, kontaktlar, layihə məlumatları"
 
-#: rustconn/src/window/connection_dialogs.rs:770
-#: rustconn/src/window/edit_group.rs:1680
+#: rustconn/src/window/connection_dialogs.rs:771
+#: rustconn/src/window/edit_group.rs:1686
 msgid "Group name cannot be empty"
 msgstr "Qrup adı boş ola bilməz"
 
-#: rustconn/src/window/connection_dialogs.rs:862
+#: rustconn/src/window/connection_dialogs.rs:863
 msgid "Error Updating Group"
 msgstr "Qrup yenilənərkən xəta"
 
-#: rustconn/src/window/connection_dialogs.rs:916
+#: rustconn/src/window/connection_dialogs.rs:917
 msgid "Group ‘{}’ created"
 msgstr "‘{}’ qrupu yaradıldı"
 
-#: rustconn/src/window/connection_dialogs.rs:972
+#: rustconn/src/window/connection_dialogs.rs:973
 msgid "Import Duplicates?"
 msgstr "Təkrarlar idxal edilsin?"
 
-#: rustconn/src/window/connection_dialogs.rs:974
+#: rustconn/src/window/connection_dialogs.rs:975
 msgid ""
 "{} of {} connections have the same name as existing ones. Imported copies "
 "are kept alongside the existing connections under a numbered name."
@@ -13533,36 +13533,36 @@ msgstr ""
 "{} / {} bağlantının adı mövcud olanlarla eynidir. İdxal edilən nüsxələr "
 "nömrəli adla mövcud bağlantıların yanında saxlanılır."
 
-#: rustconn/src/window/connection_dialogs.rs:982
+#: rustconn/src/window/connection_dialogs.rs:983
 msgid "Skip Duplicates"
 msgstr "Təkrarları keç"
 
-#: rustconn/src/window/connection_dialogs.rs:983
+#: rustconn/src/window/connection_dialogs.rs:984
 msgid "Import All"
 msgstr "Hamısını idxal et"
 
-#: rustconn/src/window/connection_dialogs.rs:1058
+#: rustconn/src/window/connection_dialogs.rs:1059
 msgid "Imported {} connections and {} snippets to '{}' group"
 msgstr "{} bağlantı və {} fraqment '{}' qrupuna idxal edildi"
 
-#: rustconn/src/window/connection_dialogs.rs:1063
+#: rustconn/src/window/connection_dialogs.rs:1064
 msgid "Imported {} connections to '{}' group"
 msgstr "{} bağlantı '{}' qrupuna idxal edildi"
 
-#: rustconn/src/window/connection_dialogs.rs:1096
+#: rustconn/src/window/connection_dialogs.rs:1097
 msgid "Storing {} imported credentials…"
 msgstr "{} idxal edilmiş kimlik məlumatı saxlanılır…"
 
-#: rustconn/src/window/connection_dialogs.rs:1107
+#: rustconn/src/window/connection_dialogs.rs:1108
 msgid "Stored {} imported credentials"
 msgstr "{} idxal edilmiş kimlik məlumatı saxlanıldı"
 
-#: rustconn/src/window/connection_dialogs.rs:1118
+#: rustconn/src/window/connection_dialogs.rs:1119
 msgid "Stored {} of {} imported credentials — check the secret backend"
 msgstr ""
 "{} / {} idxal edilmiş kimlik məlumatı saxlanıldı — sirr backend-ini yoxlayın"
 
-#: rustconn/src/window/connection_dialogs.rs:1128
+#: rustconn/src/window/connection_dialogs.rs:1129
 msgid "Could not store imported credentials in the secret backend"
 msgstr "İdxal edilmiş kimlik məlumatları sirr backend-ində saxlanıla bilmədi"
 
@@ -13934,7 +13934,7 @@ msgid "Name cannot be empty"
 msgstr "Ad boş ola bilməz"
 
 #: rustconn/src/window/edit_dialogs.rs:386
-#: rustconn/src/window/edit_group.rs:1739
+#: rustconn/src/window/edit_group.rs:1745
 msgid "Group with name '{}' already exists"
 msgstr "'{}' adlı qrup artıq mövcuddur"
 
@@ -13962,113 +13962,113 @@ msgstr "Qrupu redaktə et"
 msgid "Moving a group moves all its content"
 msgstr "Qrupun köçürülməsi onun bütün məzmununu köçürür"
 
-#: rustconn/src/window/edit_group.rs:460
+#: rustconn/src/window/edit_group.rs:466
 msgid "KeePass database not configured"
 msgstr "KeePass verilənlər bazası konfiqurasiya edilməyib"
 
-#: rustconn/src/window/edit_group.rs:627
+#: rustconn/src/window/edit_group.rs:633
 msgid "SSH Settings"
 msgstr "SSH tənzimləmələri"
 
-#: rustconn/src/window/edit_group.rs:628
+#: rustconn/src/window/edit_group.rs:634
 msgid "SSH settings inherited by connections in this group"
 msgstr "Bu qrupdakı bağlantıların miras aldığı SSH tənzimləmələri"
 
-#: rustconn/src/window/edit_group.rs:680
+#: rustconn/src/window/edit_group.rs:686
 msgid "Clear SSH Settings?"
 msgstr "SSH tənzimləmələri təmizlənsin?"
 
-#: rustconn/src/window/edit_group.rs:682
+#: rustconn/src/window/edit_group.rs:688
 msgid ""
 "Disabling will clear all SSH settings for this group. This cannot be undone."
 msgstr ""
 "Söndürmə bu qrup üçün bütün SSH tənzimləmələrini təmizləyəcək. Bu geri "
 "qaytarıla bilməz."
 
-#: rustconn/src/window/edit_group.rs:687 rustconn/src/window/edit_group.rs:1181
+#: rustconn/src/window/edit_group.rs:693 rustconn/src/window/edit_group.rs:1187
 msgid "Keep"
 msgstr "Saxla"
 
-#: rustconn/src/window/edit_group.rs:712 rustconn/src/window/edit_group.rs:735
+#: rustconn/src/window/edit_group.rs:718 rustconn/src/window/edit_group.rs:741
 msgid "Security Key"
 msgstr "Təhlükəsizlik açarı"
 
-#: rustconn/src/window/edit_group.rs:715
+#: rustconn/src/window/edit_group.rs:721
 msgid "SSH Authentication Method"
 msgstr "SSH autentifikasiya üsulu"
 
-#: rustconn/src/window/edit_group.rs:737 rustconn/src/window/edit_group.rs:762
-#: rustconn/src/window/edit_group.rs:873 rustconn/src/window/edit_group.rs:910
-#: rustconn/src/window/edit_group.rs:926
+#: rustconn/src/window/edit_group.rs:743 rustconn/src/window/edit_group.rs:768
+#: rustconn/src/window/edit_group.rs:879 rustconn/src/window/edit_group.rs:916
+#: rustconn/src/window/edit_group.rs:932
 msgid "Inherited from a parent group: {}"
 msgstr "Üst qrupdan miras alınıb: {}"
 
-#: rustconn/src/window/edit_group.rs:743
+#: rustconn/src/window/edit_group.rs:749
 msgid "SSH Key Path"
 msgstr "SSH açar yolu"
 
-#: rustconn/src/window/edit_group.rs:904
+#: rustconn/src/window/edit_group.rs:910
 msgid "SSH Proxy Jump"
 msgstr "SSH proxy jump"
 
-#: rustconn/src/window/edit_group.rs:912
+#: rustconn/src/window/edit_group.rs:918
 msgid "Manual ProxyJump (-J) — used when Jump Host is (None)"
 msgstr "Əllə ProxyJump (-J) — Jump Host (Yoxdur) olduqda istifadə olunur"
 
-#: rustconn/src/window/edit_group.rs:970
+#: rustconn/src/window/edit_group.rs:976
 msgid "Not synced"
 msgstr "Sinxronlaşdırılmayıb"
 
-#: rustconn/src/window/edit_group.rs:970
+#: rustconn/src/window/edit_group.rs:976
 msgid "Master"
 msgstr "Əsas"
 
-#: rustconn/src/window/edit_group.rs:1039
+#: rustconn/src/window/edit_group.rs:1045
 msgid "Sync File"
 msgstr "Sinxronizasiya faylı"
 
-#: rustconn/src/window/edit_group.rs:1047
+#: rustconn/src/window/edit_group.rs:1053
 msgid "Last Synced"
 msgstr "Son sinxronizasiya"
 
-#: rustconn/src/window/edit_group.rs:1066
+#: rustconn/src/window/edit_group.rs:1072
 msgid "Dynamic Folder"
 msgstr "Dinamik qovluq"
 
-#: rustconn/src/window/edit_group.rs:1067
+#: rustconn/src/window/edit_group.rs:1073
 msgid "Generate connections from a script"
 msgstr "Skriptdən bağlantılar yarat"
 
-#: rustconn/src/window/edit_group.rs:1082
+#: rustconn/src/window/edit_group.rs:1088
 msgid "Shell command executed via sh -c"
 msgstr "sh -c vasitəsilə icra olunan shell əmri"
 
-#: rustconn/src/window/edit_group.rs:1086
+#: rustconn/src/window/edit_group.rs:1092
 msgid "Working Directory"
 msgstr "İşçi qovluq"
 
-#: rustconn/src/window/edit_group.rs:1098
+#: rustconn/src/window/edit_group.rs:1104
 msgid "Timeout (seconds)"
 msgstr "Taym-aut (saniyə)"
 
-#: rustconn/src/window/edit_group.rs:1114
+#: rustconn/src/window/edit_group.rs:1120
 msgid "Refresh Interval (seconds)"
 msgstr "Yeniləmə intervalı (saniyə)"
 
-#: rustconn/src/window/edit_group.rs:1115
+#: rustconn/src/window/edit_group.rs:1121
 msgid "0 = manual only"
 msgstr "0 = yalnız əl ilə"
 
-#: rustconn/src/window/edit_group.rs:1148
+#: rustconn/src/window/edit_group.rs:1154
 msgid "Expect rules and post-login scripts inherited by connections"
 msgstr ""
 "Bağlantıların miras aldığı expect qaydaları və girişdən sonrakı skriptlər"
 
-#: rustconn/src/window/edit_group.rs:1174
+#: rustconn/src/window/edit_group.rs:1180
 msgid "Clear Automation?"
 msgstr "Avtomatlaşdırma təmizlənsin?"
 
-#: rustconn/src/window/edit_group.rs:1176
+#: rustconn/src/window/edit_group.rs:1182
 msgid ""
 "Disabling will clear all expect rules and post-login scripts for this group. "
 "This cannot be undone."
@@ -14076,43 +14076,43 @@ msgstr ""
 "Söndürmə bu qrup üçün bütün expect qaydalarını və girişdən sonrakı "
 "skriptləri təmizləyəcək. Bu geri qaytarıla bilməz."
 
-#: rustconn/src/window/edit_group.rs:1343
+#: rustconn/src/window/edit_group.rs:1349
 msgid "Clear All"
 msgstr "Hamısını təmizlə"
 
-#: rustconn/src/window/edit_group.rs:1345
+#: rustconn/src/window/edit_group.rs:1351
 msgid "Remove all expect rules"
 msgstr "Bütün expect qaydalarını sil"
 
-#: rustconn/src/window/edit_group.rs:1378
+#: rustconn/src/window/edit_group.rs:1384
 msgid "Test text against your expect rules"
 msgstr "Mətni expect qaydalarınıza qarşı yoxlayın"
 
-#: rustconn/src/window/edit_group.rs:1385
+#: rustconn/src/window/edit_group.rs:1391
 msgid "Enter text to test against patterns"
 msgstr "Şablonlara qarşı yoxlamaq üçün mətn daxil edin"
 
-#: rustconn/src/window/edit_group.rs:1422
+#: rustconn/src/window/edit_group.rs:1428
 msgid "Match: pattern '{}' → response '{}'"
 msgstr "Uyğunluq: şablon '{}' → cavab '{}'"
 
-#: rustconn/src/window/edit_group.rs:1434
+#: rustconn/src/window/edit_group.rs:1440
 msgid "No match"
 msgstr "Uyğunluq yoxdur"
 
-#: rustconn/src/window/edit_group.rs:1449
+#: rustconn/src/window/edit_group.rs:1455
 msgid "Post-login Scripts"
 msgstr "Girişdən sonrakı skriptlər"
 
-#: rustconn/src/window/edit_group.rs:1451
+#: rustconn/src/window/edit_group.rs:1457
 msgid "Commands executed after login (inherited by connections)"
 msgstr "Girişdən sonra icra olunan əmrlər (bağlantılar miras alır)"
 
-#: rustconn/src/window/edit_group.rs:1459
+#: rustconn/src/window/edit_group.rs:1465
 msgid "No post-login scripts"
 msgstr "Girişdən sonrakı skript yoxdur"
 
-#: rustconn/src/window/edit_group.rs:1498
+#: rustconn/src/window/edit_group.rs:1504
 msgid ""
 "Script library ids run after a connection in this group starts (inherited by "
 "connections)"
@@ -14120,15 +14120,15 @@ msgstr ""
 "Bu qrupdakı bağlantı başladıqdan sonra işə salınan skript kitabxanası id-"
 "ləri (bağlantılar miras alır)"
 
-#: rustconn/src/window/edit_group.rs:1713
+#: rustconn/src/window/edit_group.rs:1719
 msgid "Select a variable"
 msgstr "Dəyişən seçin"
 
-#: rustconn/src/window/edit_group.rs:1876
+#: rustconn/src/window/edit_group.rs:1882
 msgid "Dynamic Folder script cannot be empty"
 msgstr "Dinamik qovluq skripti boş ola bilməz"
 
-#: rustconn/src/window/edit_group.rs:2035
+#: rustconn/src/window/edit_group.rs:2041
 msgid ""
 "This group will be exported to {}. Other team members with read access can "
 "import it."
@@ -14136,19 +14136,19 @@ msgstr ""
 "Bu qrup {} ünvanına eksport ediləcək. Oxuma icazəsi olan digər komanda "
 "üzvləri onu idxal edə bilər."
 
-#: rustconn/src/window/edit_group.rs:2039
+#: rustconn/src/window/edit_group.rs:2045
 msgid "Enable Cloud Sync?"
 msgstr "Bulud sinxronizasiyası aktivləşdirilsin?"
 
-#: rustconn/src/window/edit_group.rs:2073
+#: rustconn/src/window/edit_group.rs:2079
 msgid "Choose Directory"
 msgstr "Qovluq seç"
 
-#: rustconn/src/window/edit_group.rs:2080
+#: rustconn/src/window/edit_group.rs:2086
 msgid "Set Up Cloud Sync"
 msgstr "Bulud sinxronizasiyasını qur"
 
-#: rustconn/src/window/edit_group.rs:2082
+#: rustconn/src/window/edit_group.rs:2088
 msgid ""
 "Choose a directory synced with your cloud service (Google Drive, Nextcloud, "
 "Syncthing, etc.)"
@@ -14156,11 +14156,11 @@ msgstr ""
 "Bulud xidmətinizlə sinxronlaşan qovluq seçin (Google Drive, Nextcloud, "
 "Syncthing və s.)"
 
-#: rustconn/src/window/edit_group.rs:2597
+#: rustconn/src/window/edit_group.rs:2603
 msgid "Shell command (e.g., export TERM=xterm-256color)"
 msgstr "Shell əmri (məs., export TERM=xterm-256color)"
 
-#: rustconn/src/window/edit_group.rs:2598
+#: rustconn/src/window/edit_group.rs:2604
 msgid "Command to execute after login"
 msgstr "Girişdən sonra icra olunacaq əmr"
 
@@ -14211,7 +14211,7 @@ msgstr "(Kök səviyyə)"
 msgid "(Ungrouped)"
 msgstr "(Qrupsuz)"
 
-#: rustconn/src/window/groups.rs:185
+#: rustconn/src/window/groups.rs:186
 msgid "Error Moving Item"
 msgstr "Element köçürülərkən xəta"
 
@@ -14436,31 +14436,31 @@ msgstr "Crash jurnalı açıla bilmədi. O, {} ünvanında saxlanılır"
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Parol verilənlər bazasını açmaq üçün aparat açarınıza toxunun"
 
-#: rustconn/src/window/mod.rs:2788
+#: rustconn/src/window/mod.rs:2807
 msgid "Already running in an external window"
 msgstr "Artıq xarici pəncərədə işləyir"
 
-#: rustconn/src/window/mod.rs:3017
+#: rustconn/src/window/mod.rs:3036
 msgid "Connection to ‘{}’ failed"
 msgstr "‘{}’ bağlantısı alınmadı"
 
-#: rustconn/src/window/mod.rs:3365 rustconn/src/window/mod.rs:3379
+#: rustconn/src/window/mod.rs:3384 rustconn/src/window/mod.rs:3398
 msgid "Pre-connect task failed: {}"
 msgstr "Qoşulmadan əvvəlki tapşırıq alınmadı: {}"
 
-#: rustconn/src/window/mod.rs:3413
+#: rustconn/src/window/mod.rs:3432
 msgid "Port knock failed: {}"
 msgstr "Port knock alınmadı: {}"
 
-#: rustconn/src/window/mod.rs:3462
+#: rustconn/src/window/mod.rs:3481
 msgid "SPA failed: {}"
 msgstr "SPA alınmadı: {}"
 
-#: rustconn/src/window/mod.rs:3646
+#: rustconn/src/window/mod.rs:3665
 msgid "{} (via {})"
 msgstr "{} ({} vasitəsilə)"
 
-#: rustconn/src/window/mod.rs:3652
+#: rustconn/src/window/mod.rs:3671
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14484,35 +14484,35 @@ msgstr ""
 "Əgər bu dəyişikliyi siz etməmisinizsə, ləğv edin — qoşulma saxlanmış kimlik "
 "məlumatlarını başqa maşına göndərə bilər."
 
-#: rustconn/src/window/mod.rs:3657
+#: rustconn/src/window/mod.rs:3676
 msgid "Routing changed for “{}”"
 msgstr "“{}” üçün marşrut dəyişdi"
 
-#: rustconn/src/window/mod.rs:3721
+#: rustconn/src/window/mod.rs:3740
 msgid "Jump Host Unavailable for “{}”"
 msgstr "“{}” üçün jump host əlçatan deyil"
 
-#: rustconn/src/window/mod.rs:3726
+#: rustconn/src/window/mod.rs:3745
 msgid "Connect Directly"
 msgstr "Birbaşa qoşul"
 
-#: rustconn/src/window/mod.rs:3815 rustconn/src/window/mod.rs:3990
+#: rustconn/src/window/mod.rs:3834 rustconn/src/window/mod.rs:4009
 msgid "Connection “{}” created"
 msgstr "“{}” bağlantısı yaradıldı"
 
-#: rustconn/src/window/mod.rs:4247
+#: rustconn/src/window/mod.rs:4266
 msgid "RustConn - {}"
 msgstr "RustConn - {}"
 
-#: rustconn/src/window/mod.rs:4459
+#: rustconn/src/window/mod.rs:4478
 msgid "Settings saved"
 msgstr "Tənzimləmələr saxlanıldı"
 
-#: rustconn/src/window/mod.rs:4496
+#: rustconn/src/window/mod.rs:4515
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Parol ifadəsi bu kompüterdə saxlanılmadı"
 
-#: rustconn/src/window/mod.rs:4498
+#: rustconn/src/window/mod.rs:4517
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14524,11 +14524,11 @@ msgstr ""
 "Əvəzinə \"System keyring\" seçin və ya RustConn-un öz məlumat qovluğuna yaza "
 "bildiyini yoxlayın."
 
-#: rustconn/src/window/mod.rs:4544
+#: rustconn/src/window/mod.rs:4563
 msgid "Credentials Not Saved to Keyring"
 msgstr "Kimlik məlumatları açar qovluğuna saxlanılmadı"
 
-#: rustconn/src/window/mod.rs:4546
+#: rustconn/src/window/mod.rs:4565
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14539,15 +14539,15 @@ msgstr ""
 "xidmətinizin işlədiyini və kilidinin açıq olduğunu yoxlayın, sonra "
 "tənzimləmələri yenidən saxlayın."
 
-#: rustconn/src/window/mod.rs:4730
+#: rustconn/src/window/mod.rs:4749
 msgid "Close RustConn?"
 msgstr "RustConn bağlansın?"
 
-#: rustconn/src/window/mod.rs:4732
+#: rustconn/src/window/mod.rs:4751
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "{} sessiya tabı açıqdır. Aktiv bağlantılar ayrılacaq."
 
-#: rustconn/src/window/mod.rs:4769
+#: rustconn/src/window/mod.rs:4788
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14555,7 +14555,7 @@ msgstr ""
 "Tənzimləmələr oxuna bilmədi, ona görə standartlar istifadə olunur. Oxunmayan "
 "fayl {} kimi saxlanıldı."
 
-#: rustconn/src/window/mod.rs:4774
+#: rustconn/src/window/mod.rs:4793
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14563,35 +14563,35 @@ msgstr ""
 "Bu tənzimləmələr daha yeni RustConn ({}) tərəfindən saxlanılıb. "
 "Dəyişdirilməzdən əvvəl ehtiyat nüsxə saxlanılır."
 
-#: rustconn/src/window/mod.rs:4799
+#: rustconn/src/window/mod.rs:4818
 msgid "Cloud sync failed for '{}': {}"
 msgstr "'{}' üçün bulud sinxronizasiyası alınmadı: {}"
 
-#: rustconn/src/window/mod.rs:4982
+#: rustconn/src/window/mod.rs:5001
 msgid "Startup connection not found"
 msgstr "Başlanğıc bağlantısı tapılmadı"
 
-#: rustconn/src/window/mod.rs:5055
+#: rustconn/src/window/mod.rs:5074
 msgid "Failed to open .rdp file"
 msgstr ".rdp faylı açıla bilmədi"
 
-#: rustconn/src/window/mod.rs:5091
+#: rustconn/src/window/mod.rs:5110
 msgid "Failed to open .vv file"
 msgstr ".vv faylı açıla bilmədi"
 
-#: rustconn/src/window/mod.rs:5128
+#: rustconn/src/window/mod.rs:5147
 msgid "Tunnel “{}” stopped: {}"
 msgstr "“{}” tuneli dayandı: {}"
 
-#: rustconn/src/window/mod.rs:5144
+#: rustconn/src/window/mod.rs:5163
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "“{}” tunelinə yenidən qoşulmadan əl çəkildi: {}"
 
-#: rustconn/src/window/mod.rs:5657
+#: rustconn/src/window/mod.rs:5676
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "{} bağlantı uğurla eksport edildi. {} keçildi."
 
-#: rustconn/src/window/mod.rs:5743
+#: rustconn/src/window/mod.rs:5762
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14601,11 +14601,11 @@ msgstr ""
 "içindəki parolların heç biri oxuna bilmir. Tənzimləmələr ▸ Sirlər bölməsini "
 "açın və faylın yaradıldığı parol ifadəsini daxil edin."
 
-#: rustconn/src/window/mod.rs:5778
+#: rustconn/src/window/mod.rs:5797
 msgid "Share Local Devices?"
 msgstr "Lokal cihazlar paylaşılsın?"
 
-#: rustconn/src/window/mod.rs:5780
+#: rustconn/src/window/mod.rs:5799
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
@@ -14876,15 +14876,15 @@ msgstr "{} bağlantı üçün qrup seçin:"
 msgid "Select parent for {} group(s):"
 msgstr "{} qrup üçün üst qrup seçin:"
 
-#: rustconn/src/window/operations.rs:1315
+#: rustconn/src/window/operations.rs:1316
 msgid "Move Partially Complete"
 msgstr "Köçürmə qismən tamamlandı"
 
-#: rustconn/src/window/operations.rs:1318
+#: rustconn/src/window/operations.rs:1319
 msgid "Moved {} item(s)."
 msgstr "{} element köçürüldü."
 
-#: rustconn/src/window/operations.rs:1320
+#: rustconn/src/window/operations.rs:1321
 msgid "Failed to move {} item(s):"
 msgstr "{} element köçürülə bilmədi:"
 
@@ -15422,18 +15422,18 @@ msgstr "Fraqmenti icra etməzdən əvvəl əvvəlcə terminal sessiyası açın.
 msgid "Enter Variable Values"
 msgstr "Dəyişən dəyərlərini daxil edin"
 
-#: rustconn/src/window/sorting.rs:485 rustconn/src/window/sorting.rs:506
+#: rustconn/src/window/sorting.rs:487 rustconn/src/window/sorting.rs:508
 msgid ""
 "Imported folders are managed by sync and their structure cannot be changed"
 msgstr ""
 "İdxal edilmiş qovluqlar sinxronizasiya ilə idarə olunur və onların strukturu "
 "dəyişdirilə bilməz"
 
-#: rustconn/src/window/sorting.rs:517
+#: rustconn/src/window/sorting.rs:519
 msgid "Cannot move a folder into one of its own subfolders"
 msgstr "Qovluq öz alt qovluqlarından birinə köçürülə bilməz"
 
-#: rustconn/src/window/split_view_actions.rs:503
+#: rustconn/src/window/split_view_actions.rs:532
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
 "across split panels"
@@ -15441,9 +15441,9 @@ msgstr ""
 "İpucu: bölünmüş panellər arasında klaviş vuruşlarını ötürmək üçün "
 "Ctrl+Shift+B basın və ya Yayım düyməsindən istifadə edin"
 
-#: rustconn/src/window/split_view_actions.rs:545
-#: rustconn/src/window/split_view_actions.rs:766
-#: rustconn/src/window/split_view_actions.rs:1257
+#: rustconn/src/window/split_view_actions.rs:574
+#: rustconn/src/window/split_view_actions.rs:795
+#: rustconn/src/window/split_view_actions.rs:1301
 msgid ""
 "Split view is not available for external-viewer sessions. Switch this "
 "connection to embedded mode to use split."
@@ -15451,18 +15451,18 @@ msgstr ""
 "Xarici görüntüləyici sessiyaları üçün bölünmüş görünüş mövcud deyil. "
 "Bölmədən istifadə etmək üçün bu bağlantını daxili rejimə keçirin."
 
-#: rustconn/src/window/split_view_actions.rs:1251
+#: rustconn/src/window/split_view_actions.rs:1295
 msgid ""
 "This tab already has a split. Remove it first, or use Select Tab in a panel."
 msgstr ""
 "Bu tab artıq bölünüb. Əvvəlcə bölməni silin və ya paneldə “Tab seç” "
 "funksiyasından istifadə edin."
 
-#: rustconn/src/window/split_view_actions.rs:1278
+#: rustconn/src/window/split_view_actions.rs:1322
 msgid "There are no other tabs that can be shown in a split."
 msgstr "Bölünmüş görünüşdə göstərilə bilən başqa tab yoxdur."
 
-#: rustconn/src/window/split_view_actions.rs:1377
+#: rustconn/src/window/split_view_actions.rs:1421
 msgid "Some tabs could not be added to the split."
 msgstr "Bəzi tabları bölməyə əlavə etmək alınmadı."
 
@@ -15526,131 +15526,135 @@ msgstr "Sağa böl (Ctrl+Shift+S)"
 msgid "Split Right"
 msgstr "Sağa böl"
 
-#: rustconn/src/window/ui.rs:133
+#: rustconn/src/window/ui.rs:123
+msgid "Remove Split (Ctrl+Shift+J)"
+msgstr "Bölməni sil (Ctrl+Shift+J)"
+
+#: rustconn/src/window/ui.rs:146
 msgid "Local Shell (Ctrl+Shift+T)"
 msgstr "Lokal shell (Ctrl+Shift+T)"
 
-#: rustconn/src/window/ui.rs:136
+#: rustconn/src/window/ui.rs:149
 msgid "Open Local Shell"
 msgstr "Lokal shell aç"
 
-#: rustconn/src/window/ui.rs:145
+#: rustconn/src/window/ui.rs:158
 msgid "Broadcast"
 msgstr "Yayım"
 
-#: rustconn/src/window/ui.rs:151
+#: rustconn/src/window/ui.rs:164
 msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"
 msgstr "Klaviş vuruşlarını bütün bölünmüş panellərə ötür (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
+#: rustconn/src/window/ui.rs:167
 msgid "Toggle split broadcast"
 msgstr "Bölünmüş yayımı dəyiş"
 
-#: rustconn/src/window/ui.rs:169
+#: rustconn/src/window/ui.rs:182
 msgid "Group Broadcast"
 msgstr "Qrup yayımı"
 
-#: rustconn/src/window/ui.rs:175
+#: rustconn/src/window/ui.rs:188
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "Klaviş vuruşlarını yayım qrupundakı bütün tablara ötür"
 
-#: rustconn/src/window/ui.rs:178
+#: rustconn/src/window/ui.rs:191
 msgid "Toggle group broadcast"
 msgstr "Qrup yayımını dəyiş"
 
-#: rustconn/src/window/ui.rs:190
+#: rustconn/src/window/ui.rs:203
 msgid "Passthrough"
 msgstr "Ötürmə"
 
-#: rustconn/src/window/ui.rs:196 rustconn/src/window/ui.rs:199
+#: rustconn/src/window/ui.rs:209 rustconn/src/window/ui.rs:212
 msgid "Keyboard passthrough active — click to disable"
 msgstr "Klaviatura ötürməsi aktivdir — söndürmək üçün klikləyin"
 
-#: rustconn/src/window/ui.rs:281
+#: rustconn/src/window/ui.rs:295
 msgid "Snippets…"
 msgstr "Fraqmentlər…"
 
-#: rustconn/src/window/ui.rs:282
+#: rustconn/src/window/ui.rs:296
 msgid "Clusters…"
 msgstr "Klasterlər…"
 
-#: rustconn/src/window/ui.rs:283
+#: rustconn/src/window/ui.rs:297
 msgid "Workspaces…"
 msgstr "İş sahələri…"
 
-#: rustconn/src/window/ui.rs:284
+#: rustconn/src/window/ui.rs:298
 msgid "Templates…"
 msgstr "Şablonlar…"
 
-#: rustconn/src/window/ui.rs:285
+#: rustconn/src/window/ui.rs:299
 msgid "Variables…"
 msgstr "Dəyişənlər…"
 
-#: rustconn/src/window/ui.rs:286
+#: rustconn/src/window/ui.rs:300
 msgid "Scripts…"
 msgstr "Skriptlər…"
 
-#: rustconn/src/window/ui.rs:290
+#: rustconn/src/window/ui.rs:304
 msgid "Password Generator…"
 msgstr "Parol generatoru…"
 
-#: rustconn/src/window/ui.rs:293
+#: rustconn/src/window/ui.rs:307
 msgid "Wake On LAN…"
 msgstr "Wake On LAN…"
 
-#: rustconn/src/window/ui.rs:294
+#: rustconn/src/window/ui.rs:308
 msgid "SSH Tunnels…"
 msgstr "SSH tunelləri…"
 
-#: rustconn/src/window/ui.rs:303
+#: rustconn/src/window/ui.rs:317
 msgid "Active Sessions…"
 msgstr "Aktiv sessiyalar…"
 
-#: rustconn/src/window/ui.rs:304
+#: rustconn/src/window/ui.rs:318
 msgid "Connection History…"
 msgstr "Bağlantı tarixçəsi…"
 
-#: rustconn/src/window/ui.rs:305
+#: rustconn/src/window/ui.rs:319
 msgid "Statistics…"
 msgstr "Statistika…"
 
-#: rustconn/src/window/ui.rs:306
+#: rustconn/src/window/ui.rs:320
 msgid "Recordings…"
 msgstr "Yazılar…"
 
-#: rustconn/src/window/ui.rs:307
+#: rustconn/src/window/ui.rs:321
 msgid "Session Logs…"
 msgstr "Sessiya jurnalları…"
 
-#: rustconn/src/window/ui.rs:310
+#: rustconn/src/window/ui.rs:324
 msgid "Sessions"
 msgstr "Sessiyalar"
 
-#: rustconn/src/window/ui.rs:315
+#: rustconn/src/window/ui.rs:329
 msgid "Import Connections…"
 msgstr "Bağlantıları idxal et…"
 
-#: rustconn/src/window/ui.rs:316
+#: rustconn/src/window/ui.rs:330
 msgid "Export Connections…"
 msgstr "Bağlantıları eksport et…"
 
-#: rustconn/src/window/ui.rs:317
+#: rustconn/src/window/ui.rs:331
 msgid "Copy Connection"
 msgstr "Bağlantını kopyala"
 
-#: rustconn/src/window/ui.rs:319
+#: rustconn/src/window/ui.rs:333
 msgid "Paste Connection"
 msgstr "Bağlantını yapışdır"
 
-#: rustconn/src/window/ui.rs:332
+#: rustconn/src/window/ui.rs:346
 msgid "Components…"
 msgstr "Komponentlər…"
 
-#: rustconn/src/window/ui.rs:339
+#: rustconn/src/window/ui.rs:353
 msgid "Compact Interface"
 msgstr "Yığcam interfeys"
 
-#: rustconn/src/window/ui.rs:341
+#: rustconn/src/window/ui.rs:355
 msgid "Keyboard Passthrough"
 msgstr "Klaviatura ötürməsi"
 
@@ -15706,7 +15710,3 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klaster uğurla saxlanıldı."
-
-#: rustconn/src/window/ui.rs:123
-msgid "Remove Split (Ctrl+Shift+J)"
-msgstr "Bölməni sil (Ctrl+Shift+J)"
