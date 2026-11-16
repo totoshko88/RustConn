@@ -313,18 +313,30 @@ fn on_mode_changed(c: &Rc<Controller>) {
     if mode == KeyMode::Existing {
         if !c.existing_keys_loaded.get() {
             c.existing_keys_loaded.set(true);
-            // ponytail: synchronous directory scan on the GTK thread, same
-            // precedent as `refresh_slot_hint` — a handful of local
-            // directories, not a network path.
-            let mut keys = ssh_key_setup::existing_key_candidates();
-            // D2a: the connection's current key file is always offered, even
-            // when it lives outside the scanned directories.
-            if let Some(current) = &c.current_key_path
-                && !keys.contains(current)
-            {
-                keys.push(current.clone());
-            }
-            dialog.set_existing_keys(&keys, c.current_key_path.as_deref());
+            // The scan reads directories, so it runs off the GTK thread; the
+            // list fills in when it finishes, and a dialog closed meanwhile
+            // is left alone.
+            let c = Rc::clone(c);
+            spawn_blocking_with_callback(
+                ssh_key_setup::existing_key_candidates,
+                move |mut keys| {
+                    let Some(dialog) = c.dialog() else {
+                        return;
+                    };
+                    // D2a: the connection's current key file is always offered,
+                    // even when it lives outside the scanned directories.
+                    if let Some(current) = &c.current_key_path
+                        && !keys.contains(current)
+                    {
+                        keys.push(current.clone());
+                    }
+                    dialog.set_existing_keys(&keys, c.current_key_path.as_deref());
+                    if dialog.mode() == KeyMode::Existing {
+                        inspect_selected(&c);
+                    }
+                },
+            );
+            return;
         }
         inspect_selected(c);
     }
