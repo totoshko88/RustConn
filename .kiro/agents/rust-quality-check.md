@@ -40,7 +40,7 @@ or not. So:
 2. Start the run detached, with a sentinel. Always pass `timeout=900000`:
 
    ```bash
-   cd /home/totoshko88/Documents/RustConn || exit 1
+   cd "$(git rev-parse --show-toplevel)" || exit 1
    rm -f target/rqc.log target/rqc.rc
    nohup sh -c 'PATH="$HOME/.cargo/bin:$PATH" ./scripts/verify.sh --tests > target/rqc.log 2>&1; echo $? > target/rqc.rc' >/dev/null 2>&1 &
    echo "rc=started"

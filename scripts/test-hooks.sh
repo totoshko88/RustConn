@@ -120,7 +120,7 @@ done <<'EOF'
 ./scripts/release.sh
 ./scripts/release.sh --yes
 ./scripts/release.sh --dry-run --yes
-cd /home/totoshko88/Documents/RustConn && ./scripts/release.sh --yes
+cd $(git rev-parse --show-toplevel) && ./scripts/release.sh --yes
 nohup sh -c "./scripts/release.sh --yes"
 bash -c './scripts/release.sh --yes'
 bash scripts/release.sh --yes
