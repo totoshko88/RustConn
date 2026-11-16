@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.2] - Unreleased
 
+### Fixed
+
+- **Quitting while an SSH tunnel is starting no longer leaves `ssh -N` running** — a tunnel (Web `tunnel_via`, **Open Browser via Tunnel**, jump-host RDP, VNC, SPICE and Telnet) is raised on a worker thread that waits up to ten seconds for its port, and nothing else knew the process until that wait ended, so quitting in that window left the `ssh -N` alive and its askpass script and password file on disk. Every tunnel is now registered the moment it spawns; the exit path kills them, deletes those files and refuses to start another. A crash of the application itself is still not covered. (`rustconn-core/src/ssh_tunnel.rs`, `rustconn/src/window/mod.rs`, `rustconn/src/window/edit_actions.rs`)
+
 ### Changed
 
 - **The existing-key list of the SSH key setup dialog loads off the GTK thread** — picking **Use an existing key** scanned `~/.ssh` and the other key directories on the main thread; it now runs on a worker and the list fills in when the scan ends. A dialog closed meanwhile is left alone. (`rustconn/src/window/key_setup.rs`)
