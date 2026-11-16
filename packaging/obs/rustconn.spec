@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.25.1
+Version:        0.25.2
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,12 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Tue Nov 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.2-0
+- Version bump to 0.25.2
+- Fixed: quitting while an SSH tunnel is starting no longer leaves ssh -N running
+- Changed: the existing-key list of the key setup dialog loads off the GTK thread
+- Dependencies: zip 9.6.1, nix 0.32, rand 0.10.4, filetime 0.2.30, notify-types 2.3.1
+
 * Sun Nov 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.1-0
 - Version bump to 0.25.1
 - Added: closing a split tab asks to remove the split or close its sessions

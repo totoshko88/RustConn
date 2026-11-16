@@ -39,6 +39,71 @@ pub enum SshTunnelError {
 /// Result type for SSH tunnel operations.
 pub type SshTunnelResult<T> = Result<T, SshTunnelError>;
 
+/// Tunnel processes alive right now, by pid, with the temporary files each one
+/// owns (askpass script, secret file).
+///
+/// A tunnel is raised on a worker thread that then waits up to ten seconds for
+/// its port, and nothing else knows the process until that wait ends. Quitting
+/// in that window used to leave an `ssh -N` running and its secret file on
+/// disk. [`stop_all_tunnels`] reaches both from the exit path.
+static LIVE_TUNNELS: Mutex<Vec<(u32, Vec<std::path::PathBuf>)>> = Mutex::new(Vec::new());
+
+/// Set by [`stop_all_tunnels`]: a worker still in flight must not start a new
+/// process after the application has begun to exit.
+static TUNNELS_REFUSED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn refuse_when_exiting() -> SshTunnelResult<()> {
+    if TUNNELS_REFUSED.load(std::sync::atomic::Ordering::SeqCst) {
+        return Err(SshTunnelError::SpawnFailed(std::io::Error::other(
+            "the application is shutting down",
+        )));
+    }
+    Ok(())
+}
+
+fn register_tunnel(pid: u32, files: [Option<&std::path::Path>; 2]) {
+    if let Ok(mut live) = LIVE_TUNNELS.lock() {
+        live.push((pid, files.into_iter().flatten().map(Into::into).collect()));
+    }
+}
+
+/// Forgets a pid so a later pid reuse is never signalled by mistake.
+fn unregister_tunnel(pid: u32) {
+    if let Ok(mut live) = LIVE_TUNNELS.lock() {
+        live.retain(|(live_pid, _)| *live_pid != pid);
+    }
+}
+
+/// Kills every tunnel process still alive, deletes their askpass and secret
+/// files, and refuses to start another. Call it once, on the way out.
+///
+/// Safe to call twice, and safe against tunnels that are already stopped:
+/// [`SshTunnel::stop`] forgets its pid first.
+pub fn stop_all_tunnels() {
+    TUNNELS_REFUSED.store(true, std::sync::atomic::Ordering::SeqCst);
+    kill_registered_tunnels();
+}
+
+/// The killing half of [`stop_all_tunnels`], without the refusal flag, so a
+/// test can run it without turning every later tunnel test into a refusal.
+fn kill_registered_tunnels() {
+    let drained = LIVE_TUNNELS
+        .lock()
+        .map(|mut live| std::mem::take(&mut *live))
+        .unwrap_or_default();
+    for (pid, files) in drained {
+        if let Ok(raw) = i32::try_from(pid) {
+            let _ = nix::sys::signal::kill(
+                nix::unistd::Pid::from_raw(raw),
+                nix::sys::signal::Signal::SIGTERM,
+            );
+        }
+        for path in &files {
+            cleanup_askpass_script(path);
+        }
+    }
+}
+
 /// A running SSH tunnel (`ssh -N -L ...`).
 ///
 /// The tunnel process is killed when this struct is dropped.
@@ -74,6 +139,7 @@ impl SshTunnel {
         match self.child.try_wait() {
             Ok(None) => true,
             Ok(Some(status)) => {
+                unregister_tunnel(self.child.id());
                 let stderr = self
                     .stderr_output
                     .lock()
@@ -117,6 +183,7 @@ impl SshTunnel {
 
     /// Stops the tunnel by killing the SSH process.
     pub fn stop(&mut self) {
+        unregister_tunnel(self.child.id());
         let _ = self.child.kill();
         let _ = self.child.wait();
     }
@@ -749,6 +816,9 @@ fn spawn_tunnel(
     forward_args: &[&str; 2],
     remote_desc: &str,
 ) -> SshTunnelResult<SshTunnel> {
+    // The application is exiting: start nothing, so nothing outlives it.
+    refuse_when_exiting()?;
+
     // Before any askpass file exists, so a refusal leaves nothing behind.
     if params.launcher == TunnelLauncher::TailscaleSsh {
         validate_tailscale_destination(&params.jump_host)?;
@@ -836,6 +906,10 @@ fn spawn_tunnel(
     );
 
     let mut child = cmd.spawn()?;
+    register_tunnel(
+        child.id(),
+        [askpass_script_path.as_deref(), secret_file_path.as_deref()],
+    );
 
     // Capture SSH stderr in a background thread so diagnostic messages
     // (auth failures, port unreachable, etc.) are available for logging.
@@ -3396,5 +3470,44 @@ mod tunnel_password_tests {
             args[1].contains("-i /k/far -o IdentitiesOnly=yes"),
             "{args:?}"
         );
+    }
+}
+
+#[cfg(test)]
+mod registry_tests {
+    use super::*;
+
+    #[test]
+    fn killing_the_registry_ends_the_process_and_removes_its_files() {
+        let dir = std::env::temp_dir().join(format!("rc-tunnel-reg-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let secret = dir.join("secret");
+        std::fs::write(&secret, b"x").expect("secret file");
+
+        let mut child = Command::new("sleep").arg("30").spawn().expect("sleep");
+        register_tunnel(child.id(), [Some(secret.as_path()), None]);
+
+        kill_registered_tunnels();
+
+        let status = child.wait().expect("wait");
+        assert!(!status.success(), "sleep must have been signalled");
+        assert!(!secret.exists(), "the secret file must be deleted");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_stopped_pid_is_forgotten() {
+        let mut child = Command::new("sleep").arg("30").spawn().expect("sleep");
+        let pid = child.id();
+        register_tunnel(pid, [None, None]);
+        unregister_tunnel(pid);
+        let known = LIVE_TUNNELS
+            .lock()
+            .expect("lock")
+            .iter()
+            .any(|(live, _)| *live == pid);
+        assert!(!known);
+        let _ = child.kill();
+        let _ = child.wait();
     }
 }
