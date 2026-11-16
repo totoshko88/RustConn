@@ -13,7 +13,7 @@
 - [x] 2.2 Attach the exit code in the same handler via `registry.set_last_exit(termprop_uint)` (the separate `connect_command_finished` stays for the activity-monitor caller)
 - [x] 2.3 Add the `#[cfg(not(feature = "vte-0-78"))]` twin returning `false` and connecting nothing
 - [x] 2.4 Updated doc comments on both twins describing the `postexec`-anchored approach and the remote `vte.sh` precondition
-- [ ] 2.5 Call `trim_below` from the terminal's scroll / contents-changed path so stored rows never outlive the buffer *(deferred to the Task 5 wiring, where the registry is owned by the session and the signal is connected)*
+- [x] 2.5 Call `trim_below` from the terminal's scroll / contents-changed path so stored rows never outlive the buffer *(done in `failed_marker.rs`: the vadjustment `changed` handler trims below `lower()`)*
 - [x] 2.6 Verified clippy clean (pedantic/nursery, all-targets) under both the default feature set (no-op twin) and `--features vte-0-78` (real path)
 
 ## Task 3: Keybindings
@@ -49,7 +49,7 @@
 - [x] 7.2 README Terminal feature row updated (OSC 133 shell integration: prompt navigation + failed-command marker)
 - [x] 7.3 i18n: `po/update-pot.sh` regenerated the POT (strings surface via `i18n(&def.label)`, already in `i18n_markers`/`POTFILES.in`); `msgmerge` all 17 catalogues; replaced the fuzzy wrong-match ("Previous/Next Match") with correct "Previous/Next Prompt" translations in every locale and cleared the fuzzy flag. All three i18n gates pass (`check-potfiles`, `check-i18n-escapes`, `check-po-complete`) plus `check-pot-current`
 - [x] 7.4 CHANGELOG entry added under a new `[Unreleased]` heading (Cargo version left at 0.24.2 — bump is a release step, not feature work)
-- [ ] 7.5 **uk.po** translation ("Попереднє/Наступне запрошення") is pending the `uk-translation-reviewer` hook, which fires at commit time per `po/AGENTS.md` — do not hand-tune before then
+- [x] 7.5 **uk.po** translation ("Попереднє/Наступне запрошення") is pending the `uk-translation-reviewer` hook, which fires at commit time per `po/AGENTS.md` — do not hand-tune before then
 
 ## Task 8: Quality gate
 

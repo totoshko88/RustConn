@@ -5,6 +5,17 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.2] - Unreleased
+
+### Changed
+
+- **The existing-key list of the SSH key setup dialog loads off the GTK thread** — picking **Use an existing key** scanned `~/.ssh` and the other key directories on the main thread; it now runs on a worker and the list fills in when the scan ends. A dialog closed meanwhile is left alone. (`rustconn/src/window/key_setup.rs`)
+
+### Dependencies
+
+- **Updated** (semver-compatible): filetime 0.2.29→0.2.30, notify-types 2.3.0→2.3.1, rand 0.10.3→0.10.4, zip 9.5.1→9.6.1. `cargo audit` reports no vulnerabilities; `cargo-sources.json` regenerated for the Flatpak manifests
+- **nix 0.31→0.32** — zip 9.6.1 now depends on nix 0.32, so the workspace moves with it and the lockfile keeps one copy of nix
+
 ## [0.25.1] - 2026-11-15
 
 ### Added
