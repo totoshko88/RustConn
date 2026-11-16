@@ -327,7 +327,11 @@ pub trait ScriptHost {
     fn print_message(&mut self, text: &str);
 
     /// Sets or clears the script's output log file.
-    fn set_log(&mut self, path: Option<&str>);
+    ///
+    /// Returns `false` when `Some(path)` could not be opened; the script then
+    /// stops instead of pretending the capture was written. Clearing the log
+    /// (`None`) always succeeds.
+    fn set_log(&mut self, path: Option<&str>) -> bool;
 
     /// Guesses the current prompt of the session.
     fn get_prompt(&mut self) -> Option<String>;
@@ -560,8 +564,13 @@ impl ScriptEngine {
                 self.advance();
             }
             ScriptStep::Log { path } => {
-                host.set_log(path.as_deref());
-                self.advance();
+                let path = path.as_ref().map(|path| self.substitute(path));
+                if host.set_log(path.as_deref()) {
+                    self.advance();
+                } else {
+                    let path = path.unwrap_or_default();
+                    self.finish(Some(format!("Could not open the script log file: {path}")));
+                }
             }
             ScriptStep::Print(text) => {
                 let text = self.substitute(&text);
@@ -844,7 +853,9 @@ impl ScriptEngine {
         self.variables.get(name).cloned().unwrap_or_default()
     }
 
-    /// Substitutes `$name` / `${name}` references using the script's variables.
+    /// Substitutes `$name` / `${name}` references using the script's variables
+    /// and the date/time built-ins. `ENV_*` is deliberately left literal: a
+    /// script must not pull an environment secret onto a command line.
     fn substitute(&self, text: &str) -> String {
         VARIABLE_REF
             .replace_all(text, |caps: &regex::Captures<'_>| {
@@ -854,6 +865,7 @@ impl ScriptEngine {
                         .variables
                         .get(name)
                         .cloned()
+                        .or_else(|| crate::variables::builtin_temporal(name))
                         .unwrap_or_else(|| caps[0].to_string()),
                     None => caps[0].to_string(),
                 }
@@ -873,8 +885,13 @@ impl ScriptEngine {
         let command = VARIABLE_REF
             .replace_all(text, |caps: &regex::Captures<'_>| {
                 let name = caps.get(1).or_else(|| caps.get(2)).map(|m| m.as_str());
-                let Some((name, value)) = name.and_then(|n| self.variables.get(n).map(|v| (n, v)))
-                else {
+                let Some((name, value)) = name.and_then(|n| {
+                    self.variables
+                        .get(n)
+                        .cloned()
+                        .or_else(|| crate::variables::builtin_temporal(n))
+                        .map(|value| (n, value))
+                }) else {
                     return caps[0].to_string();
                 };
                 if rejected.is_none() {
@@ -882,11 +899,11 @@ impl ScriptEngine {
                         rejected = Some(format!(
                             "variable '{name}' holds a hidden answer and is never put on a command line"
                         ));
-                    } else if let Err(e) = VariableManager::validate_command_value(name, value) {
+                    } else if let Err(e) = VariableManager::validate_command_value(name, &value) {
                         rejected = Some(e.to_string());
                     }
                 }
-                value.clone()
+                value
             })
             .into_owned();
         match rejected {
@@ -1489,6 +1506,7 @@ mod tests {
     struct FakeHost {
         events: Vec<String>,
         prompt: Option<String>,
+        log_fails: bool,
     }
 
     impl ScriptHost for FakeHost {
@@ -1498,8 +1516,9 @@ mod tests {
         fn print_message(&mut self, text: &str) {
             self.events.push(format!("print:{text}"));
         }
-        fn set_log(&mut self, path: Option<&str>) {
+        fn set_log(&mut self, path: Option<&str>) -> bool {
             self.events.push(format!("log:{}", path.unwrap_or("")));
+            path.is_none() || !self.log_fails
         }
         fn get_prompt(&mut self) -> Option<String> {
             self.prompt.clone()
@@ -1931,5 +1950,57 @@ mod tests {
         engine.pump(&mut host);
         assert!(engine.error().is_none());
         assert_eq!(host.events, vec!["print:a;b"]);
+    }
+
+    /// A `log` path may be built from script variables and the clock, which is
+    /// what lets a backup script name its file after the host and the date.
+    #[test]
+    fn log_path_substitutes_variables_and_the_clock() {
+        let mut host = FakeHost::default();
+        let mut engine =
+            ScriptEngine::parse("set name backup\nlog \"${name}-${DATE_Y}.log\"\n").unwrap();
+        engine.pump(&mut host);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|event| event.strip_prefix("log:"))
+            .expect("the log step runs");
+        let year = path
+            .strip_prefix("backup-")
+            .and_then(|rest| rest.strip_suffix(".log"))
+            .expect("both references resolve");
+        assert_eq!(year.len(), 4);
+        assert!(year.chars().all(|c| c.is_ascii_digit()), "{year}");
+    }
+
+    /// A failed capture must not leave the script claiming it saved something.
+    #[test]
+    fn a_log_that_cannot_be_opened_stops_the_script() {
+        let mut host = FakeHost {
+            log_fails: true,
+            ..FakeHost::default()
+        };
+        let mut engine = ScriptEngine::parse("log \"x.log\"\nprint \"after\"\n").unwrap();
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert!(
+            engine.error().is_some_and(|e| e.contains("Could not open")),
+            "{:?}",
+            engine.error()
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("print:")));
+    }
+
+    /// `ENV_*` is a variable-manager built-in, not a script one: expanding it
+    /// here would let a script pull an environment secret past the scrubbed
+    /// environment of `run`.
+    #[test]
+    fn scripts_do_not_expand_environment_builtins() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse("print \"${ENV_HOME}\"\n").unwrap();
+        engine.pump(&mut host);
+        assert_eq!(host.events, vec!["print:${ENV_HOME}"]);
     }
 }

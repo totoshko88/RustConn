@@ -51,6 +51,45 @@ const BUNDLED_EXAMPLES: &[(&str, &str)] = &[
         "example-run-command",
         "set cmd \"echo hello from script\"\nrun \"$cmd\" 5 out=o code=c\nprint \"Exit code: $c\"\nprint \"Output: $o\"\n",
     ),
+    (
+        "example-cisco-save-config",
+        // The SecureCRT "Cisco Save Running/Startup Config to Local File"
+        // shape, reduced to this DSL: read the running configuration and save
+        // it to a timestamped local file, after an explicit yes. The device is
+        // never written to. No local shell and no absolute path, so the same
+        // script runs on Linux, macOS and Windows; the file lands in
+        // RustConn's working directory unless the answer is a full path.
+        //
+        // The two ENTERs make a fresh prompt arrive even when the session
+        // already shows the old one: the first captures the host name, the
+        // second the mode character.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs privileged EXEC mode (the prompt ends in the hash sign). Run enable, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:privileged\nset file cisco-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Cisco save-config script finished.\"\n",
+    ),
+    (
+        "example-cisco-inventory",
+        // The inventory shape: two read-only show commands, one timestamped
+        // log per device, and the same explicit yes before a local file is
+        // written. Prompt regex and paging command are the two Cisco-specific
+        // assumptions; edit them for another vendor.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs privileged EXEC mode (the prompt ends in the hash sign). Run enable, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:privileged\nset file cisco-inventory-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the inventory to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nsend \"show version{ENTER}\"\nexpect \"/[#>]\\s*$/\" 60\nsend \"show interfaces status{ENTER}\"\nexpect \"/[#>]\\s*$/\" 60\nlog\nprint \"Inventory saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Cisco inventory script finished.\"\n",
+    ),
+    (
+        "example-huawei-save-config",
+        // The Huawei VRP profile of the save example: user view `<host>`,
+        // `display` instead of `show`, and `screen-length 0 temporary`
+        // instead of `terminal length 0`. System view `[host]` is refused
+        // because the paging command is a user-view command.
+        "getprompt prompt\nif_goto $prompt /^\\s*\\[/ config_mode\nsend \"{ENTER}\"\ncapture /<([A-Za-z0-9][A-Za-z0-9._-]*)>\\s*$/ device 10\nset file huawei-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the current configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"screen-length 0 temporary{ENTER}\"\nexpect \"/<[A-Za-z0-9][A-Za-z0-9._-]*>\\s*$/\" 15\nlog $file\nprint \"Capturing the current configuration...\"\nsend \"display current-configuration{ENTER}\"\nexpect \"/<[A-Za-z0-9][A-Za-z0-9._-]*>\\s*$/\" 120\nlog\nprint \"Current configuration saved to $file\"\ngoto done\n\n:config_mode\nmsg \"This script must run in user view. Leave system view with return, then start the script again.\" ok\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Huawei save-config script finished.\"\n",
+    ),
+    (
+        "example-hsgq-save-config",
+        // HSGQ EPON OLT profile: `OLT#` is enable mode, `OLT>` is user
+        // mode and `OLT(config)#` is configuration mode. HSGQ documents
+        // `show current-config` but no pager command, so no paging line is
+        // sent; a `--More--` pause would time the expect out, never save a
+        // truncated file silently.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs enable mode (the prompt ends in the hash sign). Run enable, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in enable mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:privileged\nset file hsgq-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the current configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nlog $file\nprint \"Capturing the current configuration...\"\nsend \"show current-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Current configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"HSGQ save-config script finished.\"\n",
+    ),
 ];
 
 /// Writes the bundled examples into the library when they are missing.
@@ -732,6 +771,7 @@ mod tests {
     #[derive(Default)]
     struct Recorder {
         events: Vec<String>,
+        prompt: Option<String>,
     }
 
     impl ScriptHost for Recorder {
@@ -741,11 +781,12 @@ mod tests {
         fn print_message(&mut self, text: &str) {
             self.events.push(format!("print:{text}"));
         }
-        fn set_log(&mut self, path: Option<&str>) {
+        fn set_log(&mut self, path: Option<&str>) -> bool {
             self.events.push(format!("log:{}", path.unwrap_or("")));
+            true
         }
         fn get_prompt(&mut self) -> Option<String> {
-            None
+            self.prompt.clone()
         }
         fn ask(&mut self, prompt: &str, echo: bool) {
             self.events.push(format!("ask:{prompt}:{echo}"));
@@ -790,6 +831,17 @@ mod tests {
             .find(|(example_id, _)| *example_id == id)
             .map(|(_, source)| *source)
             .unwrap_or_else(|| panic!("no bundled example `{id}`"))
+    }
+
+    /// Parses a bundled example into an engine ready to pump.
+    fn engine_for(id: &str) -> ScriptEngine {
+        ScriptEngine::parse(example(id)).unwrap_or_else(|e| panic!("`{id}`: {e}"))
+    }
+
+    /// Feeds terminal output and lets the engine consume it.
+    fn feed(engine: &mut ScriptEngine, host: &mut Recorder, output: &str) {
+        assert!(engine.on_output(output.as_bytes()), "output was not taken");
+        engine.pump(host);
     }
 
     /// Drives the first-run example up to its first question.
@@ -943,5 +995,292 @@ mod tests {
             .captures(" 14:30:00 up 2 days,  3:21,  load average: 0.00, 0.01, 0.05")
             .expect("uptime output matches");
         assert_eq!(&caps[1], "2 days");
+    }
+
+    /// Drives the Cisco save example up to its confirmation question.
+    fn cisco_save_at_question() -> (ScriptEngine, Recorder) {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-cisco-save-config");
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        // First ENTER: the host name from the fresh prompt.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        // Second ENTER: the mode character.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        (engine, host)
+    }
+
+    /// The safe default: an empty answer cancels, removing every local write
+    /// and every read of the running configuration.
+    #[test]
+    fn cisco_save_config_cancels_without_reading_or_writing() {
+        let (mut engine, mut host) = cisco_save_at_question();
+        engine.on_ask_result(Some(String::new()));
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.contains("show running-config"))
+        );
+        assert!(host.events.iter().any(|e| e == "print:Nothing was saved."));
+    }
+
+    /// "yes" captures the running configuration into a file named after the
+    /// device and the clock, and stops the log at the end.
+    #[test]
+    fn cisco_save_config_writes_a_timestamped_log_after_yes() {
+        let (mut engine, mut host) = cisco_save_at_question();
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        // `terminal length 0` returns to the prompt.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("cisco-R1-"), "{path}");
+        assert!(
+            std::path::Path::new(&path)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("log")),
+            "{path}"
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show running-config"))
+        );
+
+        // The configuration arrives, then the prompt.
+        feed(&mut engine, &mut host, "\r\nhostname R1\r\nR1# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(
+            host.events.iter().filter(|e| *e == "log:").count(),
+            1,
+            "the log is stopped after the capture"
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Running configuration saved to {path}"))
+        );
+    }
+
+    /// A user-EXEC prompt (`>`) is refused before anything is read or written.
+    #[test]
+    fn cisco_save_config_refuses_user_exec() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-cisco-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nR1> ");
+
+        assert!(engine.is_finished());
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.starts_with("msg:This script needs privileged EXEC mode"))
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+    }
+
+    /// The Huawei profile reads `display current-configuration` in user view,
+    /// after the VRP paging command, into a timestamped log.
+    #[test]
+    fn huawei_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-huawei-save-config");
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        feed(&mut engine, &mut host, "\r\n<SW1> ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        // `screen-length 0 temporary` returns to the user-view prompt.
+        feed(&mut engine, &mut host, "\r\n<SW1> ");
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("huawei-SW1-"), "{path}");
+        assert!(
+            std::path::Path::new(&path)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("log")),
+            "{path}"
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("screen-length 0 temporary"))
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("display current-configuration"))
+        );
+
+        feed(&mut engine, &mut host, "\r\nsysname SW1\r\n<SW1> ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Current configuration saved to {path}"))
+        );
+    }
+
+    /// Huawei system view is refused before the paging command, which is a
+    /// user-view command, is sent.
+    #[test]
+    fn huawei_save_config_refuses_system_view() {
+        let mut host = Recorder {
+            prompt: Some("[SW1]".to_string()),
+            ..Recorder::default()
+        };
+        let mut engine = engine_for("example-huawei-save-config");
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.starts_with("msg:This script must run in user view"))
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("send:")));
+    }
+
+    /// The HSGQ profile reads `show current-config` in enable mode
+    /// (`OLT#`), into a timestamped log.
+    #[test]
+    fn hsgq_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-hsgq-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nOLT# ");
+        feed(&mut engine, &mut host, "\r\nOLT# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("hsgq-OLT-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show current-config"))
+        );
+
+        feed(&mut engine, &mut host, "\r\nhostname OLT\r\nOLT# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Current configuration saved to {path}"))
+        );
+    }
+
+    /// HSGQ configuration mode and user mode are both refused: only the
+    /// `OLT#` enable prompt may read the configuration.
+    #[test]
+    fn hsgq_save_config_refuses_config_and_user_mode() {
+        for prompt in ["OLT(config)#", "OLT>"] {
+            let mut host = Recorder {
+                prompt: Some(prompt.to_string()),
+                ..Recorder::default()
+            };
+            let mut engine = engine_for("example-hsgq-save-config");
+            engine.pump(&mut host);
+
+            if prompt == "OLT>" {
+                // User mode is detected from the second prompt capture.
+                feed(&mut engine, &mut host, "\r\nOLT> ");
+                feed(&mut engine, &mut host, "\r\nOLT> ");
+            }
+
+            assert!(engine.is_finished(), "{prompt}");
+            assert!(
+                host.events.iter().any(|e| e.starts_with("msg:")),
+                "{prompt}"
+            );
+            assert!(
+                !host.events.iter().any(|e| e.starts_with("log:")),
+                "{prompt}"
+            );
+            assert!(
+                !host.events.iter().any(|e| e.starts_with("ask:")),
+                "{prompt}"
+            );
+        }
+    }
+
+    /// Both vendor profiles cancel without reading the configuration or
+    /// opening a local file.
+    #[test]
+    fn vendor_save_configs_cancel_without_reading_or_writing() {
+        for (id, prompt, captures) in [
+            ("example-huawei-save-config", "\r\n<SW1> ", 1),
+            ("example-hsgq-save-config", "\r\nOLT# ", 2),
+        ] {
+            let mut host = Recorder::default();
+            let mut engine = engine_for(id);
+            engine.pump(&mut host);
+            for _ in 0..captures {
+                feed(&mut engine, &mut host, prompt);
+            }
+            assert_eq!(engine.pending(), PendingKind::Ask, "{id}");
+
+            engine.on_ask_result(Some(String::new()));
+            engine.pump(&mut host);
+
+            assert!(engine.is_finished(), "{id}");
+            assert_eq!(engine.error(), None, "{id}");
+            assert!(!host.events.iter().any(|e| e.starts_with("log:")), "{id}");
+            assert!(
+                !host
+                    .events
+                    .iter()
+                    .any(|e| e.contains("current-config") || e.contains("current-configuration")),
+                "{id}"
+            );
+            assert!(
+                host.events.iter().any(|e| e == "print:Nothing was saved."),
+                "{id}"
+            );
+        }
     }
 }

@@ -5,6 +5,13 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Portable Cisco save-config and inventory scripts in the script library** — `example-cisco-save-config` is the `.rsc` form of SecureCRT's *Cisco Save Running/Startup Config to Local File* helper: it checks for privileged EXEC mode, reads `show running-config`, and writes a transcript to `cisco-<device>-<YYYYMMDD-HHMMSS>.log`, but only after an explicit **yes** (an empty answer cancels; nothing is ever written to the device). `example-cisco-inventory` is the read-only sibling for `show version` and `show interfaces status`. Both contain no local shell command and no absolute path, so one copy runs on Linux, macOS and Windows; the file lands in RustConn's working directory unless a full path is typed at the question. To make the naming possible, a `log` path now expands `${...}` script variables and the date/time built-ins, and a log that cannot be opened stops the script instead of letting it report a save that did not happen. Scripts deliberately do not expand `${ENV_*}`: `run` scrubs secrets from its environment, and expanding them in the script would hand them back. (`rustconn/src/dialogs/script.rs`, `rustconn-core/src/automation/script.rs`, `rustconn-core/src/variables/`, `rustconn/src/script_runner.rs`, `docs/USER_GUIDE.md`)
+- **Huawei VRP and HSGQ OLT save-config scripts** — `example-huawei-save-config` runs in user view (`<host>`), disables paging with `screen-length 0 temporary` and reads `display current-configuration`; `example-hsgq-save-config` runs in enable mode (`OLT#`) and reads `show current-config`. Both reuse the Cisco example's explicit yes/cancel, timestamped local file and read-only behaviour, and refuse configuration/system views before touching the device. (`rustconn/src/dialogs/script.rs`, `docs/USER_GUIDE.md`)
+
 ## [0.25.1] - 2026-11-15
 
 ### Added

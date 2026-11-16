@@ -544,7 +544,7 @@ A set of **dynamic built-ins** is also available without defining anything, usef
 | `${TIMESTAMP}` | Seconds since the Unix epoch |
 | `${ENV_NAME}` | Value of the `NAME` environment variable (empty if unset) |
 
-The environment form uses an underscore — `${ENV_HOME}`, not `${ENV:HOME}` — because a `${...}` reference cannot contain a colon. A variable *you* define with one of these names shadows the built-in, so defining `TIMESTAMP` yourself keeps your value. These resolve wherever `${...}` substitution runs (Expect responses, custom commands, and variable values), not in the [session-log Log Path](#session-logging) template, which has its own `${date}` / `${time}` set.
+The environment form uses an underscore — `${ENV_HOME}`, not `${ENV:HOME}` — because a `${...}` reference cannot contain a colon. A variable *you* define with one of these names shadows the built-in, so defining `TIMESTAMP` yourself keeps your value. These resolve wherever `${...}` substitution runs (Expect responses, custom commands, and variable values) and in `.rsc` scripts (`print`, `ask`, `set`, `run`, `log` paths), except `${ENV_*}` in a script: it is left literal so a script cannot pull a secret out of the environment that `run` deliberately scrubs. They do not resolve in the [session-log Log Path](#session-logging) template, which has its own `${date}` / `${time}` set.
 
 **Ask at connect time (`@ask:`).** Give a variable a value that starts with `@ask:` and RustConn asks you for it in a dialog every time a connection that references it opens, then substitutes what you type. This lets one connection serve several targets without duplicating it — the classic case is a host that changes:
 
@@ -2892,7 +2892,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 | `capture <regex> <var> [<sec>]` | Like `expect`, but store capture group 1 in a variable |
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
-| `log [<path>]` | Start/stop writing session output to a file |
+| `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` |
 | `print <text>` | Print an ANSI-coloured message on the terminal |
 | `ask "<prompt>" [hide] <var>` | Ask the user for input; `hide` masks it |
 | `msg <text> [ok]` | Show a message window (optionally with an OK button) |
@@ -2909,7 +2909,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 
 **Variables**
 
-`${name}` and `$name` references are substituted from script variables (`set`, `capture`, `readline`, `ask`). Inside `send` use `${name}` only — a bare `$name` there is literal text, because the key-sequence syntax reserves `$` for `${...}`. A label is defined with `:name`; `#` and `;` start comments. An iteration cap kills runaway `goto` loops.
+`${name}` and `$name` references are substituted from script variables (`set`, `capture`, `readline`, `ask`). The date/time built-ins (`${DATE_Y}`, `${DATE_M}`, `${DATE_D}`, `${TIME_H}`, `${TIME_M}`, `${TIME_S}`, `${TIMESTAMP}`) resolve in script text too, so a log file can be named by the clock. `${ENV_*}` deliberately does **not** resolve in a script: `run` executes with secrets scrubbed from its environment, and expanding them here would hand them straight back. Inside `send` use `${name}` only — a bare `$name` there is literal text, because the key-sequence syntax reserves `$` for `${...}`. A label is defined with `:name`; `#` and `;` start comments. An iteration cap kills runaway `goto` loops.
 
 **Local commands (`run`) and safety**
 
@@ -2963,6 +2963,84 @@ Why it is written that way:
 - `if_goto` compares as a regular expression, so `(?i)` makes it case-insensitive and `\s*` tolerates stray spaces;
 - `capture` matches the quoted value (`hostname='...'`) rather than `hostname=`, because the echoed command line contains the latter and would satisfy the capture before the device answers;
 - the hostname is validated before it is substituted into a command, so a name containing a space or `;` never reaches the device.
+
+**Example — save a Cisco configuration to a local file (portable)**
+
+`example-cisco-save-config` is the `.rsc` form of SecureCRT's
+"Cisco Save Running/Startup Config to Local File" example. It reads
+`show running-config` and writes a transcript to a file named after the device
+and the clock, but only after an explicit **yes**. Nothing is written to the
+device and nothing is saved locally on an empty answer. The same script runs on
+Linux, macOS and Windows: it sends only device-side commands and has no local
+shell or absolute path in it.
+
+```
+getprompt prompt
+if_goto $prompt /\(config/ config_mode
+send "{ENTER}"
+capture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\s*$/ device 10
+send "{ENTER}"
+capture /([#>])\s*$/ mode 10
+if_goto $mode /^#$/ privileged
+msg "This script needs privileged EXEC mode (the prompt ends in the hash sign). Run enable, then start it again." ok
+goto done
+
+:config_mode
+msg "This script must run in EXEC mode. Leave configuration mode with end, then start it again." ok
+goto done
+
+:privileged
+set file cisco-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log
+ask "Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:" answer
+if_goto $answer /(?i)^\s*yes\s*$/ save
+if_goto $answer /^\s*$/ cancel
+set file $answer
+
+:save
+send "terminal length 0{ENTER}"
+expect "/[#>]\s*$/" 15
+log $file
+print "Capturing the running configuration..."
+send "show running-config{ENTER}"
+expect "/[#>]\s*$/" 120
+log
+print "Running configuration saved to $file"
+goto done
+
+:cancel
+print "Nothing was saved."
+
+:done
+print "Cisco save-config script finished."
+```
+
+Why it is written that way:
+
+- the two leading `send "{ENTER}"` steps make a fresh prompt arrive even when the session already shows the old one; the first capture takes the host name for the file name, the second checks the `#` / `>` mode character;
+- `getprompt` catches configuration mode early, because a `(config)#` prompt has no plain `hostname#` for the capture and would otherwise end in a timeout;
+- the file is named with `DATE_*` / `TIME_*` built-ins, which are local to the computer and contain no colon, so the name is legal on all three platforms;
+- `log` writes what the session prints, so the file is a transcript with the echoed command and prompts, not a byte-for-byte copy of the configuration. A failed `log` open stops the script instead of printing a false "saved" line;
+- `terminal length 0` is the one Cisco-specific paging command. If your devices need a different prompt or pager, edit those two lines — they are the whole device profile.
+
+`example-cisco-inventory` is the read-only sibling: it writes `show version`
+and `show interfaces status` to `cisco-inventory-<device>-<timestamp>.log`
+with the same prompt, mode and confirmation checks. Both scripts are seeded
+into the script library on first run; an existing copy is never overwritten.
+
+Two more bundled profiles keep the same confirmation, timestamped-log and
+read-only behaviour with the vendor's own prompt and commands:
+
+| Example | Mode accepted | Paging | Configuration read |
+|---------|---------------|--------|--------------------|
+| `example-huawei-save-config` | user view `<host>`; system view `[host]` is refused | `screen-length 0 temporary` | `display current-configuration` |
+| `example-hsgq-save-config` | enable mode `<host>#`; user mode `>` and `(config)#` are refused | none — HSGQ documents no pager command | `show current-config` |
+
+For another CLI, copy the closest example and change the prompt regex, the
+paging command and the read command. Those three lines are the whole device
+profile; the safety flow around them does not change. The HSGQ script does not
+send a paging command, so if a model pauses at `--More--`, the `expect` times
+out rather than saving a truncated transcript. Add that model's pager command
+once its syntax is known.
 
 **Example — run a command and capture its output:**
 

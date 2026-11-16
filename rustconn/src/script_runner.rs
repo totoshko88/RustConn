@@ -132,7 +132,7 @@ impl ScriptHost for GuiHost {
             .feed_local_output(self.session_id, msg.as_bytes());
     }
 
-    fn set_log(&mut self, path: Option<&str>) {
+    fn set_log(&mut self, path: Option<&str>) -> bool {
         let mut writer = self.log_writer.borrow_mut();
         *writer = match path {
             Some(path) => {
@@ -141,12 +141,13 @@ impl ScriptHost for GuiHost {
                     Ok(file) => Some(file),
                     Err(e) => {
                         tracing::error!(%e, path, "script log file could not be opened");
-                        None
+                        return false;
                     }
                 }
             }
             None => None,
         };
+        true
     }
 
     fn get_prompt(&mut self) -> Option<String> {

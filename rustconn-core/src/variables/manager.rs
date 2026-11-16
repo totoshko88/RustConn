@@ -201,8 +201,6 @@ impl VariableManager {
     /// caller's undefined-variable handling would leave the literal `${ENV_X}`
     /// in place, which is never what the user meant.
     fn resolve_builtin(name: &str) -> Option<String> {
-        use chrono::{Datelike, Local, Timelike};
-
         if let Some(env_name) = name.strip_prefix("ENV_") {
             // An empty suffix (`${ENV_}`) is not a real environment reference.
             if env_name.is_empty() {
@@ -211,21 +209,7 @@ impl VariableManager {
             return Some(std::env::var(env_name).unwrap_or_default());
         }
 
-        // Computed once per call. Within a single substitute() pass the sub-second
-        // drift between two date/time references is irrelevant, and TIMESTAMP is
-        // whole seconds regardless.
-        let now = Local::now();
-        let value = match name {
-            "DATE_Y" => format!("{:04}", now.year()),
-            "DATE_M" => format!("{:02}", now.month()),
-            "DATE_D" => format!("{:02}", now.day()),
-            "TIME_H" => format!("{:02}", now.hour()),
-            "TIME_M" => format!("{:02}", now.minute()),
-            "TIME_S" => format!("{:02}", now.second()),
-            "TIMESTAMP" => now.timestamp().to_string(),
-            _ => return None,
-        };
-        Some(value)
+        builtin_temporal(name)
     }
 
     /// Looks up a variable in the scope chain
@@ -661,6 +645,33 @@ impl VariableManager {
 
         Ok(())
     }
+}
+
+/// Resolves a date/time built-in (`DATE_Y`, `DATE_M`, `DATE_D`, `TIME_H`,
+/// `TIME_M`, `TIME_S`, `TIMESTAMP`), or `None` for any other name.
+///
+/// Kept separate from [`VariableManager::resolve_builtin`] so that the script
+/// engine can resolve the clock without also exposing `ENV_*`: a script that
+/// could expand `${ENV_SECRET}` would bypass the scrubbed environment of the
+/// `run` command.
+pub(crate) fn builtin_temporal(name: &str) -> Option<String> {
+    use chrono::{Datelike, Local, Timelike};
+
+    // Computed once per call. Within a single substitute() pass the sub-second
+    // drift between two date/time references is irrelevant, and TIMESTAMP is
+    // whole seconds regardless.
+    let now = Local::now();
+    let value = match name {
+        "DATE_Y" => format!("{:04}", now.year()),
+        "DATE_M" => format!("{:02}", now.month()),
+        "DATE_D" => format!("{:02}", now.day()),
+        "TIME_H" => format!("{:02}", now.hour()),
+        "TIME_M" => format!("{:02}", now.minute()),
+        "TIME_S" => format!("{:02}", now.second()),
+        "TIMESTAMP" => now.timestamp().to_string(),
+        _ => return None,
+    };
+    Some(value)
 }
 
 #[cfg(test)]
