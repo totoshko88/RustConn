@@ -14,7 +14,7 @@ use gtk4::{
 };
 use libadwaita as adw;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Widgets created by the General tab, replacing the previous 30-element tuple.
 pub(super) struct BasicTabWidgets {
@@ -97,6 +97,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let name_entry = Entry::builder()
         .placeholder_text(i18n("Connection name"))
         .hexpand(true)
+        .activates_default(true)
         .width_chars(20)
         .max_width_chars(40)
         .build();
@@ -155,6 +156,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let host_entry = Entry::builder()
         .placeholder_text(i18n("hostname or IP"))
         .hexpand(true)
+        .activates_default(true)
         .width_chars(20)
         .max_width_chars(40)
         .build();
@@ -228,11 +230,12 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let placeholder = if current_user.is_empty() {
         i18n("Username")
     } else {
-        format!("(default: {current_user})")
+        i18n_f("(default: {})", &[&current_user])
     };
     let username_entry = Entry::builder()
         .placeholder_text(&placeholder)
         .hexpand(true)
+        .activates_default(true)
         .width_chars(16)
         .max_width_chars(40)
         .valign(gtk4::Align::Center)
@@ -255,6 +258,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let domain_entry = Entry::builder()
         .placeholder_text(i18n("Optional (e.g., WORKGROUP)"))
         .hexpand(true)
+        .activates_default(true)
         .width_chars(16)
         .max_width_chars(40)
         .valign(gtk4::Align::Center)
@@ -412,6 +416,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let tags_entry = Entry::builder()
         .placeholder_text(i18n("tag1, tag2, …"))
         .hexpand(true)
+        .activates_default(true)
         .width_chars(16)
         .max_width_chars(40)
         .valign(gtk4::Align::Center)

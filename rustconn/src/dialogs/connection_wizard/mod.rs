@@ -45,8 +45,36 @@ pub enum WizardResult {
     OpenAdvanced(PartialConnection),
 }
 
-/// Callback type for wizard completion
-pub type WizardCallback = Rc<RefCell<Option<Box<dyn Fn(WizardResult)>>>>;
+/// Callback type for wizard completion.
+///
+/// `Err` carries a message for a result that could not be applied (the
+/// connection could not be created). The wizard then stays open with its input
+/// and shows the message.
+pub type WizardCallback = Rc<RefCell<Option<Box<dyn Fn(WizardResult) -> Result<(), String>>>>>;
+
+/// Zero Trust providers in the order of the wizard's provider list.
+///
+/// ponytail: the dialog's own list has another order and also offers OCI
+/// Bastion, which the wizard cannot show; unify both behind one table if a
+/// provider is added to either.
+const ZT_WIZARD_PROVIDERS: [rustconn_core::models::ZeroTrustProvider; 10] = {
+    use rustconn_core::models::ZeroTrustProvider::{
+        AwsSsm, AzureBastion, AzureSsh, Boundary, CloudflareAccess, GcpIap, Generic, HoopDev,
+        TailscaleSsh, Teleport,
+    };
+    [
+        Generic,
+        AwsSsm,
+        GcpIap,
+        AzureBastion,
+        AzureSsh,
+        CloudflareAccess,
+        Teleport,
+        TailscaleSsh,
+        Boundary,
+        HoopDev,
+    ]
+};
 
 /// Partial connection data collected across wizard steps.
 /// Used to transfer state between pages and to the full dialog.
@@ -448,6 +476,9 @@ pub struct ConnectionWizard {
     connection_page: ConnectionPage,
     auth_page: AuthPage,
     selected_protocol: Rc<RefCell<Option<ProtocolType>>>,
+    /// The connection a duplicate starts from; its values are put back into the
+    /// pages each time a page is configured (configuring resets them).
+    duplicate_of: RefCell<Option<PartialConnection>>,
     state: SharedAppState,
     on_complete: WizardCallback,
 }
@@ -487,6 +518,7 @@ impl ConnectionWizard {
             connection_page,
             auth_page,
             selected_protocol,
+            duplicate_of: RefCell::new(None),
             state,
             on_complete,
         });
@@ -515,6 +547,9 @@ impl ConnectionWizard {
                 let host = w.connection_page.host();
                 let port = w.connection_page.port();
                 w.auth_page.configure_for_protocol(protocol, &host, port);
+                if let Some(ref partial) = *w.duplicate_of.borrow() {
+                    w.auth_page.restore_partial(partial);
+                }
                 w.nav_view.push(&w.auth_page.page);
             }
         });
@@ -522,47 +557,50 @@ impl ConnectionWizard {
         let w = wizard.clone();
         wizard.auth_page.connect_save(move || {
             let (conn, password) = w.build_connection();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::Save(conn, password));
-            }
+            w.finish(WizardResult::Save(conn, password));
         });
 
         let w = wizard.clone();
         wizard.auth_page.connect_save_and_connect(move || {
             let (conn, password) = w.build_connection();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::SaveAndConnect(conn, password));
-            }
+            w.finish(WizardResult::SaveAndConnect(conn, password));
         });
 
         let w = wizard.clone();
         wizard.protocol_page.connect_advanced(move || {
             let partial = w.collect_partial();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::OpenAdvanced(partial));
-            }
+            w.finish(WizardResult::OpenAdvanced(partial));
         });
 
         let w = wizard.clone();
         wizard.connection_page.connect_advanced(move || {
             let partial = w.collect_partial();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::OpenAdvanced(partial));
-            }
+            w.finish(WizardResult::OpenAdvanced(partial));
         });
 
         let w = wizard.clone();
         wizard.auth_page.connect_advanced(move || {
             let partial = w.collect_partial();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::OpenAdvanced(partial));
-            }
+            w.finish(WizardResult::OpenAdvanced(partial));
         });
+    }
+
+    /// Hands `result` to the completion callback. The dialog closes when the
+    /// callback accepts it; on `Err` it stays open with its input and shows
+    /// the error.
+    fn finish(&self, result: WizardResult) {
+        let outcome = match *self.on_complete.borrow() {
+            Some(ref cb) => cb(result),
+            None => Ok(()),
+        };
+        match outcome {
+            Ok(()) => {
+                self.dialog.close();
+            }
+            Err(e) => {
+                crate::alert::show_error(&self.dialog, &i18n("Error Creating Connection"), &e);
+            }
+        }
     }
 
     /// Collect partial connection data from all pages
@@ -607,20 +645,12 @@ impl ConnectionWizard {
                 .icon()
                 .or_else(|| self.connection_page.selected_template_icon()),
             zt_provider: if is_zt {
-                use rustconn_core::models::ZeroTrustProvider;
-                match self.connection_page.zt_provider_index() {
-                    0 => Some(ZeroTrustProvider::Generic),
-                    1 => Some(ZeroTrustProvider::AwsSsm),
-                    2 => Some(ZeroTrustProvider::GcpIap),
-                    3 => Some(ZeroTrustProvider::AzureBastion),
-                    4 => Some(ZeroTrustProvider::AzureSsh),
-                    5 => Some(ZeroTrustProvider::CloudflareAccess),
-                    6 => Some(ZeroTrustProvider::Teleport),
-                    7 => Some(ZeroTrustProvider::TailscaleSsh),
-                    8 => Some(ZeroTrustProvider::Boundary),
-                    9 => Some(ZeroTrustProvider::HoopDev),
-                    _ => Some(ZeroTrustProvider::Generic),
-                }
+                Some(
+                    ZT_WIZARD_PROVIDERS
+                        .get(self.connection_page.zt_provider_index() as usize)
+                        .copied()
+                        .unwrap_or(rustconn_core::models::ZeroTrustProvider::Generic),
+                )
             } else {
                 None
             },
@@ -848,7 +878,9 @@ impl ConnectionWizard {
         if let Some(ref domain) = partial.domain {
             self.connection_page.domain_row.set_text(domain);
         }
+        self.connection_page.restore_partial(partial);
         self.auth_page.set_icon(partial.icon.as_deref());
+        *self.duplicate_of.borrow_mut() = Some(partial.clone());
 
         // Navigate directly to connection page (skip protocol selection)
         self.nav_view.push(&self.connection_page.page);
@@ -863,7 +895,7 @@ impl ConnectionWizard {
     }
 
     /// Connect completion callback
-    pub fn connect_complete<F: Fn(WizardResult) + 'static>(&self, f: F) {
+    pub fn connect_complete<F: Fn(WizardResult) -> Result<(), String> + 'static>(&self, f: F) {
         *self.on_complete.borrow_mut() = Some(Box::new(f));
     }
 }

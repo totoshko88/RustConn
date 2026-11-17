@@ -462,6 +462,26 @@ impl ConnectionDialogData<'_> {
         rustconn_core::dialog_utils::validate_icon(icon_text.trim())
             .map_err(|e| i18n(&e.to_string()))?;
 
+        // An invalid port knock sequence would be dropped by `build_connection`
+        let knock_text = self.knock_sequence_entry.text();
+        let knock_text = knock_text.trim();
+        if !knock_text.is_empty()
+            && rustconn_core::connection::knock::KnockSequence::parse(knock_text).is_err()
+        {
+            return Err(i18n("Invalid format. Use: 7000 8000/tcp 9000/udp"));
+        }
+
+        // The SPA packet is sent only when both keys are set; one key alone
+        // would be skipped without a word at connect time.
+        if self.spa_enabled_toggle.is_active()
+            && (self.spa_rij_key_entry.text().is_empty()
+                || self.spa_hmac_key_entry.text().is_empty())
+        {
+            return Err(i18n(
+                "Both the Rijndael key and the HMAC key are required for fwknop SPA",
+            ));
+        }
+
         // Web (10): Custom browser mode requires a non-empty browser command
         if protocol_idx == 10 {
             use crate::dialogs::connection::web::browser_mode_from_combo_index;

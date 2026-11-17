@@ -557,7 +557,7 @@ pub fn duplicate_selected_as_range(
     let dialog = adw::AlertDialog::new(
         Some(&i18n_f("Duplicate ‘{}’ as a Range", &[&source.name])),
         Some(&i18n(
-            "Creates one copy per number. A leading zero in the first number keeps the numbers padded.",
+            "Creates one copy per number, for example web[01-10]. A leading zero in the first number keeps the numbers padded.",
         )),
     );
     let rows = adw::PreferencesGroup::new();

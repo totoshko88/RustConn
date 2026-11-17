@@ -259,14 +259,16 @@ Click **Advanced…** at any step to open the full connection editor with all en
 
 ### Full Connection Editor (Ctrl+Shift+N)
 
-The full editor provides access to all connection options:**Basic Tab:**
+The full editor provides access to all connection options. **Cancel** closes it, **Create** (**Save** when editing) stores the connection, and Enter in the Name, Host, Username, Domain or Tags field does the same. Closing with Escape, **Cancel** or the close gesture after an edit asks **Discard Changes?**.
+
+**Basic Tab:**
 - Name, Host, Port
 - Protocol selection
 - **Network Mode** — inherit a jump host from the group or the global settings, or go *Direct* (see [Network Mode and Where a Jump Host Comes From](#network-mode-and-where-a-jump-host-comes-from))
 - Parent group
 - Tags
 
-**Authentication Tab:**
+**Authentication (group on the Basic tab):**
 - Username
 - Password source selection:
   - **Prompt** — Ask for password on each connection
@@ -419,7 +421,7 @@ quicssh is **not bundled**. You install it yourself and put it on your PATH; the
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
 **Advanced Tabs:**
-- **Advanced** — Window mode (Embedded/External/Fullscreen), remember window position, hide local cursor (embedded RDP/VNC/SPICE), Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
+- **Advanced** — Terminal theme override, remote monitoring override, session recording, activity monitor, retry, port knocking and fwknop SPA, highlight rules, Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
 - **Automation** — Automatic login (expected text of the device's username/password prompts), expect rules for auto-responding to terminal patterns, pattern tester with built-in templates (Sudo, SSH Host Key, Login, etc.), pre-connect task, post-disconnect task (with conditions: first/last connection only)
 - **Data** — Local variables (connection-scoped, override global variables), custom properties (Text/URL/Protected metadata)
 - **Logging** — Session logging (enable/disable, log path template with variables, timestamp format, max file size, retention days, granular content options: log activity, log input, log output, add timestamps)
@@ -736,6 +738,7 @@ Temporary connection without saving:
 | Edit | Ctrl+E or right-click → Edit |
 | Rename | F2 or right-click → Rename |
 | Duplicate | Ctrl+D or right-click → Duplicate |
+| Duplicate via Wizard | Right-click → Duplicate via Wizard… — opens the wizard filled in with the connection's name, host, port, user, domain, icon, jump host, SSH authentication method and key file, and the Serial, Kubernetes, Zero Trust and Web fields. Other settings (port forwards, automation, tags) are not copied: use **Duplicate** for a full copy |
 | Duplicate as a numbered range | Right-click → Duplicate as Range… — `host[02-10]` creates `host02` … `host10`, and `host[2-10]` creates `host2` … `host10`. *Host Pattern* fills in by itself when the host contains the connection's name; otherwise enter one such as `10.0.0.[2-10]`. Up to 256 at a time; names that already exist are skipped |
 | Copy/Paste | Ctrl+C / Ctrl+V (sidebar focus) or Menu → Copy/Paste Connection |
 | Delete | Delete key or right-click → Delete (moves to Trash) |
@@ -964,7 +967,7 @@ You can also paste options in the `-o Key=Value` format directly from the comman
 
 | Custom Options field | Resulting SSH flags |
 |---------------------|---------------------|
-| `StrictHostKeyChecking=no, ServerAliveInterval=60` | `-o StrictHostKeyChecking=no -o ServerAliveInterval=60` |
+| `ServerAliveInterval=60, Compression=yes` | `-o ServerAliveInterval=60 -o Compression=yes` |
 | `-o StrictHostKeyChecking=no, -o ServerAliveInterval=60` | Same result (prefix stripped) |
 | `ServerAliveCountMax=3` | `-o ServerAliveCountMax=3` |
 | `ProxyCommand=nc -X 5 -x proxy:1080 %h %p` | `-o ProxyCommand=nc -X 5 -x proxy:1080 %h %p` |
@@ -2346,7 +2349,7 @@ Leave the field empty to use the system default shell (`$SHELL`).
 
 ### Display Mode (Window Mode)
 
-The **Display Mode** setting in the connection dialog (Advanced tab → Window Mode) controls how RDP and VNC sessions are displayed. The setting applies per-connection.
+A connection's **window mode** controls how its RDP and VNC session is displayed. The setting applies per connection. The connection dialog has no field for it: set it with `rustconn-cli add` or `rustconn-cli update` and `--window-mode embedded|external|fullscreen`. Editing the connection in the dialog keeps the stored mode.
 
 | Mode | RDP Behavior | VNC Behavior |
 |------|-------------|-------------|
@@ -2355,15 +2358,16 @@ The **Display Mode** setting in the connection dialog (Advanced tab → Window M
 | **External Window** | Launches FreeRDP in a separate window | Launches external VNC viewer (TigerVNC/vncviewer) in a separate window |
 
 **Configure:**
-1. Edit connection → **Advanced** tab → **Window Mode** section
-2. Select **Embedded**, **External Window**, or **Fullscreen** from the dropdown
-3. For External Window mode, enable **Remember Position** to save window geometry between sessions (RDP only)
+```bash
+rustconn-cli update "My RDP" --window-mode external
+```
+`remember_window_position` (save the external window's geometry between sessions, RDP only) is read from `connections.json` and has no field in the dialog or the CLI.
 
 **Notes:**
 - Fullscreen mode maximizes the RustConn window, not the remote desktop. Use F11 to toggle true fullscreen of the entire application. In fullscreen the application header bar and the tab bar are hidden, for every kind of session, so the session gets the space they took; they reappear when you leave fullscreen, however you entered it — the F11 shortcut, the menu toggle, or a window-manager fullscreen. To reach them without leaving fullscreen, move the pointer to the very top edge of the screen: the header and the tab bar slide in together over the session, without resizing it, and slide away a moment after the pointer moves back down. They stay while a header menu or a tab's context menu is open, or while you drag a tab. Switching tabs (for example with Ctrl+Page Up/Down) shows them for about a second and a half, and F10 opens the main menu. The sidebar stays as it is — hide it with F9 for more room. Banners that need your attention, such as an active group broadcast or a request to touch your hardware key, remain visible in fullscreen. While fullscreen the header also carries a **Leave Fullscreen** button at its right end — the counterpart of the Restore button on Remote Desktop Connection's connection bar. On a touch screen without a keyboard there is no hover, so leaving fullscreen needs F11.
 - External Window mode for VNC requires an external VNC viewer installed (TigerVNC, vncviewer, gvncviewer, or similar). If no viewer is found, a toast notification shows the install hint.
 - External Window mode for RDP uses FreeRDP. The Flatpak bundles the SDL3 client and the snap the X11 client (`xfreerdp3`) — no separate installation needed. On native installs, RustConn auto-detects the installed FreeRDP clients in priority order: on a Wayland session `sdl-freerdp3` > `sdl-freerdp` > `wlfreerdp3` > `wlfreerdp` > `xfreerdp3` > `xfreerdp`, on an X11 session the `xfreerdp*` clients first. `rustconn-cli connect` uses the same order and the connection's pinned client.
-- The VNC protocol tab also has its own **Client Mode** (Embedded/External) setting. When Display Mode is set to External Window, it takes precedence over the protocol-level Client Mode.
+- The VNC protocol tab also has its own **Client Mode** (Embedded/External) setting. When the window mode is External, it takes precedence over the protocol-level Client Mode.
 
 **External-session tracking:** an external-viewer session gets no notebook tab. Instead it is surfaced in the sidebar with a window emblem next to the connected status, and its right-click menu adds **Disconnect** (closes a RustConn-owned viewer such as TigerVNC/FreeRDP/remote-viewer) and **Stop tracking** (deregisters without closing the viewer). Owned viewers are closed automatically when you quit RustConn. Detaching viewers that RustConn cannot control (Remmina, KRDC, Vinagre) keep running independently: if you close such a viewer window yourself, the sidebar keeps showing the session as connected until you select **Stop tracking**. A double-click on a connection that already runs in an external window shows an "Already running in an external window" hint instead of opening a duplicate — use **Open new session** to force a second one.
 
@@ -2731,7 +2735,7 @@ no checkboxes.
 |--------|--------|
 | New Group | Create a new group |
 | Move to Group | Move all selected connections to a chosen group |
-| Batch Edit | Edit the selected connections together |
+| Batch Edit | Change the group, the tags or the icon of all selected connections at once (see below) |
 | Select All | Select all visible connections |
 | Clear Selection | Deselect all (stays in the mode) |
 | Delete Selected | Move all selected connections and groups to Trash (with confirmation) |
@@ -2743,6 +2747,8 @@ no checkboxes.
 3. Choose an action in the bar. Right-clicking a selected row keeps the selection and opens a menu with the same bulk actions plus **Run Local Script…**
 4. Confirm the action in the dialog
 5. Click **Select Connections** again to leave the mode. **Escape** only clears the selection
+
+**Batch Edit:** the pencil button opens **Fields to change**. Tick the check box in front of a field to change it, fill the field in, and press **Apply**; unticked fields are left alone. **Group** moves the connections (a password stored in the Vault moves with them), **Tags** *replaces* the existing tags, and **Icon** sets an emoji or GTK icon name (empty clears it). A toast offers **Undo** for ten seconds.
 
 This is useful for reorganizing large numbers of connections, cleaning up after an import, or bulk-deleting obsolete entries.
 
@@ -3282,13 +3288,13 @@ Templates are connection presets that store protocol settings, authentication de
 **Manage Templates:** Menu → Tools → **Templates...** (or `rustconn-cli template list`)
 
 **Create Template:**
-- **From scratch:** Open Manage Templates → Click **Create Template** → configure name, icon (emoji or GTK icon name), protocol, default settings
-- **From existing connection:** Right-click a connection → **Create Template from Connection**
+- **From scratch:** Open Manage Templates → click the **New Template** button (the plus in the header) → configure name, icon (emoji or GTK icon name), protocol, default settings
+- **From existing connection:** not available in the GUI. Create the template from scratch, or use `rustconn-cli template`
 
 **Use Template:**
 - **From Connection Wizard (Ctrl+N):** Choose "Custom Command" → template grid shows your templates and predefined ones; click to fill command and name
 - **From Quick Connect (Ctrl+Shift+Q):** Select a template from the dropdown — fields pre-fill the form
-- **From Manage Templates:** Select a template → click **Create Connection**
+- **From Manage Templates:** Select a template → click **Use Template**
 - **From CLI:** `rustconn-cli template apply "SSH Template" --name "New Server" --host "10.0.0.5"`
 
 **Template Fields:** Protocol, Host/Port, Username/Domain, Password Source, Tags, Icon, Protocol Config, Custom Properties, Pre/Post Tasks, WoL Config.
@@ -4772,7 +4778,7 @@ Your desktop keyring may be locked. Configure it to unlock automatically on logi
 When RustConn hits a Rust panic it writes a report to `$XDG_STATE_HOME/rustconn/crash-<timestamp>.log` (usually `~/.local/state/rustconn/`; on a system without a state directory it uses the OS data directory). The next launch shows a banner with an **Open Log** button, which opens the file and clears the saved logs so the banner does not keep returning. The log stays on your machine and is never sent anywhere automatically — open it and review it before attaching it to a bug report, since a panic message can contain data from your session. This covers Rust panics only: a crash inside a C library such as GTK or VTE (a `SIGSEGV`) does not go through this and leaves no crash log, so run RustConn from a terminal to capture its output if you need to report one of those.
 
 **How do I connect to a host behind a jump server?**
-Set the **Proxy Jump** field in the SSH connection dialog's Advanced tab (e.g., `user@bastion.example.com`). Chain multiple jump hosts with commas.
+Pick a **Jump Host** or set the **ProxyJump** field on the SSH connection dialog's Protocol tab, in the Connection group (e.g., `user@bastion.example.com`). Chain multiple jump hosts with commas.
 
 **How do I reset RustConn to default settings?**
 ```bash

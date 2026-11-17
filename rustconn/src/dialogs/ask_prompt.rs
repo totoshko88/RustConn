@@ -125,11 +125,13 @@ fn present_ask_dialog<F>(
         } else if spec.secret {
             let row = adw::PasswordEntryRow::new();
             row.set_title(&spec.prompt);
+            row.set_activates_default(true);
             prefs_group.add(&row);
             AskField::Secret(row)
         } else {
             let row = adw::EntryRow::new();
             row.set_title(&spec.prompt);
+            row.set_activates_default(true);
             prefs_group.add(&row);
             AskField::Text(row)
         };
@@ -137,6 +139,13 @@ fn present_ask_dialog<F>(
     }
 
     dialog.set_extra_child(Some(&prefs_group));
+    // Enter confirms, and typing can start at once on the first field.
+    match fields.first().map(|(_, field)| field) {
+        Some(AskField::Text(row)) => dialog.set_focus(Some(row)),
+        Some(AskField::Secret(row)) => dialog.set_focus(Some(row)),
+        Some(AskField::Choice(row, _)) => dialog.set_focus(Some(row)),
+        None => {}
+    }
 
     dialog.add_response("cancel", &i18n("Cancel"));
     dialog.add_response("connect", confirm_label);

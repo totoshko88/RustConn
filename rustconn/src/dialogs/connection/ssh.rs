@@ -880,7 +880,7 @@ fn create_session_group() -> (
     // Custom options entry
     let (options_row, options_entry) = EntryRowBuilder::new(i18n("Custom Options"))
         .subtitle(i18n("Key=Value, comma-separated (-o flags)"))
-        .placeholder("StrictHostKeyChecking=no, ServerAliveInterval=60")
+        .placeholder("ServerAliveInterval=60, Compression=yes")
         .build();
     session_group.add(&options_row);
 
