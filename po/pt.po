@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 13:50+0200\n"
+"POT-Creation-Date: 2026-11-17 15:45+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Portuguese\n"
@@ -17,14 +17,14 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Generated-By: Babel 2.10.3\n"
 
-#: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
+#: rustconn/src/alert.rs:15 rustconn/src/alert.rs:55 rustconn/src/alert.rs:66
 #: rustconn/src/app.rs:2304 rustconn/src/script_runner.rs:785
 #: rustconn/src/script_runner.rs:817 rustconn/src/toast.rs:266
 msgid "OK"
 msgstr "OK"
 
-#: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/ask_prompt.rs:141 rustconn/src/dialogs/cluster.rs:830
+#: rustconn/src/alert.rs:34 rustconn/src/alert.rs:96
+#: rustconn/src/dialogs/ask_prompt.rs:141
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:310
@@ -47,7 +47,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/tunnel.rs:727
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:571
 #: rustconn/src/dialogs/variable_setup.rs:85
-#: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
+#: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:303
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:784
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1376
@@ -68,20 +68,20 @@ msgstr "OK"
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
 #: rustconn/src/window/operations.rs:972 rustconn/src/window/operations.rs:1151
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
-#: rustconn/src/window/workspaces.rs:554
+#: rustconn/src/window/workspaces.rs:560
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:807
+#: rustconn/src/alert.rs:74 rustconn/src/dialogs/connection/dialog/save.rs:807
 #: rustconn/src/dialogs/connection/dialog/save.rs:820
 msgid "Validation Error"
 msgstr "Erro de validação"
 
-#: rustconn/src/alert.rs:93
+#: rustconn/src/alert.rs:95
 msgid "Don't Save"
 msgstr "Não guardar"
 
-#: rustconn/src/alert.rs:95
+#: rustconn/src/alert.rs:97 rustconn/src/dialogs/cluster.rs:467
 #: rustconn/src/dialogs/connection/dialog/populate.rs:90
 #: rustconn/src/dialogs/connection/dialog/populate.rs:92
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:177
@@ -94,7 +94,7 @@ msgstr "Não guardar"
 #: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1055
 #: rustconn/src/sidebar/saved_searches.rs:221
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
-#: rustconn/src/window/workspaces.rs:555
+#: rustconn/src/window/workspaces.rs:561
 msgid "Save"
 msgstr "Guardar"
 
@@ -132,9 +132,9 @@ msgstr ""
 "{} está selecionado, mas ainda não pode armazenar palavras-passe: {}. Abra "
 "as Definições e depois Segredos."
 
-#: rustconn/src/app.rs:2139 rustconn/src/window/edit_actions.rs:1833
-#: rustconn/src/window/edit_actions.rs:1972
-#: rustconn/src/window/edit_actions.rs:2000
+#: rustconn/src/app.rs:2139 rustconn/src/window/edit_actions.rs:1843
+#: rustconn/src/window/edit_actions.rs:1982
+#: rustconn/src/window/edit_actions.rs:2010
 msgid "Failed to open URL: {}"
 msgstr "Falha ao abrir URL: {}"
 
@@ -312,12 +312,12 @@ msgstr "Introduzir palavra-passe manualmente"
 msgid "Open Settings"
 msgstr "Abrir definições"
 
-#: rustconn/src/dialogs/cluster.rs:62 rustconn/src/dialogs/cluster.rs:565
-#: rustconn/src/dialogs/cluster.rs:566
+#: rustconn/src/dialogs/cluster.rs:63 rustconn/src/dialogs/cluster.rs:567
+#: rustconn/src/dialogs/cluster.rs:568
 msgid "New Cluster"
 msgstr "Novo Cluster"
 
-#: rustconn/src/dialogs/cluster.rs:70 rustconn/src/dialogs/cluster.rs:71
+#: rustconn/src/dialogs/cluster.rs:71
 #: rustconn/src/dialogs/connection/dialog/construction.rs:205
 #: rustconn/src/dialogs/connection/dialog/construction.rs:206
 #: rustconn/src/dialogs/settings/terminal_tab.rs:824
@@ -387,38 +387,38 @@ msgid "Select at least one connection or set an auto-membership pattern"
 msgstr ""
 "Selecione pelo menos uma ligação ou defina um padrão de pertença automática"
 
-#: rustconn/src/dialogs/cluster.rs:297
+#: rustconn/src/dialogs/cluster.rs:298
 #: rustconn/src/dialogs/settings/ui_tab.rs:501
 #: rustconn/src/dialogs/shortcuts.rs:175 rustconn/src/sidebar_ui.rs:1387
 msgid "Connections"
 msgstr "Ligações"
 
-#: rustconn/src/dialogs/cluster.rs:298
+#: rustconn/src/dialogs/cluster.rs:299
 msgid "Select connections to include in this cluster"
 msgstr "Selecionar ligações a incluir neste cluster"
 
-#: rustconn/src/dialogs/cluster.rs:307
+#: rustconn/src/dialogs/cluster.rs:308
 msgid "Filter connections…"
 msgstr "Filtrar ligações…"
 
-#: rustconn/src/dialogs/cluster.rs:331 rustconn/src/sidebar_ui.rs:1252
+#: rustconn/src/dialogs/cluster.rs:332 rustconn/src/sidebar_ui.rs:1252
 #: rustconn/src/terminal/config.rs:302
 msgid "Select All"
 msgstr "Selecionar Tudo"
 
-#: rustconn/src/dialogs/cluster.rs:332
+#: rustconn/src/dialogs/cluster.rs:333
 msgid "Deselect All"
 msgstr "Desselecionar Tudo"
 
-#: rustconn/src/dialogs/cluster.rs:465
+#: rustconn/src/dialogs/cluster.rs:466
 msgid "Edit Cluster"
 msgstr "Editar cluster"
 
-#: rustconn/src/dialogs/cluster.rs:557 rustconn/src/sidebar_ui.rs:1429
+#: rustconn/src/dialogs/cluster.rs:559 rustconn/src/sidebar_ui.rs:1429
 msgid "Manage Clusters"
 msgstr "Gerir clusters"
 
-#: rustconn/src/dialogs/cluster.rs:591
+#: rustconn/src/dialogs/cluster.rs:593
 msgid ""
 "Clusters open multiple servers together. To mirror keystrokes across them, "
 "split the resulting tabs and use the Broadcast toggle in the header bar."
@@ -426,59 +426,36 @@ msgstr ""
 "Os clusters abrem vários servidores em simultâneo. Para espelhar as teclas "
 "entre eles, divida os separadores e use o botão Difusão na barra de título."
 
-#: rustconn/src/dialogs/cluster.rs:681
+#: rustconn/src/dialogs/cluster.rs:683
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:284
 msgid "{} connection"
 msgid_plural "{} connections"
 msgstr[0] "{} ligação"
 msgstr[1] "{} ligações"
 
-#: rustconn/src/dialogs/cluster.rs:697 rustconn/src/dialogs/cluster.rs:701
+#: rustconn/src/dialogs/cluster.rs:699 rustconn/src/dialogs/cluster.rs:703
 msgid "Connect to cluster"
 msgstr "Ligar ao cluster"
 
-#: rustconn/src/dialogs/cluster.rs:706 rustconn/src/dialogs/cluster.rs:710
+#: rustconn/src/dialogs/cluster.rs:708 rustconn/src/dialogs/cluster.rs:712
 msgid "Connect to cluster in a new window"
 msgstr "Ligar ao cluster numa nova janela"
 
-#: rustconn/src/dialogs/cluster.rs:715 rustconn/src/dialogs/cluster.rs:719
+#: rustconn/src/dialogs/cluster.rs:717 rustconn/src/dialogs/cluster.rs:721
 msgid "Disconnect all cluster sessions"
 msgstr "Desconectar todas as sessões do cluster"
 
-#: rustconn/src/dialogs/cluster.rs:724 rustconn/src/dialogs/cluster.rs:727
+#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
 msgid "Edit cluster"
 msgstr "Editar cluster"
 
-#: rustconn/src/dialogs/cluster.rs:731 rustconn/src/dialogs/cluster.rs:735
+#: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Eliminar cluster"
 
-#: rustconn/src/dialogs/cluster.rs:770
+#: rustconn/src/dialogs/cluster.rs:772
 msgid "No clusters defined. Click 'New Cluster' to create one."
 msgstr "Nenhum cluster definido. Clique em 'Novo Cluster' para criar um."
-
-#: rustconn/src/dialogs/cluster.rs:827 rustconn/src/window/clusters.rs:625
-msgid "Delete Cluster?"
-msgstr "Excluir cluster?"
-
-#: rustconn/src/dialogs/cluster.rs:828
-msgid "This cluster will be permanently removed."
-msgstr "Este cluster será removido permanentemente."
-
-#: rustconn/src/dialogs/cluster.rs:831 rustconn/src/dialogs/recording.rs:600
-#: rustconn/src/dialogs/script.rs:175 rustconn/src/dialogs/script.rs:683
-#: rustconn/src/dialogs/template_manager.rs:114
-#: rustconn/src/dialogs/template_manager.rs:192
-#: rustconn/src/dialogs/tunnel.rs:728 rustconn/src/dialogs/workspace.rs:119
-#: rustconn/src/dialogs/workspace.rs:292
-#: rustconn/src/sidebar/saved_searches.rs:265 rustconn/src/sidebar_ui.rs:653
-#: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:459
-#: rustconn/src/window/clusters.rs:630 rustconn/src/window/edit_actions.rs:487
-#: rustconn/src/window/key_setup.rs:1023 rustconn/src/window/operations.rs:173
-#: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
-#: rustconn/src/window/templates.rs:151
-msgid "Delete"
-msgstr "Eliminar"
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
@@ -5281,8 +5258,8 @@ msgstr "A escrever ficheiros de saída…"
 msgid "Export complete"
 msgstr "Exportação concluída"
 
-#: rustconn/src/dialogs/export.rs:1151 rustconn/src/dialogs/import/mod.rs:581
-#: rustconn/src/dialogs/import/mod.rs:894
+#: rustconn/src/dialogs/export.rs:1151 rustconn/src/dialogs/import/mod.rs:597
+#: rustconn/src/dialogs/import/mod.rs:928
 #: rustconn/src/dialogs/import/sources.rs:353
 #: rustconn/src/dialogs/import/sources.rs:445
 #: rustconn/src/dialogs/import/sources.rs:541
@@ -5619,13 +5596,13 @@ msgstr "Erros ({}):"
 msgid "No connections found in the selected source."
 msgstr "Nenhuma conexão encontrada na fonte selecionada."
 
-#: rustconn/src/dialogs/import/mod.rs:554
-#: rustconn/src/dialogs/import/mod.rs:650
-#: rustconn/src/dialogs/import/mod.rs:1007
-#: rustconn/src/dialogs/import/mod.rs:1025
-#: rustconn/src/dialogs/import/mod.rs:1043
-#: rustconn/src/dialogs/import/mod.rs:1061
-#: rustconn/src/dialogs/import/mod.rs:1079
+#: rustconn/src/dialogs/import/mod.rs:570
+#: rustconn/src/dialogs/import/mod.rs:684
+#: rustconn/src/dialogs/import/mod.rs:1041
+#: rustconn/src/dialogs/import/mod.rs:1059
+#: rustconn/src/dialogs/import/mod.rs:1077
+#: rustconn/src/dialogs/import/mod.rs:1095
+#: rustconn/src/dialogs/import/mod.rs:1113
 #: rustconn/src/dialogs/import/sources.rs:322
 #: rustconn/src/dialogs/import/sources.rs:415
 #: rustconn/src/dialogs/import/sources.rs:511
@@ -5642,17 +5619,17 @@ msgstr "Nenhuma conexão encontrada na fonte selecionada."
 msgid "Importing from {}…"
 msgstr "Importando de {}…"
 
-#: rustconn/src/dialogs/import/mod.rs:571
-#: rustconn/src/dialogs/import/mod.rs:883
-#: rustconn/src/dialogs/import/mod.rs:1101
+#: rustconn/src/dialogs/import/mod.rs:587
+#: rustconn/src/dialogs/import/mod.rs:917
+#: rustconn/src/dialogs/import/mod.rs:1135
 msgid "Import complete"
 msgstr "Importação concluída"
 
-#: rustconn/src/dialogs/import/mod.rs:995
+#: rustconn/src/dialogs/import/mod.rs:1029
 msgid "Starting import from {}…"
 msgstr "A iniciar importação de {}…"
 
-#: rustconn/src/dialogs/import/mod.rs:1089
+#: rustconn/src/dialogs/import/mod.rs:1123
 msgid "Querying libvirt daemon…"
 msgstr "A consultar o daemon libvirt…"
 
@@ -7185,6 +7162,21 @@ msgstr "Eliminar gravação?"
 msgid "This will permanently remove the recording files from disk."
 msgstr "Isto removerá permanentemente os ficheiros de gravação do disco."
 
+#: rustconn/src/dialogs/recording.rs:600 rustconn/src/dialogs/script.rs:175
+#: rustconn/src/dialogs/script.rs:683
+#: rustconn/src/dialogs/template_manager.rs:114
+#: rustconn/src/dialogs/template_manager.rs:192
+#: rustconn/src/dialogs/tunnel.rs:728 rustconn/src/dialogs/workspace.rs:119
+#: rustconn/src/dialogs/workspace.rs:304
+#: rustconn/src/sidebar/saved_searches.rs:265 rustconn/src/sidebar_ui.rs:653
+#: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:459
+#: rustconn/src/window/clusters.rs:630 rustconn/src/window/edit_actions.rs:497
+#: rustconn/src/window/key_setup.rs:1023 rustconn/src/window/operations.rs:173
+#: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
+#: rustconn/src/window/templates.rs:151
+msgid "Delete"
+msgstr "Eliminar"
+
 #: rustconn/src/dialogs/recording.rs:625
 msgid "Could Not Delete Recording"
 msgstr "Não foi possível eliminar a gravação"
@@ -7236,7 +7228,8 @@ msgstr "Falha na importação"
 #: rustconn/src/window/connection_dialogs.rs:928
 #: rustconn/src/window/edit_dialogs.rs:407
 #: rustconn/src/window/edit_dialogs.rs:511
-#: rustconn/src/window/edit_group.rs:1971
+#: rustconn/src/window/edit_group.rs:1971 rustconn/src/window/workspaces.rs:375
+#: rustconn/src/window/workspaces.rs:390
 msgid "Error"
 msgstr "Erro"
 
@@ -7846,7 +7839,7 @@ msgstr ""
 "aplicar as alterações."
 
 #: rustconn/src/dialogs/settings/mod.rs:596 rustconn/src/sidebar_ui.rs:680
-#: rustconn/src/window/session_restore.rs:199
+#: rustconn/src/window/session_restore.rs:201
 msgid "Restore"
 msgstr "Restaurar"
 
@@ -7876,6 +7869,7 @@ msgstr "Sair agora"
 
 #: rustconn/src/dialogs/settings/mod.rs:671
 #: rustconn/src/dialogs/settings/mod.rs:680
+#: rustconn/src/window/edit_actions.rs:360
 msgid "Restore failed"
 msgstr "Falha na restauração"
 
@@ -11283,23 +11277,23 @@ msgstr "Renomear espaço de trabalho"
 msgid "Enter a new name:"
 msgstr "Digite um novo nome:"
 
-#: rustconn/src/dialogs/workspace.rs:285
+#: rustconn/src/dialogs/workspace.rs:297
 msgid "Delete Workspace?"
 msgstr "Excluir espaço de trabalho?"
 
-#: rustconn/src/dialogs/workspace.rs:287
+#: rustconn/src/dialogs/workspace.rs:299
 msgid "Workspace \"{}\" will be permanently removed."
 msgstr "O espaço de trabalho «{}» será removido permanentemente."
 
-#: rustconn/src/dialogs/workspace.rs:380
+#: rustconn/src/dialogs/workspace.rs:392
 msgid "No workspace profiles saved"
 msgstr "Nenhum perfil de espaço de trabalho salvo"
 
-#: rustconn/src/dialogs/workspace.rs:381
+#: rustconn/src/dialogs/workspace.rs:393
 msgid "Save your current sessions to create one"
 msgstr "Salve suas sessões atuais para criar um"
 
-#: rustconn/src/dialogs/workspace.rs:387
+#: rustconn/src/dialogs/workspace.rs:399
 msgid "{} connections"
 msgstr "{} conexões"
 
@@ -12754,7 +12748,7 @@ msgstr "Parar de acompanhar"
 msgid "Delete Permanently…"
 msgstr "Eliminar permanentemente…"
 
-#: rustconn/src/sidebar_ui.rs:696 rustconn/src/window/edit_actions.rs:399
+#: rustconn/src/sidebar_ui.rs:696 rustconn/src/window/edit_actions.rs:409
 msgid "Empty Trash"
 msgstr "Esvaziar reciclagem"
 
@@ -13671,6 +13665,10 @@ msgstr "Erro ao atualizar o cluster"
 msgid "Could not access application state"
 msgstr "Não foi possível acessar o estado do aplicativo"
 
+#: rustconn/src/window/clusters.rs:625
+msgid "Delete Cluster?"
+msgstr "Excluir cluster?"
+
 #: rustconn/src/window/clusters.rs:627
 msgid ""
 "Are you sure you want to delete the cluster '{}'?\n"
@@ -13918,7 +13916,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:1050
 #: rustconn/src/window/credentials.rs:1286
-#: rustconn/src/window/edit_actions.rs:2426
+#: rustconn/src/window/edit_actions.rs:2436
 msgid "Connection failed. Host unreachable."
 msgstr "Ligação falhada. Anfitrião inacessível."
 
@@ -13959,34 +13957,34 @@ msgstr "Não foi possível mover a sessão para a sua própria janela."
 msgid "Could not move the session back to the main window."
 msgstr "Não foi possível mover a sessão de volta para a janela principal."
 
-#: rustconn/src/window/detach_actions.rs:585
+#: rustconn/src/window/detach_actions.rs:586
 #: rustconn/src/window/group_broadcast.rs:455
 msgid "Group broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Difusão em grupo desativada — as teclas vão apenas para a aba em foco"
 
-#: rustconn/src/window/edit_actions.rs:368
+#: rustconn/src/window/edit_actions.rs:378
 msgid "Item restored"
 msgstr "Item restaurado"
 
-#: rustconn/src/window/edit_actions.rs:395
+#: rustconn/src/window/edit_actions.rs:405
 msgid "Empty trash?"
 msgstr "Esvaziar a reciclagem?"
 
-#: rustconn/src/window/edit_actions.rs:397
+#: rustconn/src/window/edit_actions.rs:407
 msgid "Deleted items will be removed permanently. This cannot be undone."
 msgstr ""
 "Os itens eliminados serão removidos permanentemente. Esta ação não pode ser "
 "anulada."
 
-#: rustconn/src/window/edit_actions.rs:421
+#: rustconn/src/window/edit_actions.rs:431
 msgid "Trash emptied"
 msgstr "Reciclagem esvaziada"
 
-#: rustconn/src/window/edit_actions.rs:429
+#: rustconn/src/window/edit_actions.rs:439
 msgid "Failed to empty trash: {}"
 msgstr "Não foi possível esvaziar a reciclagem: {}"
 
-#: rustconn/src/window/edit_actions.rs:472
+#: rustconn/src/window/edit_actions.rs:482
 msgid ""
 "“{}” will be removed together with its saved password, if any. This cannot "
 "be undone."
@@ -13994,7 +13992,7 @@ msgstr ""
 "«{}» será removido juntamente com a palavra-passe guardada, se existir. Esta "
 "ação não pode ser anulada."
 
-#: rustconn/src/window/edit_actions.rs:476
+#: rustconn/src/window/edit_actions.rs:486
 msgid ""
 "The group “{}” will be removed together with its saved password, if any. Its "
 "connections stay in the trash. This cannot be undone."
@@ -14003,68 +14001,68 @@ msgstr ""
 "existir. As suas ligações ficam na reciclagem. Esta ação não pode ser "
 "anulada."
 
-#: rustconn/src/window/edit_actions.rs:485
+#: rustconn/src/window/edit_actions.rs:495
 msgid "Delete permanently?"
 msgstr "Eliminar permanentemente?"
 
-#: rustconn/src/window/edit_actions.rs:507
+#: rustconn/src/window/edit_actions.rs:517
 msgid "Deleted permanently"
 msgstr "Eliminado permanentemente"
 
-#: rustconn/src/window/edit_actions.rs:517
+#: rustconn/src/window/edit_actions.rs:527
 msgid "Failed to delete permanently: {}"
 msgstr "Não foi possível eliminar permanentemente: {}"
 
-#: rustconn/src/window/edit_actions.rs:616
+#: rustconn/src/window/edit_actions.rs:626
 msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
 msgstr ""
 "Wake On LAN não configurado. Edite a ligação para definir um endereço MAC."
 
-#: rustconn/src/window/edit_actions.rs:644
+#: rustconn/src/window/edit_actions.rs:654
 msgid "Wake On LAN sent to {} — waiting for host to come online…"
 msgstr "Wake On LAN enviado para {} — a aguardar que o host fique online…"
 
-#: rustconn/src/window/edit_actions.rs:685
+#: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
 msgstr "{} está online — a ligar…"
 
-#: rustconn/src/window/edit_actions.rs:700
+#: rustconn/src/window/edit_actions.rs:710
 msgid "{} did not come online after WoL"
 msgstr "{} não ficou online após WoL"
 
-#: rustconn/src/window/edit_actions.rs:712
+#: rustconn/src/window/edit_actions.rs:722
 msgid "Failed to send Wake On LAN packet. Check network permissions."
 msgstr "Impossível enviar pacote Wake On LAN. Verifique as permissões de rede."
 
-#: rustconn/src/window/edit_actions.rs:747
+#: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
 msgstr "A verificar se {} está online…"
 
-#: rustconn/src/window/edit_actions.rs:778
+#: rustconn/src/window/edit_actions.rs:788
 msgid "{} is online"
 msgstr "{} está online"
 
-#: rustconn/src/window/edit_actions.rs:793
+#: rustconn/src/window/edit_actions.rs:803
 msgid "{} did not come online within timeout"
 msgstr "{} não ficou online dentro do tempo limite"
 
-#: rustconn/src/window/edit_actions.rs:800
+#: rustconn/src/window/edit_actions.rs:810
 msgid "Host check failed: {}"
 msgstr "Verificação do host falhou: {}"
 
-#: rustconn/src/window/edit_actions.rs:944
+#: rustconn/src/window/edit_actions.rs:954
 msgid "This connection type cannot host a SOCKS tunnel"
 msgstr "Este tipo de ligação não suporta um túnel SOCKS"
 
-#: rustconn/src/window/edit_actions.rs:965
+#: rustconn/src/window/edit_actions.rs:975
 msgid "application is busy"
 msgstr "a aplicação está ocupada"
 
-#: rustconn/src/window/edit_actions.rs:968
+#: rustconn/src/window/edit_actions.rs:978
 msgid "the SSH connection it tunnels through is gone"
 msgstr "a ligação SSH através da qual faz o túnel deixou de existir"
 
-#: rustconn/src/window/edit_actions.rs:1102
+#: rustconn/src/window/edit_actions.rs:1112
 msgid ""
 "The SOCKS proxy password variable ‘{}’ is not secret, so it was not used. "
 "Mark it as secret in Global Variables."
@@ -14072,28 +14070,28 @@ msgstr ""
 "A variável de palavra-passe do proxy SOCKS ‘{}’ não é secreta, por isso não "
 "foi usada. Marque-a como secreta em Variáveis globais."
 
-#: rustconn/src/window/edit_actions.rs:1108
+#: rustconn/src/window/edit_actions.rs:1118
 msgid "The SOCKS proxy password variable ‘{}’ has no value"
 msgstr "A variável de palavra-passe do proxy SOCKS ‘{}’ não tem valor"
 
-#: rustconn/src/window/edit_actions.rs:1115
+#: rustconn/src/window/edit_actions.rs:1125
 msgid "Could not start the SOCKS relay: {}"
 msgstr "Não foi possível iniciar o retransmissor SOCKS: {}"
 
-#: rustconn/src/window/edit_actions.rs:1368
-#: rustconn/src/window/edit_actions.rs:1502
-#: rustconn/src/window/edit_actions.rs:1761
-#: rustconn/src/window/edit_actions.rs:1870
+#: rustconn/src/window/edit_actions.rs:1378
+#: rustconn/src/window/edit_actions.rs:1512
+#: rustconn/src/window/edit_actions.rs:1771
+#: rustconn/src/window/edit_actions.rs:1880
 #: rustconn/src/window/protocols.rs:2385
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Não foi possível abrir o túnel SSH: {}"
 
-#: rustconn/src/window/edit_actions.rs:1381
-#: rustconn/src/window/edit_actions.rs:1481
+#: rustconn/src/window/edit_actions.rs:1391
+#: rustconn/src/window/edit_actions.rs:1491
 msgid "Starting the tunnel…"
 msgstr "A iniciar o túnel…"
 
-#: rustconn/src/window/edit_actions.rs:1441
+#: rustconn/src/window/edit_actions.rs:1451
 msgid ""
 "The tunnelled browser command ‘{}’ can't use a proxy; opening the embedded "
 "browser instead. Set a Chromium-based browser or Firefox in Settings to use "
@@ -14103,7 +14101,7 @@ msgstr ""
 "navegador integrado em alternativa. Defina nas Definições um navegador "
 "baseado em Chromium ou o Firefox para usar um navegador externo."
 
-#: rustconn/src/window/edit_actions.rs:1445
+#: rustconn/src/window/edit_actions.rs:1455
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a chromium/"
@@ -14113,7 +14111,7 @@ msgstr ""
 "Chromium. Só navegadores da família Chromium podem passar pelo túnel; defina "
 "um comando chromium/chrome/brave/vivaldi/edge nas Definições."
 
-#: rustconn/src/window/edit_actions.rs:1451
+#: rustconn/src/window/edit_actions.rs:1461
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
 "embedded browser instead. Check the command in Settings, or clear it to auto-"
@@ -14123,7 +14121,7 @@ msgstr ""
 "navegador incorporado. Verifique o comando nas Definições ou limpe-o para "
 "detetar um navegador automaticamente."
 
-#: rustconn/src/window/edit_actions.rs:1455
+#: rustconn/src/window/edit_actions.rs:1465
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -14132,7 +14130,7 @@ msgstr ""
 "o comando nas Definições ou limpe-o para detetar um navegador "
 "automaticamente."
 
-#: rustconn/src/window/edit_actions.rs:1461
+#: rustconn/src/window/edit_actions.rs:1471
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -14141,7 +14139,7 @@ msgstr ""
 "incorporado. Instale um navegador baseado em Chromium para encaminhar um "
 "externo pelo túnel."
 
-#: rustconn/src/window/edit_actions.rs:1464
+#: rustconn/src/window/edit_actions.rs:1474
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -14150,26 +14148,26 @@ msgstr ""
 "baseado em Chromium, ou use uma compilação com o navegador incorporado, para "
 "abrir um navegador por túnel."
 
-#: rustconn/src/window/edit_actions.rs:1572
-#: rustconn/src/window/edit_actions.rs:1595
-#: rustconn/src/window/edit_actions.rs:1648
+#: rustconn/src/window/edit_actions.rs:1582
+#: rustconn/src/window/edit_actions.rs:1605
+#: rustconn/src/window/edit_actions.rs:1658
 msgid "Failed to open browser: {}"
 msgstr "Não foi possível abrir o navegador: {}"
 
-#: rustconn/src/window/edit_actions.rs:1590
+#: rustconn/src/window/edit_actions.rs:1600
 msgid "Opened a tunnelled browser"
 msgstr "Navegador em túnel aberto"
 
-#: rustconn/src/window/edit_actions.rs:1625
+#: rustconn/src/window/edit_actions.rs:1635
 msgid "{} (tunnel)"
 msgstr "{} (túnel)"
 
-#: rustconn/src/window/edit_actions.rs:1639
-#: rustconn/src/window/edit_actions.rs:1801
+#: rustconn/src/window/edit_actions.rs:1649
+#: rustconn/src/window/edit_actions.rs:1811
 msgid "Could not open the page: {}"
 msgstr "Não foi possível abrir a página: {}"
 
-#: rustconn/src/window/edit_actions.rs:1895
+#: rustconn/src/window/edit_actions.rs:1905
 msgid ""
 "This browser can't use a proxy, so the page was not opened. Use a Chromium-"
 "based browser, Firefox or the embedded browser."
@@ -14177,12 +14175,12 @@ msgstr ""
 "Este navegador não pode usar um proxy, por isso a página não foi aberta. Use "
 "um navegador baseado em Chromium, o Firefox ou o navegador integrado."
 
-#: rustconn/src/window/edit_actions.rs:1961
-#: rustconn/src/window/edit_actions.rs:2014
+#: rustconn/src/window/edit_actions.rs:1971
+#: rustconn/src/window/edit_actions.rs:2024
 msgid "Opened in browser"
 msgstr "Aberto no navegador"
 
-#: rustconn/src/window/edit_actions.rs:1986
+#: rustconn/src/window/edit_actions.rs:1996
 msgid ""
 "No browser that can use a proxy was found, so the page was not opened. "
 "Install Chromium or Firefox, or use the embedded browser."
@@ -14191,28 +14189,28 @@ msgstr ""
 "página não foi aberta. Instale o Chromium ou o Firefox, ou use o navegador "
 "integrado."
 
-#: rustconn/src/window/edit_actions.rs:2163
+#: rustconn/src/window/edit_actions.rs:2173
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr ""
 "O agente SSH não está em execução. Execute «eval $(ssh-agent)» e tente "
 "novamente."
 
-#: rustconn/src/window/edit_actions.rs:2174
+#: rustconn/src/window/edit_actions.rs:2184
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr ""
 "Não foi possível verificar se o agente SSH tem a chave. O mc será aberto "
 "mesmo assim."
 
-#: rustconn/src/window/edit_actions.rs:2180
+#: rustconn/src/window/edit_actions.rs:2190
 msgid "SSH key not available"
 msgstr "Chave SSH não disponível"
 
-#: rustconn/src/window/edit_actions.rs:2201 rustconn/src/window/mc_launch.rs:62
+#: rustconn/src/window/edit_actions.rs:2211 rustconn/src/window/mc_launch.rs:62
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP está disponível apenas para ligações SSH."
 
-#: rustconn/src/window/edit_actions.rs:2230
-#: rustconn/src/window/edit_actions.rs:2527
+#: rustconn/src/window/edit_actions.rs:2240
+#: rustconn/src/window/edit_actions.rs:2537
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -14222,18 +14220,18 @@ msgstr ""
 "Flatpak.                          Ative \"SFTP via mc\" nas Definições para "
 "um acesso fiável."
 
-#: rustconn/src/window/edit_actions.rs:2246
-#: rustconn/src/window/edit_actions.rs:2545
+#: rustconn/src/window/edit_actions.rs:2256
+#: rustconn/src/window/edit_actions.rs:2555
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Anfitrião de salto detetado. O SFTP é aberto através do mc em vez do gestor "
 "de ficheiros."
 
-#: rustconn/src/window/edit_actions.rs:2273
+#: rustconn/src/window/edit_actions.rs:2283
 msgid "Opening SFTP…"
 msgstr "A abrir SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2320
+#: rustconn/src/window/edit_actions.rs:2330
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "O agente SSH não está em execução — o gestor de ficheiros pode não se "
@@ -15219,15 +15217,15 @@ msgstr "Selecione um grupo para {} ligação(ões):"
 msgid "Select parent for {} group(s):"
 msgstr "Selecione superior para {} grupo(s):"
 
-#: rustconn/src/window/operations.rs:1316
+#: rustconn/src/window/operations.rs:1326
 msgid "Move Partially Complete"
 msgstr "Movimentação parcialmente concluída"
 
-#: rustconn/src/window/operations.rs:1319
+#: rustconn/src/window/operations.rs:1329
 msgid "Moved {} item(s)."
 msgstr "Movidos {} item(ns)."
 
-#: rustconn/src/window/operations.rs:1321
+#: rustconn/src/window/operations.rs:1331
 msgid "Failed to move {} item(s):"
 msgstr "Falha ao mover {} item(ns):"
 
@@ -15593,18 +15591,21 @@ msgid "Restore previous session?"
 msgstr "Restaurar a sessão anterior?"
 
 #: rustconn/src/window/session_restore.rs:194
-msgid "Reopen the {} connections that were open when RustConn last closed."
-msgstr ""
-"Reabrir as {} ligações que estavam abertas quando o RustConn foi fechado "
-"pela última vez."
+msgid "Reopen the {} connection that was open when RustConn last closed."
+msgid_plural ""
+"Reopen the {} connections that were open when RustConn last closed."
+msgstr[0] "Reabrir a {} ligação que estava aberta quando o RustConn foi fechado pela última vez."
+msgstr[1] "Reabrir as {} ligações que estavam abertas quando o RustConn foi fechado pela última vez."
 
-#: rustconn/src/window/session_restore.rs:198
+#: rustconn/src/window/session_restore.rs:200
 msgid "Not Now"
 msgstr "Agora não"
 
-#: rustconn/src/window/session_restore.rs:273
-msgid "{} restored connections no longer exist"
-msgstr "{} ligações restauradas já não existem"
+#: rustconn/src/window/session_restore.rs:275
+msgid "{} connection from the saved session no longer exists"
+msgid_plural "{} connections from the saved session no longer exist"
+msgstr[0] "{} ligação da sessão guardada já não existe"
+msgstr[1] "{} ligações da sessão guardada já não existem"
 
 #: rustconn/src/window/sessions.rs:38
 msgid "Active Sessions"
@@ -15760,7 +15761,7 @@ msgstr "Crie snippets no diálogo Gerir Snippets"
 msgid "No Active Terminal"
 msgstr "Sem terminal ativo"
 
-#: rustconn/src/window/snippets.rs:737
+#: rustconn/src/window/snippets.rs:737 rustconn/src/window/snippets.rs:911
 msgid "Open a terminal session first before executing a snippet."
 msgstr "Abra primeiro uma sessão de terminal antes de executar um fragmento."
 
@@ -16002,27 +16003,27 @@ msgstr "Interface compacta"
 msgid "Keyboard Passthrough"
 msgstr "Passagem de teclado"
 
-#: rustconn/src/window/workspaces.rs:456
+#: rustconn/src/window/workspaces.rs:462
 msgid "No active sessions to save"
 msgstr "Nenhuma sessão ativa para salvar"
 
-#: rustconn/src/window/workspaces.rs:551
+#: rustconn/src/window/workspaces.rs:557
 msgid "Save Workspace"
 msgstr "Salvar espaço de trabalho"
 
-#: rustconn/src/window/workspaces.rs:552
+#: rustconn/src/window/workspaces.rs:558
 msgid "Enter a name for this workspace profile:"
 msgstr "Digite um nome para este perfil de espaço de trabalho:"
 
-#: rustconn/src/window/workspaces.rs:561
+#: rustconn/src/window/workspaces.rs:567
 msgid "Workspace name"
 msgstr "Nome do espaço de trabalho"
 
-#: rustconn/src/window/workspaces.rs:593
+#: rustconn/src/window/workspaces.rs:608
 msgid "Workspace '{}' saved"
 msgstr "Espaço de trabalho «{}» salvo"
 
-#: rustconn/src/window/workspaces.rs:604
+#: rustconn/src/window/workspaces.rs:619
 msgid "Failed to save workspace"
 msgstr "Falha ao salvar o espaço de trabalho"
 
@@ -16037,6 +16038,17 @@ msgstr "Gestor de ligações"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ligação;terminal;remoto;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "This cluster will be permanently removed."
+#~ msgstr "Este cluster será removido permanentemente."
+
+#~ msgid "Reopen the {} connections that were open when RustConn last closed."
+#~ msgstr ""
+#~ "Reabrir as {} ligações que estavam abertas quando o RustConn foi fechado "
+#~ "pela última vez."
+
+#~ msgid "{} restored connections no longer exist"
+#~ msgstr "{} ligações restauradas já não existem"
 
 #~ msgid "Remove from Split"
 #~ msgstr "Remover da vista dividida"
