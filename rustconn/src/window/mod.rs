@@ -250,6 +250,10 @@ pub fn shutdown_sessions_for_exit(notebook: &SharedNotebook) {
         registry.shutdown();
     }
 
+    // Tunnels still being raised on a worker thread are known to nobody else:
+    // end them, and refuse new ones, before the process goes.
+    rustconn_core::ssh_tunnel::stop_all_tunnels();
+
     // Issue #304.
     notebook.shutdown_sessions();
 

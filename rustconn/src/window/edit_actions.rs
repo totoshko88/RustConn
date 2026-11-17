@@ -912,14 +912,14 @@ impl MainWindow {
     /// `on_ready` receives `Err(message)` when the connection is gone, the state
     /// is momentarily busy, or `ssh` fails to establish the proxy.
     ///
-    /// Known limitation (shared with the Web `tunnel_via` path):
-    /// - Quitting while the worker waits for the port leaves its `ssh -N` running,
-    ///   because the tunnel is not registered anywhere until `on_ready` runs and
-    ///   `spawn_tunnel` sets neither a process group nor a parent-death signal.
+    /// Quitting while the worker waits for the port ends the `ssh -N`: every tunnel
+    /// is registered the moment it spawns, and `stop_all_tunnels` (called on the
+    /// exit path) kills it. A crash of the application itself is not covered.
     ///
     /// The sidebar action guards against repeat clicks itself, see
     /// [`BrowserTunnelStart`]; this primitive does not.
-    // ponytail: orphan-on-quit needs PDEATHSIG in rustconn-pty-sys (deferred to 0.24.x).
+    // ponytail: a crash of the application can still orphan `ssh -N`; closing that needs PDEATHSIG
+    // on a long-lived spawning thread (it fires when the spawning *thread* exits) and is Linux-only.
     fn raise_socks_tunnel_async<C>(state: &SharedAppState, jump_id: Uuid, on_ready: C)
     where
         C: FnOnce(Result<rustconn_core::ssh_tunnel::SshTunnel, String>) + 'static,

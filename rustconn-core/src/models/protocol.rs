@@ -1260,7 +1260,8 @@ impl SshConfig {
             args.push("ControlMaster=auto".to_string());
             args.push("-o".to_string());
             // ponytail: 60s persist — short enough to recover after network
-            // changes (#217), long enough for monitoring multiplex.
+            // changes (#217), long enough for monitoring multiplex; make it a
+            // setting if a user needs a longer or shorter idle window.
             args.push("ControlPersist=60".to_string());
         }
 

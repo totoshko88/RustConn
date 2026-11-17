@@ -12,7 +12,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.25.1"
+version = "0.25.2"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -110,7 +110,7 @@ gettext-rs = { version = "0.8", features = ["gettext-system"] }
 
 # POSIX bindings. nix features are additive: each crate adds the ones it uses
 # (core: fs/signal/process/user, gui: signal/process, pty-sys: term).
-nix = "0.31.2"
+nix = "0.32.0"
 libc = "0.2"
 # MPTCP (Multipath TCP) socket creation in rustconn-core — safe API
 socket2 = { version = "0.6", features = ["all"] }

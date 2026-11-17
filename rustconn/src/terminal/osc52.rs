@@ -82,7 +82,8 @@ fn enabled() -> bool {
 /// because the only path here is the one `deliver_output_to` runs.
 ///
 /// ponytail: silent, like copy-on-select — a remote yank is not worth a toast,
-/// and the paste that follows is the user's own.
+/// and the paste that follows is the user's own; add a toast here if users
+/// report not noticing that a remote program overwrote their clipboard.
 pub fn offer_to_clipboard(terminal: &Terminal, text: &str) {
     terminal.display().clipboard().set_text(text);
 }

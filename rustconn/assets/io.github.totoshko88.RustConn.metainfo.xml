@@ -116,6 +116,17 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.25.2" date="2026-11-17">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.2</url>
+      <description>
+        <p>Version 0.25.2 - a tunnel fix and updated dependencies:</p>
+        <ul>
+          <li>Quitting while an SSH tunnel is starting no longer leaves ssh running or its password file on disk.</li>
+          <li>The existing-key list of the SSH key setup dialog loads without blocking the window.</li>
+          <li>Updated dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.25.1" date="2026-11-15">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.1</url>
       <description>

@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue Nov 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.2
+- Version bump to 0.25.2
+- Fixed: quitting while an SSH tunnel is starting no longer leaves
+  ssh -N running or its password file on disk
+- Changed: the existing-key list of the SSH key setup dialog loads off
+  the GTK thread
+- Dependencies: filetime 0.2.30, notify-types 2.3.1, rand 0.10.4,
+  zip 9.6.1, nix 0.32
+-------------------------------------------------------------------
 Sun Nov 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.1
 - Version bump to 0.25.1
 - Added: closing a tab that shows a split asks whether to remove the

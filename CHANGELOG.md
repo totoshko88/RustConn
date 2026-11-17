@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Portable Cisco save-config and inventory scripts in the script library** — `example-cisco-save-config` is the `.rsc` form of SecureCRT's *Cisco Save Running/Startup Config to Local File* helper: it checks for privileged EXEC mode, reads `show running-config`, and writes a transcript to `cisco-<device>-<YYYYMMDD-HHMMSS>.log`, but only after an explicit **yes** (an empty answer cancels; nothing is ever written to the device). `example-cisco-inventory` is the read-only sibling for `show version` and `show interfaces status`. Both contain no local shell command and no absolute path, so one copy runs on Linux, macOS and Windows; the file lands in RustConn's working directory unless a full path is typed at the question. To make the naming possible, a `log` path now expands `${...}` script variables and the date/time built-ins, and a log that cannot be opened stops the script instead of letting it report a save that did not happen. Scripts deliberately do not expand `${ENV_*}`: `run` scrubs secrets from its environment, and expanding them in the script would hand them back. (`rustconn/src/dialogs/script.rs`, `rustconn-core/src/automation/script.rs`, `rustconn-core/src/variables/`, `rustconn/src/script_runner.rs`, `docs/USER_GUIDE.md`)
 - **Huawei VRP and HSGQ OLT save-config scripts** — `example-huawei-save-config` runs in user view (`<host>`), disables paging with `screen-length 0 temporary` and reads `display current-configuration`; `example-hsgq-save-config` runs in enable mode (`OLT#`) and reads `show current-config`. Both reuse the Cisco example's explicit yes/cancel, timestamped local file and read-only behaviour, and refuse configuration/system views before touching the device. (`rustconn/src/dialogs/script.rs`, `docs/USER_GUIDE.md`)
 
+## [0.25.2] - 2026-11-17
+
+### Fixed
+
+- **Quitting while an SSH tunnel is starting no longer leaves `ssh -N` running** — a tunnel (Web `tunnel_via`, **Open Browser via Tunnel**, jump-host RDP, VNC, SPICE and Telnet) is raised on a worker thread that waits up to ten seconds for its port, and nothing else knew the process until that wait ended, so quitting in that window left the `ssh -N` alive and its askpass script and password file on disk. Every tunnel is now registered the moment it spawns; the exit path kills them, deletes those files and refuses to start another. A crash of the application itself is still not covered. (`rustconn-core/src/ssh_tunnel.rs`, `rustconn/src/window/mod.rs`, `rustconn/src/window/edit_actions.rs`)
+
+### Changed
+
+- **The existing-key list of the SSH key setup dialog loads off the GTK thread** — picking **Use an existing key** scanned `~/.ssh` and the other key directories on the main thread; it now runs on a worker and the list fills in when the scan ends. A dialog closed meanwhile is left alone. (`rustconn/src/window/key_setup.rs`)
+
+### Dependencies
+
+- **Updated** (semver-compatible): filetime 0.2.29→0.2.30, notify-types 2.3.0→2.3.1, rand 0.10.3→0.10.4, zip 9.5.1→9.6.1. `cargo audit` reports no vulnerabilities; `cargo-sources.json` regenerated for the Flatpak manifests
+- **nix 0.31→0.32** — zip 9.6.1 now depends on nix 0.32, so the workspace moves with it and the lockfile keeps one copy of nix
+
 ## [0.25.1] - 2026-11-15
 
 ### Added
