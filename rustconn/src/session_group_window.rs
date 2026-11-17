@@ -245,12 +245,41 @@ impl SessionGroupWindow {
         });
     }
 
-    /// Ends every hosted session when the user closes the window.
+    /// Ends every hosted session when the user closes the window, after asking
+    /// when two or more are still live (as the split-close dialog does).
     fn connect_close_request(&self) {
         let members = Rc::clone(&self.members);
         let closing = Rc::clone(&self.closing);
         let on_close = Rc::clone(&self.on_close);
-        self.window.connect_close_request(move |_window| {
+        self.window.connect_close_request(move |window| {
+            let live = members.borrow().len();
+            if !closing.get() && live >= 2 {
+                let dialog = adw::AlertDialog::new(
+                    Some(&i18n("Close this window?")),
+                    Some(&i18n_f(
+                        "This ends all {} sessions in this window.",
+                        &[&live.to_string()],
+                    )),
+                );
+                dialog.add_response("cancel", &i18n("Cancel"));
+                dialog.add_response("close", &i18n("Close All Sessions"));
+                dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
+                dialog.set_default_response(Some("cancel"));
+                dialog.set_close_response("cancel");
+                let window_weak = window.downgrade();
+                let closing = Rc::clone(&closing);
+                dialog.connect_response(None, move |_, response| {
+                    if response == "close"
+                        && let Some(window) = window_weak.upgrade()
+                    {
+                        // Set before closing, so the request goes through.
+                        closing.set(true);
+                        window.close();
+                    }
+                });
+                dialog.present(Some(window));
+                return glib::Propagation::Stop;
+            }
             closing.set(true);
             // Taken out first: ending a session reaches back here through the
             // notebook's session-ended hook, which must find nothing left.
@@ -495,6 +524,8 @@ impl SessionGroupWindow {
 
     /// Closes the window, ending every session still hosted in it.
     pub fn close(&self) {
+        // A programmatic close (app shutdown) is not asked about.
+        self.closing.set(true);
         self.window.close();
     }
 

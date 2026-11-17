@@ -18,6 +18,9 @@ use super::*;
     reason = "independent per-tab facts, each gating one menu section or item"
 )]
 pub struct TabMenuState {
+    /// The tab hosts a session. The Welcome tab does not, and the group,
+    /// broadcast and monitor items would do nothing there.
+    pub has_session: bool,
     /// The saved connection behind the tab and its "Copy" entries, or `None`
     /// for a tab with no saved connection (Welcome, local shell, quick
     /// connect). Drives the Edit Connection section (issue #357).
@@ -248,6 +251,7 @@ impl TerminalNotebook {
                                 .is_some_and(|has_connection| has_connection(*cid))
                         });
                     TabMenuState {
+                        has_session: session_id.is_some(),
                         connection,
                         monitor_mode: mode,
                         has_group,
@@ -388,17 +392,23 @@ impl TerminalNotebook {
             dialog.set_default_response(Some("apply"));
             dialog.set_close_response("cancel");
 
-            // Enter key triggers "apply" via set_default_response above
+            // An empty name would do nothing, so Apply stays off until there is
+            // one rather than closing the dialog without an effect.
+            dialog.set_response_enabled("apply", !entry.text().trim().is_empty());
+            let dialog_for_change = dialog.clone();
+            entry.connect_changed(move |e| {
+                dialog_for_change.set_response_enabled("apply", !e.text().trim().is_empty());
+            });
 
             let session_info_clone = session_info.clone();
             let tab_group_manager_clone = tab_group_manager.clone();
             let sessions_clone = sessions.clone();
 
-            dialog.connect_response(None, move |_dialog, response| {
-                if response != "apply" {
-                    return;
-                }
-                let group_name = entry.text().trim().to_string();
+            // One commit path, reached by the "apply" response and by Enter in
+            // the entry alike.
+            let commit_entry = entry.clone();
+            let commit: Rc<dyn Fn()> = Rc::new(move || {
+                let group_name = commit_entry.text().trim().to_string();
                 if group_name.is_empty() {
                     return;
                 }
@@ -407,31 +417,31 @@ impl TerminalNotebook {
                     .borrow_mut()
                     .get_or_assign_color(&group_name);
 
-                if let Some(info) = session_info_clone.borrow_mut().get_mut(&session_id) {
-                    info.tab_group = Some(group_name.clone());
-                    info.tab_color_index = Some(color_index);
-                }
+                let old_group = session_info_clone
+                    .borrow_mut()
+                    .get_mut(&session_id)
+                    .and_then(|info| {
+                        let old = info.tab_group.replace(group_name.clone());
+                        info.tab_color_index = Some(color_index);
+                        old
+                    });
 
-                // Apply group label prefix to tab title (independent of split indicator)
-                if let Some(page) = sessions_clone.borrow().get(&session_id) {
-                    let current_title = page.title().to_string();
-                    let base_title = current_title
-                        .find("] ")
-                        .and_then(|pos| {
-                            if current_title.starts_with('[') {
-                                Some(&current_title[pos + 2..])
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or(&current_title);
-                    page.set_title(&format!("[{group_name}] {base_title}"));
-                }
+                // Swap the `[group] ` label behind the broadcast and recording
+                // markers, so neither marker nor label is lost or stacked.
+                let page = sessions_clone.borrow().get(&session_id).cloned();
+                if let Some(page) = page {
+                    let rec = format!("{} ", i18n("●REC"));
+                    let title = regroup_title(
+                        page.title().as_str(),
+                        old_group.as_deref(),
+                        Some(&group_name),
+                        &[BROADCAST_TITLE_MARKER, &rec],
+                    );
+                    page.set_title(&title);
 
-                // Update tooltip to include group name
-                // The same transformation as `set_tab_group`, which keeps the
-                // panes line (issue #421) and the directory line after it.
-                if let Some(page) = sessions_clone.borrow().get(&session_id) {
+                    // The same transformation as `set_tab_group`, which keeps
+                    // the panes line (issue #421) and the directory line after
+                    // it.
                     let current_tooltip = page.tooltip().unwrap_or_default();
                     page.set_tooltip(&Self::grouped_tooltip(
                         current_tooltip.as_str(),
@@ -447,12 +457,36 @@ impl TerminalNotebook {
                 );
             });
 
+            let commit_for_response = commit.clone();
+            dialog.connect_response(None, move |_dialog, response| {
+                if response == "apply" {
+                    commit_for_response();
+                }
+            });
+
+            // `close()` alone would emit the close response ("cancel"), so Enter
+            // commits first, as Rename Tab does.
+            let dialog_for_enter = dialog.clone();
+            let entry_for_focus = entry.clone();
+            entry.connect_activate(move |e| {
+                if e.text().trim().is_empty() {
+                    return;
+                }
+                commit();
+                dialog_for_enter.close();
+            });
+
             // Present the dialog
             if let Some(root) = target_page.child().root()
                 && let Some(window) = root.downcast_ref::<gtk4::Window>()
             {
                 dialog.present(Some(window));
             }
+            // Focus the entry once the dialog is mapped; a grab_focus issued
+            // straight after `present()` is dropped by GTK.
+            glib::idle_add_local_once(move || {
+                entry_for_focus.grab_focus();
+            });
         });
         action_group.add_action(&set_group_action);
 
@@ -587,19 +621,25 @@ impl TerminalNotebook {
 
             // Clear group from session info. A group never used the indicator
             // slot, so there is no indicator to restore.
-            if let Some(info) = session_info.borrow_mut().get_mut(&session_id) {
-                info.tab_group = None;
-                info.tab_color_index = None;
-            }
+            let old_group = session_info
+                .borrow_mut()
+                .get_mut(&session_id)
+                .and_then(|info| {
+                    info.tab_color_index = None;
+                    info.tab_group.take()
+                });
 
-            // Remove group label prefix from tab title
-            if let Some(page) = sessions.borrow().get(&session_id) {
-                let current_title = page.title().to_string();
-                if let Some(pos) = current_title.find("] ")
-                    && current_title.starts_with('[')
-                {
-                    page.set_title(&current_title[pos + 2..]);
-                }
+            // Remove the group label from the tab title, behind any markers.
+            let page = sessions.borrow().get(&session_id).cloned();
+            if let Some(page) = page {
+                let rec = format!("{} ", i18n("●REC"));
+                let title = regroup_title(
+                    page.title().as_str(),
+                    old_group.as_deref(),
+                    None,
+                    &[BROADCAST_TITLE_MARKER, &rec],
+                );
+                page.set_title(&title);
             }
 
             // Restore original tooltip (remove group suffix)
@@ -794,8 +834,11 @@ impl TerminalNotebook {
         let close_others_action = gio::SimpleAction::new("close-others", None);
         let tab_view_for_close_others = self.tab_view.clone();
         let split_close_others = self.split_close_hooks();
+        let context_page_others = context_page.clone();
         close_others_action.connect_activate(move |_, _| {
-            let selected = tab_view_for_close_others.selected_page();
+            // The right-clicked tab, not the selected one: a right-click does
+            // not select the tab.
+            let selected = context_page_others.borrow().clone();
             let pages: Vec<_> = (0..tab_view_for_close_others.n_pages())
                 .map(|i| tab_view_for_close_others.nth_page(i))
                 .filter(|p| selected.as_ref() != Some(p))
@@ -808,8 +851,10 @@ impl TerminalNotebook {
         let close_left_action = gio::SimpleAction::new("close-left", None);
         let tab_view_for_close_left = self.tab_view.clone();
         let split_close_left = self.split_close_hooks();
+        let context_page_left = context_page.clone();
         close_left_action.connect_activate(move |_, _| {
-            if let Some(selected) = tab_view_for_close_left.selected_page() {
+            let target = context_page_left.borrow().clone();
+            if let Some(selected) = target {
                 let pos = tab_view_for_close_left.page_position(&selected);
                 let pages: Vec<_> = (0..pos)
                     .map(|i| tab_view_for_close_left.nth_page(i))
@@ -823,8 +868,10 @@ impl TerminalNotebook {
         let close_right_action = gio::SimpleAction::new("close-right", None);
         let tab_view_for_close_right = self.tab_view.clone();
         let split_close_right = self.split_close_hooks();
+        let context_page_right = context_page.clone();
         close_right_action.connect_activate(move |_, _| {
-            if let Some(selected) = tab_view_for_close_right.selected_page() {
+            let target = context_page_right.borrow().clone();
+            if let Some(selected) = target {
                 let pos = tab_view_for_close_right.page_position(&selected);
                 let pages: Vec<_> = ((pos + 1)..tab_view_for_close_right.n_pages())
                     .map(|i| tab_view_for_close_right.nth_page(i))
@@ -1218,49 +1265,52 @@ impl TerminalNotebook {
             menu.append_section(None, &label_section);
         }
 
-        // Group section — adaptive: only show group actions when groups exist
-        let group_section = gio::Menu::new();
-        // HIG: the ellipsis marks an item that opens a dialog, and it is the
-        // single character U+2026 rather than three periods.
-        group_section.append(Some(&i18n("Set Group…")), Some("tab.set-group"));
-        if state.has_group {
-            group_section.append(Some(&i18n("Remove from Group")), Some("tab.remove-group"));
-            group_section.append(
-                Some(&i18n("Close All in Group")),
-                Some("tab.close-all-in-group"),
-            );
+        // Group, broadcast and monitor act on a session; the Welcome tab has none.
+        if state.has_session {
+            // Group section — adaptive: only show group actions when groups exist
+            let group_section = gio::Menu::new();
+            // HIG: the ellipsis marks an item that opens a dialog, and it is the
+            // single character U+2026 rather than three periods.
+            group_section.append(Some(&i18n("Set Group…")), Some("tab.set-group"));
+            if state.has_group {
+                group_section.append(Some(&i18n("Remove from Group")), Some("tab.remove-group"));
+                group_section.append(
+                    Some(&i18n("Close All in Group")),
+                    Some("tab.close-all-in-group"),
+                );
+            }
+            menu.append_section(None, &group_section);
+
+            // Broadcast section (issue #329) — add or remove this tab from the
+            // cross-tab broadcast group. The label reflects current membership.
+            let broadcast_section = gio::Menu::new();
+            let broadcast_label = if state.in_broadcast {
+                i18n("Remove from Broadcast")
+            } else {
+                i18n("Add to Broadcast")
+            };
+            broadcast_section.append(Some(&broadcast_label), Some("tab.toggle-broadcast"));
+            menu.append_section(None, &broadcast_section);
+
+            // Monitor submenu — one radio item per mode, with the current mode
+            // selected. This collapses what used to be a five-row labelled section
+            // (a heading plus four modes) back to a single `Monitor` row that
+            // slides to its choices, which is what GNOME HIG expects and what keeps
+            // the menu from towering. The action is `tab.set-monitor` with the mode
+            // index as its i32 target; its state is refreshed to the current mode
+            // before the menu is shown (see `setup_tab_context_menu`), so the right
+            // bullet is lit.
+            //
+            // A submenu is safe here — contrary to the flat Copy/detach blocks —
+            // because the submodel is built ONCE and reused by object identity on
+            // every rebuild (see `monitor_submenu`). The `duplicate child name in
+            // GtkStack` warning only fired when a *fresh* submodel was appended
+            // under the same name each `setup-menu`; re-appending the same stable
+            // object re-points the existing stack page instead of adding a second
+            // one. Verified with an isolated GTK repro (0 collisions over repeated
+            // rebuilds) before adopting the pattern.
+            menu.append_submenu(Some(&i18n("Monitor")), &Self::monitor_submenu());
         }
-        menu.append_section(None, &group_section);
-
-        // Broadcast section (issue #329) — add or remove this tab from the
-        // cross-tab broadcast group. The label reflects current membership.
-        let broadcast_section = gio::Menu::new();
-        let broadcast_label = if state.in_broadcast {
-            i18n("Remove from Broadcast")
-        } else {
-            i18n("Add to Broadcast")
-        };
-        broadcast_section.append(Some(&broadcast_label), Some("tab.toggle-broadcast"));
-        menu.append_section(None, &broadcast_section);
-
-        // Monitor submenu — one radio item per mode, with the current mode
-        // selected. This collapses what used to be a five-row labelled section
-        // (a heading plus four modes) back to a single `Monitor` row that
-        // slides to its choices, which is what GNOME HIG expects and what keeps
-        // the menu from towering. The action is `tab.set-monitor` with the mode
-        // index as its i32 target; its state is refreshed to the current mode
-        // before the menu is shown (see `setup_tab_context_menu`), so the right
-        // bullet is lit.
-        //
-        // A submenu is safe here — contrary to the flat Copy/detach blocks —
-        // because the submodel is built ONCE and reused by object identity on
-        // every rebuild (see `monitor_submenu`). The `duplicate child name in
-        // GtkStack` warning only fired when a *fresh* submodel was appended
-        // under the same name each `setup-menu`; re-appending the same stable
-        // object re-points the existing stack page instead of adding a second
-        // one. Verified with an isolated GTK repro (0 collisions over repeated
-        // rebuilds) before adopting the pattern.
-        menu.append_submenu(Some(&i18n("Monitor")), &Self::monitor_submenu());
 
         // Split section — only for the tab that hosts a split layout, and the
         // reason the detach item directly below it is currently refused
@@ -1413,6 +1463,21 @@ mod tests {
 
         let hidden = actions_for(super::TabMenuState::default());
         assert!(!hidden.iter().any(|a| a == "tab.split-with"));
+    }
+
+    #[test]
+    fn the_welcome_tab_is_not_offered_session_only_items() {
+        let welcome = actions_for(super::TabMenuState::default());
+        for action in ["tab.set-group", "tab.toggle-broadcast", "tab.set-monitor"] {
+            assert!(!welcome.iter().any(|a| a == action), "{action}");
+        }
+        assert!(welcome.iter().any(|a| a == "tab.pin"));
+        let session = actions_for(super::TabMenuState {
+            has_session: true,
+            ..Default::default()
+        });
+        assert!(session.iter().any(|a| a == "tab.set-group"));
+        assert!(session.iter().any(|a| a == "tab.toggle-broadcast"));
     }
 
     #[test]

@@ -455,6 +455,8 @@ impl MainWindow {
                 "Group broadcast disabled — keystrokes go to the focused tab only",
             ));
         }
+        // Stopping from a tab outside the set leaves nothing to show.
+        Self::update_group_broadcast_toggle(group, notebook, toggle, action);
     }
 
     /// Toggles a session's membership in the broadcast set and refreshes chrome.
@@ -500,7 +502,8 @@ impl MainWindow {
     }
 
     /// Shows the group toggle when the active tab is a member and the set has
-    /// two or more members; hides it otherwise. Also reflects the active state.
+    /// two or more members, or whenever the broadcast is active; hides it
+    /// otherwise. Also reflects the active state.
     fn update_group_broadcast_toggle(
         group: &GroupBroadcast,
         notebook: &SharedNotebook,
@@ -510,12 +513,15 @@ impl MainWindow {
         let active_is_member = notebook
             .get_active_session_id()
             .is_some_and(|sid| group.contains(sid));
-        let show = active_is_member && group.member_count() >= 2;
+        let active = group.is_active();
+        // An active broadcast stays switchable off from any tab: the banner's
+        // Stop button and Ctrl+Shift+A use this action, and the mode reaches
+        // tabs the user may not be looking at.
+        let show = (active_is_member && group.member_count() >= 2) || active;
 
         toggle.set_visible(show);
         action.set_enabled(show);
         if show {
-            let active = group.is_active();
             toggle.set_active(active);
             action.set_state(&active.to_variant());
             if active {

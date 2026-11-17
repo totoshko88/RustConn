@@ -64,8 +64,9 @@ use libadwaita::prelude::*;
 use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends, RdpKeyboardHook};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
-    ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SessionWidgetStorage, TerminalSession,
-    group_still_in_use, local_shell_label, tab_title,
+    BROADCAST_TITLE_MARKER, ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster,
+    SessionWidgetStorage, TerminalSession, group_still_in_use, local_shell_label, regroup_title,
+    tab_title,
 };
 use uuid::Uuid;
 use vte4::Terminal;
@@ -1530,6 +1531,7 @@ impl TerminalNotebook {
 
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             page.set_indicator_icon(Some(&gio::ThemedIcon::new("network-offline-symbolic")));
+            page.set_indicator_tooltip(&i18n("Session disconnected"));
             page.set_indicator_activatable(false);
 
             if let Ok(outer) = page.child().downcast::<GtkBox>()
@@ -2214,10 +2216,12 @@ impl TerminalNotebook {
             // This provides a visible colored indicator in the tab header
             if let Some(icon) = crate::split_view::create_colored_circle_icon(color_index, 16) {
                 page.set_indicator_icon(Some(&icon));
+                page.set_indicator_tooltip("");
             } else {
                 // Fallback to symbolic icon if colored icon creation fails
                 let icon = gio::ThemedIcon::new("media-record-symbolic");
                 page.set_indicator_icon(Some(&icon));
+                page.set_indicator_tooltip("");
             }
             page.set_indicator_activatable(false);
         }
@@ -2235,6 +2239,7 @@ impl TerminalNotebook {
 
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             page.set_indicator_icon(gio::Icon::NONE);
+            page.set_indicator_tooltip("");
 
             // Remove all tab color classes and indicator classes from the page's child
             let child = page.child();
@@ -2260,7 +2265,7 @@ impl TerminalNotebook {
     /// repeated calls never double it, and a tooltip line is kept in sync so the
     /// membership is discoverable on hover (issue #329).
     pub fn set_broadcast_member_marker(&self, session_id: Uuid, member: bool) {
-        const MARKER: &str = "⇄ ";
+        const MARKER: &str = BROADCAST_TITLE_MARKER;
 
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let title = page.title().to_string();

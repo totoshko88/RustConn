@@ -628,6 +628,7 @@ impl MainWindow {
         // 4.3: Set tab indicator icon
         if let Some(page) = sessions.borrow().get(&session_id) {
             page.set_indicator_icon(Some(&gio::ThemedIcon::new(icon_name)));
+            page.set_indicator_tooltip("");
 
             // And `needs-attention`, which is what actually survives.
             //

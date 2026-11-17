@@ -11,10 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Broadcast in a cluster window — [#436](https://github.com/totoshko88/RustConn/issues/436)** — a cluster opened in its own window gets a **Broadcast** toggle in its header bar once it holds two or more terminal tabs. On (the toggle or Ctrl+Shift+A), a keystroke typed in any tab of the window goes to all of its terminal tabs; a banner names how many, and its **Stop** turns it off. Each cluster window has its own broadcast, independent of the main window's Group Broadcast and of other cluster windows, so separate clusters can take separate commands. More than five tabs ask for confirmation first, as Group Broadcast does. All broadcasts now share one re-entrancy guard, so a session in two of them does not get each character twice. (`rustconn/src/session_group_window.rs`, `rustconn/src/window/detach_actions.rs`, `rustconn/src/window/group_broadcast.rs`, `docs/USER_GUIDE.md`, `po/`)
 - **Duplicate Tab in the tab menu — [#437](https://github.com/totoshko88/RustConn/issues/437)** — right-click a tab with a saved connection → **Duplicate Tab** opens another session of that connection, what **Open new session** does in the sidebar, without selecting the connection there first. (`rustconn/src/terminal/tab_menu.rs`, `rustconn/src/window/terminal_actions.rs`, `docs/USER_GUIDE.md`, `po/`)
+- **Closing a cluster window asks first** — closing a cluster window that still holds two or more sessions now opens a **Close this window?** dialog (Cancel is the default); confirming ends all of them. Quitting the app is not asked again.
+- **A detached window opened fullscreen says how to leave it** — its header bar is hidden in fullscreen, so a toast now says to press **F11**.
 
 ### Fixed
 
 - **Remove from Favorites in the Favorites group** — the context menu of a connection inside the ★ Favorites group offered **Add to Favorites**, because that copy of the row was built as not pinned to hide its star; clicking it removed the favorite anyway. The row now keeps the real pinned state and hides the star by a separate flag, so the menu says **Remove from Favorites** in both places. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/window/sorting.rs`, `docs/USER_GUIDE.md`)
+- **Close Others, Close to the Left and Close to the Right act on the tab you right-clicked** — they used the selected tab, so a right-click on a background tab closed every tab except the selected one.
+- **Group broadcast can always be stopped** — the banner's **Stop** button and **Ctrl+Shift+A** did nothing while the active tab was not in the broadcast set. While the broadcast is on, the toggle, the shortcut and **Stop** now work from any tab.
+- **Tab titles keep the `⇄` and `●REC` markers when a tab joins or leaves a group** — **Set Group…** and **Remove from Group** rebuilt the title by string stripping, which stacked `[a] [b]` labels, left `[group]` in a title after leaving the group and left a `⇄` that could not be removed.
+- **Set Group… takes Enter and has focus** — the name field is focused when the dialog opens, Enter applies it, and **Apply** is off while the name is empty.
+- **The Welcome tab menu no longer offers Set Group…, Add to Broadcast and Monitor** — they did nothing there.
+- **The disconnected marker on a tab has a tooltip** — hovering the offline icon says **Session disconnected**.
+
+### Documentation
+
+- **User Guide** — the cluster section no longer says broadcast is only a split-view feature, the tab menu no longer lists a **Copy** section, **Move to New Window on Monitor N** is described as flat items, the group broadcast shortcut **Ctrl+Shift+A** is in the shortcut table, and the detached window section lists what it lacks.
 
 ## [0.25.2] - 2026-11-17
 
