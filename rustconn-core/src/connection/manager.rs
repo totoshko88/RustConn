@@ -3294,7 +3294,7 @@ mod tests {
             "Renamed".to_string(),
             stored.host.clone(),
             stored.port,
-            stored.protocol_config.clone(),
+            stored.protocol_config,
         );
         fresh.id = id;
         manager.update_connection(id, fresh).unwrap();

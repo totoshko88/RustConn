@@ -239,14 +239,15 @@ pub fn show_batch_edit_dialog(
                     };
                 }
                 if state_mut.update_connection(*conn_id, modified).is_ok() {
-                    let mut applied = true;
-                    if group_check.is_active()
-                        && original.group_id != target_group
-                        && let Err(e) = state_mut.move_connection_to_group(*conn_id, target_group)
-                    {
+                    let moved = if group_check.is_active() && original.group_id != target_group {
+                        state_mut.move_connection_to_group(*conn_id, target_group)
+                    } else {
+                        Ok(())
+                    };
+                    if let Err(e) = &moved {
                         tracing::warn!(%conn_id, error = %e, "Batch Edit: group change failed");
-                        applied = false;
                     }
+                    let applied = moved.is_ok();
                     snapshot.push(original);
                     updated += usize::from(applied);
                 }
