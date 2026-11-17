@@ -3276,7 +3276,7 @@ rustconn-cli smart-folder edit "Production" --icon "none"  # Reset to default �
 - Smart Folders appear in a dedicated sidebar section with a 🔍 icon
 - Connections in Smart Folders are read-only (no drag-drop)
 - Double-click a connection to connect (same as regular connections)
-- Right-click a Smart Folder → **Edit** or **Delete**
+- Right-click a Smart Folder → **Edit** or **Delete**. **Delete** asks for confirmation and cannot be undone
 - Empty filter criteria → empty result (not "match all")
 
 ### Dynamic Folders
