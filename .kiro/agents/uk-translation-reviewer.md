@@ -43,6 +43,7 @@ Use precise terminology over common machine-translation defaults:
 - Not configured: `Не налаштовано`.
 - Default (By default): `Типово` (❌ not `за замовчуванням`).
 - Properties: `Ознаки` (❌ not `властивості`).
+- Session: `Сеанс` (Genitive: `сеансу`, Plural: `сеанси`, Gen. plural: `сеансів`; ❌ not `сесія`).
 - Variable (noun): `Змінниця` (❌ not `змінна`).
 - Directory/Folder: `Тека` (❌ not `папка`).
 - Quit: `Вийди` (or `Вихід`).

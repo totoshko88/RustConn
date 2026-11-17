@@ -255,7 +255,7 @@ impl EmbeddedSessionTab {
             let description = format!(
                 "{}\n\n<b>Ctrl+Alt+Enter</b>  —  {}\n<b>Right Ctrl</b>  —  {}\n<b>Ctrl+Alt+C</b>  —  {}\n\n<small>{}</small>",
                 glib::markup_escape_text(connection_name),
-                i18n("Toggle fullscreen"),
+                i18n("Toggle Fullscreen"),
                 i18n("Release keyboard/mouse grab"),
                 i18n("Toggle remote control (assistance)"),
                 i18n("This tab will close automatically when the session ends"),

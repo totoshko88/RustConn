@@ -16,7 +16,7 @@ use libadwaita as adw;
 
 use super::ConnectionDialog;
 use crate::dialogs::connection::builders::spice_unix_socket_path;
-use crate::dialogs::widgets::{dialog_pack_action, names_jump_host};
+use crate::dialogs::widgets::names_jump_host;
 use crate::i18n::i18n;
 
 /// Index of the Custom Command entry in the Zero Trust provider dropdown.
@@ -196,30 +196,26 @@ impl ConnectionDialog {
         dialog.set_width_request(360);
         dialog.set_height_request(400);
 
-        // Header bar with Test icon and Create icon button (GNOME HIG)
+        // Header bar: Cancel and Test at the start, the primary Create/Save
+        // button at the end (the layout of Batch Edit and Key Setup).
         let header = adw::HeaderBar::new();
+        let cancel_btn = Button::with_label(&i18n("Cancel"));
+        {
+            let dialog = dialog.clone();
+            cancel_btn.connect_clicked(move |_| {
+                dialog.close();
+            });
+        }
         let test_btn = Button::from_icon_name("network-transmit-receive-symbolic");
         test_btn.set_tooltip_text(Some(&i18n("Test Connection")));
-        test_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Test connection"))]);
-        let save_btn = Button::from_icon_name("list-add-symbolic");
-        save_btn.set_tooltip_text(Some(&i18n("Create")));
-        save_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Create"))]);
+        test_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Test Connection"))]);
+        let save_btn = Button::with_label(&i18n("Create"));
         save_btn.add_css_class("suggested-action");
-        // Pack order so the primary action (Create/Save) sits outermost on both
-        // platforms: on Linux pack_start grows rightward, so test-then-save puts
-        // save to the right of test; on macOS pack_end grows leftward, so
-        // save-then-test puts save at the far right (away from the left close
-        // button) with test to its left.
-        #[cfg(target_os = "macos")]
-        {
-            dialog_pack_action(&header, &save_btn);
-            dialog_pack_action(&header, &test_btn);
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            dialog_pack_action(&header, &test_btn);
-            dialog_pack_action(&header, &save_btn);
-        }
+        header.pack_start(&cancel_btn);
+        header.pack_start(&test_btn);
+        header.pack_end(&save_btn);
+        // Enter in a text field presses Create/Save.
+        dialog.set_default_widget(Some(&save_btn));
 
         (dialog, header, save_btn, test_btn)
     }

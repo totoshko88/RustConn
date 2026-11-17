@@ -365,11 +365,14 @@ pub fn show_workspace_manager(
     let state_for_delete = state.clone();
     let dialog_rc = std::rc::Rc::new(dialog);
     let dialog_for_delete = dialog_rc.clone();
+    let window_for_delete = window.clone();
     dialog_rc.set_on_delete(move |workspace_id| {
         if let Ok(mut state_ref) = state_for_delete.try_borrow_mut()
             && let Err(e) = state_ref.delete_workspace_profile(workspace_id)
         {
             tracing::warn!("Failed to delete workspace: {e}");
+            drop(state_ref);
+            crate::alert::show_error(&window_for_delete, &i18n("Error"), &e);
         }
         dialog_for_delete.refresh_list();
     });
@@ -377,11 +380,14 @@ pub fn show_workspace_manager(
     // Rename callback
     let state_for_rename = state.clone();
     let dialog_for_rename = dialog_rc.clone();
+    let window_for_rename = window.clone();
     dialog_rc.set_on_rename(move |workspace_id, new_name| {
         if let Ok(mut state_ref) = state_for_rename.try_borrow_mut()
             && let Err(e) = state_ref.rename_workspace_profile(workspace_id, new_name)
         {
             tracing::warn!("Failed to rename workspace: {e}");
+            drop(state_ref);
+            crate::alert::show_error(&window_for_rename, &i18n("Error"), &e);
         }
         dialog_for_rename.refresh_list();
     });
@@ -562,6 +568,15 @@ fn save_current_workspace(
         .activates_default(true)
         .build();
     alert.set_extra_child(Some(&entry));
+
+    // An empty name cannot be saved: keep "Save" disabled until one is typed.
+    alert.set_response_enabled("save", false);
+    {
+        let alert = alert.clone();
+        entry.connect_changed(move |e| {
+            alert.set_response_enabled("save", !e.text().trim().is_empty());
+        });
+    }
 
     let entry_clone = entry.clone();
     alert.connect_response(None, move |_, response| {

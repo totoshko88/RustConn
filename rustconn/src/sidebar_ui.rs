@@ -461,7 +461,7 @@ pub fn show_context_menu_for_item(
         }
         // The same `connect` action either way: on a running connection it shows
         // the newest live session (or says it runs in an external window)
-        // instead of opening another; "Open new session" below is the duplicate.
+        // instead of opening another; "Open New Session" below is the duplicate.
         let connect_label = if is_connected {
             i18n("Show Session")
         } else {
@@ -513,7 +513,7 @@ pub fn show_context_menu_for_item(
         // updating just the Favorites copy of it.
         if is_connected || has_external_session {
             items.push(ContextMenuItem::action(
-                &i18n("Open new session"),
+                &i18n("Open New Session"),
                 "open-new-session",
             ));
         }
@@ -606,7 +606,7 @@ pub fn show_context_menu_for_item(
                 "open-browser-via-tunnel",
             ));
         }
-        items.push(ContextMenuItem::action(&i18n("Wake On LAN"), "wake-on-lan"));
+        items.push(ContextMenuItem::action(&i18n("Wake-on-LAN"), "wake-on-lan"));
         items.push(ContextMenuItem::action(
             &i18n("Check if Online"),
             "check-host-online",
@@ -640,7 +640,7 @@ pub fn show_context_menu_for_item(
     if has_external_session && !is_group {
         items.push(ContextMenuItem::Separator);
         items.push(ContextMenuItem::action(
-            &i18n("Stop tracking"),
+            &i18n("Stop Tracking"),
             "external-stop-tracking",
         ));
     }
@@ -695,6 +695,32 @@ pub fn show_trash_context_menu(
         // destructive items side by side invite the wrong one.
         items.push(ContextMenuItem::action(&i18n("Empty Trash"), "empty-trash").destructive());
     }
+
+    show_popover(widget, window, &items, x, y, activation);
+}
+
+/// Shows the menu for a right-click on a row inside a multi-selection.
+///
+/// Only actions that work on the whole selection: the single-row items (Rename,
+/// Edit, Duplicate) would act on one arbitrary row of it.
+pub fn show_multi_select_context_menu(
+    widget: &impl IsA<gtk4::Widget>,
+    x: f64,
+    y: f64,
+    activation: MenuActivation,
+) {
+    let Some(root) = widget.root() else { return };
+    let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() else {
+        return;
+    };
+
+    let items = vec![
+        ContextMenuItem::action(&i18n("Run Local Script…"), "run-local-script"),
+        ContextMenuItem::action(&i18n("Move to Group"), "move-selected-to-group"),
+        ContextMenuItem::action(&i18n("Batch Edit"), "batch-edit-selected"),
+        ContextMenuItem::Separator,
+        ContextMenuItem::action(&i18n("Delete Selected"), "delete-selected").destructive(),
+    ];
 
     show_popover(widget, window, &items, x, y, activation);
 }
@@ -1261,7 +1287,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     clear_button.add_css_class("bulk-action");
     clear_button.set_tooltip_text(Some(&i18n("Clear Selection")));
     clear_button.set_action_name(Some("win.clear-selection"));
-    clear_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Clear selection"))]);
+    clear_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Clear Selection"))]);
     bar.append(&clear_button);
 
     let delete_button = Button::from_icon_name("user-trash-symbolic");
@@ -1328,7 +1354,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     // unchanged (`win.sort-connections` / `win.sort-recent`).
     let sort_az_button = Button::from_icon_name("view-sort-ascending-symbolic");
     sort_az_button.add_css_class("flat");
-    sort_az_button.set_tooltip_text(Some(&i18n("Sort alphabetically")));
+    sort_az_button.set_tooltip_text(Some(&i18n("Sort Alphabetically")));
     sort_az_button.set_action_name(Some("win.sort-connections"));
     sort_az_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Sort connections alphabetically",

@@ -317,6 +317,16 @@ fn main_window() -> Option<adw::ApplicationWindow> {
     MAIN_WINDOW.with(|cell| cell.borrow().as_ref().and_then(glib::WeakRef::upgrade))
 }
 
+/// Whether keyboard passthrough mode is currently on (the main window's
+/// `toggle-passthrough` action state).
+pub fn passthrough_active() -> bool {
+    main_window()
+        .and_then(|w| w.lookup_action("toggle-passthrough"))
+        .and_then(|a| a.state())
+        .and_then(|v| v.get::<bool>())
+        .unwrap_or(false)
+}
+
 /// Returns the focused visible application window, for parenting a dialog.
 ///
 /// `GtkApplication::active_window` is deliberately not used: it returns any
@@ -336,6 +346,16 @@ fn focused_application_window(app: &adw::Application) -> Option<gtk4::Window> {
 pub const APP_ID: &str = "io.github.totoshko88.RustConn";
 
 /// Shared tray manager type
+/// Set once a tray icon really exists. Closing the window may only hide it
+/// when this is true; the `enable_tray_icon` setting alone says nothing about
+/// a desktop that has no tray host or a switch flipped since startup.
+static TRAY_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Whether a system tray icon was created in this process.
+pub fn tray_is_active() -> bool {
+    TRAY_ACTIVE.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 type SharedTrayManager = Rc<RefCell<Option<TrayManager>>>;
 
 /// Creates and configures the GTK4 Application
@@ -470,6 +490,12 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         apply_sidebar_font_class(window.gtk_window().upcast_ref());
     }
 
+    // A codec the user switched off must stay off from the first RDP session,
+    // not only after Settings has been opened once (Cisco OpenH264 licence).
+    rustconn_core::rdp_client::openh264_download::set_openh264_enabled(
+        state.borrow().settings().connection.use_openh264,
+    );
+
     // Initialize tray icon if enabled in settings
     let enable_tray = state.borrow().settings().ui.enable_tray_icon;
     if enable_tray {
@@ -509,6 +535,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                 update_tray_state(&tray, &state_for_tray, 0, &mut initial_cache);
                 tray.force_refresh();
                 *tray_mgr_for_init.borrow_mut() = Some(tray);
+                TRAY_ACTIVE.store(true, std::sync::atomic::Ordering::Relaxed);
             });
         }
     }
@@ -1120,6 +1147,7 @@ fn try_create_macos_tray(state: SharedAppState, tray_manager: SharedTrayManager,
         // The 2 s sync in `setup_tray_handling` fills in the live count.
         update_tray_state(&tray, &state, 0, &mut initial_cache);
         *tray_manager.borrow_mut() = Some(tray);
+        TRAY_ACTIVE.store(true, std::sync::atomic::Ordering::Relaxed);
         if attempt > 0 {
             tracing::info!(attempt, "macOS tray icon created (after retry)");
         } else {
@@ -1961,13 +1989,15 @@ fn setup_app_actions(
 /// common terminal/readline chords and are suspended while a terminal or
 /// embedded viewer has focus (issue #197).
 const TERMINAL_CONFLICTING_ACTIONS: &[&str] = &[
-    "win.search",          // Ctrl+F
-    "win.command-palette", // Ctrl+P
-    "win.new-connection",  // Ctrl+N
-    "win.close-tab",       // Ctrl+W
-    "win.show-history",    // Ctrl+H
-    "win.move-to-group",   // Ctrl+M
-    "win.import",          // Ctrl+I
+    "win.search",             // Ctrl+F
+    "win.command-palette",    // Ctrl+P
+    "win.new-connection",     // Ctrl+N
+    "win.close-tab",          // Ctrl+W
+    "win.show-history",       // Ctrl+H
+    "win.move-to-group",      // Ctrl+M
+    "win.import",             // Ctrl+I
+    "win.password-generator", // Ctrl+G (abort in emacs/nano/vim)
+    "win.ssh-tunnels",        // Ctrl+T (transpose-chars in readline)
 ];
 
 /// Applies keyboard shortcuts from settings, falling back to defaults.
@@ -2155,7 +2185,6 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         "RustConn {version}\n\
          GTK {gtk_major}.{gtk_minor}.{gtk_micro}\n\
          libadwaita {adw_major}.{adw_minor}.{adw_micro}\n\
-         Rust {rust_version}\n\
          OS: {os}",
         version = env!("CARGO_PKG_VERSION"),
         gtk_major = gtk4::major_version(),
@@ -2164,7 +2193,6 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         adw_major = adw::major_version(),
         adw_minor = adw::minor_version(),
         adw_micro = adw::micro_version(),
-        rust_version = env!("CARGO_PKG_RUST_VERSION"),
         os = std::env::consts::OS,
     );
 
@@ -2174,8 +2202,8 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         .version(env!("CARGO_PKG_VERSION"))
         .comments(&description)
         .website("https://github.com/totoshko88/RustConn")
-        .issue_url("https://github.com/totoshko88/rustconn/issues")
-        .support_url("https://donatello.to/totoshko88")
+        .issue_url("https://github.com/totoshko88/RustConn/issues")
+        .support_url("https://github.com/totoshko88/RustConn/discussions")
         .license_type(gtk4::License::Gpl30)
         // Each row is one person and libadwaita (`parse_person`) makes exactly
         // one link clickable: either an `<email>` or an `http(s)://` URL,

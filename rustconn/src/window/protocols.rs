@@ -651,7 +651,7 @@ const DETACHING_VIEWERS: &[&str] = &["remmina", "krdc", "vinagre"];
 ///
 /// RustConn cannot reap or terminate such a process, so it is registered with
 /// `child: None` and never auto-closed by the shared poll timer; it ends only
-/// via "Stop tracking". Owning viewers (tigervnc, xfreerdp, remote-viewer) keep
+/// via "Stop Tracking". Owning viewers (tigervnc, xfreerdp, remote-viewer) keep
 /// their `Child` and are watched normally. The `program` may be a bare name or a
 /// full path, so it is matched on its file name.
 fn external_viewer_detaches(program: &str) -> bool {

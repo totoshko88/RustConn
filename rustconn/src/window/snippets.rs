@@ -399,13 +399,13 @@ fn populate_snippets_manager_list(
         let execute_btn = Button::from_icon_name("media-playback-start-symbolic");
         execute_btn.add_css_class("flat");
         execute_btn.set_tooltip_text(Some(&i18n("Execute")));
-        execute_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Execute snippet"))]);
+        execute_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Execute Snippet"))]);
         execute_btn.set_valign(gtk4::Align::Center);
 
         let edit_btn = Button::from_icon_name("document-edit-symbolic");
         edit_btn.add_css_class("flat");
         edit_btn.set_tooltip_text(Some(&i18n("Edit")));
-        edit_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Edit snippet"))]);
+        edit_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Edit Snippet"))]);
         edit_btn.set_valign(gtk4::Align::Center);
 
         let delete_btn = Button::from_icon_name("user-trash-symbolic");
@@ -907,6 +907,9 @@ pub fn execute_snippet_direct(
 ) {
     // Check if there's an active terminal
     if notebook.get_active_terminal().is_none() {
+        crate::toast::show_warning_toast_on_active_window(&i18n(
+            "Open a terminal session first before executing a snippet.",
+        ));
         return;
     }
 

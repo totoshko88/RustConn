@@ -286,7 +286,7 @@ impl ExternalSessionRegistry {
     /// Only *owned* viewers qualify: their `Child` is polled by the shared timer,
     /// so the entry disappears within one cycle of the viewer exiting. A
     /// detaching viewer (`child: None`, see `DETACHING_VIEWERS`) is registered
-    /// without a handle and is only ever cleared by "Stop tracking", so its
+    /// without a handle and is only ever cleared by "Stop Tracking", so its
     /// entry outlives the viewer window. Answering "yes, still running" from
     /// such an entry made the smart double-click refuse to open the connection
     /// for the rest of the session (issue #242).

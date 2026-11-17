@@ -351,7 +351,17 @@ impl MainWindow {
                         _ => return,
                     };
 
-                    if result.is_ok() {
+                    if let Err(e) = &result {
+                        drop(state_mut);
+                        tracing::warn!(%e, item_type, %id, "Failed to restore deleted item");
+                        if let Some(win) = window_weak.upgrade() {
+                            crate::toast::show_toast_on_window(
+                                &win,
+                                &crate::i18n::i18n("Restore failed"),
+                                crate::toast::ToastType::Error,
+                            );
+                        }
+                    } else {
                         drop(state_mut);
                         let state = state_clone.clone();
                         let sidebar = sidebar_clone.clone();
@@ -613,7 +623,7 @@ impl MainWindow {
             };
             let Some(wol_config) = conn.get_wol_config() else {
                 toast_clone.show_warning(&crate::i18n::i18n(
-                    "No Wake On LAN configured. Edit the connection to set a MAC address.",
+                    "No Wake-on-LAN configured. Edit the connection to set a MAC address.",
                 ));
                 return;
             };
@@ -641,7 +651,7 @@ impl MainWindow {
                             id_for_cb,
                         );
                         toast_for_cb.show_success(&crate::i18n::i18n_f(
-                            "Wake On LAN sent to {} — waiting for host to come online…",
+                            "Wake-on-LAN sent to {} — waiting for host to come online…",
                             &[&mac_for_cb],
                         ));
 
@@ -709,7 +719,7 @@ impl MainWindow {
                     Err(e) => {
                         tracing::error!(?e, "Failed to send WoL for connection {}", id_for_cb,);
                         toast_for_cb.show_error(&crate::i18n::i18n(
-                            "Failed to send Wake On LAN packet. Check network permissions.",
+                            "Failed to send Wake-on-LAN packet. Check network permissions.",
                         ));
                     }
                 },

@@ -33,7 +33,10 @@
 #
 # Environment overrides:
 #   FLATHUB_DIR   Path to the local Flathub checkout
-#                 (default: ~/Documents/io.github.totoshko88.RustConn)
+#                 (default: the user's Documents folder, as `xdg-user-dir
+#                 DOCUMENTS` names it — ~/Документи on a Ukrainian desktop —
+#                 or ~/Documents when that is unavailable, then
+#                 /io.github.totoshko88.RustConn)
 #   RUSTCONN_REPO GitHub slug of the source repo   (default: totoshko88/RustConn)
 #   FLATHUB_REPO  GitHub slug of the Flathub repo
 #                 (default: flathub/io.github.totoshko88.RustConn)
@@ -49,7 +52,14 @@ set -euo pipefail
 # ──────────────────────────────────────────────────────────────────────────────
 # Config (overridable via environment)
 # ──────────────────────────────────────────────────────────────────────────────
-FLATHUB_DIR="${FLATHUB_DIR:-$HOME/Documents/io.github.totoshko88.RustConn}"
+# The Documents folder is localised (~/Документи, ~/Dokumente, ...), so ask
+# xdg-user-dir instead of hardcoding the English name. It prints $HOME when the
+# folder is not configured; treat that like "not available".
+DOCS_DIR="$(xdg-user-dir DOCUMENTS 2>/dev/null || true)"
+if [[ -z "$DOCS_DIR" || "$DOCS_DIR" == "$HOME" ]]; then
+    DOCS_DIR="$HOME/Documents"
+fi
+FLATHUB_DIR="${FLATHUB_DIR:-$DOCS_DIR/io.github.totoshko88.RustConn}"
 RUSTCONN_REPO="${RUSTCONN_REPO:-totoshko88/RustConn}"
 FLATHUB_REPO="${FLATHUB_REPO:-flathub/io.github.totoshko88.RustConn}"
 APP_ID="io.github.totoshko88.RustConn"

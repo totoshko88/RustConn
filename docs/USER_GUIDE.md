@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.25.2** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.25.3** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -9,6 +9,9 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 1. [Getting Started](#getting-started)
 2. [Main Interface](#main-interface)
 3. [Connections](#connections)
+   - [Quick Connect](#quick-connect-ctrlshiftq)
+   - [Undo/Trash](#undotrash-functionality)
+   - [Command Macros](#command-macros)
 4. [Protocols](#protocols)
    - [SSH](#ssh)
    - [RDP](#rdp)
@@ -27,6 +30,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Split View](#split-view)
    - [Detached Session Windows](#detached-session-windows)
    - [Terminal Search](#terminal-search)
+   - [Status Indicators](#status-indicators)
    - [Session Restore & Reconnect](#session-restore)
    - [Session Logging](#session-logging)
    - [Session Recording](#session-recording)
@@ -50,6 +54,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Broadcast Input](#broadcast-input)
    - [Group Broadcast](#group-broadcast)
    - [Command Palette](#command-palette)
+   - [Run Local Script](#run-local-script)
    - [Global Variables](#global-variables)
    - [Password Generator](#password-generator)
    - [Wake-on-LAN](#wake-on-lan)
@@ -63,6 +68,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Adaptive UI](#adaptive-ui)
    - [Startup Action](#startup-action)
    - [Backup & Restore](#backup--restore)
+   - [Keyboard Passthrough Mode](#keyboard-passthrough-mode)
    - [Accessibility](#accessibility)
 9. [Import, Export & Migration](#import-export--migration)
    - [Import](#import-ctrli)
@@ -138,21 +144,24 @@ the sidebar is shown or hidden.
 - **Content header** — the active connection's name, with its group path shown
   underneath as a subtitle when **Show hierarchy path in header** is on (Settings
   → Interface).
-- **Sidebar bottom toolbar** — five one-click icons: History, Sort A–Z, Sort by
-  recent, Password Vault, Smart Folders.
+- **Sidebar bottom toolbar** — six one-click icons: History, Select Connections
+  (a toggle), Sort A–Z, Sort by recent, Password Vault, Smart Folders.
 
 ### Components
 
 - **Sidebar header** — search toggle + "Connections" title + a list menu (⋯)
-  with **Select Connections**, **Sort Alphabetically** and **Sort by Recent Use**.
+  with **New Connection**, **New Connection (Advanced)…**, **New Group**, the
+  **Manage Clusters**, **Manage Workspaces** and **Manage Snippets** managers,
+  **Quick Connect**, **Import…**, **Export…**, **Sort Alphabetically** and
+  **Sort by Recent Use**.
 - **Content header** — connection name (and optional group-path subtitle), plus
   the terminal/shell, split-view and primary-menu (☰) buttons on the right. The
   primary menu holds everything else: New Connection, New Group, Quick Connect,
   the Tools and Sessions managers, Import/Export, Settings.
 - **Sidebar** — Connection tree with groups (alphabetically sorted, collapsible
   via F9 or on narrow windows)
-- **Sidebar bottom toolbar** — History, Sort A–Z, Sort by recent usage, Password
-  Vault, Smart Folders (five standalone icons)
+- **Sidebar bottom toolbar** — History, Select Connections (toggle), Sort A–Z,
+  Sort by recent usage, Password Vault, Smart Folders (six standalone icons)
 - **Session Area** — Active sessions in tabs
 - **Toast Overlay** — Non-blocking notifications
 
@@ -169,7 +178,7 @@ history; with no match, or an empty field, Enter opens nothing (0.25.1+).
 
 Filter connections by protocol from the **Filter** menu button in the search row:
 - Open the menu and tick one or more protocols (SSH, RDP, VNC, SPICE, Telnet,
-  Serial, ZeroTrust, Kubernetes, Web)
+  WinRM, Serial, ZeroTrust, Kubernetes, Web)
 - Several protocols can be ticked at once (OR logic); ZeroTrust matches every
   provider
 - The Filter button turns accent-coloured while any protocol is ticked
@@ -256,14 +265,16 @@ Click **Advanced…** at any step to open the full connection editor with all en
 
 ### Full Connection Editor (Ctrl+Shift+N)
 
-The full editor provides access to all connection options:**Basic Tab:**
+The full editor provides access to all connection options. **Cancel** closes it, **Create** (**Save** when editing) stores the connection, and Enter in the Name, Host, Username, Domain or Tags field does the same. Closing with Escape, **Cancel** or the close gesture after an edit asks **Discard Changes?**.
+
+**Basic Tab:**
 - Name, Host, Port
 - Protocol selection
 - **Network Mode** — inherit a jump host from the group or the global settings, or go *Direct* (see [Network Mode and Where a Jump Host Comes From](#network-mode-and-where-a-jump-host-comes-from))
 - Parent group
 - Tags
 
-**Authentication Tab:**
+**Authentication (group on the Basic tab):**
 - Username
 - Password source selection:
   - **Prompt** — Ask for password on each connection
@@ -416,7 +427,7 @@ quicssh is **not bundled**. You install it yourself and put it on your PATH; the
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
 **Advanced Tabs:**
-- **Advanced** — Window mode (Embedded/External/Fullscreen), remember window position, hide local cursor (embedded RDP/VNC/SPICE), Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
+- **Advanced** — Terminal theme override, remote monitoring override, session recording, activity monitor, retry, port knocking and fwknop SPA, highlight rules, Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
 - **Automation** — Automatic login (expected text of the device's username/password prompts), expect rules for auto-responding to terminal patterns, pattern tester with built-in templates (Sudo, SSH Host Key, Login, etc.), pre-connect task, post-disconnect task (with conditions: first/last connection only)
 - **Data** — Local variables (connection-scoped, override global variables), custom properties (Text/URL/Protected metadata)
 - **Logging** — Session logging (enable/disable, log path template with variables, timestamp format, max file size, retention days, granular content options: log activity, log input, log output, add timestamps)
@@ -572,6 +583,21 @@ Behaviour worth knowing:
 | `Password:` | `${password}` | Password from vault |
 | `Verification code:` | `${OTP_CODE}` | Global variable (set before connecting) |
 | `Select environment` | `production` | Static text, no variable needed |
+
+### Command Macros
+
+A command macro is a named, single-line command that you type into a terminal with one shortcut. Macros belong to one connection.
+
+**Add a macro:** edit the connection → **Automation** tab → **Command Macros** → **Add Macro**. Fill in:
+
+- **Name** — a label for the list.
+- **Command** — one line; line breaks and control characters are refused.
+- **Shortcut** — a GTK accelerator such as `<Control><Alt>r`. It needs Ctrl, Alt or Super (F1–F24 may be used alone), and it may not reuse an application shortcut or another macro's. The editor checks this as you type.
+- **Run (append Enter)** — on by default. Switch it off to type the command without pressing Enter.
+
+**Use a macro:** press the shortcut while that connection's terminal has keyboard focus. In a split tab, the focused pane's connection is used. `${username}`, `${host}`, `${port}` and your [variables](#global-variables) are filled in; a variable whose value is `@ask:` is asked for first, and `${password}` uses the password the connection was opened with. If no password is available or a reference is undefined, nothing is sent and a toast says why.
+
+Macro shortcuts do nothing in RDP, VNC, SPICE and web sessions, while [keyboard passthrough](#keyboard-passthrough-mode) is on, and in detached session windows.
 
 ### Pre/Post Connection Tasks
 
@@ -733,10 +759,15 @@ Temporary connection without saving:
 | Edit | Ctrl+E or right-click → Edit |
 | Rename | F2 or right-click → Rename |
 | Duplicate | Ctrl+D or right-click → Duplicate |
+| Duplicate via Wizard | Right-click → Duplicate via Wizard… — opens the wizard filled in with the connection's name, host, port, user, domain, icon, jump host, SSH authentication method and key file, and the Serial, Kubernetes, Zero Trust and Web fields. Other settings (port forwards, automation, tags) are not copied: use **Duplicate** for a full copy |
 | Duplicate as a numbered range | Right-click → Duplicate as Range… — `host[02-10]` creates `host02` … `host10`, and `host[2-10]` creates `host2` … `host10`. *Host Pattern* fills in by itself when the host contains the connection's name; otherwise enter one such as `10.0.0.[2-10]`. Up to 256 at a time; names that already exist are skipped |
 | Copy/Paste | Ctrl+C / Ctrl+V (sidebar focus) or Menu → Copy/Paste Connection |
 | Delete | Delete key or right-click → Delete (moves to Trash) |
 | Move to Group | Drag-drop or right-click → Move to Group |
+| Open New Session | Right-click → Open New Session (a second session of a connection that already runs) |
+| Duplicate via Wizard | Right-click → Duplicate via Wizard… |
+| Disconnect | Right-click a connected row → Disconnect |
+| Set Up Key Authentication | Right-click an SSH row → Set Up Key Authentication… |
 | Run Snippet | Right-click → Run Snippet... (sends snippet to active session) |
 | Start/Stop Recording | Right-click connected session → Start/Stop Recording |
 
@@ -745,7 +776,7 @@ Temporary connection without saving:
 ### Undo/Trash Functionality
 
 Deleted items are moved to Trash and can be restored:
-- After deleting, an "Undo" notification appears
+- A single connection or group is deleted after a confirmation dialog; then an "Undo" notification appears
 - Click "Undo" to restore the deleted item
 - Deleting several selected items at once also moves them to Trash; there is no "Undo" notification for that, so use the Trash row
 - Items stay in Trash, with their saved vault credentials, until you choose **Empty Trash**
@@ -753,7 +784,8 @@ Deleted items are moved to Trash and can be restored:
 
 **The Trash row:** while the trash holds anything, a 🗑 **Trash** row appears at the bottom of the sidebar tree, like the Favorites group at the top. Expand it to see the deleted connections and groups.
 - Right-click an item → **Restore** puts it back (the same action as the "Undo" notification)
-- Right-click the row or an item → **Empty Trash** asks for confirmation, then removes everything in the trash for good, including saved vault credentials. This cannot be undone
+- Right-click an item → **Delete Permanently…** asks for confirmation, then removes that one item for good, with its saved vault credentials. This cannot be undone
+- Right-click the **Trash** row → **Empty Trash** asks for confirmation, then removes everything in the trash for good, including saved vault credentials. This cannot be undone
 - The row disappears when the last item is restored or the trash is emptied
 - Items in the Trash row cannot be connected, edited or dragged; restore them first
 
@@ -956,7 +988,7 @@ You can also paste options in the `-o Key=Value` format directly from the comman
 
 | Custom Options field | Resulting SSH flags |
 |---------------------|---------------------|
-| `StrictHostKeyChecking=no, ServerAliveInterval=60` | `-o StrictHostKeyChecking=no -o ServerAliveInterval=60` |
+| `ServerAliveInterval=60, Compression=yes` | `-o ServerAliveInterval=60 -o Compression=yes` |
 | `-o StrictHostKeyChecking=no, -o ServerAliveInterval=60` | Same result (prefix stripped) |
 | `ServerAliveCountMax=3` | `-o ServerAliveCountMax=3` |
 | `ProxyCommand=nc -X 5 -x proxy:1080 %h %p` | `-o ProxyCommand=nc -X 5 -x proxy:1080 %h %p` |
@@ -2330,7 +2362,7 @@ rustconn-cli add --name "Grafana" --protocol web --host "https://grafana.interna
 | Web | Embedded WebKitGTK tab (Linux) or system/custom browser (external) |
 | Local Shell | Local VTE terminal tab (user's default shell) |
 
-**Local Shell:** Open a local terminal tab without connecting to any remote host. Useful as a quick terminal emulator or for running local commands alongside remote sessions. Start via Menu → File → Local Shell, the startup action (Settings → Interface → Startup → Local Shell), or `rustconn --shell`.
+**Local Shell:** Open a local terminal tab without connecting to any remote host. Useful as a quick terminal emulator or for running local commands alongside remote sessions. Start via the ☰ menu → Local Shell, the startup action (Settings → Interface → Startup → Local Shell), or `rustconn --shell`.
 
 **Custom Shell Command:** Configure a custom command for Local Shell in Settings → Terminal → Local Shell → Command. When set, Local Shell runs this command instead of the default login shell. Examples:
 - `fish` — use Fish shell instead of bash
@@ -2343,7 +2375,7 @@ Leave the field empty to use the system default shell (`$SHELL`).
 
 ### Display Mode (Window Mode)
 
-The **Display Mode** setting in the connection dialog (Advanced tab → Window Mode) controls how RDP and VNC sessions are displayed. The setting applies per-connection.
+A connection's **window mode** controls how its RDP and VNC session is displayed. The setting applies per connection. The connection dialog has no field for it: set it with `rustconn-cli add` or `rustconn-cli update` and `--window-mode embedded|external|fullscreen`. Editing the connection in the dialog keeps the stored mode.
 
 | Mode | RDP Behavior | VNC Behavior |
 |------|-------------|-------------|
@@ -2352,17 +2384,18 @@ The **Display Mode** setting in the connection dialog (Advanced tab → Window M
 | **External Window** | Launches FreeRDP in a separate window | Launches external VNC viewer (TigerVNC/vncviewer) in a separate window |
 
 **Configure:**
-1. Edit connection → **Advanced** tab → **Window Mode** section
-2. Select **Embedded**, **External Window**, or **Fullscreen** from the dropdown
-3. For External Window mode, enable **Remember Position** to save window geometry between sessions (RDP only)
+```bash
+rustconn-cli update "My RDP" --window-mode external
+```
+`remember_window_position` (save the external window's geometry between sessions, RDP only) is read from `connections.json` and has no field in the dialog or the CLI.
 
 **Notes:**
 - Fullscreen mode maximizes the RustConn window, not the remote desktop. Use F11 to toggle true fullscreen of the entire application. In fullscreen the application header bar and the tab bar are hidden, for every kind of session, so the session gets the space they took; they reappear when you leave fullscreen, however you entered it — the F11 shortcut, the menu toggle, or a window-manager fullscreen. To reach them without leaving fullscreen, move the pointer to the very top edge of the screen: the header and the tab bar slide in together over the session, without resizing it, and slide away a moment after the pointer moves back down. They stay while a header menu or a tab's context menu is open, or while you drag a tab. Switching tabs (for example with Ctrl+Page Up/Down) shows them for about a second and a half, and F10 opens the main menu. The sidebar stays as it is — hide it with F9 for more room. Banners that need your attention, such as an active group broadcast or a request to touch your hardware key, remain visible in fullscreen. While fullscreen the header also carries a **Leave Fullscreen** button at its right end — the counterpart of the Restore button on Remote Desktop Connection's connection bar. On a touch screen without a keyboard there is no hover, so leaving fullscreen needs F11.
 - External Window mode for VNC requires an external VNC viewer installed (TigerVNC, vncviewer, gvncviewer, or similar). If no viewer is found, a toast notification shows the install hint.
 - External Window mode for RDP uses FreeRDP. The Flatpak bundles the SDL3 client and the snap the X11 client (`xfreerdp3`) — no separate installation needed. On native installs, RustConn auto-detects the installed FreeRDP clients in priority order: on a Wayland session `sdl-freerdp3` > `sdl-freerdp` > `wlfreerdp3` > `wlfreerdp` > `xfreerdp3` > `xfreerdp`, on an X11 session the `xfreerdp*` clients first. `rustconn-cli connect` uses the same order and the connection's pinned client.
-- The VNC protocol tab also has its own **Client Mode** (Embedded/External) setting. When Display Mode is set to External Window, it takes precedence over the protocol-level Client Mode.
+- The VNC protocol tab also has its own **Client Mode** (Embedded/External) setting. When the window mode is External, it takes precedence over the protocol-level Client Mode.
 
-**External-session tracking:** an external-viewer session gets no notebook tab. Instead it is surfaced in the sidebar with a window emblem next to the connected status, and its right-click menu adds **Disconnect** (closes a RustConn-owned viewer such as TigerVNC/FreeRDP/remote-viewer) and **Stop tracking** (deregisters without closing the viewer). Owned viewers are closed automatically when you quit RustConn. Detaching viewers that RustConn cannot control (Remmina, KRDC, Vinagre) keep running independently: if you close such a viewer window yourself, the sidebar keeps showing the session as connected until you select **Stop tracking**. A double-click on a connection that already runs in an external window shows an "Already running in an external window" hint instead of opening a duplicate — use **Open new session** to force a second one.
+**External-session tracking:** an external-viewer session gets no notebook tab. Instead it is surfaced in the sidebar with a window emblem next to the connected status, and its right-click menu adds **Disconnect** (closes a RustConn-owned viewer such as TigerVNC/FreeRDP/remote-viewer) and **Stop Tracking** (deregisters without closing the viewer). Owned viewers are closed automatically when you quit RustConn. Detaching viewers that RustConn cannot control (Remmina, KRDC, Vinagre) keep running independently: if you close such a viewer window yourself, the sidebar keeps showing the session as connected until you select **Stop Tracking**. A double-click on a connection that already runs in an external window shows an "Already running in an external window" hint instead of opening a duplicate — use **Open New Session** to force a second one.
 
 ### Tab Management
 
@@ -2372,7 +2405,7 @@ The **Display Mode** setting in the connection dialog (Advanced tab → Window M
 - **Tab Overview** — Click the grid icon (▦) at the right end of the tab bar, or press **Ctrl+Shift+O**, to open a full-screen grid view of all open tabs. Useful when you have many tabs open and need to visually locate a session. Click any thumbnail to switch to it.
 - **Tab Switcher** — Press **Ctrl+%** (or open Command Palette with **Ctrl+P** and type `%`) to fuzzy-search across all open tabs by name. Results show protocol type and tab group. Select and press Enter to switch instantly.
 - **Edit Connection** — Right-click a tab → **Edit Connection…** opens the editor for that tab's saved connection, whatever is selected in the sidebar (0.22.15+). Tabs with no saved connection behind them — the Welcome tab, a local shell, a quick connection — do not show it.
-- **Copy** — The same tab menu has a **Copy** section with the fields described under [Copy Menu](#copy-menu): host, port, address, username, password, SSH command and custom properties.
+- **Duplicate Tab** — Right-click a tab → **Duplicate Tab** opens another session of the tab's saved connection in a new tab, the same as **Open New Session** in the sidebar, whatever is selected there ([#437](https://github.com/totoshko88/RustConn/issues/437)). It is shown on the same tabs as **Edit Connection…**. A password you typed by hand for the first session is not reused; the new session asks again unless the password is saved.
 - **Pin Tab** — Right-click a tab → **Pin Tab**. Pinned tabs stay at the left edge of the tab bar and are never scrolled out of view. Useful for long-running sessions you need constant access to. Right-click again → **Unpin Tab** to restore normal behavior.
 - **Save Output** — Right-click a terminal tab → **Save Output…** to write the session's full scrollback to a plain-text file (issue [#371](https://github.com/totoshko88/RustConn/issues/371)). A file chooser opens with a name derived from the session. The whole buffer is saved — its length is bounded by **Settings → Terminal → Scrollback lines** — so raise that limit beforehand if you need more history in the file. The item appears only for terminal sessions (SSH, local shell, Telnet, Serial); embedded RDP/VNC/Web tabs have no text buffer and do not show it. In a split tab the **focused pane** is saved — click the pane you want first, then open the menu.
 
@@ -2386,7 +2419,7 @@ Sessions shown through an external viewer (xfreerdp, vncviewer, or an external S
 - **Vertical Split** — Ctrl+Shift+S splits the current tab vertically (top and bottom)
 - **Close Pane** — Ctrl+Shift+X closes the focused pane; if only one pane remains, the split is dissolved and the session returns to normal tab mode
 - **Remove Split** — Ctrl+Shift+J, **Remove Split** in the split tab's context menu or in a pane header's menu, or **Remove Split** in the command palette, returns every session of the split to its own tab without closing any of them. On a tab that is not split it does nothing
-- **Closing a split tab** — a split lives in the tab of its first (owner) session; the other sessions have no tab of their own while they are in the split. The tab's title names the focused pane, which is not always the owner. Closing a tab whose split shows two or more sessions (X, middle-click, **Close Tab…** in the tab menu, or Ctrl+Shift+W) asks first. The dialog says which session the tab belongs to and lists the other sessions it shows (the first three, then how many more), and offers three answers: **Remove Split** (the default, Enter) returns every session to its own tab and closes none of them, the same as Ctrl+Shift+J; **Close All Sessions** disconnects the owner and every other session of the split; **Cancel** (Escape) keeps the tab as it was. Ctrl+Shift+W always acts on the tab, so it asks about the whole split even when another pane has focus (while a terminal has focus Ctrl+W goes to the shell and does not close the tab). **Close Others**, **Close to the Left**, **Close to the Right**, **Close All Tabs** and **Close All Ungrouped** ask once for the whole batch when it includes a split tab, and confirming closes the other sessions of those splits too; **Close All in Group** says so in its own confirmation. Closing one pane's session never asks: use **Close Connection** in the pane header's menu or Ctrl+Shift+X (**Close Pane**), or **Disconnect** in the sidebar. Scripts, clusters, a session that ends by itself and closing the window do not show this dialog either. To take one session out of the split, use **Move to Own Tab**
+- **Closing a split tab** — a split lives in the tab of its first (owner) session; the other sessions have no tab of their own while they are in the split. The tab's title names the focused pane, which is not always the owner. Closing a tab whose split shows two or more sessions (X, middle-click, **Close Tab…** in the tab menu, or Ctrl+Shift+W) asks first. The dialog says which session the tab belongs to and lists the other sessions it shows (the first three, then how many more), and offers three answers: **Remove Split** (the default, Enter) returns every session to its own tab and closes none of them, the same as Ctrl+Shift+J; **Close All Sessions** disconnects the owner and every other session of the split; **Cancel** (Escape) keeps the tab as it was. Ctrl+Shift+W always acts on the tab, so it asks about the whole split even when another pane has focus (while a terminal has focus Ctrl+W goes to the shell and does not close the tab). **Close Others**, **Close to the Left**, **Close to the Right**, **Close All Tabs** and **Close All Ungrouped** ask once for the whole batch when it includes a split tab, and confirming closes the other sessions of those splits too; **Close All in Group** says so in its own confirmation. Closing one pane's session never asks: use **Close Pane** in the pane header's menu or Ctrl+Shift+X, or **Disconnect** in the sidebar. Scripts, clusters, a session that ends by itself and closing the window do not show this dialog either. To take one session out of the split, use **Move to Own Tab**
 - **Focus Next Pane** — Ctrl+` cycles focus between panes
 - **Split with Other Tabs** — right-click a tab and choose **Split with Other Tabs…** or press **Ctrl+Shift+K** while that tab is active (rebind it in **Settings ▸ Interface ▸ Keybindings**). A dialog lists every other tab that can join; tick the ones you want — with the keyboard use Tab to move and Space to tick — and press **Split**. That tab becomes the split's tab and the ticked tabs fill a balanced grid around it (2 tabs side by side or stacked to suit the window's shape, 4 tabs as 2×2, and so on), the same grid a restored workspace uses. The sessions are moved, not reconnected, and each one's own tab disappears while it is in the split. Tabs that cannot be split (external-viewer sessions, tabs in another window) are not listed. The item is hidden on a tab that already hosts a split; use **Remove Split** first, or **Select Tab…** in an empty pane to add one more session. To change the arrangement afterwards, drag the pane headers.
 - **Select Tab** — click the "Select Tab..." button in an empty pane to pick which session to display; sessions already in other split views show a colored indicator
@@ -2394,9 +2427,9 @@ Sessions shown through an external viewer (xfreerdp, vncviewer, or an external S
 - **Tab Overview** — split-view tabs render correctly in Tab Overview (Ctrl+Shift+O) with live thumbnails showing the split layout
 - **Divider ratio is remembered** — when a split layout is saved in a [workspace profile](#workspace-profiles), the position of the divider (for example a 30/70 split) is saved with it and restored, not reset to an even 50/50. Multi-panel grids restore their shape; the balanced sub-panels open evenly.
 
-Embedded viewers adapt to narrow panels: the toolbar collapses its secondary actions into an overflow ("⋯") menu (Fit resolution and Ctrl+Alt+Del stay visible), and the remote desktop rescales to fully fill a small or oddly-shaped panel. The same adaptation applies to a single embedded tab in a small or narrow application window. Keystroke broadcast (Ctrl+Shift+B) applies only to terminals — its toggle appears when a split holds at least two terminal sessions and a terminal panel is focused, and mirroring never targets an embedded remote desktop.
+Embedded viewers adapt to narrow panels: the toolbar collapses its secondary actions into an overflow ("⋯") menu (Ctrl+Alt+Del stays visible, and so does Fit resolution in an RDP session; the VNC toolbar has no Fit button), and the remote desktop rescales to fully fill a small or oddly-shaped panel. The same adaptation applies to a single embedded tab in a small or narrow application window. Keystroke broadcast (Ctrl+Shift+B) applies only to terminals — its toggle appears when a split holds at least two terminal sessions and a terminal panel is focused, and mirroring never targets an embedded remote desktop.
 
-Each occupied panel can be acted on in two ways. First, when the connection-name **headers** are shown (the default), right-click the pane's **header** for a context menu — **Reconnect** (only once the session has ended), **Move to Own Tab** (returns the session to its own tab without closing it; not on the pane of the split's owner, where it would do what **Remove Split** does), **Move to New Window**, **Remove Split**, and **Close Connection** — and on a touchscreen, long-press the header for the same menu. Closing this way takes two deliberate steps (open the menu, pick Close), so it is not second-guessed with a confirmation. The menu lives on the header rather than the pane body on purpose: a terminal or remote-desktop pane handles its own right-click (a terminal's Copy/Paste menu, for example), so putting the pane menu on the body would either fight that menu or suppress it. Second — independently of the headers — each occupied panel shows a small arrow indicator (◂) at the top-right corner; hovering or clicking it reveals **Move to Own Tab** and **Close**, and the buttons hide after a short delay. Because this hover reveal is a single easy-to-mis-click gesture, **Close** here first asks for confirmation before disconnecting a live session. The header labels and the hover corner buttons each have their own switch and do not hide one another — the small arrow stays available whether or not the names are shown. If you find the hover arrow distracting, turn it off entirely with **Settings ▸ Interface ▸ Window ▸ Hide hover controls in split panes** (off by default); with it hidden, the header context menu and the sidebar connection menu still provide close and detach.
+Each occupied pane can be acted on in two ways. First, when the connection-name **headers** are shown (the default), right-click the pane's **header** for a context menu — **Reconnect** (only once the session has ended), **Move to Own Tab** (returns the session to its own tab without closing it; not on the pane of the split's owner, where it would do what **Remove Split** does), **Move to New Window**, **Remove Split**, and **Close Pane** — and on a touchscreen, long-press the header for the same menu. Closing this way takes two deliberate steps (open the menu, pick Close), so it is not second-guessed with a confirmation. The menu lives on the header rather than the pane body on purpose: a terminal or remote-desktop pane handles its own right-click (a terminal's Copy/Paste menu, for example), so putting the pane menu on the body would either fight that menu or suppress it. Second — independently of the headers — each occupied pane shows a small arrow indicator (◂) at the top-right corner; hovering or clicking it reveals **Move to Own Tab** and **Close**, and the buttons hide after a short delay. Because this hover reveal is a single easy-to-mis-click gesture, **Close** here first asks for confirmation before disconnecting a live session. The header labels and the hover corner buttons each have their own switch and do not hide one another — the small arrow stays available whether or not the names are shown. If you find the hover arrow distracting, turn it off entirely with **Settings ▸ Interface ▸ Window ▸ Hide hover controls in split panes** (off by default); with it hidden, the header context menu and the sidebar connection menu still provide close and detach.
 
 A session whose **Session Toolbar** / **Navigation Toolbar** is switched off is still reachable: through the header's right-click menu when headers are shown, and through the hover corner buttons, which are always present. Either way the split-view actions (Move to Own Tab / Close) are part of the split infrastructure, not the session toolbar, so turning the toolbar off never leaves a pane with no way out. You can also act on a pane **from the sidebar**: right-click the connection and use **Move to Own Tab** (shown as **Remove Split** on the split's owner, which it collapses), **Move to New Window** (pops the pane out of the split and into its own window in one step), or **Disconnect**.
 
@@ -2408,13 +2441,13 @@ A session can be moved out of the main window into a window of its own — usefu
 
 - **Detach** — Right-click a tab → **Move to New Window**, or press **Ctrl+Shift+M**. The tab leaves the main window and the session appears in its own window, focused and ready for input. You can also detach straight from the **sidebar**: right-click the connection → **Move to New Window**. From the sidebar this works even on a session that is currently in a split pane or sitting in a background tab — a split pane is popped out of the split first and then moved to its own window, in one step.
 - **Attach** — Click the restore button in the detached window's header bar (**Move to Main Window**), or press **Ctrl+Shift+M** again while that window has focus. The session returns to a tab with the same title, icon, tab group, and color it had before, and the now-empty window closes.
-- **Choose a monitor** — With two or more monitors connected, the tab menu also offers **Move to New Window on…** with one entry per monitor (for example "Monitor 2 (DP-1)"). The window opens fullscreen on the chosen monitor, because Wayland does not let an application place a window at specific coordinates. With a single monitor the submenu is not shown.
+- **Choose a monitor** — With two or more monitors connected, the tab menu also offers one **Move to New Window on Monitor N** item per monitor (for example "Monitor 2 (DP-1)"), listed flat below **Move to New Window**, not in a submenu. The window opens fullscreen on the chosen monitor, because Wayland does not let an application place a window at specific coordinates, and a toast tells you to press **F11** to leave fullscreen. With a single monitor these items are not shown.
 
 **Supported sessions:** everything RustConn renders itself — terminal sessions (SSH, Local Shell, Telnet, Serial, Kubernetes, MOSH, Zero Trust, and SFTP in mc mode) plus embedded RDP, embedded VNC, and embedded Web.
 
 **Not offered for:** sessions handed to an external viewer (SPICE, or RDP/VNC in External Window mode), which already run in their own operating-system window. On a **split tab** the tab menu's **Move to New Window** is hidden (a session in a split cannot be detached while the split stands); remove the split first, or use the sidebar's **Move to New Window**, which pops the pane out and detaches it in one step.
 
-A detached window behaves like the main window: copy, paste, terminal search, close, and fullscreen (F11) act on the session in that window and never on a session in the main window, the keyboard passthrough toggle works from there as well, and toasts raised by that session appear in it. Its header bar has a menu (F10, suspended in passthrough mode like the main window's) with Settings, Keyboard Shortcuts, Help and About; **Ctrl+,** opens Settings in the main window and raises it, and Keyboard Shortcuts (Ctrl+?) and About open in the detached window itself. Compact-interface and layout-independent accelerator handling apply the same way as in the main window.
+A detached window behaves like the main window in the ways listed here, and lacks the rest: it has no tab context menu (so no Pin, Set Group, Monitor, Save Output or Duplicate Tab), no Tab Overview or Tab Switcher, no Group Broadcast or split view, and the snippet entries of the terminal menu are not available in it. Copy, paste, terminal search, close, and fullscreen (F11) act on the session in that window and never on a session in the main window, the keyboard passthrough toggle works from there as well, and toasts raised by that session appear in it. Its header bar has a menu (F10, suspended in passthrough mode like the main window's) with Settings, Keyboard Shortcuts, Help and About; **Ctrl+,** opens Settings in the main window and raises it, and Keyboard Shortcuts (Ctrl+?) and About open in the detached window itself. Compact-interface and layout-independent accelerator handling apply the same way as in the main window.
 
 **Lifecycle:**
 - **Closing a detached window ends its session** — the same teardown as closing its tab: the child process is stopped, SSH tunnels are dropped, and the sidebar status and history entry are updated. Ctrl+W inside a detached window closes only that session.
@@ -2694,6 +2727,8 @@ Override terminal colors (background, foreground, cursor) on a per-connection ba
 - Right-click in sidebar → **New Group**
 - Right-click on group → **New Subgroup**
 
+To create several groups in a row, switch on **Create Another** in the New Group dialog: after **Create** the dialog stays open with its parent, credentials and description, and only the name is cleared.
+
 Group names must be unique among siblings sharing the same parent folder. You can have identically named groups under different parents (e.g. `Site A/RDP` and `Site B/RDP`). Moving or renaming a group into a parent that already contains a child with the same name is rejected.
 
 #### Group Operations
@@ -2704,7 +2739,7 @@ Group names must be unique among siblings sharing the same parent folder. You ca
 
 #### Drag and Drop in the Sidebar
 
-The drop zone inside a row decides what happens, for both connections and folders:
+The drop zone inside a row decides what happens, for both connections and folders. Favorites, Trash, the items under them, and the copies of connections shown in Favorites take no drop: no highlight appears and nothing moves.
 
 | Drop target | Result |
 |-------------|--------|
@@ -2717,11 +2752,9 @@ A folder cannot be dropped into itself or into one of its own subfolders — suc
 #### Group Operations Mode (Bulk Actions)
 
 Group Operations Mode enables bulk actions on multiple connections at once. It is
-toggled from the sidebar's list menu **(⋯) → Select Connections** (the old
-permanent sidebar icon was removed in 0.23.0); right-click → **Group
-Operations** still works too.
-
-**Activate:** Sidebar list menu (⋯) → **Select Connections**, or right-click → Group Operations
+toggled with the **Select Connections** button in the sidebar's bottom toolbar. The
+mode switches the list to multi-selection and shows the bulk-actions bar; it adds
+no checkboxes.
 
 **Available actions in the bulk-actions bar:**
 
@@ -2729,18 +2762,20 @@ Operations** still works too.
 |--------|--------|
 | New Group | Create a new group |
 | Move to Group | Move all selected connections to a chosen group |
+| Batch Edit | Change the group, the tags or the icon of all selected connections at once (see below) |
 | Select All | Select all visible connections |
-| Clear | Deselect all |
-| Delete | Delete all selected connections (with confirmation) |
+| Clear Selection | Deselect all (stays in the mode) |
+| Delete Selected | Move all selected connections and groups to Trash (with confirmation) |
 
 **Workflow:**
 
-1. Sidebar list menu (⋯) → **Select Connections** to enter Group Operations Mode
-2. Checkboxes appear next to each connection in the sidebar
-3. Select individual connections by clicking their checkboxes, or use **Select All**
-4. Choose an action: **Move to Group** or **Delete**
-5. Confirm the action in the dialog
-6. Untick **Select Connections** in the menu (or press Escape) to exit Group Operations Mode
+1. Click **Select Connections** in the sidebar's bottom toolbar to enter Group Operations Mode
+2. Select rows with **Ctrl+click** (add or remove one) or **Shift+click** (a range), or use **Select All**
+3. Choose an action in the bar. Right-clicking a selected row keeps the selection and opens a menu with the same bulk actions plus **Run Local Script…**
+4. Confirm the action in the dialog
+5. Click **Select Connections** again to leave the mode. **Escape** only clears the selection
+
+**Batch Edit:** the pencil button opens **Fields to change**. Tick the check box in front of a field to change it, fill the field in, and press **Apply**; unticked fields are left alone. **Group** moves the connections (a password stored in the Vault moves with them), **Tags** *replaces* the existing tags, and **Icon** sets an emoji or GTK icon name (empty clears it). A toast offers **Undo** for ten seconds.
 
 This is useful for reorganizing large numbers of connections, cleaning up after an import, or bulk-deleting obsolete entries.
 
@@ -3188,12 +3223,12 @@ The same reference is available in the application: **Tools → Scripts… → �
 Pin frequently used connections to a dedicated "Favorites" section at the top of the sidebar.
 
 **Pin a Connection:**
-- Right-click a connection → **Pin / Unpin**
+- Right-click a connection → **Add to Favorites**
 - The connection appears in the ★ Favorites group at the top of the sidebar
 
 **Unpin a Connection:**
-- Right-click a pinned connection → **Pin / Unpin**
-- The connection returns to its original group
+- Right-click the connection, either in the Favorites group or in its own group → **Remove from Favorites**
+- The connection leaves the Favorites group and stays in its own group
 
 Favorites persist across sessions. Pinned connections remain in their original group as well — the Favorites section shows a reference, not a move.
 
@@ -3203,7 +3238,7 @@ Smart Folders are dynamic, filter-based views that automatically group connectio
 
 **Create a Smart Folder:**
 
-1. Right-click in the **Smart Folders** sidebar section → **New Smart Folder**
+1. Click **+** in the **Smart Folders** sidebar section header, or right-click empty space in the connection list → **New Smart Folder**
 2. Enter a name
 3. Configure filter criteria (all filters use AND logic):
 
@@ -3393,9 +3428,9 @@ Organize open tabs into named groups with a visible `[GroupName]` prefix in the 
 
 **Assign a Tab to a Group:**
 1. Right-click a tab in the tab bar
-2. Select **Set Group...**
+2. Select **Set Group…**
 3. Pick an existing group from the pill buttons, or type a new group name
-4. Click **Apply**
+4. Click **Apply** or press **Enter** (Apply stays off while the name is empty)
 
 The tab title changes to `[GroupName] ConnectionName` and the tooltip shows the group name.
 
@@ -3438,13 +3473,13 @@ Templates are connection presets that store protocol settings, authentication de
 **Manage Templates:** Menu → Tools → **Templates...** (or `rustconn-cli template list`)
 
 **Create Template:**
-- **From scratch:** Open Manage Templates → Click **Create Template** → configure name, icon (emoji or GTK icon name), protocol, default settings
-- **From existing connection:** Right-click a connection → **Create Template from Connection**
+- **From scratch:** Open Manage Templates → click the **New Template** button (the plus in the header) → configure name, icon (emoji or GTK icon name), protocol, default settings
+- **From existing connection:** not available in the GUI. Create the template from scratch, or use `rustconn-cli template`
 
 **Use Template:**
 - **From Connection Wizard (Ctrl+N):** Choose "Custom Command" → template grid shows your templates and predefined ones; click to fill command and name
 - **From Quick Connect (Ctrl+Shift+Q):** Select a template from the dropdown — fields pre-fill the form
-- **From Manage Templates:** Select a template → click **Create Connection**
+- **From Manage Templates:** Select a template → click **Use Template**
 - **From CLI:** `rustconn-cli template apply "SSH Template" --name "New Server" --host "10.0.0.5"`
 
 **Template Fields:** Protocol, Host/Port, Username/Domain, Password Source, Tags, Icon, Protocol Config, Custom Properties, Pre/Post Tasks, WoL Config.
@@ -3548,7 +3583,7 @@ A cluster is a named set of connections you open together — a rack, a Kubernet
 
 **Create a cluster:**
 1. Menu → Tools → **Clusters…**
-2. Click **New Cluster** → enter a name → tick the member connections → **Save**
+2. Click **New Cluster** → enter a name → tick the member connections → **Create** (**Save** when editing an existing cluster)
 
 You can also select several connections in the sidebar and use **Create Cluster** in the bulk-action bar.
 
@@ -3562,7 +3597,7 @@ You can also select several connections in the sidebar and use **Create Cluster*
 - **Close All Ungrouped** closes everything *except* your open clusters
 - The tab switcher (**Ctrl+%**) shows the cluster name beside each member
 
-**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
+**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all, after a confirmation when two or more sessions are still open; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. **Broadcast in a cluster window:** once the window holds two or more terminal tabs, a **Broadcast** toggle appears at the right of its header bar ([#436](https://github.com/totoshko88/RustConn/issues/436)). Turn it on with the toggle or **Ctrl+Shift+A** and what you type in any tab of the window goes to all of its terminal tabs; a banner names how many tabs receive it, and its **Stop** button, the toggle or Ctrl+Shift+A turns it off. Each cluster window has its own broadcast, separate from the main window's [Group Broadcast](#group-broadcast), so two clusters in two windows can take different commands. More than five tabs ask for confirmation first, and embedded RDP, VNC and SPICE tabs are left out. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
 
 **Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters… (**Disconnect all cluster sessions**).
 
@@ -3572,7 +3607,7 @@ Notes on the automatic group:
 - You can override it per tab: **Remove from Group**, or **Set Group…** to move one member elsewhere. The tab stays part of the cluster for the Disconnect button either way.
 - Groups are visual and session-scoped; they are not written to disk.
 
-**Broadcast:** typing into several hosts at once is *not* a cluster property. It is a split-view feature — arrange the members in a split layout and use the broadcast toggle in the header bar. See [Broadcast Input](#broadcast-input).
+**Broadcast:** a cluster that opens in its own window has a **Broadcast** toggle in that window's header bar (Ctrl+Shift+A), described above. In the main window, typing into several hosts at once is a split-view feature (see [Broadcast Input](#broadcast-input)) or a [Group Broadcast](#group-broadcast) of tabs you add by hand.
 
 **Use cases:**
 - Rolling out configuration changes across multiple servers
@@ -3644,7 +3679,7 @@ Where a knock *sequence* can be replayed or observed by anyone watching the wire
 
 ### Run Local Script
 
-Runs a script from this computer on several hosts: a `.ps1` file in PowerShell on WinRM hosts, any other file with bash on SSH hosts, and shows a result for each one. Right-click a connection, a group or a multi-selection → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
+Runs a script from this computer on several hosts: a `.ps1` file in PowerShell on WinRM hosts, any other file with bash on SSH hosts, and shows a result for each one. Right-click a connection, a group or a multi-selection (keep Ctrl/Shift+click selected rows; right-clicking one of them keeps the selection) → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
 
 - The script reaches each host over stdin and runs under `bash`, as the login user. Nothing is saved on the host, and `bash` must be installed there.
 - It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
@@ -3686,7 +3721,7 @@ Membership is explicit: you choose which tabs are in the broadcast set, one at a
 1. Right-click a terminal tab → **Add to Broadcast**. Repeat for each tab you want in the set. A member tab shows a `⇄ ` marker in its title.
 2. Once at least two tabs are members, the **Group Broadcast** toggle appears in the header bar while a member tab is active. Turn it on with the toggle or **Ctrl+Shift+A**.
 3. Type into any member tab — the keystrokes are mirrored to the other members. A tab that is **not** a member types only into itself, even while the broadcast is on.
-4. Turn it off with the toggle, **Ctrl+Shift+A**, or the **Stop** button on the banner.
+4. Turn it off with the toggle, **Ctrl+Shift+A**, or the **Stop** button on the banner. While the broadcast is on, all three work from any tab, also one that is not in the set.
 
 To remove a tab from the set, right-click it → **Remove from Broadcast**. Dropping below two members turns the broadcast off automatically.
 
@@ -3712,6 +3747,9 @@ A VS Code-style quick launcher with fuzzy search. Type to filter, then select wi
 | `@` | Tags | Filter connections by tag |
 | `#` | Groups | Filter connections by group |
 | `%` | Open Tabs | Fuzzy search open tabs by name; Enter to switch |
+| `!` | Snippets | List saved snippets; Enter runs one after a confirmation |
+
+With only `@` or `#` typed, the palette lists every tag or group (groups of any depth); pick one to narrow the list to its connections. Choosing a connection that already runs shows its session, as **Show Session** does in the sidebar; use the sidebar's **Open New Session** for a second one.
 
 The palette shows up to 20 results with match highlighting. Results are ranked by fuzzy match score. In `%` mode, results include protocol type and tab group name for quick identification.
 
@@ -3840,11 +3878,11 @@ Wake sleeping machines before connecting by sending WoL magic packets.
 3. Optionally set broadcast address and port
 4. Save
 
-**Send WoL from sidebar:** Right-click connection → **Wake On LAN**. After sending, RustConn polls the host (every 5s for up to 5 minutes) and auto-connects when online.
+**Send WoL from sidebar:** Right-click connection → **Wake-on-LAN**. After sending, RustConn polls the host (every 5s for up to 5 minutes) and auto-connects when online.
 
 **Auto-WoL on connect:** If a connection has WoL configured, a magic packet is sent automatically when you connect (fire-and-forget).
 
-**Standalone WoL dialog:** Menu → Tools → **Wake On LAN...**
+**Standalone WoL dialog:** Menu → Tools → **Wake-on-LAN...**
 
 All GUI sends use 3 retries at 500 ms intervals for reliability.
 
@@ -4061,7 +4099,7 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 
 ### Terminal page
 
-**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select, confirm multi-line paste, remote clipboard (OSC 52), close tab on clean exit).
+**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect, show scrollbar), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select, right-click pastes, Option as Meta key (macOS), confirm multi-line paste, remote clipboard (OSC 52), close tab on clean exit).
 
 **Confirm multi-line paste:** When enabled (the default), pasting clipboard text that spans more than one line first shows a preview and asks you to confirm before it reaches the shell — a guard against pastejacking, where a page or program sneaks a command onto your clipboard so the next paste runs it. Turn it off to paste multi-line text immediately without the prompt.
 
@@ -4080,27 +4118,31 @@ set -g allow-passthrough on     # let wrapped sequences through untouched
 
 **Custom Themes:** Click the **+** button next to the theme dropdown to create a new custom theme. The theme editor lets you set background, foreground, cursor, and all 16 ANSI palette colors. Custom themes are saved to `~/.config/rustconn/custom_themes.json` and appear alongside built-in themes. Edit or delete custom themes with the pencil and trash buttons.
 
-**Logging group:** Enable Logging (global toggle), Log Directory, Retention Days, Logging Modes (activity, user input, terminal output), Timestamps.
+**Session Logging group:** Persist logs (global toggle), Directory, Retention (days), and what to record: Activity, User Input, Terminal Output, Timestamps. User Input records keystrokes, so a password typed at a prompt can end up in the log.
 
 ### Interface page
 
-**Appearance group:** Theme (System, Light, Dark), Language (UI language selector, restart required), Rendering (see below, restart required), Sidebar width (180–500 pixels, default 320), Resize sidebar by dragging (off by default; when on, drag the sidebar's inner edge to change the same Sidebar width within the same range, saved when you let go; hidden on narrow windows), Compact interface, Compact automatically on small windows, Sidebar row spacing, and Sidebar text size.
+**Appearance group:** Theme (System, Light, Dark), Language (UI language selector, restart required), Rendering (see below, restart required), Sidebar width (180–500 pixels, default 320), Resize sidebar by dragging (off by default; when on, drag the sidebar's inner edge to change the same Sidebar width within the same range, saved when you let go; hidden on narrow windows), Compact interface, Compact automatically on small windows, Open session toolbar on hover, Sidebar row spacing, Sidebar text size, Send terminal control shortcuts to the session, Remember keyboard passthrough, and Auto-capture shortcuts in remote desktop.
+
+**Send terminal control shortcuts to the session** lets single-Ctrl chords (Ctrl+F, P, N, W, H, M, I, G, T) reach a focused terminal instead of triggering the application shortcut. **Remember keyboard passthrough** restores the passthrough mode of the last session at startup. **Open session toolbar on hover** reveals the floating RDP/VNC toolbar when the pointer touches the top edge. **Auto-capture shortcuts in remote desktop** hands desktop shortcuts (Alt+Tab, Super) to a focused embedded remote desktop while passthrough is on.
 
 **Sidebar row spacing** and **Sidebar text size** tune the density of the connection list independently of Compact interface — the lever to reach for when you keep a large number of hosts in the sidebar and want more of them on screen at once. **Sidebar row spacing** is a slider from 0 to 12 pixels (default 7, the historical spacing) that sets the vertical gap above and below every connection row; lower it toward 0 for a tight, scan-many list and raise it for a roomier one. **Sidebar text size** scales only the connection-name labels — Small, Medium (the theme default) or Large — leaving the row icons, group arrows and status indicators at their usual size, so a smaller text size packs in more rows while a larger one aids readability. Both apply instantly as you change them (no restart) and are remembered across restarts. They are separate from **Compact interface**, which only tightens the window chrome (header bar, tab bar and toolbars) and no longer touches the connection list.
 
 **Rendering** chooses which GTK renderer draws the interface. Leave it on **Automatic** unless the interface is sluggish: RustConn then uses the GPU renderer, except where it is known to behave worse than software rasterisation — X11 sessions whose compositor paints menus blank until you hover them, and macOS running inside a virtual machine, where the virtual GPU offers no accelerated OpenGL and the GPU path becomes both slow and CPU-hungry. **Software (Cairo)** forces software rasterisation everywhere; pick it if the interface lags, scrolls in steps, or responds late to typing in an environment the automatic choice does not recognise. **Hardware (GPU)** forces the GPU renderer, which is the setting for an X11 session with a driver that works fine. A `GSK_RENDERER` environment variable, if you set one, overrides all three. The choice applies on the next start, because GTK reads it while it opens the first window.
 
-**Window group:** Remember size (restore window geometry on startup), Show connection in window title (appends the active connection name so time-tracking tools can attribute usage; off by default for privacy), Show hierarchy path in header (shows the active connection's group path — e.g. `AWS Test Lab / Prod` — as a subtitle under the connection name in the content header, GNOME-breadcrumb style; off by default, updates when the active tab changes, and is blank for a connection that sits in the root with no parent group; independent of the window title, so time-tracking tools are unaffected), Show connection name in split panes (compact per-pane header; on by default for new installations, while an existing configuration keeps its stored value — also serves as the pane drag handle).
+**Window group:** Remember size (restore window geometry on startup), Show connection in window title (appends the active connection name so time-tracking tools can attribute usage; off by default for privacy), Show hierarchy path in header (shows the active connection's group path — e.g. `AWS Test Lab / Prod` — as a subtitle under the connection name in the content header, GNOME-breadcrumb style; off by default, updates when the active tab changes, and is blank for a connection that sits in the root with no parent group; independent of the window title, so time-tracking tools are unaffected), Show connection name in split panes (compact per-pane header; on by default for new installations, while an existing configuration keeps its stored value — also serves as the pane drag handle), Hide hover controls in split panes, Show directional tab-close items (close tabs to the left/right/others in the tab menu).
 
-**Connections group:** Open a new session on every double-click — off by default, so a double-click on a connection that is already running focuses that session instead of duplicating it (hold Shift or Ctrl, or use right-click → Open new session, to force a second one). Turn it on if you routinely keep several concurrent sessions on the same host: every double-click then starts another session, and the modifier is no longer needed. On a running connection the first item of the sidebar context menu reads **Show Session** instead of **Connect**: it brings up the newest live session (or shows the "Already running in an external window" hint), whatever this setting says, and **Open new session** in the same menu starts another one.
+**Connections group:** Open a new session on every double-click — off by default, so a double-click on a connection that is already running focuses that session instead of duplicating it (hold Shift or Ctrl, or use right-click → Open New Session, to force a second one). Turn it on if you routinely keep several concurrent sessions on the same host: every double-click then starts another session, and the modifier is no longer needed. On a running connection the first item of the sidebar context menu reads **Show Session** instead of **Connect**: it brings up the newest live session (or shows the "Already running in an external window" hint), whatever this setting says, and **Open New Session** in the same menu starts another one.
+
+Also in this group: **Auto-hide the sidebar on connect**, and **Open tunnelled browser in the embedded browser** with a start page and, when the embedded browser is off, an external browser command.
 
 **Startup group:** On startup — Do nothing, Local Shell, or connect to a specific saved connection.
 
-**System Tray group:** Show icon, Minimize to tray (hide window instead of closing).
+**System Tray group:** Show icon (restart required), Minimize to tray (hide the window instead of closing it). The window is only hidden when a tray icon actually exists; on a desktop without tray support, closing the window closes it as usual.
 
 **Session Restore group:** Enabled, Ask first, Max age (1–168 hours).
 
-**Keybindings group:** Customizable keyboard shortcuts for 30+ actions across 6 categories. Record button to capture key combinations. Per-shortcut Reset and Reset All to Defaults.
+**Keybindings group:** Customizable keyboard shortcuts for 50+ actions across 6 categories. Record button to capture key combinations. Per-shortcut Reset and Reset All to Defaults.
 
 ### Secrets page
 
@@ -4129,19 +4171,23 @@ set -g allow-passthrough on     # let wrapped sequences through untouched
 
 **Clients group:** Auto-detected CLI tools with versions — Protocol Clients (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes) and Zero Trust (AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary, Hoop.dev). Searches PATH and user directories.
 
-**Media Codecs group:** **H.264 codec (Cisco OpenH264)** — a **Download** button enables hardware-style H.264 for the embedded RDP GFX pipeline on packaged installs. The embedded RDP client's H.264 decoder (OpenH264) only accepts Cisco's own published binary; the copy built into distribution packages is refused, so H.264 GFX otherwise falls back to the slower RemoteFX path. Clicking **Download** opens a confirm dialog naming exactly what will be downloaded, from where (`ciscobinary.openh264.org`), and under whose licence — because Cisco, not RustConn, provides the binary and holds the MPEG-LA patent licence for it, so the download is **user-initiated and opt-in** (nothing is fetched automatically, ever). On consent, RustConn downloads the official v2.6.0 blob, verifies its checksum, and caches it under `~/.cache/rustconn/openh264/`; the RDP GFX decoder picks it up on the **next RDP connection** — no application restart needed (already-open sessions keep their current path until reconnected). Once installed, the row shows **Installed ✓**. The same action is available headless as `rustconn-cli codec download-h264 --accept-cisco-license` (without the flag it only prints the licence and downloads nothing). Supported on x86_64/aarch64 Linux and x86_64/aarch64 macOS. You can also point `RUSTCONN_OPENH264` at a Cisco blob you downloaded yourself; that override still wins over the cached copy.
+**Media Codecs group:** **Use OpenH264** switches the downloaded codec on or off without deleting it; the choice is saved at once and stays off after a restart. **H.264 codec (Cisco OpenH264)** — a **Download** button enables hardware-style H.264 for the embedded RDP GFX pipeline on packaged installs. The embedded RDP client's H.264 decoder (OpenH264) only accepts Cisco's own published binary; the copy built into distribution packages is refused, so H.264 GFX otherwise falls back to the slower RemoteFX path. Clicking **Download** opens a confirm dialog naming exactly what will be downloaded, from where (`ciscobinary.openh264.org`), and under whose licence — because Cisco, not RustConn, provides the binary and holds the MPEG-LA patent licence for it, so the download is **user-initiated and opt-in** (nothing is fetched automatically, ever). On consent, RustConn downloads the official v2.6.0 blob, verifies its checksum, and caches it under `~/.cache/rustconn/openh264/`; the RDP GFX decoder picks it up on the **next RDP connection** — no application restart needed (already-open sessions keep their current path until reconnected). Once installed, the row shows **Installed ✓**. The same action is available headless as `rustconn-cli codec download-h264 --accept-cisco-license` (without the flag it only prints the licence and downloads nothing). Supported on x86_64/aarch64 Linux and x86_64/aarch64 macOS. You can also point `RUSTCONN_OPENH264` at a Cisco blob you downloaded yourself; that override still wins over the cached copy.
 
-**Monitoring group:** Enable monitoring (global toggle), Polling interval (1–60 seconds, default: 3), Reset Per-Connection Overrides (makes every connection follow the global toggle; per-connection polling intervals are kept), Visible Metrics (CPU, Memory, Disk, Network, Load Average, System Info).
+### Monitoring page
+
+**General group:** Enable monitoring (global toggle), Polling interval (1–60 seconds, default: 3), Reset Per-Connection Overrides (makes every connection follow the global toggle; per-connection polling intervals are kept). **Visible Metrics group:** CPU, Memory, Disk, Network, Load Average, System Info. **Activity Monitor group:** default mode, quiet period and silence timeout.
 
 ### Custom Keybindings
 
 Customize all keyboard shortcuts via Settings → Interface page → Keybindings.
 
-1. Open **Settings** (Ctrl+,) → **Keybindings** tab
+1. Open **Settings** (Ctrl+,) → **Interface** page → **Keybindings** group
 2. Find the action you want to change
 3. Click **Record** next to it
 4. Press the desired key combination
-5. The new shortcut is saved immediately
+5. The new shortcut works at once and is written to the settings file when you close Settings
+
+Press **Backspace** or **Escape** on their own to reset or cancel; with a modifier held (for example Ctrl+Backspace) they are recorded like any other key.
 
 Click the ↩ button next to any shortcut to reset it to default, or **Reset All to Defaults** at the bottom.
 
@@ -4152,7 +4198,7 @@ When working in remote sessions with TUI applications (nvim, tmux, htop, mc), Ru
 **Toggle passthrough:**
 - Press **Ctrl+Shift+Backspace** (works in both normal and passthrough mode)
 - Or use the menu: ☰ → Keyboard Passthrough
-- Or use the command palette: Ctrl+P → "Toggle Keyboard Passthrough"
+- Or use the command palette: Ctrl+Shift+P → "Toggle Keyboard Passthrough"
 
 **When passthrough is active:**
 - All application shortcuts are disabled (Ctrl+N, Ctrl+F, Ctrl+P, etc. go to the terminal)
@@ -4178,7 +4224,7 @@ A session in an external viewer window is not affected by RustConn's passthrough
 
 **Automatic focus-based shortcut management (0.18.8+):**
 
-Independently from manual passthrough mode, RustConn automatically suspends single-modifier shortcuts (e.g. `Ctrl+W`) that conflict with terminal input when a terminal has focus, while keeping multi-modifier variants active (e.g. `Ctrl+Shift+W`). This means:
+Independently from manual passthrough mode, RustConn automatically suspends single-modifier shortcuts (e.g. `Ctrl+W`, including `Ctrl+G` and `Ctrl+T`) that conflict with terminal input when a terminal has focus, while keeping multi-modifier variants active (e.g. `Ctrl+Shift+W`). This means:
 - `Ctrl+W` in a focused terminal → sent to the remote session (shell word-delete)
 - `Ctrl+Shift+W` → still closes the tab (application shortcut)
 - If you remap "Close Tab" to a non-conflicting combo (e.g. `Ctrl+F4`), it works regardless of terminal focus
@@ -4279,14 +4325,9 @@ gtk-enable-animations=false
 
 Double-click source to start import immediately.
 
-**Merge Strategies:**
-- **Skip Existing** — Keep current connections, skip duplicates
-- **Overwrite** — Replace existing connections with imported data
-- **Rename** — Import as new connections with a suffix
-
 **Duplicate Handling:** If imported connections have names that already exist, RustConn shows a dialog with the duplicate count and three choices — **Cancel**, **Skip Duplicates**, or **Import All** — instead of silently creating renamed copies.
 
-**Import Preview:** For large imports (10+ connections), a preview is shown before applying.
+**Applying the import:** the result page lists what was found. Nothing is added to your connection list until you click **Done**; closing the dialog from the result page (Esc or ✕) does the same as **Done**.
 
 **Import Source Details:**
 
@@ -4312,7 +4353,7 @@ Double-click source to start import immediately.
 
 **Supported formats:** SSH Config, Remmina profiles, Asbru-CM, Ansible inventory, Royal TS (.rtsz), MobaXterm (.mxtsessions), SecureCRT (.ini), RDP files (.rdp), RustConn Native (.rcn).
 
-Options: Export selected only.
+Options: filter by group.
 
 > **Passwords are never exported.** No export format writes a password, in any
 > form. A connection stores only a *password source* (Vault, Prompt, Variable,
@@ -4399,7 +4440,7 @@ xdg-mime default io.github.totoshko88.RustConn.desktop application/x-virt-viewer
 #### From Remmina
 
 1. **File > Import > Remmina** → select data directory
-2. Review import preview → choose merge strategy → Import
+2. Pick the source → Import → check the result page → **Done** (if names already exist, choose **Skip Duplicates** or **Import All**)
 3. Re-enter passwords and verify SSH key paths after import
 
 > **Flatpak ↔ Flatpak:** If both RustConn and Remmina are installed as Flatpaks, the Remmina import button may show "Not Found" because Remmina stores its `.remmina` files inside its own sandbox (`~/.var/app/org.remmina.Remmina/data/remmina/`), which RustConn cannot access by default. See [Flatpak Sandbox Overrides → Remmina Import](#flatpak-sandbox-overrides) below for the fix.
@@ -4925,7 +4966,7 @@ Your desktop keyring may be locked. Configure it to unlock automatically on logi
 When RustConn hits a Rust panic it writes a report to `$XDG_STATE_HOME/rustconn/crash-<timestamp>.log` (usually `~/.local/state/rustconn/`; on a system without a state directory it uses the OS data directory). The next launch shows a banner with an **Open Log** button, which opens the file and clears the saved logs so the banner does not keep returning. The log stays on your machine and is never sent anywhere automatically — open it and review it before attaching it to a bug report, since a panic message can contain data from your session. This covers Rust panics only: a crash inside a C library such as GTK or VTE (a `SIGSEGV`) does not go through this and leaves no crash log, so run RustConn from a terminal to capture its output if you need to report one of those.
 
 **How do I connect to a host behind a jump server?**
-Set the **Proxy Jump** field in the SSH connection dialog's Advanced tab (e.g., `user@bastion.example.com`). Chain multiple jump hosts with commas.
+Pick a **Jump Host** or set the **ProxyJump** field on the SSH connection dialog's Protocol tab, in the Connection group (e.g., `user@bastion.example.com`). Chain multiple jump hosts with commas.
 
 **How do I reset RustConn to default settings?**
 ```bash
@@ -5024,6 +5065,8 @@ RustConn opens the KeePass database directly by file (`.kdbx`); it does not use 
 1. Requires `tray-icon` feature
 2. Check DE tray support
 3. Some DEs need extensions
+4. Turning on **Show icon** takes effect after a restart
+5. Without a tray icon, **Minimize to tray** does nothing: closing the window closes it
 
 ### KDE Plasma and Wayland
 
@@ -5152,7 +5195,7 @@ flatpak override --user --reset io.github.totoshko88.RustConn
 
 Press **Ctrl+?** for the searchable shortcuts dialog, and **F1** (or Menu → **Help**) to open this guide.
 
-Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Ctrl+M, Left, Right) only work when the sidebar has focus. In right-to-left layouts Left and Right swap.
+Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Left, Right) only work when the sidebar has focus. In right-to-left layouts Left and Right swap.
 
 ### Connections
 
@@ -5252,13 +5295,14 @@ markers appear; nothing else changes.
 | Ctrl+H | Connection History |
 | Ctrl+Shift+I | Statistics |
 | Ctrl+G | Password Generator |
-| Ctrl+Shift+L | Wake On LAN |
+| Ctrl+Shift+L | Wake-on-LAN |
 | Ctrl+T | SSH Tunnel Manager |
 | F10 | Open Menu (suspended in passthrough mode) |
 | Ctrl+? | Keyboard Shortcuts |
 | F1 | Help (opens this guide in the browser) |
 | Ctrl+Shift+Backspace | Toggle Keyboard Passthrough |
 | Ctrl+Shift+B | Toggle Split Broadcast |
+| Ctrl+Shift+A | Toggle Group Broadcast (also the cluster window's Broadcast) |
 | Ctrl+Q | Quit |
 
 > **Note:** Quitting with **Ctrl+Q** (or closing the window) while session tabs are open shows a "Close RustConn?" confirmation dialog with the number of open sessions (tabs plus [detached windows](#detached-session-windows)), instead of silently disconnecting everything. This is skipped when minimize-to-tray is enabled (the app keeps running in the tray).

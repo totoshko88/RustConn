@@ -99,6 +99,20 @@ pub fn select_single_position(model: &gtk4::SelectionModel, position: u32) {
     }
 }
 
+/// Prepares the selection for a right-click on `position`.
+///
+/// Returns `true` when the row is part of a multi-selection of two or more rows:
+/// the selection is kept and the caller shows the multi-select menu. Otherwise
+/// the row alone is selected, as [`select_single_position`] does, and `false` is
+/// returned.
+pub fn select_for_context_menu(model: &gtk4::SelectionModel, position: u32) -> bool {
+    if model.is::<MultiSelection>() && model.is_selected(position) && model.selection().size() > 1 {
+        return true;
+    }
+    select_single_position(model, position);
+    false
+}
+
 /// Resolves menu-relevant data from a `ConnectionItem` and shows the
 /// sidebar context menu pointing at (`x`, `y`) within `widget`.
 ///
@@ -121,6 +135,12 @@ pub fn show_context_menu_for_connection_item(
         || crate::sidebar::trash::parse_trash_item_id(&row_id).is_some()
     {
         sidebar_ui::show_trash_context_menu(widget, x, y, &row_id, activation);
+        return;
+    }
+
+    // The virtual Favorites group is not in the data model: Rename, Edit and
+    // Delete parse its id as a UUID and silently do nothing, so it gets no menu.
+    if row_id == crate::sidebar::PINNED_GROUP_ID {
         return;
     }
 
@@ -446,7 +466,16 @@ pub fn setup_list_item(
                 .filter(|p| *p != gtk4::INVALID_LIST_POSITION)
                 .or_else(|| row.as_ref().and_then(|r| position_of_row(&model, r)));
             if let Some(position) = position {
-                select_single_position(&model, position);
+                if select_for_context_menu(&model, position) {
+                    sidebar_ui::show_multi_select_context_menu(
+                        &widget,
+                        x,
+                        y,
+                        sidebar_ui::MenuActivation::PointerRow,
+                    );
+                    gesture.set_state(gtk4::EventSequenceState::Claimed);
+                    return;
+                }
             } else {
                 tracing::debug!(
                     name = %item.name(),
@@ -800,9 +829,10 @@ pub fn bind_list_item(
         };
         expander.set_tooltip_text(Some(&tooltip));
 
-        // Show pin icon for pinned connections
+        // Show pin icon for pinned connections, except on the copy inside the
+        // Favorites group, where every row is a favorite by definition.
         if let Some(ref pin) = pin_icon {
-            pin.set_visible(item.is_pinned());
+            pin.set_visible(item.is_pinned() && !item.in_favorites());
         }
 
         // Setup status monitoring logic

@@ -38,7 +38,7 @@ PATH="$HOME/.cargo/bin:$PATH" ./scripts/release.sh --dry-run
 - **One cargo at a time** (`pgrep -x cargo` first). **One terminal owner**: no
   bash while a sub-agent works.
 - **Stop background processes** you started (`list_processes`).
-- **Start repo-root commands with** `cd /home/totoshko88/Documents/RustConn || exit 1`
+- **Start repo-root commands with** `cd "$(git rev-parse --show-toplevel)" || exit 1`
   — the tool can lose its working directory.
 - **Never wait with `sleep`**, and never spin on a PID (`wait`, `tail --pid`).
 - **Pass `timeout=900000`** to any cargo build/test call, detached or not. 120 000
@@ -66,7 +66,7 @@ rules anyway.
 | The main tty has wedged (a redirect that should create a file creates none) | `control_bash_process(action="start", …)` with the same detached command and `PATH="$HOME/.cargo/bin:$PATH"` prepended; ignore its "not long-running" warning; `stop` it when the `.rc` appears |
 
 ```bash
-cd /home/totoshko88/Documents/RustConn || exit 1
+cd "$(git rev-parse --show-toplevel)" || exit 1
 rm -f target/rc-test.log target/rc-test.rc
 nohup sh -c 'PATH="$HOME/.cargo/bin:$PATH" cargo test --workspace > target/rc-test.log 2>&1; echo $? > target/rc-test.rc' >/dev/null 2>&1 &
 echo "rc=started"

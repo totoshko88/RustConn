@@ -2304,9 +2304,9 @@ impl SplitViewBridge {
 
         let shortcuts: [(&str, String); 9] = [
             ("Ctrl+N", i18n("New connection")),
-            ("Ctrl+Shift+Q", i18n("Quick connect")),
-            ("Ctrl+P", i18n("Command palette")),
-            ("Ctrl+Shift+T", i18n("Local shell")),
+            ("Ctrl+Shift+Q", i18n("Quick Connect")),
+            ("Ctrl+P", i18n("Command Palette")),
+            ("Ctrl+Shift+T", i18n("Local Shell")),
             ("Ctrl+F", i18n("Search")),
             ("Ctrl+Shift+S/H", i18n("Split vertical / horizontal")),
             ("Ctrl+Shift+Backspace", i18n("Disable shortcuts")),

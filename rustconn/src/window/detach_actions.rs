@@ -26,6 +26,10 @@ use std::rc::Weak;
 use gtk4::gdk;
 use rustconn_core::DetachVerdict;
 
+use super::group_broadcast::{
+    GROUP_BROADCAST_CONFIRM_THRESHOLD, GroupBroadcast, confirm_large_group_broadcast,
+    wire_group_broadcast_for_session,
+};
 use super::*;
 use crate::detached_window::{DetachedSessionWindow, DetachedWindowParams, DetachedWindowRegistry};
 use crate::i18n::i18n;
@@ -403,6 +407,8 @@ fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &D
         }
     });
 
+    wire_group_window_broadcast(group, &handles.notebook);
+
     // Forgotten when the window closes, on idle so the entry is not dropped
     // from inside the window's own close handler. `destroy` is too late for
     // this: it fires when the last reference goes, and the registry holds one.
@@ -512,6 +518,102 @@ fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &D
             }
         }),
     );
+}
+
+/// Gives a group window its own broadcast to every terminal tab it hosts
+/// (issue #436).
+///
+/// The set is every terminal-backed tab of the window, kept in step as tabs
+/// arrive and leave: a cluster opened in its own window is already the group
+/// the user wants to type into, so nothing is opted in tab by tab. It is a
+/// [`GroupBroadcast`] of its own, separate from the main window's, so two
+/// cluster windows broadcast independently. It is off until the user turns it
+/// on, and more than [`GROUP_BROADCAST_CONFIRM_THRESHOLD`] tabs ask first.
+///
+/// A tab that leaves is removed, not forgotten: its `commit` handler stays
+/// connected, and keeping it in the wired record means a return can never
+/// connect a second handler that would mirror every keystroke twice.
+fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<TerminalNotebook>) {
+    let broadcast = GroupBroadcast::new();
+    let broadcast_probe = broadcast.clone();
+
+    let refresh = {
+        let group = Rc::downgrade(group);
+        let broadcast = broadcast.clone();
+        let notebook = notebook.clone();
+        move || {
+            let (Some(group), Some(notebook)) = (group.upgrade(), notebook.upgrade()) else {
+                return;
+            };
+            let hosted: std::collections::HashSet<Uuid> = group
+                .sessions()
+                .into_iter()
+                .filter(|sid| notebook.get_terminal(*sid).is_some())
+                .collect();
+            for sid in broadcast.members() {
+                if !hosted.contains(&sid) {
+                    broadcast.remove(sid);
+                }
+            }
+            for &sid in &hosted {
+                if broadcast.add(sid) {
+                    wire_group_broadcast_for_session(&broadcast, &notebook, sid);
+                }
+            }
+            let count = broadcast.member_count();
+            group.show_broadcast(count >= 2, broadcast.is_active(), count);
+        }
+    };
+    group.set_on_members_changed(refresh);
+
+    let apply = {
+        let group = Rc::downgrade(group);
+        let broadcast = broadcast.clone();
+        Rc::new(move |wanted: bool| {
+            let Some(group) = group.upgrade() else {
+                return;
+            };
+            let count = broadcast.member_count();
+            let active = wanted && count >= 2;
+            let was_active = broadcast.is_active();
+            broadcast.set_active(active);
+            group.show_broadcast(count >= 2, active, count);
+            tracing::info!(active, sessions = count, "group window broadcast toggled");
+            if was_active && !active {
+                group
+                    .toast_overlay()
+                    .add_toast(crate::toast::plain_toast(&i18n(
+                        "Group broadcast disabled — keystrokes go to the focused tab only",
+                    )));
+            }
+        })
+    };
+
+    let group_weak = Rc::downgrade(group);
+    let request = Rc::new(move |wanted: bool| {
+        let Some(group) = group_weak.upgrade() else {
+            return;
+        };
+        let count = broadcast.member_count();
+        if wanted && count > GROUP_BROADCAST_CONFIRM_THRESHOLD {
+            // The toggle stays off until the user agrees.
+            group.show_broadcast(true, false, count);
+            let apply = Rc::clone(&apply);
+            confirm_large_group_broadcast(group.window(), count, move || apply(true));
+            return;
+        }
+        apply(wanted);
+    });
+    let request_toggle = Rc::clone(&request);
+    group.set_on_broadcast_toggled(move |wanted| request_toggle(wanted));
+
+    // Ctrl+Shift+A is bound application-wide to `win.toggle-group-broadcast`;
+    // GTK resolves it against the focused window, so registering the same name
+    // here makes the main window's shortcut drive this window's broadcast.
+    let action = gio::SimpleAction::new("toggle-group-broadcast", None);
+    let active_probe = broadcast_probe;
+    action.connect_activate(move |_, _| request(!active_probe.is_active()));
+    group.window().add_action(&action);
 }
 
 /// Drops the tab of a session that ended while shown in a group window.

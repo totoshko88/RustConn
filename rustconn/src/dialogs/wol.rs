@@ -35,7 +35,7 @@ impl WolDialog {
     #[must_use]
     pub fn new() -> Self {
         let dialog = adw::Dialog::builder()
-            .title(i18n("Wake On LAN"))
+            .title(i18n("Wake-on-LAN"))
             .content_width(500)
             .build();
 

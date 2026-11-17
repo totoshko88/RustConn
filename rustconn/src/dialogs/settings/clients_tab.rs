@@ -30,6 +30,16 @@ struct ClientInfo {
     embedded_name: Option<String>,
 }
 
+/// The `use_openh264` value currently on disk (the Media Codecs switch writes
+/// it directly), or `None` when the settings file cannot be read.
+pub fn persisted_use_openh264() -> Option<bool> {
+    rustconn_core::config::ConfigManager::new()
+        .ok()?
+        .load_settings()
+        .ok()
+        .map(|s| s.connection.use_openh264)
+}
+
 /// Creates the clients detection page using AdwPreferencesPage
 /// Client detection is performed asynchronously after the page is shown.
 pub fn create_clients_page() -> adw::PreferencesPage {

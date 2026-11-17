@@ -263,7 +263,7 @@ pub fn create_ui_page() -> (
 
     // Compact interface toggle — denser header bar, tabs and buttons.
     // Live preview: applies the .compact CSS class to all windows on toggle,
-    // so the user sees the effect before clicking Save.
+    // so the user sees the effect before closing the dialog.
     let compact_ui = adw::SwitchRow::builder()
         .title(i18n("Compact interface"))
         .subtitle(i18n(
@@ -581,6 +581,13 @@ pub fn create_ui_page() -> (
         "Command or path to a Chromium-based browser for the external tunnelled browser (e.g. chromium, brave-browser). Leave empty to auto-detect.",
     )));
     connections_group.add(&tunnel_browser_command_row);
+    // The command only matters while the embedded browser is not used.
+    {
+        let command_row = tunnel_browser_command_row.clone();
+        open_tunnelled_browser_in_embedded.connect_active_notify(move |row| {
+            command_row.set_sensitive(!row.is_active());
+        });
+    }
 
     page.add(&connections_group);
 
@@ -626,7 +633,7 @@ pub fn create_ui_page() -> (
 
     let enable_tray_icon = adw::SwitchRow::builder()
         .title(i18n("Show icon"))
-        .subtitle(i18n("Display icon in system tray"))
+        .subtitle(i18n("Restart required to apply"))
         .build();
     tray_expander.add_row(&enable_tray_icon);
 

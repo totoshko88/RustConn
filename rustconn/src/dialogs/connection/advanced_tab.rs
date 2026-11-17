@@ -650,7 +650,7 @@ pub(super) fn create_advanced_tab() -> (
     // === Wake On LAN Section (collapsible, merged) ===
     let wol_group = adw::PreferencesGroup::builder().build();
     let wol_expander = adw::ExpanderRow::builder()
-        .title(i18n("Wake On LAN"))
+        .title(i18n("Wake-on-LAN"))
         .subtitle(i18n("Send magic packet before connecting"))
         .show_enable_switch(false)
         .build();

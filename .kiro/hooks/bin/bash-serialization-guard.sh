@@ -79,11 +79,11 @@ if [ -n "$sleeps" ] && { [ "$sleeps" -ge 5 ] || [ "${has_loop:-0}" -gt 0 ]; }; t
         '  if that terminal is busy the line just queues up behind the running job.' \
         '' \
         '  Wait inside one tool call instead:' \
-        '    execute_bash(command="cd /home/totoshko88/Documents/RustConn && cargo test --workspace > target/rc-test.log 2>&1", timeout=900000)' \
+        '    execute_bash(command="cd $(git rev-parse --show-toplevel) && cargo test --workspace > target/rc-test.log 2>&1", timeout=900000)' \
         '  then read target/rc-test.log with the file-reading tool.' \
         '' \
         '  Or take a handle and poll the filesystem, never the clock:' \
-        '    execute_bash(command="cd /home/totoshko88/Documents/RustConn && rm -f target/rc-test.log target/rc-test.rc && nohup sh -c \x27cargo test --workspace > target/rc-test.log 2>&1; echo $? > target/rc-test.rc\x27 >/dev/null 2>&1 &", timeout=900000)' \
+        '    execute_bash(command="cd $(git rev-parse --show-toplevel) && rm -f target/rc-test.log target/rc-test.rc && nohup sh -c \x27cargo test --workspace > target/rc-test.log 2>&1; echo $? > target/rc-test.rc\x27 >/dev/null 2>&1 &", timeout=900000)' \
         '  The run is done exactly when target/rc-test.rc exists. Read it with the' \
         '  file-reading tool between other work; do not sit in the shell.' \
         '' \

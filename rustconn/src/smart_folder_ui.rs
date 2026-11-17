@@ -449,7 +449,7 @@ fn show_connection_context_menu_in_smart_folder(
     }
     items.extend([
         ContextMenuItem::Separator,
-        ContextMenuItem::action_with_target(&i18n("Wake On LAN"), "wake-on-lan-by-id", &id),
+        ContextMenuItem::action_with_target(&i18n("Wake-on-LAN"), "wake-on-lan-by-id", &id),
         ContextMenuItem::action_with_target(
             &i18n("Check if Online"),
             "check-host-online-by-id",
