@@ -159,23 +159,47 @@ impl MainWindow {
             let folder_name = folder.name.clone();
             drop(state_ref);
 
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                let mut settings = state_mut.settings().clone();
-                settings.smart_folders.retain(|f| f.id != folder_id);
-                if let Err(e) = state_mut.update_settings(settings) {
-                    tracing::warn!(error = %e, "failed to delete smart folder");
-                    // Failure to persist settings is not transient — show a
-                    // blocking dialog instead of a toast (GNOME HIG).
-                    let msg = i18n_f("Could not delete smart folder: {}", &[&e]);
-                    crate::alert::show_error(&win, &i18n("Could not delete smart folder"), &msg);
-                    return;
-                }
-            }
+            // Deleting a configured filter has no Undo, so ask first.
+            let state_clone = state_clone.clone();
+            let sidebar_clone = sidebar_clone.clone();
+            let win_for_confirm = win.clone();
+            crate::alert::show_confirm(
+                &win,
+                &i18n_f("Delete {}?", &[&folder_name]),
+                &i18n_f(
+                    "“{}” will be removed. Your connections are not affected.",
+                    &[&folder_name],
+                ),
+                &i18n("Delete"),
+                true,
+                move |confirmed| {
+                    if !confirmed {
+                        return;
+                    }
+                    let win = win_for_confirm.clone();
+                    if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                        let mut settings = state_mut.settings().clone();
+                        settings.smart_folders.retain(|f| f.id != folder_id);
+                        if let Err(e) = state_mut.update_settings(settings) {
+                            tracing::warn!(error = %e, "failed to delete smart folder");
+                            // Failure to persist settings is not transient — show a
+                            // blocking dialog instead of a toast (GNOME HIG).
+                            let msg = i18n_f("Could not delete smart folder: {}", &[&e]);
+                            crate::alert::show_error(
+                                &win,
+                                &i18n("Could not delete smart folder"),
+                                &msg,
+                            );
+                            return;
+                        }
+                    }
 
-            Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
+                    Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
 
-            let msg = i18n_f("Smart folder '{}' deleted", &[&folder_name]);
-            crate::toast::show_toast_on_window(&win, &msg, crate::toast::ToastType::Info);
+                    let msg = i18n_f("Smart folder '{}' deleted", &[&folder_name]);
+                    crate::toast::show_toast_on_window(&win, &msg, crate::toast::ToastType::Info);
+                },
+            );
         });
         window.add_action(&delete_action);
 
