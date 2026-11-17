@@ -204,7 +204,7 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
             CommandPaletteAction::GtkAction("app.shortcuts".into()),
         )
         .with_icon("preferences-desktop-keyboard-shortcuts-symbolic")
-        .with_description("F1")
+        .with_description("Ctrl+?")
         .with_priority(20),
         PaletteItem::new(
             "Tab Overview",
@@ -226,6 +226,18 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shortcuts_hint_is_ctrl_question_not_f1() {
+        // F1 opens Help; Keyboard Shortcuts is Ctrl+? (config::keybindings).
+        let item = builtin_commands()
+            .into_iter()
+            .find(
+                |i| matches!(&i.action, CommandPaletteAction::GtkAction(a) if a == "app.shortcuts"),
+            )
+            .expect("shortcuts command");
+        assert_eq!(item.description.as_deref(), Some("Ctrl+?"));
+    }
 
     #[test]
     fn test_parse_palette_input_connections() {

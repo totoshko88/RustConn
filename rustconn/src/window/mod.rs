@@ -2791,14 +2791,7 @@ impl MainWindow {
                 if !types::protocol_matches_filter(&protocol, &protocol_names) {
                     continue;
                 }
-                let item = ConnectionItem::new_connection(
-                    &conn.id.to_string(),
-                    &conn.name,
-                    &protocol,
-                    &conn.host,
-                );
-                item.set_description(conn.description.as_deref().unwrap_or(""));
-                item.set_browser_tunnel(rustconn_core::ssh_tunnel::supports_browser_tunnel(conn));
+                let item = sorting::build_connection_item(sidebar, conn, false);
                 store.append(&item);
             }
         } else {
@@ -2828,29 +2821,10 @@ impl MainWindow {
             // Display results sorted by relevance
             for result in results {
                 if let Some(conn) = conn_by_id.get(&result.connection_id) {
-                    let protocol = get_protocol_string(&conn.protocol_config);
-
-                    // Create display name with relevance indicator
-                    let display_name = if result.score >= 0.9 {
-                        format!("★★★ {}", conn.name) // High relevance
-                    } else if result.score >= 0.7 {
-                        format!("★★ {}", conn.name) // Medium relevance
-                    } else if result.score >= 0.5 {
-                        format!("★ {}", conn.name) // Low relevance
-                    } else {
-                        conn.name.clone() // Very low relevance
-                    };
-
-                    let item = ConnectionItem::new_connection(
-                        &conn.id.to_string(),
-                        &display_name,
-                        &protocol,
-                        &conn.host,
-                    );
-                    item.set_description(conn.description.as_deref().unwrap_or(""));
-                    item.set_browser_tunnel(rustconn_core::ssh_tunnel::supports_browser_tunnel(
-                        conn,
-                    ));
+                    // Same builder as the tree rows, so the context menu sees the
+                    // real state. `result.score` already orders the rows; the name
+                    // stays untouched so Rename and Delete never see a prefix.
+                    let item = sorting::build_connection_item(sidebar, conn, false);
                     store.append(&item);
                 }
             }
@@ -4254,7 +4228,7 @@ impl MainWindow {
         {
             let state_ref = state.borrow();
             let connections: Vec<_> = state_ref.list_connections_owned();
-            let groups: Vec<_> = state_ref.get_root_groups().into_iter().cloned().collect();
+            let groups: Vec<_> = state_ref.list_groups().into_iter().cloned().collect();
             palette.set_connections(connections);
             palette.set_groups(groups);
         }
@@ -4308,6 +4282,11 @@ impl MainWindow {
         let window_weak = window.downgrade();
         palette.connect_on_action(move |action| match action {
             rustconn_core::search::command_palette::CommandPaletteAction::Connect(uuid) => {
+                // Same as the sidebar's Connect / Show Session: show a running
+                // session instead of opening a duplicate.
+                if Self::show_running_session(&notebook_clone, &session_bridges_clone, uuid) {
+                    return;
+                }
                 Self::start_connection(
                     &state_clone,
                     &notebook_clone,

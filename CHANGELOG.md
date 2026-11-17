@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Remove from Favorites in the Favorites group** — the context menu of a connection inside the ★ Favorites group offered **Add to Favorites**, because that copy of the row was built as not pinned to hide its star; clicking it removed the favorite anyway. The row now keeps the real pinned state and hides the star by a separate flag, so the menu says **Remove from Favorites** in both places. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/window/sorting.rs`, `docs/USER_GUIDE.md`)
+- **Search results keep the connection's real state and name** — a row in the sidebar search results was built without its state, so the menu of a favorite offered **Add to Favorites** and a connected one lacked **Show Session**, **Open new session** and **Disconnect**, and its name carried a relevance prefix (`★★★ srv`) that **Rename** and the delete dialog then showed. Results are now built by the same function as the tree rows and keep the plain name; their order is still by relevance. (`rustconn/src/window/mod.rs`, `rustconn/src/window/sorting.rs`)
+- **The Favorites group has no dead context menu** — right-clicking the virtual ★ Favorites group opened the group menu whose **Rename**, **Edit**, **Delete** and others silently did nothing. It now opens no menu. (`rustconn/src/sidebar/view.rs`)
+- **Tags and groups in the command palette work** — typing only `@` or `#` listed the tags or groups, but choosing one did nothing; it now narrows the palette to that tag or group. `#` lists and searches groups of every depth, not only top-level ones. (`rustconn/src/dialogs/command_palette.rs`, `rustconn/src/window/mod.rs`)
+- **Connect in the command palette shows a running session** — choosing a connection that already runs opened a second session; it now shows the running one, as **Show Session** in the sidebar does. (`rustconn/src/window/mod.rs`)
+- **Keyboard Shortcuts hint in the command palette** — it read F1, which opens Help; it reads Ctrl+?. (`rustconn-core/src/search/command_palette.rs`)
+- **Dragging onto Favorites, Trash or a Favorites copy is refused** — these rows showed a drop highlight and then ignored the drop (a copy in Favorites moved the connection out of its real group). They now take no drop. (`rustconn/src/sidebar/mod.rs`)
+- **Deleting selected items counts a favorite once** — a favorite has two rows (Favorites and its group), so a bulk delete listed it twice and then reported a failure for the second. The selection is now de-duplicated, and a failure names the item instead of its UUID. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/window/operations.rs`)
+- **Right-click keeps a multi-selection** — in Select Connections mode a right-click on a selected row cleared the selection, so **Run Local Script…** on several rows worked only from the keyboard. The selection is kept and a menu with the bulk actions opens: **Run Local Script…**, **Move to Group**, **Batch Edit**, **Delete Selected**. (`rustconn/src/sidebar/view.rs`, `rustconn/src/sidebar/mod.rs`, `rustconn/src/sidebar_ui.rs`)
+
+### Documentation
+
+- **USER_GUIDE matches the sidebar** — Layout and Components (the ⋯ menu, six bottom-toolbar icons), Group Operations Mode (no checkboxes, no right-click entry, Escape only clears), the Trash menus, the Smart Folder **+** button, the Command Palette `!` prefix and drill-down, the passthrough palette shortcut (Ctrl+Shift+P), WinRM in the protocol filter, Local Shell in the ☰ menu, and the context-menu actions the Connection Actions table lacked. (`docs/USER_GUIDE.md`)
 
 ## [0.25.2] - 2026-11-17
 

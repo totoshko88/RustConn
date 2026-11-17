@@ -699,6 +699,32 @@ pub fn show_trash_context_menu(
     show_popover(widget, window, &items, x, y, activation);
 }
 
+/// Shows the menu for a right-click on a row inside a multi-selection.
+///
+/// Only actions that work on the whole selection: the single-row items (Rename,
+/// Edit, Duplicate) would act on one arbitrary row of it.
+pub fn show_multi_select_context_menu(
+    widget: &impl IsA<gtk4::Widget>,
+    x: f64,
+    y: f64,
+    activation: MenuActivation,
+) {
+    let Some(root) = widget.root() else { return };
+    let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() else {
+        return;
+    };
+
+    let items = vec![
+        ContextMenuItem::action(&i18n("Run Local Script…"), "run-local-script"),
+        ContextMenuItem::action(&i18n("Move to Group"), "move-selected-to-group"),
+        ContextMenuItem::action(&i18n("Batch Edit"), "batch-edit-selected"),
+        ContextMenuItem::Separator,
+        ContextMenuItem::action(&i18n("Delete Selected"), "delete-selected").destructive(),
+    ];
+
+    show_popover(widget, window, &items, x, y, activation);
+}
+
 /// Shows the context menu for empty space in the sidebar
 pub fn show_empty_space_context_menu(widget: &impl IsA<gtk4::Widget>, x: f64, y: f64) {
     let Some(root) = widget.root() else { return };
