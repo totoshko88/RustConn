@@ -2518,6 +2518,7 @@ impl MainWindow {
                             .contains_key(&session_id)
                         {
                             page.set_indicator_icon(gio::Icon::NONE);
+                            page.set_indicator_tooltip("");
                         }
                     }
 

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Broadcast in a cluster window — [#436](https://github.com/totoshko88/RustConn/issues/436)** — a cluster opened in its own window gets a **Broadcast** toggle in its header bar once it holds two or more terminal tabs. On (the toggle or Ctrl+Shift+A), a keystroke typed in any tab of the window goes to all of its terminal tabs; a banner names how many, and its **Stop** turns it off. Each cluster window has its own broadcast, independent of the main window's Group Broadcast and of other cluster windows, so separate clusters can take separate commands. More than five tabs ask for confirmation first, as Group Broadcast does. All broadcasts now share one re-entrancy guard, so a session in two of them does not get each character twice. (`rustconn/src/session_group_window.rs`, `rustconn/src/window/detach_actions.rs`, `rustconn/src/window/group_broadcast.rs`, `docs/USER_GUIDE.md`, `po/`)
 - **Duplicate Tab in the tab menu — [#437](https://github.com/totoshko88/RustConn/issues/437)** — right-click a tab with a saved connection → **Duplicate Tab** opens another session of that connection, what **Open new session** does in the sidebar, without selecting the connection there first. (`rustconn/src/terminal/tab_menu.rs`, `rustconn/src/window/terminal_actions.rs`, `docs/USER_GUIDE.md`, `po/`)
+- **Closing a cluster window asks first** — closing a cluster window that still holds two or more sessions now opens a **Close this window?** dialog (Cancel is the default); confirming ends all of them. Quitting the app is not asked again.
+- **A detached window opened fullscreen says how to leave it** — its header bar is hidden in fullscreen, so a toast now says to press **F11**.
 
 ### Fixed
 
@@ -51,12 +53,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The external browser command is dimmed while the embedded browser is on** — **External browser command (tunnelled)** only applies when the embedded browser is off. (`rustconn/src/dialogs/settings/ui_tab.rs`)
 - **About dialog** — the debug information named the minimum supported Rust version as the compiler; the line is removed. **Get Support** opens GitHub Discussions instead of the donation page (the donation links stay in the link list), and the issue link uses the canonical `RustConn` path. (`rustconn/src/app.rs`)
 - **The Settings dialog is titled Settings** — it showed libadwaita's own "Preferences". (`rustconn/src/dialogs/settings/mod.rs`)
+- **Close Others, Close to the Left and Close to the Right act on the tab you right-clicked** — they used the selected tab, so a right-click on a background tab closed every tab except the selected one.
+- **Group broadcast can always be stopped** — the banner's **Stop** button and **Ctrl+Shift+A** did nothing while the active tab was not in the broadcast set. While the broadcast is on, the toggle, the shortcut and **Stop** now work from any tab.
+- **Tab titles keep the `⇄` and `●REC` markers when a tab joins or leaves a group** — **Set Group…** and **Remove from Group** rebuilt the title by string stripping, which stacked `[a] [b]` labels, left `[group]` in a title after leaving the group and left a `⇄` that could not be removed.
+- **Set Group… takes Enter and has focus** — the name field is focused when the dialog opens, Enter applies it, and **Apply** is off while the name is empty.
+- **The Welcome tab menu no longer offers Set Group…, Add to Broadcast and Monitor** — they did nothing there.
+- **The disconnected marker on a tab has a tooltip** — hovering the offline icon says **Session disconnected**.
 
 ### Documentation
 
 - **USER_GUIDE matches the sidebar** — Layout and Components (the ⋯ menu, six bottom-toolbar icons), Group Operations Mode (no checkboxes, no right-click entry, Escape only clears), the Trash menus, the Smart Folder **+** button, the Command Palette `!` prefix and drill-down, the passthrough palette shortcut (Ctrl+Shift+P), WinRM in the protocol filter, Local Shell in the ☰ menu, and the context-menu actions the Connection Actions table lacked. (`docs/USER_GUIDE.md`)
 - **User Guide matches the connection editor** — removed the Window Mode and Remember Position fields the Advanced tab does not have (the mode is set with `rustconn-cli --window-mode`), renamed the "Authentication Tab" to the Authentication group on the Basic tab, pointed ProxyJump to the Protocol tab, corrected the template buttons (**New Template**, **Use Template**) and dropped **Create Template from Connection**, which does not exist. Added **Batch Edit**, **Duplicate via Wizard…** and the editor's Cancel, Enter and discard check. (`docs/USER_GUIDE.md`)
 - **User Guide, Settings and shortcuts** — Monitoring is described as its own page, the Keybindings steps point to the Interface page and say when a shortcut is written to disk, the Logging rows carry their real names with a warning about recorded keystrokes, the Settings rows that were missing (toolbar on hover, terminal control shortcuts, remember passthrough, auto-capture, split-pane hover controls, directional tab-close items, scrollbar, right-click paste, Option as Meta, auto-hide sidebar, Use OpenH264) are listed, **Ctrl+Shift+A** is in the shortcut table, and Ctrl+M is no longer called sidebar-only. (`docs/USER_GUIDE.md`)
+- **User guide matches the import, export, cluster and trash dialogs** — removed the Merge Strategies list and the Import Preview paragraph (neither exists; duplicates are handled by the Cancel / Skip Duplicates / Import All dialog), replaced "Export selected only" with the group filter, named the **Create**/**Save** button of the cluster dialog and noted the confirmation before a single delete. (`docs/USER_GUIDE.md`)
+- **User Guide** — the cluster section no longer says broadcast is only a split-view feature, the tab menu no longer lists a **Copy** section, **Move to New Window on Monitor N** is described as flat items, the group broadcast shortcut **Ctrl+Shift+A** is in the shortcut table, and the detached window section lists what it lacks.
 
 ### Changed
 
@@ -67,10 +77,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Duplicate as Range shows a syntax example** — the dialog text now names `web[01-10]`. (`rustconn/src/window/operations.rs`)
 
-
-### Documentation
-
-- **User guide matches the import, export, cluster and trash dialogs** — removed the Merge Strategies list and the Import Preview paragraph (neither exists; duplicates are handled by the Cancel / Skip Duplicates / Import All dialog), replaced "Export selected only" with the group filter, named the **Create**/**Save** button of the cluster dialog and noted the confirmation before a single delete. (`docs/USER_GUIDE.md`)
 
 ## [0.25.2] - 2026-11-17
 

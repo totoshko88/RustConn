@@ -132,6 +132,38 @@ pub fn tab_title(name: &str, group: Option<&str>) -> String {
     }
 }
 
+/// The marker the cross-tab broadcast puts in front of a member's title.
+pub const BROADCAST_TITLE_MARKER: &str = "⇄ ";
+
+/// Moves a tab title from group `old` to group `new`, keeping the markers.
+///
+/// A title reads `<markers>[group] name`, where the markers (`⇄ `, `●REC `) are
+/// put there by other features in front of everything else. The old label is
+/// found by the group name the session is known to carry, so a user label that
+/// merely looks like `[x] y` is never eaten, and the new label goes behind the
+/// markers instead of in front of them. `markers` are the prefixes with their
+/// trailing space.
+#[must_use]
+pub fn regroup_title(
+    title: &str,
+    old: Option<&str>,
+    new: Option<&str>,
+    markers: &[&str],
+) -> String {
+    let mut rest = title;
+    let mut head = String::new();
+    while let Some(marker) = markers.iter().find(|m| rest.starts_with(**m)) {
+        head.push_str(marker);
+        rest = &rest[marker.len()..];
+    }
+    if let Some(old) = old
+        && let Some(stripped) = rest.strip_prefix(&format!("[{old}] "))
+    {
+        rest = stripped;
+    }
+    format!("{head}{}", tab_title(rest, new))
+}
+
 /// Protocol marker of a Local Shell tab (its connection id is nil).
 ///
 /// One definition, because three places have to agree on it: the creation
@@ -164,7 +196,29 @@ pub fn local_shell_label(saved: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::{DEFAULT_LOCAL_SHELL_LABEL, group_still_in_use, local_shell_label, tab_title};
+    use super::{
+        DEFAULT_LOCAL_SHELL_LABEL, group_still_in_use, local_shell_label, regroup_title, tab_title,
+    };
+
+    #[test]
+    fn regrouping_keeps_markers_in_front_and_never_stacks_labels() {
+        let m = ["⇄ ", "●REC "];
+        assert_eq!(
+            regroup_title("⇄ web1", None, Some("prod"), &m),
+            "⇄ [prod] web1"
+        );
+        assert_eq!(
+            regroup_title("⇄ ●REC [prod] web1", Some("prod"), Some("dev"), &m),
+            "⇄ ●REC [dev] web1"
+        );
+        assert_eq!(
+            regroup_title("⇄ [prod] web1", Some("prod"), None, &m),
+            "⇄ web1"
+        );
+        // A label that looks like a group is not the session's group.
+        assert_eq!(regroup_title("[x] y", None, Some("g"), &m), "[g] [x] y");
+        assert_eq!(regroup_title("[x] y", Some("g"), None, &m), "[x] y");
+    }
 
     /// The shape the creation paths produce.
     #[test]

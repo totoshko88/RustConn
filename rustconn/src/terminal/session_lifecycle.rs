@@ -444,6 +444,7 @@ impl TerminalNotebook {
         // Clear disconnected indicator (a detached session has no tab to clear)
         if let Some(ref page) = page {
             page.set_indicator_icon(gio::Icon::NONE);
+            page.set_indicator_tooltip("");
         }
 
         // The session is live again, so it becomes focusable by the smart
@@ -611,6 +612,7 @@ impl TerminalNotebook {
         }
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             page.set_indicator_icon(Some(&gio::ThemedIcon::new("network-offline-symbolic")));
+            page.set_indicator_tooltip(&i18n("Session disconnected"));
             page.set_indicator_activatable(false);
         }
         // Reset VTE internal state to prevent use-after-free in libvte/pango
@@ -644,12 +646,14 @@ impl TerminalNotebook {
                 && let Some(icon) = crate::split_view::create_colored_circle_icon(color_index, 16)
             {
                 page.set_indicator_icon(Some(&icon));
+                page.set_indicator_tooltip("");
                 page.set_indicator_activatable(false);
             }
             return;
         }
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             page.set_indicator_icon(gio::Icon::NONE);
+            page.set_indicator_tooltip("");
         }
     }
 

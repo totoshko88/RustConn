@@ -47,13 +47,14 @@ msgstr "OK"
 #: rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:303
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:784
+#: rustconn/src/session_group_window.rs:264
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1376
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
-#: rustconn/src/terminal/tab_menu.rs:385 rustconn/src/terminal/tab_menu.rs:508
-#: rustconn/src/terminal/tab_menu.rs:742 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:389 rustconn/src/terminal/tab_menu.rs:542
+#: rustconn/src/terminal/tab_menu.rs:782 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:379
 #: rustconn/src/window/clusters.rs:434
 #: rustconn/src/window/connection_dialogs.rs:982
@@ -61,8 +62,8 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2095
 #: rustconn/src/window/group_broadcast.rs:267
 #: rustconn/src/window/key_setup.rs:1022 rustconn/src/window/mc_launch.rs:453
-#: rustconn/src/window/mod.rs:3814 rustconn/src/window/mod.rs:3878
-#: rustconn/src/window/mod.rs:4909 rustconn/src/window/mod.rs:6004
+#: rustconn/src/window/mod.rs:3815 rustconn/src/window/mod.rs:3879
+#: rustconn/src/window/mod.rs:4910 rustconn/src/window/mod.rs:6005
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
 #: rustconn/src/window/operations.rs:972 rustconn/src/window/operations.rs:1158
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -217,38 +218,44 @@ msgstr "{} — RustConn"
 #: rustconn/src/embedded_rdp/connection.rs:2762
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
-#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:446
-#: rustconn/src/terminal/session_lifecycle.rs:756
+#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:475
+#: rustconn/src/terminal/mod.rs:1534
+#: rustconn/src/terminal/session_lifecycle.rs:615
+#: rustconn/src/terminal/session_lifecycle.rs:760
 msgid "Session disconnected"
 msgstr "Relace odpojena"
 
-#: rustconn/src/detached_window.rs:460
+#: rustconn/src/detached_window.rs:204
+msgid "Press F11 to leave fullscreen"
+msgstr "Stisknutím F11 ukončíte celou obrazovku"
+
+#: rustconn/src/detached_window.rs:477
 msgid "Move to Main Window"
 msgstr "Přesunout do hlavního okna"
 
-#: rustconn/src/detached_window.rs:475 rustconn/src/window/ui.rs:327
+#: rustconn/src/detached_window.rs:492 rustconn/src/window/ui.rs:327
 msgid "Settings…"
 msgstr "Nastavení…"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/window/ui.rs:345
+#: rustconn/src/detached_window.rs:494 rustconn/src/window/ui.rs:345
 msgid "Keyboard Shortcuts…"
 msgstr "Klávesové zkratky…"
 
-#: rustconn/src/detached_window.rs:478 rustconn/src/dialogs/shortcuts.rs:183
+#: rustconn/src/detached_window.rs:495 rustconn/src/dialogs/shortcuts.rs:183
 #: rustconn/src/window/ui.rs:346
 msgid "Help"
 msgstr "Nápověda"
 
-#: rustconn/src/detached_window.rs:479 rustconn/src/tray.rs:331
+#: rustconn/src/detached_window.rs:496 rustconn/src/tray.rs:331
 #: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:347
 msgid "About RustConn"
 msgstr "O aplikaci RustConn"
 
-#: rustconn/src/detached_window.rs:486 rustconn/src/window/ui.rs:82
+#: rustconn/src/detached_window.rs:503 rustconn/src/window/ui.rs:82
 msgid "Menu (F10)"
 msgstr "Nabídka (F10)"
 
-#: rustconn/src/detached_window.rs:490
+#: rustconn/src/detached_window.rs:507
 #: rustconn/src/embedded_web/navigation.rs:152
 #: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
 msgid "Menu"
@@ -266,7 +273,7 @@ msgstr "„{}“ před připojením vyžaduje následující."
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1060
 #: rustconn/src/sidebar_ui.rs:468 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:6005
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:6006
 msgid "Connect"
 msgstr "Připojit"
 
@@ -2787,7 +2794,7 @@ msgstr "Přesměrování tiskárny"
 msgid "Share your local printer with the remote session"
 msgstr "Sdílet místní tiskárnu se vzdálenou relací"
 
-#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5978
+#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5979
 msgid "Microphone"
 msgstr "Mikrofon"
 
@@ -2795,7 +2802,7 @@ msgstr "Mikrofon"
 msgid "Send the local microphone to the remote session"
 msgstr "Odesílat místní mikrofon do vzdáleného sezení"
 
-#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5981
+#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5982
 msgid "Smart Cards"
 msgstr "Čipové karty"
 
@@ -3736,7 +3743,7 @@ msgstr "SSH agent"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5984
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5985
 msgid "Security Key (FIDO2)"
 msgstr "Bezpečnostní klíč (FIDO2)"
 
@@ -4965,8 +4972,8 @@ msgstr "Kopírování zastaveno"
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/split_view/adapter.rs:1377
-#: rustconn/src/terminal/tab_menu.rs:743 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4910
+#: rustconn/src/terminal/tab_menu.rs:783 rustconn/src/vault_ops.rs:65
+#: rustconn/src/window/mod.rs:4911
 msgid "Close"
 msgstr "Zavřít"
 
@@ -9888,7 +9895,7 @@ msgid "Find in Terminal"
 msgstr "Najít v terminálu"
 
 #: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:811
-#: rustconn/src/terminal/tab_menu.rs:85
+#: rustconn/src/terminal/tab_menu.rs:88
 msgid "Close Tab"
 msgstr "Zavřít kartu"
 
@@ -9900,7 +9907,7 @@ msgstr "Následující karta"
 msgid "Previous Tab"
 msgstr "Předchozí karta"
 
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:598
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:599
 msgid "Tab Overview"
 msgstr "Přehled karet"
 
@@ -9941,7 +9948,7 @@ msgstr "Přesunout do vlastní karty"
 #: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/sidebar_ui.rs:555
 #: rustconn/src/split_view/adapter.rs:197
 #: rustconn/src/terminal/split_close.rs:321
-#: rustconn/src/terminal/tab_menu.rs:1277
+#: rustconn/src/terminal/tab_menu.rs:1327
 msgid "Remove Split"
 msgstr "Odebrat rozdělení"
 
@@ -11920,15 +11927,15 @@ msgstr "Uložit soubory ze vzdálené schránky"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:185 rustconn/src/terminal/config.rs:419
-#: rustconn/src/terminal/mod.rs:1560
-#: rustconn/src/terminal/session_lifecycle.rs:791
-#: rustconn/src/terminal/tab_menu.rs:1197
+#: rustconn/src/terminal/mod.rs:1562
+#: rustconn/src/terminal/session_lifecycle.rs:795
+#: rustconn/src/terminal/tab_menu.rs:1244
 msgid "Reconnect"
 msgstr "Znovu připojit"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1562
-#: rustconn/src/terminal/session_lifecycle.rs:793
+#: rustconn/src/terminal/mod.rs:1564
+#: rustconn/src/terminal/session_lifecycle.rs:797
 msgid "Reconnect to this session"
 msgstr "Znovu připojit k této relaci"
 
@@ -12049,7 +12056,7 @@ msgid "RDP session running in external window"
 msgstr "Relace RDP běží v externím okně"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:864 rustconn/src/window/mod.rs:3375
+#: rustconn/src/sidebar/view.rs:864 rustconn/src/window/mod.rs:3376
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Připojení selhalo"
@@ -12439,7 +12446,21 @@ msgstr "Zrcadlit stisky kláves do všech karet v tomto okně"
 msgid "Toggle broadcast to all tabs in this window"
 msgstr "Přepnout vysílání do všech karet v tomto okně"
 
-#: rustconn/src/session_group_window.rs:358
+#: rustconn/src/session_group_window.rs:258
+msgid "Close this window?"
+msgstr "Zavřít toto okno?"
+
+#: rustconn/src/session_group_window.rs:260
+msgid "This ends all {} sessions in this window."
+msgstr "Tím se ukončí všech {} relací v tomto okně."
+
+#: rustconn/src/session_group_window.rs:265
+#: rustconn/src/terminal/split_close.rs:273
+#: rustconn/src/terminal/split_close.rs:322
+msgid "Close All Sessions"
+msgstr "Zavřít všechny relace"
+
+#: rustconn/src/session_group_window.rs:387
 msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 "Vysílání je aktivní — stisky kláves se zrcadlí do {} karet v tomto okně"
@@ -12683,7 +12704,7 @@ msgstr "Otevřít novou relaci"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
 #: rustconn/src/split_view/adapter.rs:1327
-#: rustconn/src/terminal/tab_menu.rs:1285
+#: rustconn/src/terminal/tab_menu.rs:1335
 msgid "Move to New Window"
 msgstr "Přesunout do nového okna"
 
@@ -13060,31 +13081,31 @@ msgstr "Uložit výběr jako úryvek…"
 msgid "Execute Snippet…"
 msgstr "Spustit úryvek…"
 
-#: rustconn/src/terminal/mod.rs:594
+#: rustconn/src/terminal/mod.rs:595
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Přehled karet (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:611 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:612 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Vítejte"
 
-#: rustconn/src/terminal/mod.rs:1204
+#: rustconn/src/terminal/mod.rs:1205
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "Filtr výstupu „{}“ není nainstalován; výstup sezení se nefiltruje"
 
-#: rustconn/src/terminal/mod.rs:1554
+#: rustconn/src/terminal/mod.rs:1556
 msgid "Command not found: {}"
 msgstr "Příkaz nenalezen: {}"
 
-#: rustconn/src/terminal/mod.rs:1556
+#: rustconn/src/terminal/mod.rs:1558
 msgid "Failed to start '{}'"
 msgstr "Nepodařilo se spustit „{}“"
 
-#: rustconn/src/terminal/mod.rs:1578
+#: rustconn/src/terminal/mod.rs:1580
 msgid "'{}' is not installed"
 msgstr "„{}“ není nainstalovanáno"
 
-#: rustconn/src/terminal/mod.rs:1581
+#: rustconn/src/terminal/mod.rs:1583
 msgid "Failed to start '{}': {}"
 msgstr "Nepodařilo se spustit „{}“: {}"
 
@@ -13124,7 +13145,8 @@ msgstr "Přehrávání…"
 msgid "Playback complete"
 msgstr "Přehrávání dokončeno"
 
-#: rustconn/src/terminal/recording.rs:353
+#: rustconn/src/terminal/recording.rs:353 rustconn/src/terminal/tab_menu.rs:433
+#: rustconn/src/terminal/tab_menu.rs:635
 msgid "●REC"
 msgstr "●NAH"
 
@@ -13153,40 +13175,40 @@ msgid "Press Enter again to reconnect"
 msgstr "Stiskněte znovu Enter pro opětovné připojení"
 
 #: rustconn/src/terminal/session_lifecycle.rs:331
-#: rustconn/src/terminal/session_lifecycle.rs:780
+#: rustconn/src/terminal/session_lifecycle.rs:784
 msgid "Press R to reconnect, Q to close"
 msgstr "Stiskněte R pro opětovné připojení, Q pro zavření"
 
-#: rustconn/src/terminal/session_lifecycle.rs:534
+#: rustconn/src/terminal/session_lifecycle.rs:535
 msgid "Reconnected at {}"
 msgstr "Znovu připojeno v {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:766
+#: rustconn/src/terminal/session_lifecycle.rs:770
 msgid ""
 "Press R to reconnect, Q to close, or Enter twice for the suggested action"
 msgstr ""
 "Stiskněte R pro opětovné připojení, Q pro zavření nebo dvakrát Enter pro "
 "navrženou akci"
 
-#: rustconn/src/terminal/session_lifecycle.rs:785
-#: rustconn/src/terminal/session_lifecycle.rs:940
+#: rustconn/src/terminal/session_lifecycle.rs:789
+#: rustconn/src/terminal/session_lifecycle.rs:944
 msgid "Auto-reconnecting…"
 msgstr "Automatické připojování…"
 
-#: rustconn/src/terminal/session_lifecycle.rs:980
-#: rustconn/src/terminal/session_lifecycle.rs:990
+#: rustconn/src/terminal/session_lifecycle.rs:984
+#: rustconn/src/terminal/session_lifecycle.rs:994
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "Automatické opětovné připojení (pokus {}/{})"
 
-#: rustconn/src/terminal/session_lifecycle.rs:1158
+#: rustconn/src/terminal/session_lifecycle.rs:1162
 msgid "Sign-in expired"
 msgstr "Platnost přihlášení vypršela"
 
-#: rustconn/src/terminal/session_lifecycle.rs:1167
+#: rustconn/src/terminal/session_lifecycle.rs:1171
 msgid "Log In to {}"
 msgstr "Přihlásit se k {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:1171
+#: rustconn/src/terminal/session_lifecycle.rs:1175
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Spustit „{}“ a znovu se přihlásit v prohlížeči"
 
@@ -13205,11 +13227,6 @@ msgstr ""
 #: rustconn/src/terminal/split_close.rs:269
 msgid "Close Tabs With Split Views?"
 msgstr "Zavřít karty s rozděleným zobrazením?"
-
-#: rustconn/src/terminal/split_close.rs:273
-#: rustconn/src/terminal/split_close.rs:322
-msgid "Close All Sessions"
-msgstr "Zavřít všechny relace"
 
 #: rustconn/src/terminal/split_close.rs:314
 msgid "Close Split Tab?"
@@ -13233,151 +13250,151 @@ msgstr ""
 msgid "Panes:"
 msgstr "Panely:"
 
-#: rustconn/src/terminal/tab_menu.rs:83
+#: rustconn/src/terminal/tab_menu.rs:86
 msgid "Close Tab…"
 msgstr "Zavřít kartu…"
 
-#: rustconn/src/terminal/tab_menu.rs:324
+#: rustconn/src/terminal/tab_menu.rs:328
 msgid "Set Tab Group"
 msgstr "Nastavit skupinu karty"
 
-#: rustconn/src/terminal/tab_menu.rs:332
+#: rustconn/src/terminal/tab_menu.rs:336
 msgid "New group name…"
 msgstr "Název nové skupiny…"
 
-#: rustconn/src/terminal/tab_menu.rs:337
+#: rustconn/src/terminal/tab_menu.rs:341
 msgid "Enter a group name for this tab"
 msgstr "Zadejte název skupiny pro tuto kartu"
 
-#: rustconn/src/terminal/tab_menu.rs:342
+#: rustconn/src/terminal/tab_menu.rs:346
 msgid "Existing groups:"
 msgstr "Existující skupiny:"
 
-#: rustconn/src/terminal/tab_menu.rs:370
+#: rustconn/src/terminal/tab_menu.rs:374
 msgid "or enter a new name:"
 msgstr "nebo zadejte nový název:"
 
-#: rustconn/src/terminal/tab_menu.rs:386 rustconn/src/terminal/tab_menu.rs:509
+#: rustconn/src/terminal/tab_menu.rs:390 rustconn/src/terminal/tab_menu.rs:543
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Použít"
 
-#: rustconn/src/terminal/tab_menu.rs:496
+#: rustconn/src/terminal/tab_menu.rs:530
 msgid "Rename Tab"
 msgstr "Přejmenovat kartu"
 
-#: rustconn/src/terminal/tab_menu.rs:498
+#: rustconn/src/terminal/tab_menu.rs:532
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "Popisek označuje pouze tuto kartu. Ponechte jej prázdný pro obnovení "
 "výchozího názvu."
 
-#: rustconn/src/terminal/tab_menu.rs:504
+#: rustconn/src/terminal/tab_menu.rs:538
 msgid "Tab name"
 msgstr "Název karty"
 
-#: rustconn/src/terminal/tab_menu.rs:729
+#: rustconn/src/terminal/tab_menu.rs:769
 msgid "Close {} tabs in group '{}'?"
 msgstr "Zavřít {} karet ve skupině „{}“?"
 
-#: rustconn/src/terminal/tab_menu.rs:739 rustconn/src/terminal/tab_menu.rs:1229
+#: rustconn/src/terminal/tab_menu.rs:779 rustconn/src/terminal/tab_menu.rs:1278
 msgid "Close All in Group"
 msgstr "Zavřít vše ve skupině"
 
-#: rustconn/src/terminal/tab_menu.rs:1025
+#: rustconn/src/terminal/tab_menu.rs:1072
 msgid "Save Output"
 msgstr "Uložit výstup"
 
-#: rustconn/src/terminal/tab_menu.rs:1031
+#: rustconn/src/terminal/tab_menu.rs:1078
 msgid "Text files"
 msgstr "Textové soubory"
 
-#: rustconn/src/terminal/tab_menu.rs:1057
+#: rustconn/src/terminal/tab_menu.rs:1104
 msgid "Output saved"
 msgstr "Výstup uložen"
 
-#: rustconn/src/terminal/tab_menu.rs:1067
+#: rustconn/src/terminal/tab_menu.rs:1114
 msgid "Could not save output"
 msgstr "Výstup se nepodařilo uložit"
 
-#: rustconn/src/terminal/tab_menu.rs:1129
+#: rustconn/src/terminal/tab_menu.rs:1176
 msgid "Move to New Window on {}"
 msgstr "Přesunout do nového okna na {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1149
+#: rustconn/src/terminal/tab_menu.rs:1196
 msgid "Monitor {} ({})"
 msgstr "Monitor {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:1150
+#: rustconn/src/terminal/tab_menu.rs:1197
 msgid "Monitor {}"
 msgstr "Monitor {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1204
+#: rustconn/src/terminal/tab_menu.rs:1251
 msgid "Unpin Tab"
 msgstr "Odepnout kartu"
 
-#: rustconn/src/terminal/tab_menu.rs:1206
+#: rustconn/src/terminal/tab_menu.rs:1253
 msgid "Pin Tab"
 msgstr "Připnout kartu"
 
-#: rustconn/src/terminal/tab_menu.rs:1217
+#: rustconn/src/terminal/tab_menu.rs:1264
 msgid "Rename Tab…"
 msgstr "Přejmenovat kartu…"
 
-#: rustconn/src/terminal/tab_menu.rs:1225
+#: rustconn/src/terminal/tab_menu.rs:1274
 msgid "Set Group…"
 msgstr "Nastavit skupinu…"
 
-#: rustconn/src/terminal/tab_menu.rs:1227
+#: rustconn/src/terminal/tab_menu.rs:1276
 msgid "Remove from Group"
 msgstr "Odebrat ze skupiny"
 
-#: rustconn/src/terminal/tab_menu.rs:1239
+#: rustconn/src/terminal/tab_menu.rs:1288
 msgid "Remove from Broadcast"
 msgstr "Odebrat z vysílání"
 
-#: rustconn/src/terminal/tab_menu.rs:1241
+#: rustconn/src/terminal/tab_menu.rs:1290
 msgid "Add to Broadcast"
 msgstr "Přidat do vysílání"
 
-#: rustconn/src/terminal/tab_menu.rs:1263
+#: rustconn/src/terminal/tab_menu.rs:1312
 msgid "Monitor"
 msgstr "Monitorování"
 
-#: rustconn/src/terminal/tab_menu.rs:1272
+#: rustconn/src/terminal/tab_menu.rs:1322
 msgid "Split with Other Tabs…"
 msgstr "Rozdělit s dalšími záložkami…"
 
-#: rustconn/src/terminal/tab_menu.rs:1321
+#: rustconn/src/terminal/tab_menu.rs:1371
 msgid "Duplicate Tab"
 msgstr "Zduplikovat kartu"
 
-#: rustconn/src/terminal/tab_menu.rs:1327
+#: rustconn/src/terminal/tab_menu.rs:1377
 msgid "Edit Connection…"
 msgstr "Upravit připojení…"
 
-#: rustconn/src/terminal/tab_menu.rs:1343
+#: rustconn/src/terminal/tab_menu.rs:1393
 msgid "Save Output…"
 msgstr "Uložit výstup…"
 
-#: rustconn/src/terminal/tab_menu.rs:1350
+#: rustconn/src/terminal/tab_menu.rs:1400
 msgid "Close Others"
 msgstr "Zavřít ostatní"
 
-#: rustconn/src/terminal/tab_menu.rs:1355
+#: rustconn/src/terminal/tab_menu.rs:1405
 msgid "Close to the Left"
 msgstr "Zavřít nalevo"
 
-#: rustconn/src/terminal/tab_menu.rs:1356
+#: rustconn/src/terminal/tab_menu.rs:1406
 msgid "Close to the Right"
 msgstr "Zavřít napravo"
 
-#: rustconn/src/terminal/tab_menu.rs:1360
+#: rustconn/src/terminal/tab_menu.rs:1410
 msgid "Close All Ungrouped"
 msgstr "Zavřít vše bez skupiny"
 
-#: rustconn/src/terminal/tab_menu.rs:1364
+#: rustconn/src/terminal/tab_menu.rs:1414
 msgid "Close All Tabs"
 msgstr "Zavřít všechny karty"
 
@@ -13427,7 +13444,7 @@ msgstr "Rychlé připojení…"
 msgid "{} Active Session(s)"
 msgstr "{} aktivních relací"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5961
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5962
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Heslo přenosný soubor neotevře"
 
@@ -13629,8 +13646,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Mezihostitel není dostupný"
 
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3815
-#: rustconn/src/window/mod.rs:3881 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3816
+#: rustconn/src/window/mod.rs:3882 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Přesto připojit"
 
@@ -14545,9 +14562,9 @@ msgstr "Klíč funguje, ale připojení se na něj nepodařilo přepnout: {}"
 msgid "'{}' now signs in with a key"
 msgstr "„{}“ se nyní přihlašuje klíčem"
 
-#: rustconn/src/window/key_setup.rs:907 rustconn/src/window/mod.rs:3961
-#: rustconn/src/window/mod.rs:3997 rustconn/src/window/mod.rs:4142
-#: rustconn/src/window/mod.rs:4177
+#: rustconn/src/window/key_setup.rs:907 rustconn/src/window/mod.rs:3962
+#: rustconn/src/window/mod.rs:3998 rustconn/src/window/mod.rs:4143
+#: rustconn/src/window/mod.rs:4178
 msgid "the application is busy"
 msgstr "aplikace je zaneprázdněna"
 
@@ -14726,31 +14743,31 @@ msgstr "Záznam o pádu nelze otevřít. Je uložen v {}"
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Dotkněte se hardwarového klíče pro odemknutí databáze hesel"
 
-#: rustconn/src/window/mod.rs:2905
+#: rustconn/src/window/mod.rs:2906
 msgid "Already running in an external window"
 msgstr "Již běží v externím okně"
 
-#: rustconn/src/window/mod.rs:3171
+#: rustconn/src/window/mod.rs:3172
 msgid "Connection to ‘{}’ failed"
 msgstr "Připojení k ‘{}’ selhalo"
 
-#: rustconn/src/window/mod.rs:3519 rustconn/src/window/mod.rs:3533
+#: rustconn/src/window/mod.rs:3520 rustconn/src/window/mod.rs:3534
 msgid "Pre-connect task failed: {}"
 msgstr "Úloha před připojením selhala: {}"
 
-#: rustconn/src/window/mod.rs:3567
+#: rustconn/src/window/mod.rs:3568
 msgid "Port knock failed: {}"
 msgstr "Port knock selhal: {}"
 
-#: rustconn/src/window/mod.rs:3616
+#: rustconn/src/window/mod.rs:3617
 msgid "SPA failed: {}"
 msgstr "SPA selhalo: {}"
 
-#: rustconn/src/window/mod.rs:3800
+#: rustconn/src/window/mod.rs:3801
 msgid "{} (via {})"
 msgstr "{} (přes {})"
 
-#: rustconn/src/window/mod.rs:3806
+#: rustconn/src/window/mod.rs:3807
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14774,35 +14791,35 @@ msgstr ""
 "Pokud jste tuto změnu neprovedli, zrušte ji — připojení by mohlo odeslat "
 "uložené přihlašovací údaje na jiný počítač."
 
-#: rustconn/src/window/mod.rs:3811
+#: rustconn/src/window/mod.rs:3812
 msgid "Routing changed for “{}”"
 msgstr "Změnila se cesta pro „{}“"
 
-#: rustconn/src/window/mod.rs:3875
+#: rustconn/src/window/mod.rs:3876
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Mezihostitel není dostupný pro „{}“"
 
-#: rustconn/src/window/mod.rs:3880
+#: rustconn/src/window/mod.rs:3881
 msgid "Connect Directly"
 msgstr "Připojit přímo"
 
-#: rustconn/src/window/mod.rs:3971 rustconn/src/window/mod.rs:4151
+#: rustconn/src/window/mod.rs:3972 rustconn/src/window/mod.rs:4152
 msgid "Connection “{}” created"
 msgstr "Připojení “{}” vytvořeno"
 
-#: rustconn/src/window/mod.rs:4420
+#: rustconn/src/window/mod.rs:4421
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4632
+#: rustconn/src/window/mod.rs:4633
 msgid "Settings saved"
 msgstr "Nastavení uloženo"
 
-#: rustconn/src/window/mod.rs:4669
+#: rustconn/src/window/mod.rs:4670
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Heslo nebylo na tomto počítači uloženo"
 
-#: rustconn/src/window/mod.rs:4671
+#: rustconn/src/window/mod.rs:4672
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14814,11 +14831,11 @@ msgstr ""
 "klíčenka“ nebo zkontrolujte, zda může RustConn zapisovat do svého datového "
 "adresáře."
 
-#: rustconn/src/window/mod.rs:4717
+#: rustconn/src/window/mod.rs:4718
 msgid "Credentials Not Saved to Keyring"
 msgstr "Přihlašovací údaje nebyly uloženy do klíčenky"
 
-#: rustconn/src/window/mod.rs:4719
+#: rustconn/src/window/mod.rs:4720
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14828,15 +14845,15 @@ msgstr ""
 "pro tuto relaci a po restartu zmizí. Zkontrolujte, že služba klíčenky běží a "
 "je odemčená, a poté nastavení uložte znovu."
 
-#: rustconn/src/window/mod.rs:4903
+#: rustconn/src/window/mod.rs:4904
 msgid "Close RustConn?"
 msgstr "Zavřít RustConn?"
 
-#: rustconn/src/window/mod.rs:4905
+#: rustconn/src/window/mod.rs:4906
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "Počet otevřených karet relací: {}. Aktivní připojení budou odpojena."
 
-#: rustconn/src/window/mod.rs:4942
+#: rustconn/src/window/mod.rs:4943
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14844,7 +14861,7 @@ msgstr ""
 "Nastavení se nepodařilo načíst, proto se používají výchozí hodnoty. "
 "Nečitelný soubor byl zachován jako {}."
 
-#: rustconn/src/window/mod.rs:4947
+#: rustconn/src/window/mod.rs:4948
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14852,35 +14869,35 @@ msgstr ""
 "Tato nastavení byla uložena novější verzí RustConn ({}). Před jejich změnou "
 "se uchovává záloha."
 
-#: rustconn/src/window/mod.rs:4972
+#: rustconn/src/window/mod.rs:4973
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Synchronizace s cloudem selhala pro „{}“: {}"
 
-#: rustconn/src/window/mod.rs:5155
+#: rustconn/src/window/mod.rs:5156
 msgid "Startup connection not found"
 msgstr "Připojení pro spuštění nenalezeno"
 
-#: rustconn/src/window/mod.rs:5228
+#: rustconn/src/window/mod.rs:5229
 msgid "Failed to open .rdp file"
 msgstr "Nepodařilo se otevřít soubor .rdp"
 
-#: rustconn/src/window/mod.rs:5264
+#: rustconn/src/window/mod.rs:5265
 msgid "Failed to open .vv file"
 msgstr "Nepodařilo se otevřít soubor .vv"
 
-#: rustconn/src/window/mod.rs:5301
+#: rustconn/src/window/mod.rs:5302
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Tunel “{}” se zastavil: {}"
 
-#: rustconn/src/window/mod.rs:5317
+#: rustconn/src/window/mod.rs:5318
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Opětovné připojení tunelu “{}” bylo vzdáno: {}"
 
-#: rustconn/src/window/mod.rs:5877
+#: rustconn/src/window/mod.rs:5878
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Úspěšně exportováno {} připojení. {} přeskočeno."
 
-#: rustconn/src/window/mod.rs:5963
+#: rustconn/src/window/mod.rs:5964
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14890,11 +14907,11 @@ msgstr ""
 "z hesel v něm nelze přečíst. Otevřete Nastavení ▸ Tajemství a zadejte heslo, "
 "se kterým byl soubor vytvořen."
 
-#: rustconn/src/window/mod.rs:5998
+#: rustconn/src/window/mod.rs:5999
 msgid "Share Local Devices?"
 msgstr "Sdílet místní zařízení?"
 
-#: rustconn/src/window/mod.rs:6000
+#: rustconn/src/window/mod.rs:6001
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
@@ -15529,7 +15546,7 @@ msgstr "Příkaz dokončen: {}"
 msgid "Command failed with status {}: {}"
 msgstr "Příkaz se nezdařil, stav {}: {}"
 
-#: rustconn/src/window/session_lifecycle.rs:1315
+#: rustconn/src/window/session_lifecycle.rs:1316
 msgid ""
 "Sign in again in the browser. The session reconnects when the login finishes."
 msgstr ""
