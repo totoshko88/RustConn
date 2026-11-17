@@ -27,21 +27,25 @@ use uuid::Uuid;
 /// Bundled ids are managed content: an edited copy under an `example-*` id is
 /// replaced on upgrade, so adaptation belongs in a copy saved under a new id.
 /// An identical file is not rewritten, and a differing file is copied to
-/// `<id>.rsc.bak` first so an edit is never lost silently.
+/// `<id>.rsc.bak` first. An existing backup is never overwritten: the next
+/// copy goes to `<id>.rsc.bak.1`, `.bak.2`, and so on, so a user's edit
+/// survives any number of upgrades.
 fn seed_bundled_examples(manager: &ScriptManager) {
-    for (id, source) in BUNDLED_EXAMPLES {
+    seed_examples(manager, BUNDLED_EXAMPLES);
+}
+
+fn seed_examples(manager: &ScriptManager, examples: &[(&str, &str)]) {
+    for (id, source) in examples {
         let current = manager.load_script(id).ok();
-        if current.as_deref() == Some(source) {
+        if current.as_deref() == Some(*source) {
             continue;
         }
-        if current.is_some() {
+        if let Some(current) = current {
             let path = manager.scripts_dir().join(format!("{id}.rsc"));
-            let backup = path.with_file_name(format!("{id}.rsc.bak"));
-            if let Err(error) = std::fs::copy(&path, &backup) {
+            if let Err(error) = back_up(&path, &current) {
                 tracing::warn!(
                     %error,
                     path = %path.display(),
-                    backup = %backup.display(),
                     "could not back up an edited bundled example; leaving it unchanged"
                 );
                 continue;
@@ -49,6 +53,30 @@ fn seed_bundled_examples(manager: &ScriptManager) {
         }
         let _ = manager.save_script(id, source);
     }
+}
+
+/// Copies `path` to the first free `<path>.bak[.N]`; a backup that already
+/// holds the same text is reused.
+fn back_up(path: &std::path::Path, current: &str) -> std::io::Result<()> {
+    for n in 0u32.. {
+        let suffix = if n == 0 {
+            "bak".to_owned()
+        } else {
+            format!("bak.{n}")
+        };
+        let mut name = path.as_os_str().to_owned();
+        name.push(format!(".{suffix}"));
+        let backup = std::path::PathBuf::from(name);
+        match std::fs::read_to_string(&backup) {
+            Ok(existing) if existing == current => return Ok(()),
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                return std::fs::write(&backup, current);
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    unreachable!("the loop ends by returning")
 }
 
 /// Scripts manager dialog.
@@ -790,6 +818,34 @@ mod tests {
             "print \"old version\"\n"
         );
         assert_eq!(manager.load_script("mine").unwrap(), "print \"mine\"\n");
+    }
+
+    /// An edit survives two upgrades: the second one must not overwrite the
+    /// backup of the first.
+    #[test]
+    fn seeding_keeps_the_original_edit_across_two_upgrades() {
+        let temp = tempfile::TempDir::new().expect("tempdir");
+        let config =
+            rustconn_core::config::ConfigManager::with_config_dir(temp.path().join("config"));
+        let manager = rustconn_core::script::ScriptManager::new(config);
+        manager
+            .save_script("example-x", "print \"my edit\"\n")
+            .unwrap();
+
+        super::seed_examples(&manager, &[("example-x", "print \"A\"\n")]);
+        super::seed_examples(&manager, &[("example-x", "print \"B\"\n")]);
+        super::seed_examples(&manager, &[("example-x", "print \"B\"\n")]);
+
+        let dir = manager.scripts_dir();
+        assert_eq!(manager.load_script("example-x").unwrap(), "print \"B\"\n");
+        assert_eq!(
+            std::fs::read_to_string(dir.join("example-x.rsc.bak")).unwrap(),
+            "print \"my edit\"\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(dir.join("example-x.rsc.bak.1")).unwrap(),
+            "print \"A\"\n"
+        );
     }
 
     use rustconn_core::automation::{KeySequence, PendingKind, ScriptEngine, ScriptHost};
