@@ -462,6 +462,15 @@ impl ConnectionDialogData<'_> {
         rustconn_core::dialog_utils::validate_icon(icon_text.trim())
             .map_err(|e| i18n(&e.to_string()))?;
 
+        // An invalid port knock sequence would be dropped by `build_connection`
+        let knock_text = self.knock_sequence_entry.text();
+        let knock_text = knock_text.trim();
+        if !knock_text.is_empty()
+            && rustconn_core::connection::knock::KnockSequence::parse(knock_text).is_err()
+        {
+            return Err(i18n("Invalid format. Use: 7000 8000/tcp 9000/udp"));
+        }
+
         // Web (10): Custom browser mode requires a non-empty browser command
         if protocol_idx == 10 {
             use crate::dialogs::connection::web::browser_mode_from_combo_index;
