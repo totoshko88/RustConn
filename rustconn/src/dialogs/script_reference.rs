@@ -68,8 +68,9 @@ getprompt <variable>
 
 log [<file-path>]
     Start appending the session output to a file. With no argument, logging
-    stops. The file is written locally. The path may contain ${name}
-    references and the ${DATE_*} / ${TIME_*} built-ins.
+    stops. The file is written locally with owner-only permissions on Unix.
+    The path may contain ${name} references, the ${DATE_*} / ${TIME_*}
+    built-ins and ${CWD}; a path built from an `ask … hide` answer is refused.
 
 print <text>
     Print a message on the terminal in the session, with ANSI colouring.
@@ -154,8 +155,10 @@ ${name} and $name
     Inside `send`, use ${name} only (see above). The date/time built-ins
     (${DATE_Y}, ${DATE_M}, ${DATE_D}, ${TIME_H}, ${TIME_M}, ${TIME_S},
     ${TIMESTAMP}) also resolve in script text, so a log file can be named by
-    the clock. ${ENV_*} does not resolve: `run` scrubs secrets from its
-    environment, and a script must not pull them back.
+    the clock. ${CWD} resolves to RustConn's working directory, so a log path
+    can be absolute without a literal OS path in the script. ${ENV_*} does not
+    resolve: `run` scrubs secrets from its environment, and a script must not
+    pull them back. A path built from an `ask … hide` answer is refused.
 
 A script that jumps in a loop is stopped after one million instructions.
 

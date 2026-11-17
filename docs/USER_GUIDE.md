@@ -2307,11 +2307,6 @@ Which browser modes honour it:
 **Downloads:**
 Files are automatically saved to `~/Downloads/`. A toast notification "Downloaded: {filename}" appears when a download completes.
 
-**WebCodecs streaming (Selkies):**
-WebKitGTK 2.44 and newer implement the WebCodecs API, and Selkies uses it for its default WebSocket transport, so Selkies can stream in the embedded pane on a runtime that ships it (the Flatpak and current distribution packages do). Checked end-to-end on WebKitGTK 2.52 against a Selkies 2.2.1 server: the H.264 WebSocket stream rendered live in the embedded pane, with Selkies reframing H.264 into the length-prefixed form WebKit expects, and VP8 and VP9 also decode through `VideoDecoder`.
-
-WebKitGTK has no WebRTC (`RTCPeerConnection` is not available), so Selkies' optional **WebRTC** transport and its webcam uplink do not work in the embedded pane. Keep Selkies on its default **WebSockets** transport. If a stream stays black, pick VP8 or VP9 in Selkies' video settings, or open the page in System or a Chromium-based Custom browser.
-
 **Open in System Browser:**
 Available via the "⋯" menu → "Open in System Browser" — opens the current page URL in your default system browser using `UriLauncher` (portal-aware, works in Flatpak).
 
@@ -2326,7 +2321,7 @@ Available via the "⋯" menu → "Open in System Browser" — opens the current 
 | Enter (in URL bar) | Navigate to entered URL |
 
 **Known Limitations:**
-- WebKitGTK 2.44 and newer provide WebCodecs, so Selkies' default WebSocket transport can stream in the embedded pane; WebRTC is not available in WebKitGTK, so Selkies' WebRTC transport needs an external Chromium-based browser
+- WebKitGTK does not support WebCodecs (needed for Selkies/WebRTC streaming)
 - No DRM/EME content (Widevine not available in WebKitGTK)
 - Embedded mode is Linux-only (requires WebKitGTK 6.0)
 - In the snap package the embedded browser is available since 0.24.0 (issue [#244](https://github.com/totoshko88/RustConn/issues/244)), using the WebKitGTK 6.0 of the gnome-core26 platform. WebKit turns its own bubblewrap sandbox off inside a snap, so the web content is confined only by the snap's strict confinement and has the same access as RustConn itself. See [Snap — Embedded web browser](SNAP.md#embedded-web-browser-webkitgtk); use System or Custom mode for a connection where that matters.
@@ -2932,7 +2927,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 | `capture <regex> <var> [<sec>]` | Like `expect`, but store capture group 1 in a variable |
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
-| `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` |
+| `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` and `${CWD}`; the file is created owner-only on Unix |
 | `print <text>` | Print an ANSI-coloured message on the terminal |
 | `ask "<prompt>" [hide] [default "<value>"] <var>` | Ask the user for input; `hide` masks it, `default` pre-fills it |
 | `msg <text> [ok]` | Show a message window (optionally with an OK button) |
@@ -2949,7 +2944,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 
 **Variables**
 
-`${name}` and `$name` references are substituted from script variables (`set`, `capture`, `readline`, `ask`). The date/time built-ins (`${DATE_Y}`, `${DATE_M}`, `${DATE_D}`, `${TIME_H}`, `${TIME_M}`, `${TIME_S}`, `${TIMESTAMP}`) resolve in script text too, so a log file can be named by the clock. `${ENV_*}` deliberately does **not** resolve in a script: `run` executes with secrets scrubbed from its environment, and expanding them here would hand them straight back. Inside `send` use `${name}` only — a bare `$name` there is literal text, because the key-sequence syntax reserves `$` for `${...}`. A label is defined with `:name`; `#` and `;` start comments. An iteration cap kills runaway `goto` loops.
+`${name}` and `$name` references are substituted from script variables (`set`, `capture`, `readline`, `ask`). The date/time built-ins (`${DATE_Y}`, `${DATE_M}`, `${DATE_D}`, `${TIME_H}`, `${TIME_M}`, `${TIME_S}`, `${TIMESTAMP}`) resolve in script text too, so a log file can be named by the clock. `${CWD}` resolves to RustConn's working directory, so a log path can be absolute without a literal OS path in the script. `${ENV_*}` deliberately does **not** resolve in a script: `run` executes with secrets scrubbed from its environment, and expanding them here would hand them straight back. Inside `send` use `${name}` only — a bare `$name` there is literal text, because the key-sequence syntax reserves `$` for `${...}`. A label is defined with `:name`; `#` and `;` start comments. An iteration cap kills runaway `goto` loops.
 
 **Local commands (`run`) and safety**
 
@@ -2957,7 +2952,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 - A variable substituted into a `run` command must not contain a shell metacharacter (`; | & $ ( ) < > !` and backtick), a newline or a control character. A script that tries stops with *Refusing to run command* instead. This is deliberate: `capture` and `readline` store text the remote host printed, and without the check a host could run commands on your machine. Validate a value with `if_goto` before using it, as the first-run example below does.
 - The command gets no standard input, runs with session tokens and cloud credentials (`BW_SESSION`, `OP_SESSION`, `AWS_*`, `GITHUB_TOKEN`, `GH_TOKEN`) removed from its environment, and is killed when its timeout expires. A `run` without `<sec>` is limited to 60 seconds.
 - **Flatpak:** the command runs inside the RustConn sandbox and sees only the tools the sandbox has. Prefix it with `flatpak-spawn --host` to run it on the host.
-- `ask … hide` masks what is typed, and `run` refuses to put such an answer on a command line, which other local users could read in the process list; the script stops instead. Pass a password to the remote side with `send "${answer}{ENTER}"`. `print $answer` still prints it, so do not.
+- `ask … hide` masks what is typed; `run` refuses to put such an answer on a command line, which other local users could read in the process list, and `log` refuses to use one in a file path. The script stops instead. Pass a password to the remote side with `send "${answer}{ENTER}"`. `print $answer` still prints it, so do not.
 
 **Branching on user input (a first-run wizard)**
 
@@ -3030,10 +3025,11 @@ msg "This script must run in EXEC mode. Leave configuration mode with end, then 
 goto done
 
 :privileged
-set file cisco-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log
-ask "Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:" answer
+set file ${CWD}/cisco-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log
+ask "Save the running configuration to '${file}'? Type yes, no, another path, or nothing to cancel:" answer
 if_goto $answer /(?i)^\s*yes\s*$/ save
 if_goto $answer /^\s*$/ cancel
+if_goto $answer /(?i)^\s*(n|no)\s*$/ cancel
 set file $answer
 
 :save
@@ -3066,7 +3062,8 @@ Why it is written that way:
 and `show interfaces status` to `cisco-inventory-<device>-<timestamp>.log`
 with the same prompt, mode and confirmation checks. Bundled scripts are added
 on first run and refreshed automatically when a new version ships; an edit to
-an `example-*` script is replaced, so save your adaptation under a new id.
+an `example-*` script is copied to `<id>.rsc.bak` before it is replaced, so
+save your adaptation under a new id to keep it in the library.
 
 Twenty-seven more bundled profiles keep the same confirmation, timestamped-log
 and read-only behaviour with each vendor's prompt and commands. Between them
@@ -3082,10 +3079,10 @@ they cover the brands most often seen in CIS and Chinese networks:
 | `example-tplink-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
 | `example-ruijie-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `terminal length 0` | `show running-config` |
 | `example-zte-save-config` | administrator `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` |
-| `example-mikrotik-save-config` | any RouterOS prompt `[admin@host] >` | none — RouterOS does not paginate | `/export verbose show-sensitive` |
+| `example-mikrotik-save-config` | any RouterOS prompt `[admin@host] >` | none — RouterOS does not paginate | `/export verbose`; RouterOS 7 adds `show-sensitive` after reading the major version |
 | `example-eltex-save-config` | privileged `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config detailed` (includes keys, so the log holds secrets) |
 | `example-bdcom-save-config` | administrator `<host>#`; the `_config#` prompt is refused | `terminal length 0` | `show running-config` |
-| `example-ubiquiti-save-config` | operational `user@host:~$`; configuration mode `#` is refused | none — EdgeOS does not paginate | `show configuration commands` |
+| `example-ubiquiti-save-config` | operational `user@host:~$`; configuration mode `#` is refused | `\| no-more` on the read command | `show configuration commands` |
 | `example-juniper-save-config` | operational mode `user@host>`; configuration mode `user@host#` is refused | `\| no-more` on the read command | `show configuration` |
 | `example-huawei-olt-save-config` | enable mode `MA5680T#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive — SmartAX cannot disable paging | `display current-configuration` (an extra ENTER accepts the filter prompt) |
 | `example-raisecom-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
@@ -3099,7 +3096,7 @@ they cover the brands most often seen in CIS and Chinese networks:
 | `example-netgear-save-config` | `(model)#` administrator prompt | `pager` directive | `show running-config` |
 | `example-aruba-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `no page` | `show running-config` |
 | `example-arista-save-config` | privileged EXEC `<host>#` | `terminal length 0` | `show running-config` |
-| `example-extreme-save-config` | administrator prompt `<host> #` (a space before `#`) | `disable clipaging` | `show configuration` |
+| `example-extreme-save-config` | administrator prompt `<host> #` (a space before `#`, an optional leading `*` is stripped) | `disable clipaging` | `show configuration` |
 | `example-allied-save-config` | privileged EXEC `awplus#` | `terminal length 0` | `show running-config` |
 
 `example-huawei-olt-provision-ont` is the write counterpart for SmartAX GPON
@@ -3127,8 +3124,9 @@ text, add it to that expression; otherwise the `expect` times out rather than
 saving a truncated file.
 
 Only two of these CLIs offer a documented way to include secrets:
-`/export verbose show-sensitive` on RouterOS and `show running-config detailed`
-on the Eltex MES (binary data such as SSH and SSL keys). The rest print hashes
+`/export verbose show-sensitive` on RouterOS 7 (RouterOS 6 includes them by
+default) and `show running-config detailed` on the Eltex MES (binary data such
+as SSH and SSL keys). The rest print hashes
 or ciphertext by design — `enable secret` on Cisco, `cipher` on Huawei and H3C,
 `encrypted-password` on EdgeOS, `## SECRET-DATA` on Junos — and have no reveal
 switch. Those transcripts are restore-useful but not credential-complete; for
@@ -3144,11 +3142,18 @@ it. Configuration mode is still refused in every profile.
 
 The DGS-1210 prompt carries the model and the account (`DGS-1210-24:admin#`), so
 that profile names the file after the model before the colon, not the account.
-MikroTik sends the absolute `/export verbose show-sensitive`, so a session left
-inside `/interface` still exports the whole configuration, default values are
-included, and secrets are included too. That last flag means the log holds
-passwords and keys: treat it exactly like the device's configuration backup and
-keep it out of shared folders and version control.
+MikroTik reads the RouterOS major version and sends the absolute
+`/export verbose` form: RouterOS 7 adds `show-sensitive`, RouterOS 6 includes
+secrets by default. A session left inside `/interface` still exports the whole
+configuration and default values are included. The log holds passwords and keys:
+treat it exactly like the device's configuration backup and keep it out of
+shared folders and version control.
+
+Hikvision and Dahua profiles target their managed switches, the models that
+expose this CLI; unmanaged models do not have it. The default transcript paths
+are `${CWD}/<vendor>-<device>-<timestamp>.log`, so the confirmation question
+shows the absolute location, and the file is created owner-only (`0600`) on
+Unix. Answering `n` or `no` cancels like an empty answer.
 
 **Example — run a command and capture its output:**
 
@@ -3838,6 +3843,7 @@ are handy for tokens, banners and per-connection log lines:
 | `${DATE_M}` / `${DATE_D}` | Local month / day, zero-padded |
 | `${TIME_H}` / `${TIME_M}` / `${TIME_S}` | Local hour (24h) / minute / second, zero-padded |
 | `${TIMESTAMP}` | Seconds since the Unix epoch |
+| `${CWD}` | RustConn's working directory — makes a script log path absolute without a literal OS path |
 | `${ENV_NAME}` | Value of the `NAME` environment variable (empty if unset) — note the underscore, `${ENV_HOME}`, since a `${...}` reference cannot contain a colon |
 
 A variable you define yourself with one of these names shadows the built-in. These

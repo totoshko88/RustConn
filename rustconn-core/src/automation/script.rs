@@ -41,6 +41,17 @@ static VARIABLE_REF: LazyLock<Regex> = LazyLock::new(|| {
         .expect("static regex")
 });
 
+/// Built-ins a script may use. `CWD` lets a log path be absolute without a
+/// literal OS path in the script; `ENV_*` stays out, as in `substitute`.
+fn script_builtin(name: &str) -> Option<String> {
+    if name == "CWD" {
+        return std::env::current_dir()
+            .ok()
+            .map(|path| path.to_string_lossy().into_owned());
+    }
+    crate::variables::builtin_temporal(name)
+}
+
 /// How long a step with no explicit timeout waits before giving up.
 pub const DEFAULT_TIMEOUT_MS: u32 = 10_000;
 
@@ -404,8 +415,10 @@ pub struct ScriptEngine {
     /// pattern is re-tried on every output chunk and `if_goto` may run in a
     /// loop, so compiling each time would dominate the GTK thread.
     regex_cache: HashMap<String, Regex>,
-    /// Variables currently holding an `ask … hide` answer. `run` refuses them:
-    /// a command line is readable by every local user in the process table.
+    /// Variables currently holding an `ask … hide` answer. `run` and `log`
+    /// refuse them: a command line is readable by every local user in the
+    /// process table, and a log path becomes a file name and a terminal
+    /// message.
     hidden_vars: std::collections::HashSet<String>,
     /// Whether the pending `ask` masks its answer.
     ask_hidden: bool,
@@ -595,7 +608,16 @@ impl ScriptEngine {
                 self.advance();
             }
             ScriptStep::Log { path } => {
-                let path = path.as_ref().map(|path| self.substitute(path));
+                let path = match path {
+                    Some(path) => match self.substitute_for_log(&path) {
+                        Ok(path) => Some(path),
+                        Err(reason) => {
+                            self.finish(Some(format!("Refusing to log: {reason}")));
+                            return;
+                        }
+                    },
+                    None => None,
+                };
                 if host.set_log(path.as_deref()) {
                     self.advance();
                 } else {
@@ -915,9 +937,9 @@ impl ScriptEngine {
         self.variables.get(name).cloned().unwrap_or_default()
     }
 
-    /// Substitutes `$name` / `${name}` references using the script's variables
-    /// and the date/time built-ins. `ENV_*` is deliberately left literal: a
-    /// script must not pull an environment secret onto a command line.
+    /// Substitutes `$name` / `${name}` references using the script's variables,
+    /// the date/time built-ins and `CWD`. `ENV_*` is deliberately left literal:
+    /// a script must not pull an environment secret onto a command line.
     fn substitute(&self, text: &str) -> String {
         VARIABLE_REF
             .replace_all(text, |caps: &regex::Captures<'_>| {
@@ -927,7 +949,7 @@ impl ScriptEngine {
                         .variables
                         .get(name)
                         .cloned()
-                        .or_else(|| crate::variables::builtin_temporal(name))
+                        .or_else(|| script_builtin(name))
                         .unwrap_or_else(|| caps[0].to_string()),
                     None => caps[0].to_string(),
                 }
@@ -951,7 +973,7 @@ impl ScriptEngine {
                     self.variables
                         .get(n)
                         .cloned()
-                        .or_else(|| crate::variables::builtin_temporal(n))
+                        .or_else(|| script_builtin(n))
                         .map(|value| (n, value))
                 }) else {
                     return caps[0].to_string();
@@ -971,6 +993,39 @@ impl ScriptEngine {
         match rejected {
             Some(reason) => Err(reason),
             None => Ok(command),
+        }
+    }
+
+    /// [`Self::substitute`] for a log path.
+    ///
+    /// A hidden `ask` answer is refused here for the same reason `run`
+    /// refuses it: a path ends up in a file name, a terminal message and
+    /// possibly a backup, so a secret must not become part of it.
+    fn substitute_for_log(&self, text: &str) -> Result<String, String> {
+        let mut rejected: Option<String> = None;
+        let path = VARIABLE_REF
+            .replace_all(text, |caps: &regex::Captures<'_>| {
+                let name = caps.get(1).or_else(|| caps.get(2)).map(|m| m.as_str());
+                let Some((name, value)) = name.and_then(|n| {
+                    self.variables
+                        .get(n)
+                        .cloned()
+                        .or_else(|| script_builtin(n))
+                        .map(|value| (n, value))
+                }) else {
+                    return caps[0].to_string();
+                };
+                if rejected.is_none() && self.hidden_vars.contains(name) {
+                    rejected = Some(format!(
+                        "variable '{name}' holds a hidden answer and is never used in a log path"
+                    ));
+                }
+                value
+            })
+            .into_owned();
+        match rejected {
+            Some(reason) => Err(reason),
+            None => Ok(path),
         }
     }
 
@@ -2108,6 +2163,43 @@ mod tests {
             .expect("both references resolve");
         assert_eq!(year.len(), 4);
         assert!(year.chars().all(|c| c.is_ascii_digit()), "{year}");
+    }
+
+    /// `${CWD}` makes the default backup path absolute without putting an OS
+    /// path in the script, so the question can show where the file will land.
+    #[test]
+    fn cwd_builtin_resolves_to_the_process_directory() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse("log \"${CWD}/backup.log\"\n").unwrap();
+        engine.pump(&mut host);
+        let cwd = std::env::current_dir().expect("current directory");
+        assert_eq!(
+            host.events,
+            vec![format!("log:{}/backup.log", cwd.display())]
+        );
+    }
+
+    /// A hidden answer must not become a file name, a terminal message or a
+    /// backup path, exactly as it must not reach a `run` command line.
+    #[test]
+    fn log_path_rejects_a_hidden_answer() {
+        let mut host = FakeHost::default();
+        let mut engine =
+            ScriptEngine::parse("ask \"Secret:\" hide secret\nlog \"${secret}.log\"\n").unwrap();
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        engine.on_ask_result(Some("hunter2".to_string()));
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert!(
+            engine
+                .error()
+                .is_some_and(|error| error.contains("hidden answer")),
+            "{:?}",
+            engine.error()
+        );
+        assert!(!host.events.iter().any(|event| event.starts_with("log:")));
     }
 
     /// A failed capture must not leave the script claiming it saved something.

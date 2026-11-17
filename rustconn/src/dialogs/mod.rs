@@ -76,6 +76,7 @@ pub mod portable_passphrase_change;
 mod portable_unlock;
 pub mod recording;
 pub mod script;
+pub(crate) mod script_examples;
 pub mod script_reference;
 pub(crate) mod settings;
 mod shortcuts;
