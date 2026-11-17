@@ -3612,7 +3612,7 @@ msgstr "Unix-сокет"
 
 #: rustconn/src/dialogs/connection/spice.rs:305
 msgid "Connect via local unix socket instead of network"
-msgstr "Підключення через локальний unix-сокет замість мережі"
+msgstr "З'єднування через локальний unix-сокет замість мережі"
 
 #: rustconn/src/dialogs/connection/spice.rs:320
 #: rustconn/src/dialogs/connection/spice.rs:323
@@ -10168,7 +10168,7 @@ msgid ""
 "their connections."
 msgstr ""
 "Обери вкладки, які показати поруч із «{}». Їх буде розташовано сіткою, а "
-"їхні з’єднання збережуться."
+"їхні з’єднки збережуться."
 
 #: rustconn/src/dialogs/split_tabs.rs:44
 msgid "Tabs to split"
@@ -11795,7 +11795,7 @@ msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
 msgstr ""
-"Kerberos потребує DNS-ім'я сервера. З'єднання за IP-адресою або через SSH-"
+"Kerberos потребує DNS-ім'я сервера. З'єднування за IP-адресою або через SSH-"
 "тунель не працює."
 
 #: rustconn/src/embedded_rdp/connection.rs:3253
@@ -12541,7 +12541,7 @@ msgstr "Збережи поточний пошук…"
 
 #: rustconn/src/sidebar/saved_searches.rs:109
 msgid "No saved searches yet"
-msgstr "Збережених пошуків ще немає"
+msgstr "Збережених пошуків ще нема"
 
 #: rustconn/src/sidebar/saved_searches.rs:148
 msgid "Rename saved search {}"
@@ -12569,7 +12569,7 @@ msgstr "Вилучити збережений пошук?"
 
 #: rustconn/src/sidebar/saved_searches.rs:262
 msgid "“{}” will be removed. Your connections are not affected."
-msgstr "«{}» буде вилучено. Ваші підключення не зміняться."
+msgstr "«{}» буде вилучено. Твої з'єднки не зміняться."
 
 #: rustconn/src/sidebar/search.rs:21
 msgid "Search Syntax"
@@ -14628,12 +14628,12 @@ msgstr ""
 
 #: rustconn/src/window/macro_dispatch.rs:387
 msgid "Undefined variables: {}"
-msgstr "Невизначені змінні: {}"
+msgstr "Невизначені змінниці: {}"
 
 #: rustconn/src/window/macro_dispatch.rs:400
 msgid ""
 "A variable value contains characters that cannot be typed into a terminal"
-msgstr "Значення змінної містить символи, які не можна ввести в термінал"
+msgstr "Значення змінниці містить символи, які не можна ввести в термінал"
 
 #: rustconn/src/window/macro_dispatch.rs:409
 msgid "Command macro"
@@ -15779,7 +15779,7 @@ msgstr ""
 
 #: rustconn/src/window/split_view_actions.rs:1389
 msgid "There are no other tabs that can be shown in a split."
-msgstr "Немає інших вкладок, які можна показати в розділеному вигляді."
+msgstr "Нема інших вкладок, які можна показати в розділеному вигляді."
 
 #: rustconn/src/window/split_view_actions.rs:1488
 msgid "Some tabs could not be added to the split."
