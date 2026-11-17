@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.25.2
+Version:        0.25.3
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
