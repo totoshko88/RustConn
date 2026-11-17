@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **New/Edit Cluster dialog fits its content** — the dialog had a fixed 580 px height, so the form was cut off and the connection list was squeezed. It now takes the height of its content, never more than the window, and scrolls on small screens.
 - **Editing a connection keeps its hidden protocol fields** — saving the connection dialog dropped settings it has no widget for: MOSH custom arguments, the username of a Cloudflare Access, Teleport or Tailscale SSH connection, RDP paste-via-clipboard turned off, and a Kubernetes shell outside the dialog's four choices. A default value from the dialog now leaves the stored one in place. (`rustconn-core/src/connection/manager.rs`)
 - **Deleting a smart folder asks first** — the red menu item removed the filter at once, with no Undo. It now opens a **Delete …?** dialog (Cancel is the default). (`rustconn/src/window/smart_folders.rs`)
 
