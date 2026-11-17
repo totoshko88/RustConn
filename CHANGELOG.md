@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Custom SSH options keep their order and no longer suggest turning host key checking off** — the Custom Options field listed the options in a different order on every open, and its placeholder and the User Guide example offered `StrictHostKeyChecking=no`. Options are shown sorted and the example is `ServerAliveInterval=60, Compression=yes`. (`rustconn/src/dialogs/connection/dialog/populate.rs`, `ssh.rs`)
 - **Untranslated texts in the connection dialog and Template Manager** — the **Jump Host** and **Tunnel** lists showed `(None)`, the **Username** placeholder `(default: …)`, the template rows `Host:`/`Port:`/`User:`, and the Expect pattern tester its result lines in English. They go through gettext now. (`general_tab.rs`, `dialog/populate.rs`, `dialog/rows.rs`, `template_manager.rs`)
 - **Duplicate via Wizard… fills in everything the wizard can show** — the wizard copied only name, host, port, user, domain and icon. It now also restores the Serial device and baud rate, the Kubernetes context, namespace, pod and container, the Zero Trust provider and its fields, the Web URL, the jump host, the SSH authentication method and the key file. (`rustconn/src/dialogs/connection_wizard/`)
+- **fwknop SPA needs both keys** — a connection with SPA enabled and only one of the Rijndael and HMAC keys sent no packet and gave no hint. **Save** now asks for both. The model documentation no longer says the keys are stored in the vault: they are still written to `connections.json` as typed. (`rustconn/src/dialogs/connection/builders.rs`, `rustconn-core/src/connection/knock.rs`)
 
 ### Changed
 
@@ -31,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 
 - **Duplicate as Range shows a syntax example** — the dialog text now names `web[01-10]`. (`rustconn/src/window/operations.rs`)
+
+### Documentation
+
+- **User Guide matches the connection editor** — removed the Window Mode and Remember Position fields the Advanced tab does not have (the mode is set with `rustconn-cli --window-mode`), renamed the "Authentication Tab" to the Authentication group on the Basic tab, pointed ProxyJump to the Protocol tab, corrected the template buttons (**New Template**, **Use Template**) and dropped **Create Template from Connection**, which does not exist. Added **Batch Edit**, **Duplicate via Wizard…** and the editor's Cancel, Enter and discard check. (`docs/USER_GUIDE.md`)
 
 ## [0.25.2] - 2026-11-17
 

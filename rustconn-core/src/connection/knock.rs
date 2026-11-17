@@ -146,17 +146,18 @@ pub enum SpaAllowIp {
 
 /// fwknop SPA configuration per connection
 ///
-/// Keys are stored as `SecretString` at runtime; serialized form holds
-/// only a reference (vault key). The actual key material lives in the
-/// secret backend.
+/// Keys are wrapped in `SecretString` at runtime.
+///
+/// ponytail: the `*_key_ref` fields hold the key text itself and are written
+/// to `connections.json` as typed; no secret backend stores them yet. Move them
+/// to the vault, with a migration that keeps old files loading, when the
+/// backends can hold more than user/password/domain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SpaConfig {
     /// Rijndael (AES-256-CBC) key — passphrase or base64
-    /// Stored in vault; this field holds the vault reference key
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rijndael_key_ref: Option<String>,
     /// HMAC key — passphrase or base64 (recommended)
-    /// Stored in vault; this field holds the vault reference key
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hmac_key_ref: Option<String>,
     /// Access specification (e.g. "tcp/22" or "tcp/22,tcp/443")
