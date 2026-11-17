@@ -52,6 +52,14 @@ readline <variable> [<timeout-seconds>]
     Wait for a complete line of output and store it (without the line break)
     in a variable.
 
+pager <regex>
+    Answer the device's pager prompt automatically. While an expect, capture
+    or readline is waiting, output matching the expression is removed from the
+    buffer and a space is sent, so a device that cannot disable paging (Huawei
+    SmartAX OLTs, for one) still reaches its final prompt. The expression may
+    be written bare or delimited with slashes. It stays in effect for the rest
+    of the script.
+
 getprompt <variable>
     Guess the current prompt of the session and store it. The guess is the
     text on the cursor's line with escape sequences removed. It is a
@@ -70,10 +78,12 @@ print <text>
 2. USER INTERACTION
 -------------------
 
-ask "<prompt>" [hide] <variable>
+ask "<prompt>" [hide] [default "<value>"] <variable>
     Ask the user for input and store the answer in a variable. With the "hide"
-    keyword the input is masked (use it for passwords). Cancelling the dialog
-    stops the script with an error.
+    keyword the input is masked (use it for passwords). With "default" the
+    field is pre-filled with the value, selected so typing replaces it and
+    Enter accepts it. The keywords may appear in either order. Cancelling the
+    dialog stops the script with an error.
 
 msg <text> [ok]
     Show a message window. With the "ok" keyword the window has an OK button.

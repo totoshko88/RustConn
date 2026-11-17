@@ -158,11 +158,11 @@ impl ScriptHost for GuiHost {
         (!cleaned.is_empty()).then_some(cleaned)
     }
 
-    fn ask(&mut self, prompt: &str, echo: bool) {
+    fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>) {
         let engine = Rc::clone(&self.engine);
         let resume = Rc::clone(&self.resume);
         let parent = parent_widget(&self.runtime);
-        show_ask_dialog(parent.as_ref(), prompt, echo, move |answer| {
+        show_ask_dialog(parent.as_ref(), prompt, echo, default, move |answer| {
             let mut engine = engine.borrow_mut();
             engine.on_ask_result(answer);
             drop(engine);
@@ -761,6 +761,7 @@ fn show_ask_dialog(
     parent: Option<&gtk4::Widget>,
     prompt: &str,
     echo: bool,
+    default: Option<&str>,
     callback: impl FnOnce(Option<String>) + 'static,
 ) {
     use adw::prelude::*;
@@ -780,6 +781,11 @@ fn show_ask_dialog(
             .build()
     };
     entry.set_activates_default(true);
+    // A pre-filled answer is selected so typing replaces it and Enter keeps it.
+    if let Some(default) = default {
+        entry.set_text(default);
+        entry.select_region(0, -1);
+    }
     dialog.set_extra_child(Some(&entry));
 
     dialog.add_response("cancel", &crate::i18n::i18n("Cancel"));
@@ -788,10 +794,11 @@ fn show_ask_dialog(
     dialog.set_close_response("cancel");
 
     let callback = std::cell::RefCell::new(Some(callback));
+    let response_entry = entry.clone();
     dialog.connect_response(None, move |_, response| {
         if let Some(callback) = callback.borrow_mut().take() {
             if response == "ok" {
-                let value = entry.text().to_string();
+                let value = response_entry.text().to_string();
                 callback(Some(value));
             } else {
                 callback(None);
@@ -803,6 +810,9 @@ fn show_ask_dialog(
         dialog.present(Some(parent));
     } else {
         dialog.present(None::<&gtk4::Widget>);
+    }
+    if default.is_some() {
+        entry.grab_focus();
     }
 }
 

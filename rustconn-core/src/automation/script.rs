@@ -85,6 +85,13 @@ pub enum ScriptStep {
         /// Timeout in milliseconds; `None` uses [`DEFAULT_TIMEOUT_MS`].
         timeout_ms: Option<u32>,
     },
+    /// Answers the device's pager prompt with a space while a pattern wait is
+    /// pending, so devices that cannot disable paging still dump the whole
+    /// configuration.
+    Pager {
+        /// Regex matching the pager prompt, e.g. `--More--`.
+        pattern: String,
+    },
     /// Guesses the current prompt (host-side) and stores it.
     GetPrompt {
         /// Script variable receiving the guessed prompt.
@@ -103,6 +110,8 @@ pub enum ScriptStep {
         prompt: String,
         /// Whether the input is masked (secret).
         echo: bool,
+        /// Pre-filled answer; the user can edit it before accepting.
+        default: Option<String>,
         /// Script variable receiving the answer.
         variable: String,
     },
@@ -337,8 +346,9 @@ pub trait ScriptHost {
     fn get_prompt(&mut self) -> Option<String>;
 
     /// Shows an input dialog; the answer arrives via
-    /// [`ScriptEngine::on_ask_result`].
-    fn ask(&mut self, prompt: &str, echo: bool);
+    /// [`ScriptEngine::on_ask_result`]. A `default` is offered as the
+    /// pre-filled, editable answer.
+    fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>);
 
     /// Shows a message window.
     fn message(&mut self, text: &str, ok_button: bool);
@@ -381,6 +391,10 @@ pub trait ScriptHost {
 /// A variable may hold an `ask … hide` answer, so `Debug` names variables
 /// without their values, and every value is zeroized when it is replaced or
 /// the engine is dropped.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "independent flags (masked ask, cancelled, finished, pager reply); a state enum would conflate them"
+)]
 pub struct ScriptEngine {
     program: ScriptProgram,
     pc: usize,
@@ -410,6 +424,11 @@ pub struct ScriptEngine {
     session_uuid_var: Option<String>,
     session_tmp_uuid_var: Option<String>,
     expect_pattern: Option<String>,
+    /// Regex of the device's pager prompt, set by `pager`.
+    pager_pattern: Option<String>,
+    /// A pager prompt was answered; `pump` must send a space before the
+    /// suspended step runs again.
+    pager_armed: bool,
 }
 
 impl ScriptEngine {
@@ -447,6 +466,8 @@ impl ScriptEngine {
             session_uuid_var: None,
             session_tmp_uuid_var: None,
             expect_pattern: None,
+            pager_pattern: None,
+            pager_armed: false,
         }
     }
 
@@ -494,6 +515,12 @@ impl ScriptEngine {
     pub fn pump(&mut self, host: &mut dyn ScriptHost) {
         // Bounded loop: every iteration either advances `pc` or suspends.
         while !self.finished && !self.canceled && self.pending == PendingKind::None {
+            if self.pager_armed {
+                self.pager_armed = false;
+                // The paused step runs again on the buffer with the pager text
+                // removed, so it can match the real prompt or arm another page.
+                host.send(&KeySequence::parse(" ").unwrap_or_default());
+            }
             if self.steps_executed >= MAX_STEPS_EXECUTED {
                 self.finish(Some(format!(
                     "Script exceeded the {MAX_STEPS_EXECUTED}-instruction limit (runaway loop?)"
@@ -557,6 +584,10 @@ impl ScriptEngine {
                     let _ = timeout_ms;
                 }
             }
+            ScriptStep::Pager { pattern } => {
+                self.pager_pattern = Some(pattern);
+                self.advance();
+            }
             ScriptStep::GetPrompt { variable } => {
                 if let Some(prompt) = host.get_prompt() {
                     self.set_var(variable, prompt);
@@ -580,13 +611,15 @@ impl ScriptEngine {
             ScriptStep::Ask {
                 prompt,
                 echo,
+                default,
                 variable,
             } => {
                 let prompt = self.substitute(&prompt);
+                let default = default.as_ref().map(|d| self.substitute(d));
                 self.ask_var = Some(variable);
                 self.ask_hidden = !echo;
                 self.pending = PendingKind::Ask;
-                host.ask(&prompt, echo);
+                host.ask(&prompt, echo, default.as_deref());
             }
             ScriptStep::Message { text, ok_button } => {
                 let text = self.substitute(&text);
@@ -730,10 +763,39 @@ impl ScriptEngine {
         };
         if satisfied {
             self.pending = PendingKind::None;
-            true
-        } else {
-            false
+            return true;
         }
+        // A pager prompt gets a space instead of failing the wait; the
+        // suspended step then runs again with the pager text removed.
+        if matches!(
+            self.pending,
+            PendingKind::Expect | PendingKind::Capture | PendingKind::ReadLine
+        ) && self.answer_pager()
+        {
+            self.pending = PendingKind::None;
+            return true;
+        }
+        false
+    }
+
+    /// Removes one pager prompt from the buffer and arms a space. Returns
+    /// whether a `pager` pattern is set and matched.
+    fn answer_pager(&mut self) -> bool {
+        let Some(pattern) = self.pager_pattern.clone() else {
+            return false;
+        };
+        let Some(regex) = self.compiled(&pattern) else {
+            return false;
+        };
+        let Some(range) = regex
+            .find(&self.buffer)
+            .map(|found| found.start()..found.end())
+        else {
+            return false;
+        };
+        self.buffer.replace_range(range, "");
+        self.pager_armed = true;
+        true
     }
 
     /// Fires when a `wait` timer expires or a pattern-wait times out.
@@ -1295,6 +1357,14 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
                 timeout_ms,
             })
         }
+        "pager" => {
+            let pattern = pattern(&arg(1)?);
+            Regex::new(&pattern).map_err(|e| ScriptParseError::InvalidRegex {
+                line: line_no,
+                message: e.to_string(),
+            })?;
+            Ok(ScriptStep::Pager { pattern })
+        }
         "getprompt" => {
             let variable = var_name(&arg(1)?);
             Ok(ScriptStep::GetPrompt { variable })
@@ -1310,19 +1380,29 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
         }
         "ask" => {
             let prompt = arg(1)?;
-            let last = tokens
-                .last()
-                .cloned()
-                .ok_or_else(|| ScriptParseError::MissingArgument {
-                    line: line_no,
-                    message: "ask needs a variable".to_string(),
-                })?;
-            let echo = !tokens.iter().any(|t| t == "hide");
-            let variable = if echo && tokens.len() == 2 {
-                var_name(&prompt)
-            } else {
-                var_name(&last)
-            };
+            let mut echo = true;
+            let mut default = None;
+            let mut variable = None;
+            let mut i = 2;
+            while let Some(token) = tokens.get(i) {
+                match token.as_str() {
+                    "hide" => echo = false,
+                    "default" => {
+                        let value = tokens.get(i + 1).cloned().ok_or_else(|| {
+                            ScriptParseError::MissingArgument {
+                                line: line_no,
+                                message: "default needs a value".to_string(),
+                            }
+                        })?;
+                        default = Some(value);
+                        i += 1;
+                    }
+                    _ => variable = Some(var_name(token)),
+                }
+                i += 1;
+            }
+            // `ask "Prompt"` derives the variable from the prompt text.
+            let variable = variable.unwrap_or_else(|| var_name(&prompt));
             if variable.is_empty() {
                 return Err(ScriptParseError::MissingArgument {
                     line: line_no,
@@ -1332,6 +1412,7 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
             Ok(ScriptStep::Ask {
                 prompt,
                 echo,
+                default,
                 variable,
             })
         }
@@ -1523,8 +1604,9 @@ mod tests {
         fn get_prompt(&mut self) -> Option<String> {
             self.prompt.clone()
         }
-        fn ask(&mut self, prompt: &str, echo: bool) {
-            self.events.push(format!("ask:{prompt}:{echo}"));
+        fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>) {
+            self.events
+                .push(format!("ask:{prompt}:{echo}:{}", default.unwrap_or("")));
         }
         fn message(&mut self, text: &str, ok_button: bool) {
             self.events.push(format!("msg:{text}:{ok_button}"));
@@ -1563,6 +1645,33 @@ mod tests {
         let mut engine = ScriptEngine::parse(source).expect("script should parse");
         engine.pump(host);
         engine
+    }
+
+    /// A `pager` pattern answers the device's pager prompt with a space and
+    /// keeps the same `expect` waiting, so a device that cannot disable
+    /// paging still reaches its final prompt.
+    #[test]
+    fn pager_answers_the_more_prompt_and_keeps_waiting() {
+        let mut host = FakeHost::default();
+        let mut engine =
+            ScriptEngine::parse("pager \"---- More .*----\"\nexpect \"R1#\\s*$\" 30\n").unwrap();
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        assert!(engine.on_output(b"line 1\r\n---- More ( Press 'Q' to break ) ----"));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+        assert_eq!(host.events, vec!["send: "]);
+
+        assert!(engine.on_output(b"line 2\r\n---- More ( Press 'Q' to break ) ----"));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+        assert_eq!(host.events, vec!["send: ", "send: "]);
+
+        assert!(engine.on_output(b"line 3\r\nR1# "));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
     }
 
     #[test]
@@ -1691,11 +1800,38 @@ mod tests {
         let mut engine = ScriptEngine::parse("ask \"Value:\" hide val\nprint $val\n").unwrap();
         engine.pump(&mut host);
         assert_eq!(engine.pending(), PendingKind::Ask);
-        assert_eq!(host.events, vec!["ask:Value::false"]);
+        assert_eq!(host.events, vec!["ask:Value::false:"]);
         engine.on_ask_result(Some("hunter2".to_string()));
         engine.pump(&mut host);
         assert!(engine.is_finished());
-        assert_eq!(host.events, vec!["ask:Value::false", "print:hunter2"]);
+        assert_eq!(host.events, vec!["ask:Value::false:", "print:hunter2"]);
+    }
+
+    #[test]
+    fn ask_offers_a_substituted_default() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse(
+            "set vlan 500\nask \"VLAN:\" default $vlan hide value\nprint $value\n",
+        )
+        .unwrap();
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert_eq!(host.events, vec!["ask:VLAN::false:500"]);
+        engine.on_ask_result(Some("600".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert_eq!(host.events, vec!["ask:VLAN::false:500", "print:600"]);
+    }
+
+    #[test]
+    fn ask_default_without_a_variable_derives_it_from_the_prompt() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse("ask \"Port\" default \"22\"\nprint $Port\n").unwrap();
+        engine.pump(&mut host);
+        assert_eq!(host.events, vec!["ask:Port:true:22"]);
+        engine.on_ask_result(Some("22".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.variable("Port"), Some("22"));
     }
 
     #[test]

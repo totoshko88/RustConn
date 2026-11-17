@@ -2275,6 +2275,11 @@ Which browser modes honour it:
 **Downloads:**
 Files are automatically saved to `~/Downloads/`. A toast notification "Downloaded: {filename}" appears when a download completes.
 
+**WebCodecs streaming (Selkies):**
+WebKitGTK 2.44 and newer implement the WebCodecs API, and Selkies uses it for its default WebSocket transport, so Selkies can stream in the embedded pane on a runtime that ships it (the Flatpak and current distribution packages do). Checked end-to-end on WebKitGTK 2.52 against a Selkies 2.2.1 server: the H.264 WebSocket stream rendered live in the embedded pane, with Selkies reframing H.264 into the length-prefixed form WebKit expects, and VP8 and VP9 also decode through `VideoDecoder`.
+
+WebKitGTK has no WebRTC (`RTCPeerConnection` is not available), so Selkies' optional **WebRTC** transport and its webcam uplink do not work in the embedded pane. Keep Selkies on its default **WebSockets** transport. If a stream stays black, pick VP8 or VP9 in Selkies' video settings, or open the page in System or a Chromium-based Custom browser.
+
 **Open in System Browser:**
 Available via the "⋯" menu → "Open in System Browser" — opens the current page URL in your default system browser using `UriLauncher` (portal-aware, works in Flatpak).
 
@@ -2289,7 +2294,7 @@ Available via the "⋯" menu → "Open in System Browser" — opens the current 
 | Enter (in URL bar) | Navigate to entered URL |
 
 **Known Limitations:**
-- WebKitGTK does not support WebCodecs (needed for Selkies/WebRTC streaming)
+- WebKitGTK 2.44 and newer provide WebCodecs, so Selkies' default WebSocket transport can stream in the embedded pane; WebRTC is not available in WebKitGTK, so Selkies' WebRTC transport needs an external Chromium-based browser
 - No DRM/EME content (Widevine not available in WebKitGTK)
 - Embedded mode is Linux-only (requires WebKitGTK 6.0)
 - In the snap package the embedded browser is available since 0.24.0 (issue [#244](https://github.com/totoshko88/RustConn/issues/244)), using the WebKitGTK 6.0 of the gnome-core26 platform. WebKit turns its own bubblewrap sandbox off inside a snap, so the web content is confined only by the snap's strict confinement and has the same access as RustConn itself. See [Snap — Embedded web browser](SNAP.md#embedded-web-browser-webkitgtk); use System or Custom mode for a connection where that matters.
@@ -2894,7 +2899,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
 | `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` |
 | `print <text>` | Print an ANSI-coloured message on the terminal |
-| `ask "<prompt>" [hide] <var>` | Ask the user for input; `hide` masks it |
+| `ask "<prompt>" [hide] [default "<value>"] <var>` | Ask the user for input; `hide` masks it, `default` pre-fills it |
 | `msg <text> [ok]` | Show a message window (optionally with an OK button) |
 | `start <name-or-uuid> [manual] [-> uuid,tmp]` | Start a session; optionally record its ids |
 | `select <name-or-uuid> [-> uuid,tmp]` | Select an open session |
@@ -3024,23 +3029,91 @@ Why it is written that way:
 
 `example-cisco-inventory` is the read-only sibling: it writes `show version`
 and `show interfaces status` to `cisco-inventory-<device>-<timestamp>.log`
-with the same prompt, mode and confirmation checks. Both scripts are seeded
-into the script library on first run; an existing copy is never overwritten.
+with the same prompt, mode and confirmation checks. Bundled scripts are added
+on first run and refreshed automatically when a new version ships; an edit to
+an `example-*` script is replaced, so save your adaptation under a new id.
 
-Two more bundled profiles keep the same confirmation, timestamped-log and
-read-only behaviour with the vendor's own prompt and commands:
+Twenty-seven more bundled profiles keep the same confirmation, timestamped-log
+and read-only behaviour with each vendor's prompt and commands. Between them
+they cover the brands most often seen in CIS and Chinese networks:
 
 | Example | Mode accepted | Paging | Configuration read |
 |---------|---------------|--------|--------------------|
 | `example-huawei-save-config` | user view `<host>`; system view `[host]` is refused | `screen-length 0 temporary` | `display current-configuration` |
-| `example-hsgq-save-config` | enable mode `<host>#`; user mode `>` and `(config)#` are refused | none — HSGQ documents no pager command | `show current-config` |
+| `example-h3c-save-config` | user view `<host>`; system view `[host]` is refused | `screen-length disable` | `display current-configuration` |
+| `example-hsgq-save-config` | enable mode `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show current-config` |
+| `example-dlink-xstack-save-config` | administrator prompt `<host>#`; `(config)#` is refused | `disable clipaging` | `show configuration running` |
+| `example-dlink-dgs1210-save-config` | administrator prompt `<model>:<account>#` | `pager` directive | `show config` |
+| `example-tplink-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-ruijie-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `terminal length 0` | `show running-config` |
+| `example-zte-save-config` | administrator `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-mikrotik-save-config` | any RouterOS prompt `[admin@host] >` | none — RouterOS does not paginate | `/export verbose show-sensitive` |
+| `example-eltex-save-config` | privileged `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config detailed` (includes keys, so the log holds secrets) |
+| `example-bdcom-save-config` | administrator `<host>#`; the `_config#` prompt is refused | `terminal length 0` | `show running-config` |
+| `example-ubiquiti-save-config` | operational `user@host:~$`; configuration mode `#` is refused | none — EdgeOS does not paginate | `show configuration commands` |
+| `example-juniper-save-config` | operational mode `user@host>`; configuration mode `user@host#` is refused | `\| no-more` on the read command | `show configuration` |
+| `example-huawei-olt-save-config` | enable mode `MA5680T#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive — SmartAX cannot disable paging | `display current-configuration` (an extra ENTER accepts the filter prompt) |
+| `example-raisecom-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-qtech-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-zyxel-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-cdata-save-config` | enable mode `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-vsol-save-config` | enable mode `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-maipu-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-hikvision-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-dahua-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-netgear-save-config` | `(model)#` administrator prompt | `pager` directive | `show running-config` |
+| `example-aruba-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `no page` | `show running-config` |
+| `example-arista-save-config` | privileged EXEC `<host>#` | `terminal length 0` | `show running-config` |
+| `example-extreme-save-config` | administrator prompt `<host> #` (a space before `#`) | `disable clipaging` | `show configuration` |
+| `example-allied-save-config` | privileged EXEC `awplus#` | `terminal length 0` | `show running-config` |
+
+`example-huawei-olt-provision-ont` is the write counterpart for SmartAX GPON
+OLTs. It asks for the service VLAN, uplink frame/slot and port, PON slot and
+port, ONT ID and serial number, service and line profile IDs, existing DBA and
+traffic table IDs, Ethernet port count and description, pre-filling every
+answer with an example value (only the serial number has no default). Every
+answer is validated before anything is sent, the whole plan is printed for
+review, and the commands run only after an explicit **yes**. The transcript
+goes to `huawei-olt-provision-<device>-<timestamp>.log`, and the script
+deliberately does not save the OLT configuration — save it once the ONT works.
+The profile prompts differ between releases (`config-gpon-srvprofile-N` on the
+R011 line and `config-srvprofile-gpon-N` on others), and both are accepted.
 
 For another CLI, copy the closest example and change the prompt regex, the
 paging command and the read command. Those three lines are the whole device
-profile; the safety flow around them does not change. The HSGQ script does not
-send a paging command, so if a model pauses at `--More--`, the `expect` times
-out rather than saving a truncated transcript. Add that model's pager command
-once its syntax is known.
+profile; the safety flow around them does not change. The HSGQ, DGS-1210,
+TP-Link, ZTE, Eltex, Raisecom, QTECH, MikroTik, Ubiquiti, Zyxel, C-Data, VSOL,
+Maipu, Hikvision, Dahua and Netgear scripts do not send a vendor paging
+command. Instead they begin `:save` with
+`pager "(--More--|---- More .*----|Press any key)"`, which answers a pager
+prompt with a space while the `expect` waits, so a device that cannot disable
+paging still produces a complete transcript. If a model uses different pager
+text, add it to that expression; otherwise the `expect` times out rather than
+saving a truncated file.
+
+Only two of these CLIs offer a documented way to include secrets:
+`/export verbose show-sensitive` on RouterOS and `show running-config detailed`
+on the Eltex MES (binary data such as SSH and SSL keys). The rest print hashes
+or ciphertext by design — `enable secret` on Cisco, `cipher` on Huawei and H3C,
+`encrypted-password` on EdgeOS, `## SECRET-DATA` on Junos — and have no reveal
+switch. Those transcripts are restore-useful but not credential-complete; for
+MikroTik and Eltex, treat the log as a credential file.
+
+When a profile lands in user mode (a prompt ending in `>`), it sends `enable`
+and continues in privileged mode instead of refusing. If the device asks for an
+enable password, the script asks for it with a masked dialog; the answer is sent
+to the device and never enters the transcript. A rejected password stops the
+script before anything is read. Profiles for CLIs without an enable level —
+D-Link, H3C, Huawei VRP, Juniper, MikroTik, Ubiquiti and Extreme — never send
+it. Configuration mode is still refused in every profile.
+
+The DGS-1210 prompt carries the model and the account (`DGS-1210-24:admin#`), so
+that profile names the file after the model before the colon, not the account.
+MikroTik sends the absolute `/export verbose show-sensitive`, so a session left
+inside `/interface` still exports the whole configuration, default values are
+included, and secrets are included too. That last flag means the log holds
+passwords and keys: treat it exactly like the device's configuration backup and
+keep it out of shared folders and version control.
 
 **Example — run a command and capture its output:**
 
@@ -3080,6 +3153,18 @@ The capture group picks the text after `up`, so a session showing
 
 For an ordinary shell whose prompt ends in `$`, use `example-shell-uptime`,
 which is the same script with `expect "\$"`.
+
+**Example — save the OpenWrt UCI configuration**
+
+`example-openwrt-save-uci` dumps the whole configuration with `uci export`,
+which prints every package as `config` blocks and writes nothing to the router.
+It takes the device name from the prompt (`root@OpenWrtMx4300:~#` becomes
+`OpenWrtMx4300`), asks for confirmation, and writes
+`openwrt-<host>-<YYYYMMDD-HHMMSS>.log`. A non-root shell (`user@host:~$`) is
+refused, because `uci` and the configuration files it reads are root-only.
+There is no pager to disable: the BusyBox shell prints the dump in one go.
+Validated against OpenWrt 25.12.5 (aarch64) on the router named
+`OpenWrtMx4300`: 956 lines across 39 packages, then the prompt returned.
 
 **Full language reference**
 

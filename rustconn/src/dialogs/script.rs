@@ -8,7 +8,8 @@ use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, Entry, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow, TextView,
+    Box as GtkBox, Button, Entry, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow,
+    SearchEntry, TextView,
 };
 use libadwaita as adw;
 use rustconn_core::script::ScriptManager;
@@ -30,6 +31,14 @@ const BUNDLED_EXAMPLES: &[(&str, &str)] = &[
         "example-openwrt-uptime",
         // OpenWrt / BusyBox root prompt ends in `#` (root@OpenWrt:~#).
         "expect \"#\" 15\nsend \"uptime{ENTER}\"\ncapture /up\\s+([^,]+)/ up 10\nprint \"Uptime: $up\"\n",
+    ),
+    (
+        "example-openwrt-save-uci",
+        // OpenWrt's UCI is the whole configuration: `uci export` prints every
+        // package as `config` blocks and writes nothing to the router. The
+        // prompt is `root@OpenWrtMx4300:~#`, so the device name is the host
+        // between `@` and `:`; a non-root shell ends in `$` and is refused.
+        "getprompt prompt\nsend \"{ENTER}\"\ncapture /@([A-Za-z0-9][A-Za-z0-9._-]*):[^#$\\s]*[#$]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#$])\\s*$/ mode 10\nif_goto $mode /^#$/ root\nmsg \"This script needs a root shell (the prompt ends in the hash sign). Log in as root, then start it again.\" ok\ngoto done\n\n:root\nset file openwrt-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the UCI configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nlog $file\nprint \"Capturing the UCI configuration...\"\nsend \"uci export{ENTER}\"\nexpect \"/@[A-Za-z0-9][A-Za-z0-9._-]*:[^#$\\s]*#\\s*$/\" 60\nlog\nprint \"UCI configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"OpenWrt UCI save-config script finished.\"\n",
     ),
     (
         "example-ping",
@@ -63,7 +72,7 @@ const BUNDLED_EXAMPLES: &[(&str, &str)] = &[
         // The two ENTERs make a fresh prompt arrive even when the session
         // already shows the old one: the first captures the host name, the
         // second the mode character.
-        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs privileged EXEC mode (the prompt ends in the hash sign). Run enable, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:privileged\nset file cisco-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Cisco save-config script finished.\"\n",
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file cisco-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Cisco save-config script finished.\"\n",
     ),
     (
         "example-cisco-inventory",
@@ -71,7 +80,7 @@ const BUNDLED_EXAMPLES: &[(&str, &str)] = &[
         // log per device, and the same explicit yes before a local file is
         // written. Prompt regex and paging command are the two Cisco-specific
         // assumptions; edit them for another vendor.
-        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs privileged EXEC mode (the prompt ends in the hash sign). Run enable, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:privileged\nset file cisco-inventory-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the inventory to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nsend \"show version{ENTER}\"\nexpect \"/[#>]\\s*$/\" 60\nsend \"show interfaces status{ENTER}\"\nexpect \"/[#>]\\s*$/\" 60\nlog\nprint \"Inventory saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Cisco inventory script finished.\"\n",
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file cisco-inventory-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the inventory to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nsend \"show version{ENTER}\"\nexpect \"/[#>]\\s*$/\" 60\nsend \"show interfaces status{ENTER}\"\nexpect \"/[#>]\\s*$/\" 60\nlog\nprint \"Inventory saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Cisco inventory script finished.\"\n",
     ),
     (
         "example-huawei-save-config",
@@ -85,19 +94,413 @@ const BUNDLED_EXAMPLES: &[(&str, &str)] = &[
         "example-hsgq-save-config",
         // HSGQ EPON OLT profile: `OLT#` is enable mode, `OLT>` is user
         // mode and `OLT(config)#` is configuration mode. HSGQ documents
-        // `show current-config` but no pager command, so no paging line is
-        // sent; a `--More--` pause would time the expect out, never save a
-        // truncated file silently.
-        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs enable mode (the prompt ends in the hash sign). Run enable, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in enable mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:privileged\nset file hsgq-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the current configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nlog $file\nprint \"Capturing the current configuration...\"\nsend \"show current-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Current configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"HSGQ save-config script finished.\"\n",
+        // `show current-config` but no pager command, so the `pager`
+        // directive answers any `--More--` prompt instead.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in enable mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file hsgq-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the current configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the current configuration...\"\nsend \"show current-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Current configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"HSGQ save-config script finished.\"\n",
+    ),
+    (
+        "example-dlink-xstack-save-config",
+        // D-Link xStack managed switches (DGS-3100/3200/3600) print
+        // `DGS-3100-24#` and switch to `... (config)#` in configuration
+        // mode. `disable clipaging` turns off the `--More--` pager and
+        // `show configuration running` is the read-only command.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs the administrator prompt (ending in the hash sign). Log in with administrator rights, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run outside configuration mode. Leave it with exit, then start the script again.\" ok\ngoto done\n\n:privileged\nset file dlink-xstack-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"disable clipaging{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show configuration running{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"D-Link xStack save-config script finished.\"\n",
+    ),
+    (
+        "example-dlink-dgs1210-save-config",
+        // The DGS-1210 web-smart family: the prompt carries the model and the
+        // account (`DGS-1210-24:admin#`), the CLI has no configuration mode
+        // and no paging command, and `show config` is the read-only command.
+        // Any `--More--` prompt is answered by the `pager` directive.
+        // The file is named after the model, not the logged-in account.
+        "getprompt prompt\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)(:[^#>\\s]*)?[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs the administrator prompt (ending in the hash sign). Log in with administrator rights, then start it again.\" ok\ngoto done\n\n:privileged\nset file dlink-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the configuration...\"\nsend \"show config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"D-Link DGS-1210 save-config script finished.\"\n",
+    ),
+    (
+        "example-juniper-save-config",
+        // Junos: operational mode is `user@host>` and configuration mode is
+        // `user@host#`, so the greater-than sign is the mode this profile
+        // needs. `| no-more` suppresses the pager on the read command itself,
+        // which is why Junos needs no separate paging command.
+        "getprompt prompt\nif_goto $prompt /#\\s*$/ config_mode\nsend \"{ENTER}\"\ncapture /@([A-Za-z0-9][A-Za-z0-9._-]*)[>#]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([>#])\\s*$/ mode 10\nif_goto $mode /^>$/ operational\nmsg \"This script needs operational mode (the prompt ends in the greater-than sign). Leave configuration mode with exit, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in operational mode. Commit or discard your changes with exit, then start the script again.\" ok\ngoto done\n\n:operational\nset file juniper-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nlog $file\nprint \"Capturing the configuration...\"\nsend \"show configuration | no-more{ENTER}\"\nexpect \"/@[A-Za-z0-9][A-Za-z0-9._-]*[>#]\\s*$/\" 120\nlog\nprint \"Configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Juniper save-config script finished.\"\n",
+    ),
+    (
+        "example-tplink-save-config",
+        // TP-Link JetStream switches use Cisco-shaped prompts (`Switch>`,
+        // `Switch#`, `Switch(config)#`) but their CLI reference documents no
+        // paging command, so the `pager` directive answers `--More--`.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file tplink-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"TP-Link save-config script finished.\"\n",
+    ),
+    (
+        "example-h3c-save-config",
+        // H3C Comware (S/CR/MSR): user view `<H3C>`, system view `[H3C]`.
+        // `screen-length disable` turns paging off for this session and
+        // `display current-configuration` is the read-only command.
+        "getprompt prompt\nif_goto $prompt /^\\s*\\[/ config_mode\nsend \"{ENTER}\"\ncapture /<([A-Za-z0-9][A-Za-z0-9._-]*)>\\s*$/ device 10\nset file h3c-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the current configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"screen-length disable{ENTER}\"\nexpect \"/<[A-Za-z0-9][A-Za-z0-9._-]*>\\s*$/\" 15\nlog $file\nprint \"Capturing the current configuration...\"\nsend \"display current-configuration{ENTER}\"\nexpect \"/<[A-Za-z0-9][A-Za-z0-9._-]*>\\s*$/\" 120\nlog\nprint \"Current configuration saved to $file\"\ngoto done\n\n:config_mode\nmsg \"This script must run in user view. Leave system view with return, then start the script again.\" ok\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"H3C save-config script finished.\"\n",
+    ),
+    (
+        "example-ruijie-save-config",
+        // Ruijie RGOS (RG-S switches, RG-EG gateways) mirrors Cisco:
+        // `Ruijie>` / `Ruijie#` / `Ruijie(config)#`, `terminal length 0`
+        // and `show running-config`.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file ruijie-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Ruijie save-config script finished.\"\n",
+    ),
+    (
+        "example-zte-save-config",
+        // ZTE ZXR10 switches and ZXA10 OLTs: `ZXR10>` / `ZXR10#` /
+        // `ZXR10(config)#` (`ZXAN#` on the OLT). `show running-config` is
+        // read-only. No pager command is documented for this CLI, so the
+        // `pager` directive answers any `--More--` prompt.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run outside configuration mode. Leave it with exit, then start the script again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file zte-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"ZTE save-config script finished.\"\n",
+    ),
+    (
+        "example-mikrotik-save-config",
+        // RouterOS has no enable mode and no pager: `export` prints the
+        // configuration as commands. `/export` is absolute, so a session left
+        // inside `/interface` still exports everything; `verbose` includes
+        // default values and `show-sensitive` includes passwords and keys, so
+        // the resulting log must be protected like any credential file.
+        "send \"{ENTER}\"\ncapture /@([A-Za-z0-9][A-Za-z0-9._-]*)\\][^>]*>\\s*$/ device 10\nset file mikrotik-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the configuration...\"\nsend \"/export verbose show-sensitive{ENTER}\"\nexpect \"/@[A-Za-z0-9][A-Za-z0-9._-]*\\][^>]*>\\s*$/\" 120\nlog\nprint \"Configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"MikroTik save-config script finished.\"\n",
+    ),
+    (
+        "example-eltex-save-config",
+        // Eltex MES switches and ESR routers use a Cisco-like CLI:
+        // `console>` / `console#` / `console(config)#`, with
+        // `show running-config`. The MES CLI has no pager command: its own
+        // binary contains `--More--` but no `terminal length`, so the
+        // `pager` directive answers the prompt. `detailed` is the full form:
+        // it includes binary data such as SSH and SSL keys, so the log holds
+        // secrets.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file eltex-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config detailed{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Eltex save-config script finished.\"\n",
+    ),
+    (
+        "example-bdcom-save-config",
+        // BDCOM switches and EPON/GPON OLTs: `Switch>` / `Switch#`, and the
+        // configuration prompt is `switch_config#` with no parentheses, so
+        // this profile refuses any prompt containing `_config`.
+        // `terminal length 0` and `show running-config` are documented for
+        // both families.
+        "getprompt prompt\nif_goto $prompt /_config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run outside configuration mode. Leave it with exit, then start the script again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file bdcom-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"BDCOM save-config script finished.\"\n",
+    ),
+    (
+        "example-ubiquiti-save-config",
+        // EdgeOS (EdgeRouter, EdgeSwitch): the operational prompt ends in
+        // `$` and configuration mode in `#`. `show configuration commands`
+        // prints the whole configuration and EdgeOS does not paginate.
+        "getprompt prompt\nif_goto $prompt /#\\s*$/ config_mode\nsend \"{ENTER}\"\ncapture /@([A-Za-z0-9][A-Za-z0-9._-]*):[^$#\\s]*[$#]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([$#])\\s*$/ mode 10\nif_goto $mode /^\\$/ operational\nmsg \"This script needs operational mode (the prompt ends in the dollar sign). Leave configuration mode with exit discard, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in operational mode. Leave configuration mode with exit discard, then start it again.\" ok\ngoto done\n\n:operational\nset file ubiquiti-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the configuration...\"\nsend \"show configuration commands{ENTER}\"\nexpect \"/@[A-Za-z0-9][A-Za-z0-9._-]*:[^$#\\s]*\\$\\s*$/\" 120\nlog\nprint \"Configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Ubiquiti save-config script finished.\"\n",
+    ),
+    (
+        "example-huawei-olt-save-config",
+        // Huawei SmartAX OLTs (MA5600T/MA5680T/MA5800) differ from VRP:
+        // `MA5680T>` is user mode, `MA5680T#` is enable and
+        // `MA5680T(config)#` is configuration mode. `display
+        // current-configuration` then asks for an optional filter and needs
+        // an extra ENTER. SmartAX cannot disable paging, so the `pager`
+        // directive answers its `---- More ----` prompt.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([>#])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in enable mode. Leave configuration mode with quit, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file huawei-olt-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the current configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"/---- More .*----/\"\nlog $file\nprint \"Capturing the current configuration...\"\nsend \"display current-configuration{ENTER}\"\nsend \"{ENTER}\"\nexpect \"/[>#]\\s*$/\" 180\nlog\nprint \"Current configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Huawei OLT save-config script finished.\"\n",
+    ),
+    (
+        "example-huawei-olt-provision-ont",
+        // Write script for Huawei SmartAX OLTs (MA5600T/MA5680T/MA5800):
+        // creates the service VLAN and uplink port, a service profile, a line
+        // profile, the ONT and its service port. Every prompt is pre-filled
+        // with an example value; the serial number has no default because it
+        // belongs to the physical ONT. The PON frame is fixed at 0, which is
+        // the only frame on these models. Requires an existing DBA profile and
+        // traffic table, and free profile IDs. The profile prompts are
+        // `config-gpon-srvprofile-N` on R011 and `config-srvprofile-gpon-N` on
+        // other releases, so both orders are accepted; commands otherwise
+        // vary by software version, so check a rejected one with ? on the OLT.
+        // Nothing is saved: the operator saves the configuration manually
+        // after the ONT comes online.
+        r#"pager "/---- More .*----/"
+getprompt prompt
+if_goto $prompt /\(config/ config_mode
+send "{ENTER}"
+capture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\s*$/ device 10
+send "{ENTER}"
+capture /([>#])\s*$/ mode 10
+if_goto $mode /^#$/ config
+goto user_mode
+
+:config_mode
+msg "This script must run in enable mode. Leave configuration mode with quit, then start it again." ok
+goto done
+
+:user_mode
+send "enable{ENTER}"
+capture /(Password:|[#>])\s*$/ enable_reply 15
+if_goto $enable_reply /^Password:$/ enable_password
+if_goto $enable_reply /^#$/ config
+msg "This script could not enter privileged mode. Check the enable password, then start it again." ok
+goto done
+
+:enable_password
+ask "Enable password:" hide enable_pw
+send "${enable_pw}{ENTER}"
+capture /([#>])\s*$/ mode 10
+if_goto $mode /^#$/ config
+msg "This script could not enter privileged mode. Check the enable password, then start it again." ok
+goto done
+
+:config
+send "config{ENTER}"
+expect "/\(config\)#\s*$/" 15
+
+:ask_vlan
+ask "Service VLAN (1-4094):" default "500" vlan
+if_goto $vlan /^([1-9]|[1-9][0-9]|[1-9][0-9]{2}|[1-3][0-9]{3}|40[0-8][0-9]|409[0-4])$/ ask_uplink_fs
+print "The VLAN must be a whole number from 1 to 4094."
+goto ask_vlan
+
+:ask_uplink_fs
+ask "Uplink frame/slot (example 0/19):" default "0/19" uplink_fs
+if_goto $uplink_fs /^[0-9]{1,2}\/[0-9]{1,2}$/ ask_uplink_port
+print "Use frame/slot as two numbers separated by a slash, for example 0/19."
+goto ask_uplink_fs
+
+:ask_uplink_port
+ask "Uplink port on frame 0/<slot>:" default "0" uplink_port
+if_goto $uplink_port /^[0-9]{1,2}$/ ask_pon_slot
+print "The uplink port must be a number, for example 0."
+goto ask_uplink_port
+
+:ask_pon_slot
+ask "PON slot (interface gpon 0/<slot>):" default "1" pon_slot
+if_goto $pon_slot /^[0-9]{1,2}$/ ask_pon_port
+print "The PON slot must be a number, for example 1."
+goto ask_pon_slot
+
+:ask_pon_port
+ask "PON port on that slot:" default "0" pon_port
+if_goto $pon_port /^[0-9]{1,2}$/ ask_ont_id
+print "The PON port must be a number, for example 0."
+goto ask_pon_port
+
+:ask_ont_id
+ask "ONT ID on this PON port (usually 1-128):" default "1" ont_id
+if_goto $ont_id /^[1-9][0-9]{0,2}$/ ask_sn
+print "The ONT ID must be a whole number from 1 to 999."
+goto ask_ont_id
+
+:ask_sn
+ask "ONT serial number (16 hex digits, from the ONT label):" sn
+if_goto $sn /^[0-9A-Fa-f]{16}$/ ask_srv_profile
+print "The serial number must be exactly 16 hexadecimal digits."
+goto ask_sn
+
+:ask_srv_profile
+ask "Service profile ID:" default "10" srv_profile
+if_goto $srv_profile /^[1-9][0-9]{0,3}$/ ask_line_profile
+print "The profile ID must be a whole number from 1 to 9999."
+goto ask_srv_profile
+
+:ask_line_profile
+ask "Line profile ID:" default "10" line_profile
+if_goto $line_profile /^[1-9][0-9]{0,3}$/ ask_dba
+print "The profile ID must be a whole number from 1 to 9999."
+goto ask_line_profile
+
+:ask_dba
+ask "Existing DBA profile ID:" default "10" dba
+if_goto $dba /^[1-9][0-9]{0,3}$/ ask_traffic
+print "The DBA profile ID must be a whole number from 1 to 9999."
+goto ask_dba
+
+:ask_traffic
+ask "Existing traffic table ID:" default "10" traffic
+if_goto $traffic /^[1-9][0-9]{0,5}$/ ask_eth
+print "The traffic table index must be a whole number."
+goto ask_traffic
+
+:ask_eth
+ask "Ethernet ports to enable on the ONT:" default "4" eth
+if_goto $eth /^[1-8]$/ ask_desc
+print "The Ethernet port count must be a number from 1 to 8."
+goto ask_eth
+
+:ask_desc
+ask "ONT description (letters, digits, dot, dash, underscore):" default "RUSTCONN_EXAMPLE" desc
+if_goto $desc /^[A-Za-z0-9_.-]{1,32}$/ preview
+print "The description may contain only letters, digits, dot, dash and underscore (at most 32 characters)."
+goto ask_desc
+
+:preview
+print "The OLT will now be configured with:"
+print "  VLAN: $vlan"
+print "  Uplink: $uplink_fs port $uplink_port"
+print "  PON: 0/$pon_slot/$pon_port, ONT ID $ont_id"
+print "  ONT serial: $sn"
+print "  Service profile $srv_profile, line profile $line_profile"
+print "  DBA profile $dba, traffic table $traffic"
+print "  Ethernet ports: $eth, description: $desc"
+ask "Apply these changes? Type yes to continue, or nothing to cancel:" apply
+if_goto $apply /(?i)^\s*yes\s*$/ write
+print "Nothing was sent to the OLT."
+goto done
+
+:write
+set file huawei-olt-provision-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log
+log $file
+print "Creating the VLAN and uplink port..."
+send "vlan ${vlan} smart{ENTER}"
+expect "/\(config\)#\s*$/" 30
+send "port vlan ${vlan} ${uplink_fs} ${uplink_port}{ENTER}"
+expect "/\(config\)#\s*$/" 30
+
+print "Creating the service profile..."
+send "ont-srvprofile gpon profile-id ${srv_profile}{ENTER}"
+expect "/\((config-srvprofile-gpon|config-gpon-srvprofile)-[0-9]+\)#\s*$/" 30
+send "ont-port eth ${eth}{ENTER}"
+expect "/\((config-srvprofile-gpon|config-gpon-srvprofile)-[0-9]+\)#\s*$/" 30
+send "port vlan eth 1-${eth} ${vlan}{ENTER}"
+expect "/\((config-srvprofile-gpon|config-gpon-srvprofile)-[0-9]+\)#\s*$/" 30
+send "commit{ENTER}"
+expect "/\((config-srvprofile-gpon|config-gpon-srvprofile)-[0-9]+\)#\s*$/" 60
+send "quit{ENTER}"
+expect "/\(config\)#\s*$/" 15
+
+print "Creating the line profile..."
+send "ont-lineprofile gpon profile-id ${line_profile}{ENTER}"
+expect "/\((config-lineprofile-gpon|config-gpon-lineprofile)-[0-9]+\)#\s*$/" 30
+send "tcont 1 dba-profile-id ${dba}{ENTER}"
+expect "/\((config-lineprofile-gpon|config-gpon-lineprofile)-[0-9]+\)#\s*$/" 30
+send "gem add 1 eth tcont 1{ENTER}"
+expect "/\((config-lineprofile-gpon|config-gpon-lineprofile)-[0-9]+\)#\s*$/" 30
+send "gem mapping 1 0 vlan ${vlan}{ENTER}"
+expect "/\((config-lineprofile-gpon|config-gpon-lineprofile)-[0-9]+\)#\s*$/" 30
+send "commit{ENTER}"
+expect "/\((config-lineprofile-gpon|config-gpon-lineprofile)-[0-9]+\)#\s*$/" 60
+send "quit{ENTER}"
+expect "/\(config\)#\s*$/" 15
+
+print "Adding the ONT..."
+send "interface gpon 0/${pon_slot}{ENTER}"
+expect "/(config-if-gpon-0\/[0-9]+)#\s*$/" 15
+send "ont add ${pon_port} ${ont_id} sn-auth ${sn} omci ont-lineprofile-id ${line_profile} ont-srvprofile-id ${srv_profile} desc ${desc}{ENTER}"
+capture "/((?i)(\(y\/n\)|\[y\/n\])|\(config-if-gpon-0\/[0-9]+\)#\s*$)/" add_reply 60
+if_goto $add_reply "/(?i)(\(y\/n\)|\[y\/n\])/" confirm_ont
+goto service_port
+
+:confirm_ont
+send "y{ENTER}"
+expect "/\(config-if-gpon-0\/[0-9]+\)#\s*$/" 60
+
+:service_port
+send "quit{ENTER}"
+expect "/\(config\)#\s*$/" 15
+print "Adding the service port..."
+send "service-port vlan ${vlan} gpon 0/${pon_slot}/${pon_port} ont ${ont_id} gemport 1 multi-service user-vlan ${vlan} inbound traffic-table index ${traffic} outbound traffic-table index ${traffic}{ENTER}"
+expect "/\(config\)#\s*$/" 60
+
+log
+print "Provisioning commands finished. The ONT should come online shortly."
+print "The running configuration has NOT been saved. Save it on the OLT once the ONT works."
+goto done
+
+:done
+print "Huawei OLT provision script finished."
+"#,
+    ),
+    (
+        "example-raisecom-save-config",
+        // Raisecom ISCOM switches: `Raisecom>` / `Raisecom#` /
+        // `Raisecom(config)#`, with `show running-config` in privileged
+        // EXEC. The pager is answered generically because Raisecom documents
+        // no pager command for this CLI.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with exit, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file raisecom-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Raisecom save-config script finished.\"\n",
+    ),
+    (
+        "example-qtech-save-config",
+        // QTECH switches (QSW series): `QTECH>` / `QTECH#` /
+        // `QTECH(config)#`, with `show running-config` in privileged EXEC.
+        // The pager is answered generically because QTECH documents no pager
+        // command for this CLI.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with exit, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file qtech-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"QTECH save-config script finished.\"\n",
+    ),
+    (
+        "example-zyxel-save-config",
+        // Zyxel switches (GS/XGS series) use a Cisco-like CLI: `GS2210-24>`,
+        // `GS2210-24#`, `GS2210-24(config)#`, with `show running-config`.
+        // Zyxel switches page by default and document no pager command, so
+        // the generic `pager` directive answers `--More--`.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with exit, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file zyxel-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Zyxel save-config script finished.\"\n",
+    ),
+    (
+        "example-cdata-save-config",
+        // C-Data OLTs (FD series) use the enable-mode `OLT#` prompt and a
+        // Cisco-like `show running-config`. The pager is answered generically
+        // because C-Data documents no pager command for this CLI.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in enable mode. Leave configuration mode with exit, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file cdata-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"C-Data save-config script finished.\"\n",
+    ),
+    (
+        "example-vsol-save-config",
+        // VSOL (V-SOL) OLTs, same enable-mode `OLT#` shape and
+        // `show running-config`; the pager is answered generically.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in enable mode. Leave configuration mode with exit, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file vsol-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"VSOL save-config script finished.\"\n",
+    ),
+    (
+        "example-maipu-save-config",
+        // Maipu routers and switches: Cisco-shaped `Maipu>` / `Maipu#` /
+        // `Maipu(config)#`, with `show running-config`. The pager is answered
+        // generically.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file maipu-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Maipu save-config script finished.\"\n",
+    ),
+    (
+        "example-hikvision-save-config",
+        // Hikvision access/CCTV switches: Cisco-shaped enable mode and
+        // `show running-config`; the pager is answered generically.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file hikvision-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Hikvision save-config script finished.\"\n",
+    ),
+    (
+        "example-dahua-save-config",
+        // Dahua access/CCTV switches: same Cisco-shaped enable mode and
+        // `show running-config`; the pager is answered generically.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file dahua-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Dahua save-config script finished.\"\n",
+    ),
+    (
+        "example-netgear-save-config",
+        // Netgear ProSAFE managed switches (M4100 and similar): the prompt
+        // may carry the model in parentheses, so the device name is taken from
+        // the last word before the mode character.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\)?\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with exit, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file netgear-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\npager \"(--More--|---- More .*----|Press any key)\"\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Netgear save-config script finished.\"\n",
+    ),
+    (
+        "example-aruba-save-config",
+        // Aruba / HP ProCurve AOS-S switches: `show running-config` in
+        // privileged mode, paging turned off with `no page`.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file aruba-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"no page{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Aruba save-config script finished.\"\n",
+    ),
+    (
+        "example-arista-save-config",
+        // Arista EOS: `show running-config` in privileged mode, paging turned
+        // off with `terminal length 0`.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file arista-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Arista save-config script finished.\"\n",
+    ),
+    (
+        "example-extreme-save-config",
+        // Extreme EXOS: the prompt puts a space before `#` (`X460-48t.1 #`),
+        // the read command is `show configuration`, and paging is turned off
+        // with `disable clipaging`.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs the administrator prompt (ending in the hash sign). Log in with administrator rights, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run outside configuration mode. Leave it, then start the script again.\" ok\ngoto done\n\n:privileged\nset file extreme-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"disable clipaging{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the configuration...\"\nsend \"show configuration{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Extreme save-config script finished.\"\n",
+    ),
+    (
+        "example-allied-save-config",
+        // Allied Telesis AlliedWare Plus: `awplus#` prompt,
+        // `show running-config`, paging turned off with `terminal length 0`.
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)\\s*[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\ngoto user_mode\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:user_mode\nsend \"enable{ENTER}\"\ncapture /(Password:|[#>])\\s*$/ enable_reply 15\nif_goto $enable_reply /^Password:$/ enable_password\nif_goto $enable_reply /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:enable_password\nask \"Enable password:\" hide enable_pw\nsend \"${enable_pw}{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script could not enter privileged mode. Check the enable password, then start it again.\" ok\ngoto done\n\n:privileged\nset file allied-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the running configuration to '${file}'? Type yes, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the running configuration...\"\nsend \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 120\nlog\nprint \"Running configuration saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Allied Telesis save-config script finished.\"\n",
     ),
 ];
 
-/// Writes the bundled examples into the library when they are missing.
+/// Writes the bundled examples into the library, refreshing them when the
+/// shipped source differs.
 ///
-/// An existing file is never overwritten: the user may have edited it.
+/// Bundled ids are managed content: an edited copy under an `example-*` id is
+/// replaced on upgrade, so adaptation belongs in a copy saved under a new id.
+/// An identical file is not rewritten.
 fn seed_bundled_examples(manager: &ScriptManager) {
     for (id, source) in BUNDLED_EXAMPLES {
-        if !manager.has_script(id) {
+        let current = manager.load_script(id).ok();
+        if current.as_deref() != Some(source) {
             let _ = manager.save_script(id, source);
         }
     }
@@ -149,7 +552,6 @@ impl ScriptDialog {
         let script_list = ListBox::builder()
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
-            .width_request(220)
             .build();
         let placeholder = adw::StatusPage::builder()
             .icon_name("utilities-terminal-symbolic")
@@ -159,10 +561,41 @@ impl ScriptDialog {
         script_list.set_placeholder(Some(&placeholder));
         let list_scroll = ScrolledWindow::builder()
             .child(&script_list)
-            .width_request(220)
-            .hexpand(false)
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .width_request(200)
+            .vexpand(true)
             .build();
-        body.append(&list_scroll);
+
+        // Filters the library by script id as the user types. Matching is
+        // case-insensitive and applies to the visible label only. A filter
+        // function is used instead of hiding rows, so the list's placeholder
+        // logic keeps working when nothing matches.
+        let search = SearchEntry::new();
+        search.set_placeholder_text(Some(&i18n("Search")));
+        {
+            let query = Rc::new(RefCell::new(String::new()));
+            let filter_query = query.clone();
+            script_list.set_filter_func(move |row: &ListBoxRow| {
+                let name = row
+                    .child()
+                    .and_then(|child| child.downcast::<GtkBox>().ok())
+                    .and_then(|box_| box_.first_child())
+                    .and_then(|first| first.downcast::<Label>().ok())
+                    .map(|label| label.text().to_lowercase())
+                    .unwrap_or_default();
+                name.contains(filter_query.borrow().as_str())
+            });
+
+            let list = script_list.clone();
+            search.connect_search_changed(move |entry| {
+                *query.borrow_mut() = entry.text().to_lowercase();
+                list.invalidate_filter();
+            });
+        }
+        let list_group = GtkBox::new(Orientation::Vertical, 6);
+        list_group.set_vexpand(true);
+        list_group.append(&search);
+        list_group.append(&list_scroll);
 
         let editor_group = GtkBox::new(Orientation::Vertical, 8);
         editor_group.set_hexpand(true);
@@ -220,7 +653,21 @@ impl ScriptDialog {
         button_box.append(&delete_btn);
         editor_group.append(&button_box);
 
-        body.append(&editor_group);
+        // A draggable split: long script ids no longer have to fit a fixed
+        // 220 px column, and the divider can give the editor more room.
+        let paned = gtk4::Paned::builder()
+            .orientation(Orientation::Horizontal)
+            .wide_handle(true)
+            .position(280)
+            .start_child(&list_group)
+            .end_child(&editor_group)
+            .resize_start_child(false)
+            .resize_end_child(true)
+            .shrink_start_child(false)
+            .hexpand(true)
+            .vexpand(true)
+            .build();
+        body.append(&paned);
 
         let clamp = adw::Clamp::builder().maximum_size(820).child(&body).build();
         content.append(&clamp);
@@ -278,6 +725,8 @@ impl ScriptDialog {
             let label = Label::new(Some(&id));
             label.set_halign(gtk4::Align::Start);
             label.set_hexpand(true);
+            label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+            label.set_tooltip_text(Some(&id));
 
             let delete_btn = Button::from_icon_name("user-trash-symbolic");
             delete_btn.add_css_class("flat");
@@ -655,11 +1104,12 @@ pub fn library_script_manager() -> ScriptManager {
     ScriptManager::new(manager)
 }
 
-/// Writes the bundled example scripts into the library when they are missing.
+/// Writes the bundled example scripts into the library, refreshing each one
+/// whose shipped source changed.
 ///
 /// Called once at startup and again when the Scripts manager opens, so the
 /// examples exist in the auto-run dropdowns even if the manager has never been
-/// opened. An existing file is never overwritten: the user may have edited it.
+/// opened. An identical file is not rewritten.
 pub fn ensure_bundled_examples() {
     seed_bundled_examples(&library_script_manager());
 }
@@ -765,6 +1215,32 @@ mod tests {
         }
     }
 
+    /// Upgrading rewrites a bundled example whose source changed, and leaves
+    /// scripts outside the bundled ids alone.
+    #[test]
+    fn seeding_refreshes_a_changed_example() {
+        let temp = tempfile::TempDir::new().expect("tempdir");
+        let config =
+            rustconn_core::config::ConfigManager::with_config_dir(temp.path().join("config"));
+        let manager = rustconn_core::script::ScriptManager::new(config);
+        manager
+            .save_script("example-ping", "print \"old version\"\n")
+            .unwrap();
+        manager.save_script("mine", "print \"mine\"\n").unwrap();
+
+        super::seed_bundled_examples(&manager);
+
+        assert_eq!(
+            manager.load_script("example-ping").unwrap(),
+            BUNDLED_EXAMPLES
+                .iter()
+                .find(|(id, _)| *id == "example-ping")
+                .map(|(_, source)| *source)
+                .unwrap()
+        );
+        assert_eq!(manager.load_script("mine").unwrap(), "print \"mine\"\n");
+    }
+
     use rustconn_core::automation::{KeySequence, PendingKind, ScriptEngine, ScriptHost};
 
     /// Records what a script asks the host to do, and answers nothing.
@@ -788,8 +1264,9 @@ mod tests {
         fn get_prompt(&mut self) -> Option<String> {
             self.prompt.clone()
         }
-        fn ask(&mut self, prompt: &str, echo: bool) {
-            self.events.push(format!("ask:{prompt}:{echo}"));
+        fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>) {
+            self.events
+                .push(format!("ask:{prompt}:{echo}:{}", default.unwrap_or("")));
         }
         fn message(&mut self, text: &str, ok_button: bool) {
             self.events.push(format!("msg:{text}:{ok_button}"));
@@ -840,7 +1317,11 @@ mod tests {
 
     /// Feeds terminal output and lets the engine consume it.
     fn feed(engine: &mut ScriptEngine, host: &mut Recorder, output: &str) {
-        assert!(engine.on_output(output.as_bytes()), "output was not taken");
+        assert!(
+            engine.on_output(output.as_bytes()),
+            "output was not taken (pending {:?}): {output:?}",
+            engine.pending()
+        );
         engine.pump(host);
     }
 
@@ -926,7 +1407,7 @@ mod tests {
         assert!(
             host.events
                 .iter()
-                .any(|e| e == "ask:New hostname (letters, digits and dashes only)::true")
+                .any(|e| e == "ask:New hostname (letters, digits and dashes only)::true:")
         );
 
         // A valid name is applied.
@@ -995,6 +1476,64 @@ mod tests {
             .captures(" 14:30:00 up 2 days,  3:21,  load average: 0.00, 0.01, 0.05")
             .expect("uptime output matches");
         assert_eq!(&caps[1], "2 days");
+    }
+
+    /// OpenWrt's UCI dump lands in a timestamped log after an explicit yes,
+    /// named after the host in the prompt.
+    #[test]
+    fn openwrt_save_uci_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-openwrt-save-uci");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nroot@OpenWrtMx4300:~# ");
+        feed(&mut engine, &mut host, "\r\nroot@OpenWrtMx4300:~# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("openwrt-OpenWrtMx4300-"), "{path}");
+        assert!(host.events.iter().any(|e| e.contains("uci export")));
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\npackage network\r\n\r\nconfig interface 'lan'\r\n\toption proto 'static'\r\nroot@OpenWrtMx4300:~# ",
+        );
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:UCI configuration saved to {path}"))
+        );
+    }
+
+    /// A non-root shell (`user@host:~$`) is refused before the dump.
+    #[test]
+    fn openwrt_save_uci_refuses_non_root() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-openwrt-save-uci");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nuser@OpenWrt:~$ ");
+        feed(&mut engine, &mut host, "\r\nuser@OpenWrt:~$ ");
+
+        assert!(engine.is_finished());
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.starts_with("msg:This script needs a root shell"))
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
     }
 
     /// Drives the Cisco save example up to its confirmation question.
@@ -1080,23 +1619,79 @@ mod tests {
         );
     }
 
-    /// A user-EXEC prompt (`>`) is refused before anything is read or written.
+    /// A user-EXEC prompt (`>`) sends `enable` and continues in privileged
+    /// mode instead of refusing.
     #[test]
-    fn cisco_save_config_refuses_user_exec() {
+    fn cisco_save_config_escalates_from_user_exec() {
         let mut host = Recorder::default();
         let mut engine = engine_for("example-cisco-save-config");
         engine.pump(&mut host);
         feed(&mut engine, &mut host, "\r\nR1> ");
         feed(&mut engine, &mut host, "\r\nR1> ");
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        assert!(host.events.iter().any(|e| e == "send:enable{ENTER}"));
+
+        // The switch accepts `enable` without a password.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(!host.events.iter().any(|e| e.starts_with("msg:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+    }
+
+    /// When `enable` asks for a password, the script asks for it masked and
+    /// only then continues; the answer never reaches the transcript.
+    #[test]
+    fn enable_password_is_asked_and_used() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-cisco-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nPassword: ");
+
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "ask:Enable password::false:"),
+            "the enable password must be asked masked"
+        );
+
+        engine.on_ask_result(Some("s3cret".to_string()));
+        engine.pump(&mut host);
+        assert!(host.events.iter().any(|e| e == "send:s3cret{ENTER}"));
+
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+    }
+
+    /// A rejected enable password leaves the session in user mode and stops
+    /// before anything is read.
+    #[test]
+    fn rejected_enable_password_stops_the_script() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-cisco-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nPassword: ");
+        engine.on_ask_result(Some("wrong".to_string()));
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\n% Access denied\r\nR1> ");
 
         assert!(engine.is_finished());
         assert!(
             host.events
                 .iter()
-                .any(|e| e.starts_with("msg:This script needs privileged EXEC mode"))
+                .any(|e| e.starts_with("msg:This script could not enter privileged mode"))
         );
         assert!(!host.events.iter().any(|e| e.starts_with("log:")));
-        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+        assert_eq!(
+            host.events.iter().filter(|e| e.starts_with("ask:")).count(),
+            1,
+            "only the enable password is asked; the save question never appears"
+        );
     }
 
     /// The Huawei profile reads `display current-configuration` in user view,
@@ -1214,38 +1809,746 @@ mod tests {
         );
     }
 
-    /// HSGQ configuration mode and user mode are both refused: only the
-    /// `OLT#` enable prompt may read the configuration.
+    /// The D-Link xStack profile reads `show configuration running` in
+    /// administrator mode, after `disable clipaging`, into a timestamped log.
     #[test]
-    fn hsgq_save_config_refuses_config_and_user_mode() {
-        for prompt in ["OLT(config)#", "OLT>"] {
+    fn dlink_xstack_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-dlink-xstack-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nDGS-3100-24# ");
+        feed(&mut engine, &mut host, "\r\nDGS-3100-24# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        // `disable clipaging` returns to the prompt.
+        feed(&mut engine, &mut host, "\r\nDGS-3100-24# ");
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("dlink-xstack-DGS-3100-24-"), "{path}");
+        assert!(host.events.iter().any(|e| e.contains("disable clipaging")));
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show configuration running"))
+        );
+
+        // The configuration arrives, then the prompt.
+        feed(&mut engine, &mut host, "\r\nvlan 10\r\nDGS-3100-24# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Running configuration saved to {path}"))
+        );
+    }
+
+    /// The DGS-1210 web-smart profile sends no paging command (none exists),
+    /// reads `show config`, and names the file after the model before the
+    /// colon instead of the logged-in account.
+    #[test]
+    fn dlink_dgs1210_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-dlink-dgs1210-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nDGS-1210-24:admin# ");
+        feed(&mut engine, &mut host, "\r\nDGS-1210-24:admin# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("dlink-DGS-1210-24-"), "{path}");
+        assert!(host.events.iter().any(|e| e.contains("show config")));
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("clipaging"))
+        );
+
+        feed(&mut engine, &mut host, "\r\nvlan 10\r\nDGS-1210-24:admin# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Configuration saved to {path}"))
+        );
+    }
+
+    /// Junos reads `show configuration | no-more` in operational mode; the
+    /// `#` configuration prompt is refused.
+    #[test]
+    fn juniper_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-juniper-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nadmin@SW1> ");
+        feed(&mut engine, &mut host, "\r\nadmin@SW1> ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("juniper-SW1-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show configuration | no-more"))
+        );
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\nsystem { host-name SW1; }\r\nadmin@SW1> ",
+        );
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Configuration saved to {path}"))
+        );
+    }
+
+    /// Junos configuration mode (`user@host#`) is refused before anything is
+    /// read or written.
+    #[test]
+    fn juniper_save_config_refuses_configuration_mode() {
+        let mut host = Recorder {
+            prompt: Some("admin@SW1#".to_string()),
+            ..Recorder::default()
+        };
+        let mut engine = engine_for("example-juniper-save-config");
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.starts_with("msg:This script must run in operational mode"))
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("send:")));
+    }
+
+    /// The TP-Link profile sends no paging command (none is documented) and
+    /// reads `show running-config` in privileged EXEC mode.
+    #[test]
+    fn tplink_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-tplink-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nSwitch# ");
+        feed(&mut engine, &mut host, "\r\nSwitch# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("tplink-Switch-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show running-config"))
+        );
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("pagination"))
+        );
+
+        feed(&mut engine, &mut host, "\r\nvlan 10\r\nSwitch# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Running configuration saved to {path}"))
+        );
+    }
+
+    /// Wrong-mode prompts are refused before anything is sent.
+    #[test]
+    fn save_config_profiles_refuse_wrong_mode() {
+        for (id, prompt, feed_text, feeds) in [
+            (
+                "example-dlink-xstack-save-config",
+                "DGS-3100-24(config)#",
+                "",
+                0,
+            ),
+            (
+                "example-dlink-dgs1210-save-config",
+                "DGS-1210-24:admin>",
+                "\r\nDGS-1210-24:admin> ",
+                2,
+            ),
+            ("example-tplink-save-config", "Switch(config)#", "", 0),
+            ("example-h3c-save-config", "[H3C]", "", 0),
+            ("example-zte-save-config", "ZXR10(config)#", "", 0),
+            ("example-bdcom-save-config", "switch_config#", "", 0),
+            ("example-ubiquiti-save-config", "ubnt@EdgeRouter#", "", 0),
+            ("example-huawei-olt-save-config", "MA5680T(config)#", "", 0),
+            ("example-aruba-save-config", "Switch(config)#", "", 0),
+        ] {
             let mut host = Recorder {
                 prompt: Some(prompt.to_string()),
                 ..Recorder::default()
             };
-            let mut engine = engine_for("example-hsgq-save-config");
+            let mut engine = engine_for(id);
             engine.pump(&mut host);
-
-            if prompt == "OLT>" {
-                // User mode is detected from the second prompt capture.
-                feed(&mut engine, &mut host, "\r\nOLT> ");
-                feed(&mut engine, &mut host, "\r\nOLT> ");
+            for _ in 0..feeds {
+                feed(&mut engine, &mut host, feed_text);
             }
 
-            assert!(engine.is_finished(), "{prompt}");
+            assert!(engine.is_finished(), "{id} at {prompt}");
             assert!(
                 host.events.iter().any(|e| e.starts_with("msg:")),
-                "{prompt}"
+                "{id} at {prompt}"
             );
             assert!(
                 !host.events.iter().any(|e| e.starts_with("log:")),
-                "{prompt}"
+                "{id} at {prompt}"
             );
             assert!(
                 !host.events.iter().any(|e| e.starts_with("ask:")),
-                "{prompt}"
+                "{id} at {prompt}"
+            );
+            assert!(
+                !host
+                    .events
+                    .iter()
+                    .any(|e| e.starts_with("send:") && e.contains("config")),
+                "{id} at {prompt}"
             );
         }
+    }
+
+    /// HSGQ configuration mode is refused; user mode escalates with `enable`
+    /// instead.
+    #[test]
+    fn hsgq_save_config_refuses_config_mode_and_escalates_from_user_mode() {
+        let mut host = Recorder {
+            prompt: Some("OLT(config)#".to_string()),
+            ..Recorder::default()
+        };
+        let mut engine = engine_for("example-hsgq-save-config");
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert!(host.events.iter().any(|e| e.starts_with("msg:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-hsgq-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nOLT> ");
+        feed(&mut engine, &mut host, "\r\nOLT> ");
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        assert!(host.events.iter().any(|e| e == "send:enable{ENTER}"));
+
+        feed(&mut engine, &mut host, "\r\nOLT# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert_eq!(engine.error(), None);
+    }
+
+    /// The CIS/China profiles: each reads its vendor command into a
+    /// timestamped log after an explicit yes.
+    #[test]
+    fn cis_and_china_profiles_write_a_timestamped_log_after_yes() {
+        struct Case {
+            id: &'static str,
+            feeds: &'static [&'static str],
+            prefix: &'static str,
+            pager: Option<&'static str>,
+            /// Prompt feeds needed between "yes" and the read command: one for
+            /// a pager command or a RouterOS menu change, none otherwise.
+            steps: u32,
+            sent: &'static [&'static str],
+            tail: &'static str,
+        }
+
+        let cases = [
+            Case {
+                id: "example-h3c-save-config",
+                feeds: &["\r\n<H3C> "],
+                prefix: "h3c-H3C-",
+                pager: Some("screen-length disable"),
+                steps: 1,
+                sent: &["display current-configuration"],
+                tail: "\r\nsysname H3C\r\n<H3C> ",
+            },
+            Case {
+                id: "example-ruijie-save-config",
+                feeds: &["\r\nRuijie# ", "\r\nRuijie# "],
+                prefix: "ruijie-Ruijie-",
+                pager: Some("terminal length 0"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nRuijie# ",
+            },
+            Case {
+                id: "example-zte-save-config",
+                feeds: &["\r\nZXR10# ", "\r\nZXR10# "],
+                prefix: "zte-ZXR10-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nZXR10# ",
+            },
+            Case {
+                id: "example-mikrotik-save-config",
+                feeds: &["\r\n[admin@MikroTik] > "],
+                prefix: "mikrotik-MikroTik-",
+                pager: None,
+                steps: 0,
+                sent: &["/export verbose show-sensitive"],
+                tail: "\r\n/interface ethernet\r\n[admin@MikroTik] > ",
+            },
+            Case {
+                id: "example-eltex-save-config",
+                feeds: &["\r\nconsole# ", "\r\nconsole# "],
+                prefix: "eltex-console-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config detailed"],
+                tail: "\r\nvlan 10\r\nconsole# ",
+            },
+            Case {
+                id: "example-bdcom-save-config",
+                feeds: &["\r\nSwitch# ", "\r\nSwitch# "],
+                prefix: "bdcom-Switch-",
+                pager: Some("terminal length 0"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nSwitch# ",
+            },
+            Case {
+                id: "example-ubiquiti-save-config",
+                feeds: &["\r\nubnt@EdgeRouter:~$ ", "\r\nubnt@EdgeRouter:~$ "],
+                prefix: "ubiquiti-EdgeRouter-",
+                pager: None,
+                steps: 0,
+                sent: &["show configuration commands"],
+                tail: "\r\nset system host-name EdgeRouter\r\nubnt@EdgeRouter:~$ ",
+            },
+            Case {
+                id: "example-raisecom-save-config",
+                feeds: &["\r\nRaisecom# ", "\r\nRaisecom# "],
+                prefix: "raisecom-Raisecom-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nRaisecom# ",
+            },
+            Case {
+                id: "example-qtech-save-config",
+                feeds: &["\r\nQTECH# ", "\r\nQTECH# "],
+                prefix: "qtech-QTECH-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nQTECH# ",
+            },
+            Case {
+                id: "example-zyxel-save-config",
+                feeds: &["\r\nGS2210-24# ", "\r\nGS2210-24# "],
+                prefix: "zyxel-GS2210-24-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nGS2210-24# ",
+            },
+            Case {
+                id: "example-cdata-save-config",
+                feeds: &["\r\nOLT# ", "\r\nOLT# "],
+                prefix: "cdata-OLT-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nOLT# ",
+            },
+            Case {
+                id: "example-vsol-save-config",
+                feeds: &["\r\nOLT# ", "\r\nOLT# "],
+                prefix: "vsol-OLT-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nOLT# ",
+            },
+            Case {
+                id: "example-maipu-save-config",
+                feeds: &["\r\nMaipu# ", "\r\nMaipu# "],
+                prefix: "maipu-Maipu-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nMaipu# ",
+            },
+            Case {
+                id: "example-hikvision-save-config",
+                feeds: &["\r\nHikvision# ", "\r\nHikvision# "],
+                prefix: "hikvision-Hikvision-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nHikvision# ",
+            },
+            Case {
+                id: "example-dahua-save-config",
+                feeds: &["\r\nDahua# ", "\r\nDahua# "],
+                prefix: "dahua-Dahua-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nDahua# ",
+            },
+            Case {
+                id: "example-netgear-save-config",
+                feeds: &["\r\n(GS724Tv4)# ", "\r\n(GS724Tv4)# "],
+                prefix: "netgear-GS724Tv4-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\n(GS724Tv4)# ",
+            },
+            Case {
+                id: "example-aruba-save-config",
+                feeds: &["\r\nSwitch# ", "\r\nSwitch# "],
+                prefix: "aruba-Switch-",
+                pager: Some("no page"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nSwitch# ",
+            },
+            Case {
+                id: "example-arista-save-config",
+                feeds: &["\r\nswitch# ", "\r\nswitch# "],
+                prefix: "arista-switch-",
+                pager: Some("terminal length 0"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nswitch# ",
+            },
+            Case {
+                id: "example-extreme-save-config",
+                feeds: &["\r\nX460-48t.1 # ", "\r\nX460-48t.1 # "],
+                prefix: "extreme-X460-48t.1-",
+                pager: Some("disable clipaging"),
+                steps: 1,
+                sent: &["show configuration"],
+                tail: "\r\ncreate vlan ToR\r\nX460-48t.1 # ",
+            },
+            Case {
+                id: "example-allied-save-config",
+                feeds: &["\r\nawplus# ", "\r\nawplus# "],
+                prefix: "allied-awplus-",
+                pager: Some("terminal length 0"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nawplus# ",
+            },
+        ];
+
+        for case in cases {
+            let mut host = Recorder::default();
+            let mut engine = engine_for(case.id);
+            engine.pump(&mut host);
+            for output in case.feeds {
+                feed(&mut engine, &mut host, output);
+            }
+            assert_eq!(engine.pending(), PendingKind::Ask, "{}", case.id);
+
+            engine.on_ask_result(Some("yes".to_string()));
+            engine.pump(&mut host);
+
+            if let Some(pager) = case.pager {
+                assert!(
+                    host.events
+                        .iter()
+                        .any(|e| e.starts_with("send:") && e.contains(pager)),
+                    "{} does not send {pager}",
+                    case.id
+                );
+            }
+            for _ in 0..case.steps {
+                assert_eq!(engine.pending(), PendingKind::Expect, "{}", case.id);
+                feed(&mut engine, &mut host, case.feeds[0]);
+            }
+
+            let path = host
+                .events
+                .iter()
+                .find_map(|e| e.strip_prefix("log:"))
+                .unwrap_or_else(|| panic!("{} never opened a log", case.id))
+                .to_string();
+            assert!(path.starts_with(case.prefix), "{}: {path}", case.id);
+            for command in case.sent {
+                assert!(
+                    host.events
+                        .iter()
+                        .any(|e| e.starts_with("send:") && e.contains(command)),
+                    "{} does not send {command}",
+                    case.id
+                );
+            }
+
+            feed(&mut engine, &mut host, case.tail);
+            assert!(engine.is_finished(), "{}", case.id);
+            assert_eq!(engine.error(), None, "{}", case.id);
+            assert_eq!(
+                host.events.iter().filter(|e| *e == "log:").count(),
+                1,
+                "{} left the log open",
+                case.id
+            );
+        }
+    }
+
+    /// The Huawei OLT profile cannot disable paging, so the `pager`
+    /// directive answers `---- More ----` and the dump still completes.
+    #[test]
+    fn huawei_olt_save_config_answers_the_pager() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-huawei-olt-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nMA5680T# ");
+        feed(&mut engine, &mut host, "\r\nMA5680T# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(path.starts_with("huawei-olt-MA5680T-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("display current-configuration"))
+        );
+
+        // The optional filter prompt does not end the wait.
+        engine.on_output(b"\r\n { |ont|port|section|service-port|simple|| }:");
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        // Each `---- More ----` page is answered with a space.
+        assert!(engine.on_output(b"\r\nline 1\r\n---- More ( Press 'Q' to break ) ----"));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+        assert!(host.events.iter().any(|e| e == "send: "));
+
+        assert!(engine.on_output(b"\r\nline 2\r\nMA5680T# "));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+    }
+
+    /// Drives the OLT provisioning example to its final `Apply` question.
+    fn provisioning_at_apply() -> (ScriptEngine, Recorder) {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-huawei-olt-provision-ont");
+        engine.pump(&mut host);
+        // Enable-mode prompt: device and mode are captured from one feed each.
+        feed(&mut engine, &mut host, "\r\nMA5680T# ");
+        feed(&mut engine, &mut host, "\r\nMA5680T# ");
+        feed(&mut engine, &mut host, "\r\nMA5680T(config)# ");
+
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        let first = host.events.last().cloned().unwrap_or_default();
+        assert_eq!(first, "ask:Service VLAN (1-4094)::true:500");
+
+        // Out-of-range answers are rejected before anything is contacted.
+        engine.on_ask_result(Some("5000".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "print:The VLAN must be a whole number from 1 to 4094."),
+            "an invalid VLAN is explained"
+        );
+
+        for answer in [
+            "500",
+            "0/19",
+            "0",
+            "1",
+            "0",
+            "1",
+            "48575443AABBCCDD",
+            "10",
+            "10",
+            "10",
+            "10",
+            "4",
+            "RUSTCONN_EXAMPLE",
+        ] {
+            assert_eq!(engine.pending(), PendingKind::Ask);
+            engine.on_ask_result(Some(answer.to_string()));
+            engine.pump(&mut host);
+        }
+
+        (engine, host)
+    }
+
+    /// The provisioning example shows the collected values and writes nothing
+    /// when the operator does not type yes.
+    #[test]
+    fn huawei_olt_provision_previews_and_cancels() {
+        let (mut engine, mut host) = provisioning_at_apply();
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(host.events.iter().any(|e| e == "print:  VLAN: 500"));
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "print:  Uplink: 0/19 port 0")
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+
+        engine.on_ask_result(Some(String::new()));
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(
+            host.events
+                .iter()
+                .all(|e| !e.starts_with("send:") || !e.contains("vlan "))
+        );
+    }
+
+    /// Yes starts the write path: the transcript is logged, commands are
+    /// sent in order, and no `save` is ever issued.
+    #[test]
+    fn huawei_olt_provision_writes_after_yes_without_saving() {
+        let (mut engine, mut host) = provisioning_at_apply();
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the transcript starts before the first command")
+            .to_string();
+        assert!(path.starts_with("huawei-olt-provision-MA5680T-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:vlan 500 smart{ENTER}")
+        );
+
+        feed(&mut engine, &mut host, "\r\nMA5680T(config)# ");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:port vlan 500 0/19 0{ENTER}")
+        );
+
+        feed(&mut engine, &mut host, "\r\nMA5680T(config)# ");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:ont-srvprofile gpon profile-id 10{ENTER}")
+        );
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\nMA5680T(config-gpon-srvprofile-10)# ",
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:ont-port eth 4{ENTER}")
+        );
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\nMA5680T(config-srvprofile-gpon-10)# ",
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:port vlan eth 1-4 500{ENTER}"),
+            "all Ethernet ports are mapped to the service VLAN"
+        );
+        assert!(
+            host.events
+                .iter()
+                .all(|e| !e.starts_with("send:") || !e.contains("save")),
+            "provisioning must not save the configuration"
+        );
+    }
+
+    /// MikroTik sends the absolute `/export`, so a session left inside
+    /// `/interface` still exports the whole configuration.
+    #[test]
+    fn mikrotik_save_config_uses_the_absolute_export_command() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-mikrotik-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\n[admin@MikroTik] /interface> ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:/export verbose show-sensitive{ENTER}"),
+            "the script must send the absolute /export with verbose and show-sensitive"
+        );
     }
 
     /// Both vendor profiles cancel without reading the configuration or
@@ -1255,6 +2558,35 @@ mod tests {
         for (id, prompt, captures) in [
             ("example-huawei-save-config", "\r\n<SW1> ", 1),
             ("example-hsgq-save-config", "\r\nOLT# ", 2),
+            ("example-dlink-xstack-save-config", "\r\nDGS-3100-24# ", 2),
+            (
+                "example-dlink-dgs1210-save-config",
+                "\r\nDGS-1210-24:admin# ",
+                2,
+            ),
+            ("example-juniper-save-config", "\r\nadmin@SW1> ", 2),
+            ("example-tplink-save-config", "\r\nSwitch# ", 2),
+            ("example-h3c-save-config", "\r\n<H3C> ", 1),
+            ("example-ruijie-save-config", "\r\nRuijie# ", 2),
+            ("example-zte-save-config", "\r\nZXR10# ", 2),
+            ("example-mikrotik-save-config", "\r\n[admin@MikroTik] > ", 1),
+            ("example-eltex-save-config", "\r\nconsole# ", 2),
+            ("example-bdcom-save-config", "\r\nSwitch# ", 2),
+            ("example-ubiquiti-save-config", "\r\nubnt@EdgeRouter:~$ ", 2),
+            ("example-huawei-olt-save-config", "\r\nMA5680T# ", 2),
+            ("example-raisecom-save-config", "\r\nRaisecom# ", 2),
+            ("example-qtech-save-config", "\r\nQTECH# ", 2),
+            ("example-zyxel-save-config", "\r\nGS2210-24# ", 2),
+            ("example-cdata-save-config", "\r\nOLT# ", 2),
+            ("example-vsol-save-config", "\r\nOLT# ", 2),
+            ("example-maipu-save-config", "\r\nMaipu# ", 2),
+            ("example-hikvision-save-config", "\r\nHikvision# ", 2),
+            ("example-dahua-save-config", "\r\nDahua# ", 2),
+            ("example-netgear-save-config", "\r\n(GS724Tv4)# ", 2),
+            ("example-aruba-save-config", "\r\nSwitch# ", 2),
+            ("example-arista-save-config", "\r\nswitch# ", 2),
+            ("example-extreme-save-config", "\r\nX460-48t.1 # ", 2),
+            ("example-allied-save-config", "\r\nawplus# ", 2),
         ] {
             let mut host = Recorder::default();
             let mut engine = engine_for(id);
@@ -1274,7 +2606,7 @@ mod tests {
                 !host
                     .events
                     .iter()
-                    .any(|e| e.contains("current-config") || e.contains("current-configuration")),
+                    .any(|e| e.starts_with("send:") && e.contains("config")),
                 "{id}"
             );
             assert!(
