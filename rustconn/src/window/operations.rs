@@ -871,7 +871,7 @@ pub fn copy_selected_connection(
                 crate::toast::show_toast_on_window(
                     window,
                     &i18n("Connection copied to clipboard"),
-                    crate::toast::ToastType::Info,
+                    crate::toast::ToastType::Success,
                 );
             }
             Err(e) => {
@@ -1287,14 +1287,24 @@ pub fn show_move_selected_to_group_dialog(
             for conn_id in &connection_ids {
                 match state_mut.move_connection_to_group(*conn_id, target_group) {
                     Ok(()) => success_count += 1,
-                    Err(e) => failures.push(format!("{conn_id}: {e}")),
+                    Err(e) => {
+                        let name = state_mut
+                            .get_connection(*conn_id)
+                            .map_or_else(|| conn_id.to_string(), |c| c.name.clone());
+                        failures.push(format!("{name}: {e}"));
+                    }
                 }
             }
             // Move groups
             for group_id in &group_ids_to_move {
                 match state_mut.move_group_to_parent(*group_id, target_group) {
                     Ok(()) => success_count += 1,
-                    Err(e) => failures.push(format!("{group_id}: {e}")),
+                    Err(e) => {
+                        let name = state_mut
+                            .get_group(*group_id)
+                            .map_or_else(|| group_id.to_string(), |g| g.name.clone());
+                        failures.push(format!("{name}: {e}"));
+                    }
                 }
             }
         }
