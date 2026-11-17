@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **An invalid port knock sequence is reported on Save** — the connection dialog dropped a sequence it could not parse and closed as if it had been saved. **Save** now stops with the format hint. (`rustconn/src/dialogs/connection/builders.rs`)
 - **Enter confirms the `@ask:` prompt** — the prompt for `@ask:` variables now focuses its first field and Enter in a text or secret field answers **Connect**. (`rustconn/src/dialogs/ask_prompt.rs`)
 
+### Improved
+
+- **Duplicate as Range shows a syntax example** — the dialog text now names `web[01-10]`. (`rustconn/src/window/operations.rs`)
+
 ## [0.25.2] - 2026-11-17
 
 ### Fixed
