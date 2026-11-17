@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enter confirms the `@ask:` prompt** — the prompt for `@ask:` variables now focuses its first field and Enter in a text or secret field answers **Connect**. (`rustconn/src/dialogs/ask_prompt.rs`)
 - **Custom SSH options keep their order and no longer suggest turning host key checking off** — the Custom Options field listed the options in a different order on every open, and its placeholder and the User Guide example offered `StrictHostKeyChecking=no`. Options are shown sorted and the example is `ServerAliveInterval=60, Compression=yes`. (`rustconn/src/dialogs/connection/dialog/populate.rs`, `ssh.rs`)
 - **Untranslated texts in the connection dialog and Template Manager** — the **Jump Host** and **Tunnel** lists showed `(None)`, the **Username** placeholder `(default: …)`, the template rows `Host:`/`Port:`/`User:`, and the Expect pattern tester its result lines in English. They go through gettext now. (`general_tab.rs`, `dialog/populate.rs`, `dialog/rows.rs`, `template_manager.rs`)
+- **Duplicate via Wizard… fills in everything the wizard can show** — the wizard copied only name, host, port, user, domain and icon. It now also restores the Serial device and baud rate, the Kubernetes context, namespace, pod and container, the Zero Trust provider and its fields, the Web URL, the jump host, the SSH authentication method and the key file. (`rustconn/src/dialogs/connection_wizard/`)
 
 ### Changed
 
