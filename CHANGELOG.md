@@ -82,6 +82,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **User Guide** — the cluster section no longer says broadcast is only a split-view feature, the tab menu no longer lists a **Copy** section, **Move to New Window on Monitor N** is described as flat items, the group broadcast shortcut **Ctrl+Shift+A** is in the shortcut table, and the detached window section lists what it lacks.
 - **User Guide: command macros, Create Another, import steps, contents** — added a Command Macros section (Name, Command, Shortcut, Run), the New Group **Create Another** switch, replaced the Remmina migration step that named a merge strategy with the real result-page steps, and listed Quick Connect, Undo/Trash, Command Macros, Status Indicators, Run Local Script and Keyboard Passthrough in the contents.
 
+### Dependencies
+
+- **cargo-deny passes again** — RUSTSEC-2026-0543 (chrono is unmaintained, all versions, no patched release) is accepted in `deny.toml` and `.cargo/audit.toml` until chrono moves to `time` or `jiff` (0.26). (`deny.toml`, `.cargo/audit.toml`)
+
 ## [0.25.2] - 2026-11-17
 
 ### Fixed
