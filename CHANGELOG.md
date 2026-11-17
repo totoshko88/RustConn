@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Remove from Favorites in the Favorites group** — the context menu of a connection inside the ★ Favorites group offered **Add to Favorites**, because that copy of the row was built as not pinned to hide its star; clicking it removed the favorite anyway. The row now keeps the real pinned state and hides the star by a separate flag, so the menu says **Remove from Favorites** in both places. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/window/sorting.rs`, `docs/USER_GUIDE.md`)
+- **Editing a connection keeps its window mode, dynamic-folder flag and post-login scripts** — the connection editor has no widgets for `window_mode`, `remember_window_position`, `is_dynamic` and `automation.post_login_scripts`, so saving any edit reset them to the defaults (an External or Fullscreen RDP/VNC connection set with `rustconn-cli add --window-mode` went back to Embedded). `ConnectionManager::update_connection` now keeps the stored value when the edited copy holds the default. (`rustconn-core/src/connection/manager.rs`)
 
 ## [0.25.2] - 2026-11-17
 
