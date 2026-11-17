@@ -8,59 +8,46 @@ use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, Entry, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow, TextView,
+    Box as GtkBox, Button, Entry, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow,
+    SearchEntry, TextView,
 };
 use libadwaita as adw;
 use rustconn_core::script::ScriptManager;
+
+use super::script_examples::BUNDLED_EXAMPLES;
 
 use crate::i18n::{i18n, i18n_f};
 use crate::state::SharedAppState;
 use crate::window::types::SharedNotebook;
 use uuid::Uuid;
 
-const BUNDLED_EXAMPLES: &[(&str, &str)] = &[
-    (
-        "example-shell-uptime",
-        // A shell prompt ending in `$` (local shell, most SSH hosts).
-        // `capture` grabs the uptime text itself; `readline` would return
-        // the echoed `uptime` command line.
-        "expect \"\\$\" 10\nsend \"uptime{ENTER}\"\ncapture /up\\s+([^,]+)/ up 10\nprint \"Uptime: $up\"\n",
-    ),
-    (
-        "example-openwrt-uptime",
-        // OpenWrt / BusyBox root prompt ends in `#` (root@OpenWrt:~#).
-        "expect \"#\" 15\nsend \"uptime{ENTER}\"\ncapture /up\\s+([^,]+)/ up 10\nprint \"Uptime: $up\"\n",
-    ),
-    (
-        "example-ping",
-        // Inside `send`, a variable must be written `${name}`; `$name` is
-        // literal text there (see the language reference).
-        "ask \"Host to ping:\" host\nsend \"ping -c 3 ${host}{ENTER}\"\nwait 8000\n",
-    ),
-    (
-        "example-router-first-run",
-        // A first-run wizard: asks in clear text, validates the answer and
-        // branches. No password is requested or stored.
-        //
-        // `uci show ...` is captured on the quoted value (`hostname='...'`),
-        // not on `hostname=`, because the echoed command line contains the
-        // latter and would satisfy the capture before the output arrives.
-        "expect \"#\" 15\n\n:ask\nask \"Configure this router now? Type yes or no:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ configure\nif_goto $answer /(?i)^\\s*no\\s*$/ skip\nprint \"Please answer yes or no.\"\ngoto ask\n\n:skip\nmsg \"Leaving the router unchanged.\" ok\ngoto done\n\n:configure\nsend \"uci show system.@system[0].hostname{ENTER}\"\ncapture /hostname='([^']+)'/ old_name 10\nprint \"Current hostname: $old_name\"\nask \"New hostname (letters, digits and dashes only):\" new_name\nif_goto $new_name /^[A-Za-z0-9][A-Za-z0-9-]*$/ apply\nprint \"Invalid hostname. Nothing was changed.\"\ngoto done\n\n:apply\nsend \"uci set system.@system[0].hostname=${new_name} && uci commit system{ENTER}\"\nexpect \"#\" 15\nprint \"Hostname set to $new_name. It takes effect on the next boot.\"\n\n:done\nprint \"First-run helper finished.\"\n",
-    ),
-    (
-        "example-run-command",
-        "set cmd \"echo hello from script\"\nrun \"$cmd\" 5 out=o code=c\nprint \"Exit code: $c\"\nprint \"Output: $o\"\n",
-    ),
-];
-
-/// Writes the bundled examples into the library when they are missing.
+/// Writes the bundled examples into the library, refreshing them when the
+/// shipped source differs.
 ///
-/// An existing file is never overwritten: the user may have edited it.
+/// Bundled ids are managed content: an edited copy under an `example-*` id is
+/// replaced on upgrade, so adaptation belongs in a copy saved under a new id.
+/// An identical file is not rewritten, and a differing file is copied to
+/// `<id>.rsc.bak` first so an edit is never lost silently.
 fn seed_bundled_examples(manager: &ScriptManager) {
     for (id, source) in BUNDLED_EXAMPLES {
-        if !manager.has_script(id) {
-            let _ = manager.save_script(id, source);
+        let current = manager.load_script(id).ok();
+        if current.as_deref() == Some(source) {
+            continue;
         }
+        if current.is_some() {
+            let path = manager.scripts_dir().join(format!("{id}.rsc"));
+            let backup = path.with_file_name(format!("{id}.rsc.bak"));
+            if let Err(error) = std::fs::copy(&path, &backup) {
+                tracing::warn!(
+                    %error,
+                    path = %path.display(),
+                    backup = %backup.display(),
+                    "could not back up an edited bundled example; leaving it unchanged"
+                );
+                continue;
+            }
+        }
+        let _ = manager.save_script(id, source);
     }
 }
 
@@ -110,7 +97,6 @@ impl ScriptDialog {
         let script_list = ListBox::builder()
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
-            .width_request(220)
             .build();
         let placeholder = adw::StatusPage::builder()
             .icon_name("utilities-terminal-symbolic")
@@ -120,10 +106,41 @@ impl ScriptDialog {
         script_list.set_placeholder(Some(&placeholder));
         let list_scroll = ScrolledWindow::builder()
             .child(&script_list)
-            .width_request(220)
-            .hexpand(false)
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .width_request(200)
+            .vexpand(true)
             .build();
-        body.append(&list_scroll);
+
+        // Filters the library by script id as the user types. Matching is
+        // case-insensitive and applies to the visible label only. A filter
+        // function is used instead of hiding rows, so the list's placeholder
+        // logic keeps working when nothing matches.
+        let search = SearchEntry::new();
+        search.set_placeholder_text(Some(&i18n("Search")));
+        {
+            let query = Rc::new(RefCell::new(String::new()));
+            let filter_query = query.clone();
+            script_list.set_filter_func(move |row: &ListBoxRow| {
+                let name = row
+                    .child()
+                    .and_then(|child| child.downcast::<GtkBox>().ok())
+                    .and_then(|box_| box_.first_child())
+                    .and_then(|first| first.downcast::<Label>().ok())
+                    .map(|label| label.text().to_lowercase())
+                    .unwrap_or_default();
+                name.contains(filter_query.borrow().as_str())
+            });
+
+            let list = script_list.clone();
+            search.connect_search_changed(move |entry| {
+                *query.borrow_mut() = entry.text().to_lowercase();
+                list.invalidate_filter();
+            });
+        }
+        let list_group = GtkBox::new(Orientation::Vertical, 6);
+        list_group.set_vexpand(true);
+        list_group.append(&search);
+        list_group.append(&list_scroll);
 
         let editor_group = GtkBox::new(Orientation::Vertical, 8);
         editor_group.set_hexpand(true);
@@ -181,7 +198,21 @@ impl ScriptDialog {
         button_box.append(&delete_btn);
         editor_group.append(&button_box);
 
-        body.append(&editor_group);
+        // A draggable split: long script ids no longer have to fit a fixed
+        // 220 px column, and the divider can give the editor more room.
+        let paned = gtk4::Paned::builder()
+            .orientation(Orientation::Horizontal)
+            .wide_handle(true)
+            .position(280)
+            .start_child(&list_group)
+            .end_child(&editor_group)
+            .resize_start_child(false)
+            .resize_end_child(true)
+            .shrink_start_child(false)
+            .hexpand(true)
+            .vexpand(true)
+            .build();
+        body.append(&paned);
 
         let clamp = adw::Clamp::builder().maximum_size(820).child(&body).build();
         content.append(&clamp);
@@ -239,6 +270,8 @@ impl ScriptDialog {
             let label = Label::new(Some(&id));
             label.set_halign(gtk4::Align::Start);
             label.set_hexpand(true);
+            label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+            label.set_tooltip_text(Some(&id));
 
             let delete_btn = Button::from_icon_name("user-trash-symbolic");
             delete_btn.add_css_class("flat");
@@ -616,11 +649,13 @@ pub fn library_script_manager() -> ScriptManager {
     ScriptManager::new(manager)
 }
 
-/// Writes the bundled example scripts into the library when they are missing.
+/// Writes the bundled example scripts into the library, refreshing each one
+/// whose shipped source changed.
 ///
 /// Called once at startup and again when the Scripts manager opens, so the
 /// examples exist in the auto-run dropdowns even if the manager has never been
-/// opened. An existing file is never overwritten: the user may have edited it.
+/// opened. An identical file is not rewritten; a differing file is copied to
+/// `<id>.rsc.bak` before it is replaced.
 pub fn ensure_bundled_examples() {
     seed_bundled_examples(&library_script_manager());
 }
@@ -726,12 +761,44 @@ mod tests {
         }
     }
 
+    /// Upgrading rewrites a bundled example whose source changed, and leaves
+    /// scripts outside the bundled ids alone.
+    #[test]
+    fn seeding_refreshes_a_changed_example() {
+        let temp = tempfile::TempDir::new().expect("tempdir");
+        let config =
+            rustconn_core::config::ConfigManager::with_config_dir(temp.path().join("config"));
+        let manager = rustconn_core::script::ScriptManager::new(config);
+        manager
+            .save_script("example-ping", "print \"old version\"\n")
+            .unwrap();
+        manager.save_script("mine", "print \"mine\"\n").unwrap();
+
+        super::seed_bundled_examples(&manager);
+
+        assert_eq!(
+            manager.load_script("example-ping").unwrap(),
+            BUNDLED_EXAMPLES
+                .iter()
+                .find(|(id, _)| *id == "example-ping")
+                .map(|(_, source)| *source)
+                .unwrap()
+        );
+        assert_eq!(
+            std::fs::read_to_string(manager.scripts_dir().join("example-ping.rsc.bak"))
+                .expect("the edited copy is backed up"),
+            "print \"old version\"\n"
+        );
+        assert_eq!(manager.load_script("mine").unwrap(), "print \"mine\"\n");
+    }
+
     use rustconn_core::automation::{KeySequence, PendingKind, ScriptEngine, ScriptHost};
 
     /// Records what a script asks the host to do, and answers nothing.
     #[derive(Default)]
     struct Recorder {
         events: Vec<String>,
+        prompt: Option<String>,
     }
 
     impl ScriptHost for Recorder {
@@ -741,14 +808,16 @@ mod tests {
         fn print_message(&mut self, text: &str) {
             self.events.push(format!("print:{text}"));
         }
-        fn set_log(&mut self, path: Option<&str>) {
+        fn set_log(&mut self, path: Option<&str>) -> bool {
             self.events.push(format!("log:{}", path.unwrap_or("")));
+            true
         }
         fn get_prompt(&mut self) -> Option<String> {
-            None
+            self.prompt.clone()
         }
-        fn ask(&mut self, prompt: &str, echo: bool) {
-            self.events.push(format!("ask:{prompt}:{echo}"));
+        fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>) {
+            self.events
+                .push(format!("ask:{prompt}:{echo}:{}", default.unwrap_or("")));
         }
         fn message(&mut self, text: &str, ok_button: bool) {
             self.events.push(format!("msg:{text}:{ok_button}"));
@@ -790,6 +859,26 @@ mod tests {
             .find(|(example_id, _)| *example_id == id)
             .map(|(_, source)| *source)
             .unwrap_or_else(|| panic!("no bundled example `{id}`"))
+    }
+
+    /// Parses a bundled example into an engine ready to pump.
+    fn engine_for(id: &str) -> ScriptEngine {
+        ScriptEngine::parse(example(id)).unwrap_or_else(|e| panic!("`{id}`: {e}"))
+    }
+
+    /// Feeds terminal output and lets the engine consume it.
+    fn feed(engine: &mut ScriptEngine, host: &mut Recorder, output: &str) {
+        assert!(
+            engine.on_output(output.as_bytes()),
+            "output was not taken (pending {:?}): {output:?}",
+            engine.pending()
+        );
+        engine.pump(host);
+    }
+
+    /// The file-name part of a log path, which is now absolute through `${CWD}`.
+    fn log_name(path: &str) -> &str {
+        path.rsplit(['/', '\\']).next().unwrap_or(path)
     }
 
     /// Drives the first-run example up to its first question.
@@ -874,7 +963,7 @@ mod tests {
         assert!(
             host.events
                 .iter()
-                .any(|e| e == "ask:New hostname (letters, digits and dashes only)::true")
+                .any(|e| e == "ask:New hostname (letters, digits and dashes only)::true:")
         );
 
         // A valid name is applied.
@@ -943,5 +1032,1233 @@ mod tests {
             .captures(" 14:30:00 up 2 days,  3:21,  load average: 0.00, 0.01, 0.05")
             .expect("uptime output matches");
         assert_eq!(&caps[1], "2 days");
+    }
+
+    /// OpenWrt's UCI dump lands in a timestamped log after an explicit yes,
+    /// named after the host in the prompt.
+    #[test]
+    fn openwrt_save_uci_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-openwrt-save-uci");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nroot@OpenWrtMx4300:~# ");
+        feed(&mut engine, &mut host, "\r\nroot@OpenWrtMx4300:~# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(
+            log_name(&path).starts_with("openwrt-OpenWrtMx4300-"),
+            "{path}"
+        );
+        assert!(host.events.iter().any(|e| e.contains("uci export")));
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\npackage network\r\n\r\nconfig interface 'lan'\r\n\toption proto 'static'\r\nroot@OpenWrtMx4300:~# ",
+        );
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:UCI configuration saved to {path}"))
+        );
+    }
+
+    /// A non-root shell (`user@host:~$`) is refused before the dump.
+    #[test]
+    fn openwrt_save_uci_refuses_non_root() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-openwrt-save-uci");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nuser@OpenWrt:~$ ");
+        feed(&mut engine, &mut host, "\r\nuser@OpenWrt:~$ ");
+
+        assert!(engine.is_finished());
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.starts_with("msg:This script needs a root shell"))
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+    }
+
+    /// Drives the Cisco save example up to its confirmation question.
+    fn cisco_save_at_question() -> (ScriptEngine, Recorder) {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-cisco-save-config");
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        // First ENTER: the host name from the fresh prompt.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        // Second ENTER: the mode character.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        (engine, host)
+    }
+
+    /// The safe default: an empty answer cancels, removing every local write
+    /// and every read of the running configuration.
+    #[test]
+    fn cisco_save_config_cancels_without_reading_or_writing() {
+        let (mut engine, mut host) = cisco_save_at_question();
+        engine.on_ask_result(Some(String::new()));
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.contains("show running-config"))
+        );
+        assert!(host.events.iter().any(|e| e == "print:Nothing was saved."));
+    }
+
+    /// `n` and `no` are cancellations too, in any case and with surrounding
+    /// spaces; they must not become the file name.
+    #[test]
+    fn save_config_treats_no_as_cancel() {
+        for answer in ["n", "no", "N", "No", "  no  "] {
+            let (mut engine, mut host) = cisco_save_at_question();
+            engine.on_ask_result(Some(answer.to_string()));
+            engine.pump(&mut host);
+
+            assert!(engine.is_finished(), "{answer:?}");
+            assert_eq!(engine.error(), None, "{answer:?}");
+            assert!(
+                !host.events.iter().any(|event| event.starts_with("log:")),
+                "{answer:?}"
+            );
+            assert!(
+                !host
+                    .events
+                    .iter()
+                    .any(|event| event.contains("show running-config")),
+                "{answer:?}"
+            );
+            assert!(
+                host.events
+                    .iter()
+                    .any(|event| event == "print:Nothing was saved."),
+                "{answer:?}"
+            );
+        }
+    }
+
+    /// "yes" captures the running configuration into a file named after the
+    /// device and the clock, and stops the log at the end.
+    #[test]
+    fn cisco_save_config_writes_a_timestamped_log_after_yes() {
+        let (mut engine, mut host) = cisco_save_at_question();
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        // `terminal length 0` returns to the prompt.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(log_name(&path).starts_with("cisco-R1-"), "{path}");
+        assert!(std::path::Path::new(&path).is_absolute(), "{path}");
+        assert!(
+            std::path::Path::new(&path)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("log")),
+            "{path}"
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show running-config"))
+        );
+
+        // The configuration arrives, then the prompt.
+        feed(&mut engine, &mut host, "\r\nhostname R1\r\nR1# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(
+            host.events.iter().filter(|e| *e == "log:").count(),
+            1,
+            "the log is stopped after the capture"
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Running configuration saved to {path}"))
+        );
+    }
+
+    /// A user-EXEC prompt (`>`) sends `enable` and continues in privileged
+    /// mode instead of refusing.
+    #[test]
+    fn cisco_save_config_escalates_from_user_exec() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-cisco-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        assert!(host.events.iter().any(|e| e == "send:enable{ENTER}"));
+
+        // The switch accepts `enable` without a password.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(!host.events.iter().any(|e| e.starts_with("msg:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+    }
+
+    /// When `enable` asks for a password, the script asks for it masked and
+    /// only then continues; the answer never reaches the transcript.
+    #[test]
+    fn enable_password_is_asked_and_used() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-cisco-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nPassword: ");
+
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "ask:Enable password::false:"),
+            "the enable password must be asked masked"
+        );
+
+        engine.on_ask_result(Some("s3cret".to_string()));
+        engine.pump(&mut host);
+        assert!(host.events.iter().any(|e| e == "send:s3cret{ENTER}"));
+
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+    }
+
+    /// A rejected enable password leaves the session in user mode and stops
+    /// before anything is read.
+    #[test]
+    fn rejected_enable_password_stops_the_script() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-cisco-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nR1> ");
+        feed(&mut engine, &mut host, "\r\nPassword: ");
+        engine.on_ask_result(Some("wrong".to_string()));
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\n% Access denied\r\nR1> ");
+
+        assert!(engine.is_finished());
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.starts_with("msg:This script could not enter privileged mode"))
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert_eq!(
+            host.events.iter().filter(|e| e.starts_with("ask:")).count(),
+            1,
+            "only the enable password is asked; the save question never appears"
+        );
+    }
+
+    /// The Huawei profile reads `display current-configuration` in user view,
+    /// after the VRP paging command, into a timestamped log.
+    #[test]
+    fn huawei_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-huawei-save-config");
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        feed(&mut engine, &mut host, "\r\n<SW1> ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        // `screen-length 0 temporary` returns to the user-view prompt.
+        feed(&mut engine, &mut host, "\r\n<SW1> ");
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(log_name(&path).starts_with("huawei-SW1-"), "{path}");
+        assert!(
+            std::path::Path::new(&path)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("log")),
+            "{path}"
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("screen-length 0 temporary"))
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("display current-configuration"))
+        );
+
+        feed(&mut engine, &mut host, "\r\nsysname SW1\r\n<SW1> ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Current configuration saved to {path}"))
+        );
+    }
+
+    /// Huawei system view is refused before the paging command, which is a
+    /// user-view command, is sent.
+    #[test]
+    fn huawei_save_config_refuses_system_view() {
+        let mut host = Recorder {
+            prompt: Some("[SW1]".to_string()),
+            ..Recorder::default()
+        };
+        let mut engine = engine_for("example-huawei-save-config");
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.starts_with("msg:This script must run in user view"))
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("send:")));
+    }
+
+    /// The HSGQ profile reads `show current-config` in enable mode
+    /// (`OLT#`), into a timestamped log.
+    #[test]
+    fn hsgq_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-hsgq-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nOLT# ");
+        feed(&mut engine, &mut host, "\r\nOLT# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(log_name(&path).starts_with("hsgq-OLT-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show current-config"))
+        );
+
+        feed(&mut engine, &mut host, "\r\nhostname OLT\r\nOLT# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Current configuration saved to {path}"))
+        );
+    }
+
+    /// The D-Link xStack profile reads `show configuration running` in
+    /// administrator mode, after `disable clipaging`, into a timestamped log.
+    #[test]
+    fn dlink_xstack_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-dlink-xstack-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nDGS-3100-24# ");
+        feed(&mut engine, &mut host, "\r\nDGS-3100-24# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        // `disable clipaging` returns to the prompt.
+        feed(&mut engine, &mut host, "\r\nDGS-3100-24# ");
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(
+            log_name(&path).starts_with("dlink-xstack-DGS-3100-24-"),
+            "{path}"
+        );
+        assert!(host.events.iter().any(|e| e.contains("disable clipaging")));
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show configuration running"))
+        );
+
+        // The configuration arrives, then the prompt.
+        feed(&mut engine, &mut host, "\r\nvlan 10\r\nDGS-3100-24# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Running configuration saved to {path}"))
+        );
+    }
+
+    /// The DGS-1210 web-smart profile sends no paging command (none exists),
+    /// reads `show config`, and names the file after the model before the
+    /// colon instead of the logged-in account.
+    #[test]
+    fn dlink_dgs1210_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-dlink-dgs1210-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nDGS-1210-24:admin# ");
+        feed(&mut engine, &mut host, "\r\nDGS-1210-24:admin# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(log_name(&path).starts_with("dlink-DGS-1210-24-"), "{path}");
+        assert!(host.events.iter().any(|e| e.contains("show config")));
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("clipaging"))
+        );
+
+        feed(&mut engine, &mut host, "\r\nvlan 10\r\nDGS-1210-24:admin# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Configuration saved to {path}"))
+        );
+    }
+
+    /// Junos reads `show configuration | no-more` in operational mode; the
+    /// `#` configuration prompt is refused.
+    #[test]
+    fn juniper_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-juniper-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nadmin@SW1> ");
+        feed(&mut engine, &mut host, "\r\nadmin@SW1> ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(log_name(&path).starts_with("juniper-SW1-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show configuration | no-more"))
+        );
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\nsystem { host-name SW1; }\r\nadmin@SW1> ",
+        );
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Configuration saved to {path}"))
+        );
+    }
+
+    /// Junos configuration mode (`user@host#`) is refused before anything is
+    /// read or written.
+    #[test]
+    fn juniper_save_config_refuses_configuration_mode() {
+        let mut host = Recorder {
+            prompt: Some("admin@SW1#".to_string()),
+            ..Recorder::default()
+        };
+        let mut engine = engine_for("example-juniper-save-config");
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.starts_with("msg:This script must run in operational mode"))
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("send:")));
+    }
+
+    /// The TP-Link profile sends no paging command (none is documented) and
+    /// reads `show running-config` in privileged EXEC mode.
+    #[test]
+    fn tplink_save_config_writes_a_timestamped_log_after_yes() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-tplink-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nSwitch# ");
+        feed(&mut engine, &mut host, "\r\nSwitch# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(log_name(&path).starts_with("tplink-Switch-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("show running-config"))
+        );
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("pagination"))
+        );
+
+        feed(&mut engine, &mut host, "\r\nvlan 10\r\nSwitch# ");
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| *e == format!("print:Running configuration saved to {path}"))
+        );
+    }
+
+    /// Wrong-mode prompts are refused before anything is sent.
+    #[test]
+    fn save_config_profiles_refuse_wrong_mode() {
+        for (id, prompt, feed_text, feeds) in [
+            (
+                "example-dlink-xstack-save-config",
+                "DGS-3100-24(config)#",
+                "",
+                0,
+            ),
+            (
+                "example-dlink-dgs1210-save-config",
+                "DGS-1210-24:admin>",
+                "\r\nDGS-1210-24:admin> ",
+                2,
+            ),
+            ("example-tplink-save-config", "Switch(config)#", "", 0),
+            ("example-h3c-save-config", "[H3C]", "", 0),
+            ("example-zte-save-config", "ZXR10(config)#", "", 0),
+            ("example-bdcom-save-config", "switch_config#", "", 0),
+            ("example-ubiquiti-save-config", "ubnt@EdgeRouter#", "", 0),
+            ("example-huawei-olt-save-config", "MA5680T(config)#", "", 0),
+            ("example-aruba-save-config", "Switch(config)#", "", 0),
+        ] {
+            let mut host = Recorder {
+                prompt: Some(prompt.to_string()),
+                ..Recorder::default()
+            };
+            let mut engine = engine_for(id);
+            engine.pump(&mut host);
+            for _ in 0..feeds {
+                feed(&mut engine, &mut host, feed_text);
+            }
+
+            assert!(engine.is_finished(), "{id} at {prompt}");
+            assert!(
+                host.events.iter().any(|e| e.starts_with("msg:")),
+                "{id} at {prompt}"
+            );
+            assert!(
+                !host.events.iter().any(|e| e.starts_with("log:")),
+                "{id} at {prompt}"
+            );
+            assert!(
+                !host.events.iter().any(|e| e.starts_with("ask:")),
+                "{id} at {prompt}"
+            );
+            assert!(
+                !host
+                    .events
+                    .iter()
+                    .any(|e| e.starts_with("send:") && e.contains("config")),
+                "{id} at {prompt}"
+            );
+        }
+    }
+
+    /// HSGQ configuration mode is refused; user mode escalates with `enable`
+    /// instead.
+    #[test]
+    fn hsgq_save_config_refuses_config_mode_and_escalates_from_user_mode() {
+        let mut host = Recorder {
+            prompt: Some("OLT(config)#".to_string()),
+            ..Recorder::default()
+        };
+        let mut engine = engine_for("example-hsgq-save-config");
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert!(host.events.iter().any(|e| e.starts_with("msg:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(!host.events.iter().any(|e| e.starts_with("ask:")));
+
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-hsgq-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nOLT> ");
+        feed(&mut engine, &mut host, "\r\nOLT> ");
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        assert!(host.events.iter().any(|e| e == "send:enable{ENTER}"));
+
+        feed(&mut engine, &mut host, "\r\nOLT# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert_eq!(engine.error(), None);
+    }
+
+    /// The CIS/China profiles: each reads its vendor command into a
+    /// timestamped log after an explicit yes.
+    #[test]
+    fn cis_and_china_profiles_write_a_timestamped_log_after_yes() {
+        struct Case {
+            id: &'static str,
+            feeds: &'static [&'static str],
+            prefix: &'static str,
+            pager: Option<&'static str>,
+            /// Prompt feeds needed between "yes" and the read command: one for
+            /// a pager command or a RouterOS menu change, none otherwise.
+            steps: u32,
+            sent: &'static [&'static str],
+            tail: &'static str,
+        }
+
+        let cases = [
+            Case {
+                id: "example-h3c-save-config",
+                feeds: &["\r\n<H3C> "],
+                prefix: "h3c-H3C-",
+                pager: Some("screen-length disable"),
+                steps: 1,
+                sent: &["display current-configuration"],
+                tail: "\r\nsysname H3C\r\n<H3C> ",
+            },
+            Case {
+                id: "example-ruijie-save-config",
+                feeds: &["\r\nRuijie# ", "\r\nRuijie# "],
+                prefix: "ruijie-Ruijie-",
+                pager: Some("terminal length 0"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nRuijie# ",
+            },
+            Case {
+                id: "example-zte-save-config",
+                feeds: &["\r\nZXR10# ", "\r\nZXR10# "],
+                prefix: "zte-ZXR10-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nZXR10# ",
+            },
+            Case {
+                id: "example-eltex-save-config",
+                feeds: &["\r\nconsole# ", "\r\nconsole# "],
+                prefix: "eltex-console-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config detailed"],
+                tail: "\r\nvlan 10\r\nconsole# ",
+            },
+            Case {
+                id: "example-bdcom-save-config",
+                feeds: &["\r\nSwitch# ", "\r\nSwitch# "],
+                prefix: "bdcom-Switch-",
+                pager: Some("terminal length 0"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nSwitch# ",
+            },
+            Case {
+                id: "example-ubiquiti-save-config",
+                feeds: &["\r\nubnt@EdgeRouter:~$ ", "\r\nubnt@EdgeRouter:~$ "],
+                prefix: "ubiquiti-EdgeRouter-",
+                pager: None,
+                steps: 0,
+                sent: &["show configuration commands"],
+                tail: "\r\nset system host-name EdgeRouter\r\nubnt@EdgeRouter:~$ ",
+            },
+            Case {
+                id: "example-raisecom-save-config",
+                feeds: &["\r\nRaisecom# ", "\r\nRaisecom# "],
+                prefix: "raisecom-Raisecom-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nRaisecom# ",
+            },
+            Case {
+                id: "example-qtech-save-config",
+                feeds: &["\r\nQTECH# ", "\r\nQTECH# "],
+                prefix: "qtech-QTECH-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nQTECH# ",
+            },
+            Case {
+                id: "example-zyxel-save-config",
+                feeds: &["\r\nGS2210-24# ", "\r\nGS2210-24# "],
+                prefix: "zyxel-GS2210-24-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nGS2210-24# ",
+            },
+            Case {
+                id: "example-cdata-save-config",
+                feeds: &["\r\nOLT# ", "\r\nOLT# "],
+                prefix: "cdata-OLT-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nOLT# ",
+            },
+            Case {
+                id: "example-vsol-save-config",
+                feeds: &["\r\nOLT# ", "\r\nOLT# "],
+                prefix: "vsol-OLT-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nOLT# ",
+            },
+            Case {
+                id: "example-maipu-save-config",
+                feeds: &["\r\nMaipu# ", "\r\nMaipu# "],
+                prefix: "maipu-Maipu-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nMaipu# ",
+            },
+            Case {
+                id: "example-hikvision-save-config",
+                feeds: &["\r\nHikvision# ", "\r\nHikvision# "],
+                prefix: "hikvision-Hikvision-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nHikvision# ",
+            },
+            Case {
+                id: "example-dahua-save-config",
+                feeds: &["\r\nDahua# ", "\r\nDahua# "],
+                prefix: "dahua-Dahua-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nDahua# ",
+            },
+            Case {
+                id: "example-netgear-save-config",
+                feeds: &["\r\n(GS724Tv4)# ", "\r\n(GS724Tv4)# "],
+                prefix: "netgear-GS724Tv4-",
+                pager: None,
+                steps: 0,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\n(GS724Tv4)# ",
+            },
+            Case {
+                id: "example-aruba-save-config",
+                feeds: &["\r\nSwitch# ", "\r\nSwitch# "],
+                prefix: "aruba-Switch-",
+                pager: Some("no page"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nSwitch# ",
+            },
+            Case {
+                id: "example-arista-save-config",
+                feeds: &["\r\nswitch# ", "\r\nswitch# "],
+                prefix: "arista-switch-",
+                pager: Some("terminal length 0"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nswitch# ",
+            },
+            Case {
+                id: "example-extreme-save-config",
+                feeds: &["\r\n*X460-48t.1 # ", "\r\n*X460-48t.1 # "],
+                prefix: "extreme-X460-48t.1-",
+                pager: Some("disable clipaging"),
+                steps: 1,
+                sent: &["show configuration"],
+                tail: "\r\ncreate vlan ToR\r\n*X460-48t.1 # ",
+            },
+            Case {
+                id: "example-allied-save-config",
+                feeds: &["\r\nawplus# ", "\r\nawplus# "],
+                prefix: "allied-awplus-",
+                pager: Some("terminal length 0"),
+                steps: 1,
+                sent: &["show running-config"],
+                tail: "\r\nvlan 10\r\nawplus# ",
+            },
+        ];
+
+        for case in cases {
+            let mut host = Recorder::default();
+            let mut engine = engine_for(case.id);
+            engine.pump(&mut host);
+            for output in case.feeds {
+                feed(&mut engine, &mut host, output);
+            }
+            assert_eq!(engine.pending(), PendingKind::Ask, "{}", case.id);
+
+            engine.on_ask_result(Some("yes".to_string()));
+            engine.pump(&mut host);
+
+            if let Some(pager) = case.pager {
+                assert!(
+                    host.events
+                        .iter()
+                        .any(|e| e.starts_with("send:") && e.contains(pager)),
+                    "{} does not send {pager}",
+                    case.id
+                );
+            }
+            for _ in 0..case.steps {
+                assert_eq!(engine.pending(), PendingKind::Expect, "{}", case.id);
+                feed(&mut engine, &mut host, case.feeds[0]);
+            }
+
+            let path = host
+                .events
+                .iter()
+                .find_map(|e| e.strip_prefix("log:"))
+                .unwrap_or_else(|| panic!("{} never opened a log", case.id))
+                .to_string();
+            assert!(
+                log_name(&path).starts_with(case.prefix),
+                "{}: {path}",
+                case.id
+            );
+            for command in case.sent {
+                assert!(
+                    host.events
+                        .iter()
+                        .any(|e| e.starts_with("send:") && e.contains(command)),
+                    "{} does not send {command}",
+                    case.id
+                );
+            }
+
+            feed(&mut engine, &mut host, case.tail);
+            assert!(engine.is_finished(), "{}", case.id);
+            assert_eq!(engine.error(), None, "{}", case.id);
+            assert_eq!(
+                host.events.iter().filter(|e| *e == "log:").count(),
+                1,
+                "{} left the log open",
+                case.id
+            );
+        }
+    }
+
+    /// The Huawei OLT profile cannot disable paging, so the `pager`
+    /// directive answers `---- More ----` and the dump still completes.
+    #[test]
+    fn huawei_olt_save_config_answers_the_pager() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-huawei-olt-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\nMA5680T# ");
+        feed(&mut engine, &mut host, "\r\nMA5680T# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the log starts before the command")
+            .to_string();
+        assert!(log_name(&path).starts_with("huawei-olt-MA5680T-"), "{path}");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e.contains("display current-configuration"))
+        );
+
+        // The optional filter prompt does not end the wait.
+        engine.on_output(b"\r\n { |ont|port|section|service-port|simple|| }:");
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        // Each `---- More ----` page is answered with a space.
+        assert!(engine.on_output(b"\r\nline 1\r\n---- More ( Press 'Q' to break ) ----"));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+        assert!(host.events.iter().any(|e| e == "send: "));
+
+        assert!(engine.on_output(b"\r\nline 2\r\nMA5680T# "));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert_eq!(host.events.iter().filter(|e| *e == "log:").count(), 1);
+    }
+
+    /// Drives the OLT provisioning example to its final `Apply` question.
+    fn provisioning_at_apply() -> (ScriptEngine, Recorder) {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-huawei-olt-provision-ont");
+        engine.pump(&mut host);
+        // Enable-mode prompt: device and mode are captured from one feed each.
+        feed(&mut engine, &mut host, "\r\nMA5680T# ");
+        feed(&mut engine, &mut host, "\r\nMA5680T# ");
+        feed(&mut engine, &mut host, "\r\nMA5680T(config)# ");
+
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        let first = host.events.last().cloned().unwrap_or_default();
+        assert_eq!(first, "ask:Service VLAN (1-4094)::true:500");
+
+        // Out-of-range answers are rejected before anything is contacted.
+        engine.on_ask_result(Some("5000".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "print:The VLAN must be a whole number from 1 to 4094."),
+            "an invalid VLAN is explained"
+        );
+
+        for answer in [
+            "500",
+            "0/19",
+            "0",
+            "1",
+            "0",
+            "1",
+            "48575443AABBCCDD",
+            "10",
+            "10",
+            "10",
+            "10",
+            "4",
+            "RUSTCONN_EXAMPLE",
+        ] {
+            assert_eq!(engine.pending(), PendingKind::Ask);
+            engine.on_ask_result(Some(answer.to_string()));
+            engine.pump(&mut host);
+        }
+
+        (engine, host)
+    }
+
+    /// The provisioning example shows the collected values and writes nothing
+    /// when the operator does not type yes.
+    #[test]
+    fn huawei_olt_provision_previews_and_cancels() {
+        let (mut engine, mut host) = provisioning_at_apply();
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert!(host.events.iter().any(|e| e == "print:  VLAN: 500"));
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "print:  Uplink: 0/19 port 0")
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+
+        engine.on_ask_result(Some(String::new()));
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
+        assert!(
+            host.events
+                .iter()
+                .all(|e| !e.starts_with("send:") || !e.contains("vlan "))
+        );
+    }
+
+    /// Yes starts the write path: the transcript is logged, commands are
+    /// sent in order, and no `save` is ever issued.
+    #[test]
+    fn huawei_olt_provision_writes_after_yes_without_saving() {
+        let (mut engine, mut host) = provisioning_at_apply();
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|e| e.strip_prefix("log:"))
+            .expect("the transcript starts before the first command")
+            .to_string();
+        assert!(
+            log_name(&path).starts_with("huawei-olt-provision-MA5680T-"),
+            "{path}"
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:vlan 500 smart{ENTER}")
+        );
+
+        feed(&mut engine, &mut host, "\r\nMA5680T(config)# ");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:port vlan 500 0/19 0{ENTER}")
+        );
+
+        feed(&mut engine, &mut host, "\r\nMA5680T(config)# ");
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:ont-srvprofile gpon profile-id 10{ENTER}")
+        );
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\nMA5680T(config-gpon-srvprofile-10)# ",
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:ont-port eth 4{ENTER}")
+        );
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\nMA5680T(config-srvprofile-gpon-10)# ",
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:port vlan eth 1-4 500{ENTER}"),
+            "all Ethernet ports are mapped to the service VLAN"
+        );
+        assert!(
+            host.events
+                .iter()
+                .all(|e| !e.starts_with("send:") || !e.contains("save")),
+            "provisioning must not save the configuration"
+        );
+    }
+
+    /// MikroTik sends the absolute `/export`, so a session left inside
+    /// `/interface` still exports the whole configuration.
+    #[test]
+    fn mikrotik_save_config_uses_the_absolute_export_command() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-mikrotik-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\n[admin@MikroTik] /interface> ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:/system resource print{ENTER}"),
+            "the script reads the RouterOS major version first"
+        );
+        assert_eq!(engine.pending(), PendingKind::Capture);
+
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\nversion: 7.19.6 (stable)\r\n[admin@MikroTik] > ",
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:/export verbose show-sensitive{ENTER}"),
+            "RouterOS 7 needs show-sensitive for a complete export"
+        );
+        assert!(
+            host.events.iter().any(|event| {
+                event
+                    .strip_prefix("log:")
+                    .is_some_and(|path| log_name(path).starts_with("mikrotik-MikroTik-"))
+            }),
+            "the transcript uses the device name"
+        );
+    }
+
+    /// RouterOS 6 shows secrets by default and may reject `show-sensitive`,
+    /// so the same script must fall back to the plain verbose export.
+    #[test]
+    fn mikrotik_save_config_uses_plain_export_on_routeros_6() {
+        let mut host = Recorder::default();
+        let mut engine = engine_for("example-mikrotik-save-config");
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "\r\n[admin@MikroTik] > ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Capture);
+        feed(
+            &mut engine,
+            &mut host,
+            "\r\nversion: 6.49.17 (stable)\r\n[admin@MikroTik] > ",
+        );
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "send:/export verbose{ENTER}"),
+            "RouterOS 6 uses the plain verbose export"
+        );
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e == "send:/export verbose show-sensitive{ENTER}"),
+            "the RouterOS 7 form is not sent"
+        );
+    }
+
+    /// Both vendor profiles cancel without reading the configuration or
+    /// opening a local file.
+    #[test]
+    fn vendor_save_configs_cancel_without_reading_or_writing() {
+        for (id, prompt, captures) in [
+            ("example-huawei-save-config", "\r\n<SW1> ", 1),
+            ("example-hsgq-save-config", "\r\nOLT# ", 2),
+            ("example-dlink-xstack-save-config", "\r\nDGS-3100-24# ", 2),
+            (
+                "example-dlink-dgs1210-save-config",
+                "\r\nDGS-1210-24:admin# ",
+                2,
+            ),
+            ("example-juniper-save-config", "\r\nadmin@SW1> ", 2),
+            ("example-tplink-save-config", "\r\nSwitch# ", 2),
+            ("example-h3c-save-config", "\r\n<H3C> ", 1),
+            ("example-ruijie-save-config", "\r\nRuijie# ", 2),
+            ("example-zte-save-config", "\r\nZXR10# ", 2),
+            ("example-mikrotik-save-config", "\r\n[admin@MikroTik] > ", 1),
+            ("example-eltex-save-config", "\r\nconsole# ", 2),
+            ("example-bdcom-save-config", "\r\nSwitch# ", 2),
+            ("example-ubiquiti-save-config", "\r\nubnt@EdgeRouter:~$ ", 2),
+            ("example-huawei-olt-save-config", "\r\nMA5680T# ", 2),
+            ("example-raisecom-save-config", "\r\nRaisecom# ", 2),
+            ("example-qtech-save-config", "\r\nQTECH# ", 2),
+            ("example-zyxel-save-config", "\r\nGS2210-24# ", 2),
+            ("example-cdata-save-config", "\r\nOLT# ", 2),
+            ("example-vsol-save-config", "\r\nOLT# ", 2),
+            ("example-maipu-save-config", "\r\nMaipu# ", 2),
+            ("example-hikvision-save-config", "\r\nHikvision# ", 2),
+            ("example-dahua-save-config", "\r\nDahua# ", 2),
+            ("example-netgear-save-config", "\r\n(GS724Tv4)# ", 2),
+            ("example-aruba-save-config", "\r\nSwitch# ", 2),
+            ("example-arista-save-config", "\r\nswitch# ", 2),
+            ("example-extreme-save-config", "\r\n*X460-48t.1 # ", 2),
+            ("example-allied-save-config", "\r\nawplus# ", 2),
+        ] {
+            let mut host = Recorder::default();
+            let mut engine = engine_for(id);
+            engine.pump(&mut host);
+            for _ in 0..captures {
+                feed(&mut engine, &mut host, prompt);
+            }
+            assert_eq!(engine.pending(), PendingKind::Ask, "{id}");
+
+            engine.on_ask_result(Some(String::new()));
+            engine.pump(&mut host);
+
+            assert!(engine.is_finished(), "{id}");
+            assert_eq!(engine.error(), None, "{id}");
+            assert!(!host.events.iter().any(|e| e.starts_with("log:")), "{id}");
+            assert!(
+                !host
+                    .events
+                    .iter()
+                    .any(|e| e.starts_with("send:") && e.contains("config")),
+                "{id}"
+            );
+            assert!(
+                host.events.iter().any(|e| e == "print:Nothing was saved."),
+                "{id}"
+            );
+        }
     }
 }

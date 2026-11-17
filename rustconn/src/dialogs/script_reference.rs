@@ -52,6 +52,14 @@ readline <variable> [<timeout-seconds>]
     Wait for a complete line of output and store it (without the line break)
     in a variable.
 
+pager <regex>
+    Answer the device's pager prompt automatically. While an expect, capture
+    or readline is waiting, output matching the expression is removed from the
+    buffer and a space is sent, so a device that cannot disable paging (Huawei
+    SmartAX OLTs, for one) still reaches its final prompt. The expression may
+    be written bare or delimited with slashes. It stays in effect for the rest
+    of the script.
+
 getprompt <variable>
     Guess the current prompt of the session and store it. The guess is the
     text on the cursor's line with escape sequences removed. It is a
@@ -60,7 +68,9 @@ getprompt <variable>
 
 log [<file-path>]
     Start appending the session output to a file. With no argument, logging
-    stops. The file is written locally.
+    stops. The file is written locally with owner-only permissions on Unix.
+    The path may contain ${name} references, the ${DATE_*} / ${TIME_*}
+    built-ins and ${CWD}; a path built from an `ask … hide` answer is refused.
 
 print <text>
     Print a message on the terminal in the session, with ANSI colouring.
@@ -69,10 +79,12 @@ print <text>
 2. USER INTERACTION
 -------------------
 
-ask "<prompt>" [hide] <variable>
+ask "<prompt>" [hide] [default "<value>"] <variable>
     Ask the user for input and store the answer in a variable. With the "hide"
-    keyword the input is masked (use it for passwords). Cancelling the dialog
-    stops the script with an error.
+    keyword the input is masked (use it for passwords). With "default" the
+    field is pre-filled with the value, selected so typing replaces it and
+    Enter accepts it. The keywords may appear in either order. Cancelling the
+    dialog stops the script with an error.
 
 msg <text> [ok]
     Show a message window. With the "ok" keyword the window has an OK button.
@@ -140,7 +152,13 @@ if_goto <variable> <regex> <label> [else <label>]
 
 ${name} and $name
     Reference a variable. The value is substituted when the instruction runs.
-    Inside `send`, use ${name} only (see above).
+    Inside `send`, use ${name} only (see above). The date/time built-ins
+    (${DATE_Y}, ${DATE_M}, ${DATE_D}, ${TIME_H}, ${TIME_M}, ${TIME_S},
+    ${TIMESTAMP}) also resolve in script text, so a log file can be named by
+    the clock. ${CWD} resolves to RustConn's working directory, so a log path
+    can be absolute without a literal OS path in the script. ${ENV_*} does not
+    resolve: `run` scrubs secrets from its environment, and a script must not
+    pull them back. A path built from an `ask … hide` answer is refused.
 
 A script that jumps in a loop is stopped after one million instructions.
 
