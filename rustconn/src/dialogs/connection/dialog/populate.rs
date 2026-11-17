@@ -84,12 +84,8 @@ impl ConnectionDialog {
     /// Populates the dialog with an existing connection for editing
     pub fn set_connection(&self, conn: &Connection) {
         self.dialog.set_title(&i18n("Edit Connection"));
-        // Switch from Create icon to Save icon for edit mode
-        self.save_button.set_label("");
-        self.save_button.set_icon_name("media-floppy-symbolic");
-        self.save_button.set_tooltip_text(Some(&i18n("Save")));
-        self.save_button
-            .update_property(&[gtk4::accessible::Property::Label(&i18n("Save"))]);
+        // Create becomes Save in edit mode
+        self.save_button.set_label(&i18n("Save"));
         *self.editing_id.borrow_mut() = Some(conn.id);
 
         // Basic fields

@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Custom SSH options keep their order and no longer suggest turning host key checking off** — the Custom Options field listed the options in a different order on every open, and its placeholder and the User Guide example offered `StrictHostKeyChecking=no`. Options are shown sorted and the example is `ServerAliveInterval=60, Compression=yes`. (`rustconn/src/dialogs/connection/dialog/populate.rs`, `ssh.rs`)
 - **Untranslated texts in the connection dialog and Template Manager** — the **Jump Host** and **Tunnel** lists showed `(None)`, the **Username** placeholder `(default: …)`, the template rows `Host:`/`Port:`/`User:`, and the Expect pattern tester its result lines in English. They go through gettext now. (`general_tab.rs`, `dialog/populate.rs`, `dialog/rows.rs`, `template_manager.rs`)
 
+### Changed
+
+- **The connection dialog has Cancel, Enter saves and unsaved edits are confirmed** — the header now has a **Cancel** button, a text **Create**/**Save** button at the end instead of the plus and floppy-disk icons, and Enter in the Name, Host, Username, Domain and Tags fields presses it. Cancel, Escape or the close gesture after an edit asks **Discard Changes?**; a dialog nothing was typed or clicked in closes at once. (`rustconn/src/dialogs/connection/dialog/construction.rs`, `save.rs`, `populate.rs`, `general_tab.rs`)
+
 ### Improved
 
 - **Duplicate as Range shows a syntax example** — the dialog text now names `web[01-10]`. (`rustconn/src/window/operations.rs`)
