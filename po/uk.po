@@ -7445,7 +7445,7 @@ msgstr "Не вдалося зберегти уставу апаратного �
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:178
 msgid "Refresh client detection"
-msgstr "Оновити виявлення клієнтів"
+msgstr "Онови виявлення клієнтів"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:278
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:77
@@ -7994,7 +7994,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:89
 msgid "Reset…"
-msgstr "Скинути…"
+msgstr "Скинь…"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:100
 msgid "Visible Metrics"
@@ -12505,15 +12505,15 @@ msgstr "Веб"
 
 #: rustconn/src/sidebar/mod.rs:979
 msgid "Filter by {} protocol"
-msgstr "Фільтрувати за протоколом {}"
+msgstr "Фільтруй за протоколом {}"
 
 #: rustconn/src/sidebar/mod.rs:1031 rustconn/src/sidebar/mod.rs:1049
 msgid "Filter by protocol"
-msgstr "Фільтрувати за протоколом"
+msgstr "Фільтруй за протоколом"
 
 #: rustconn/src/sidebar/mod.rs:1046
 msgid "Filter by protocol (filters active)"
-msgstr "Фільтрувати за протоколом (фільтри активні)"
+msgstr "Фільтруй за протоколом (фільтри активні)"
 
 #: rustconn/src/sidebar/mod.rs:1169
 msgid "Trash"
@@ -12537,7 +12537,7 @@ msgstr "Збережені пошуки"
 
 #: rustconn/src/sidebar/saved_searches.rs:49
 msgid "Save current search…"
-msgstr "Зберегти поточний пошук…"
+msgstr "Збережи поточний пошук…"
 
 #: rustconn/src/sidebar/saved_searches.rs:109
 msgid "No saved searches yet"
@@ -12545,11 +12545,11 @@ msgstr "Збережених пошуків ще немає"
 
 #: rustconn/src/sidebar/saved_searches.rs:148
 msgid "Rename saved search {}"
-msgstr "Перейменувати збережений пошук {}"
+msgstr "Перейменуй збережений пошук {}"
 
 #: rustconn/src/sidebar/saved_searches.rs:157
 msgid "Delete saved search {}"
-msgstr "Видалити збережений пошук {}"
+msgstr "Вилучи збережений пошук {}"
 
 #: rustconn/src/sidebar/saved_searches.rs:191
 msgid "Saved search name"
@@ -12557,15 +12557,15 @@ msgstr "Назва збереженого пошуку"
 
 #: rustconn/src/sidebar/saved_searches.rs:220
 msgid "Save Search"
-msgstr "Зберегти пошук"
+msgstr "Збережи пошук"
 
 #: rustconn/src/sidebar/saved_searches.rs:237
 msgid "Rename Saved Search"
-msgstr "Перейменувати збережений пошук"
+msgstr "Перейменуй збережений пошук"
 
 #: rustconn/src/sidebar/saved_searches.rs:260
 msgid "Delete saved search?"
-msgstr "Видалити збережений пошук?"
+msgstr "Вилучити збережений пошук?"
 
 #: rustconn/src/sidebar/saved_searches.rs:262
 msgid "“{}” will be removed. Your connections are not affected."
@@ -12748,7 +12748,7 @@ msgstr "Вилучи назавжди…"
 
 #: rustconn/src/sidebar_ui.rs:696 rustconn/src/window/edit_actions.rs:409
 msgid "Empty Trash"
-msgstr "Спорожнити кошик"
+msgstr "Спорожни кошик"
 
 #: rustconn/src/sidebar_ui.rs:720 rustconn/src/sidebar_ui.rs:1268
 #: rustconn/src/window/batch_edit.rs:46
@@ -12845,7 +12845,7 @@ msgstr "Пошук (Ctrl+F)"
 
 #: rustconn/src/sidebar_ui.rs:1424
 msgid "Toggle search"
-msgstr "Увімкнути/вимкнути пошук"
+msgstr "Перемкни пошук"
 
 #: rustconn/src/sidebar_ui.rs:1447 rustconn/src/window/ui.rs:259
 msgid "New Connection (Advanced)…"
@@ -12865,11 +12865,11 @@ msgstr "Інструменти"
 
 #: rustconn/src/sidebar_ui.rs:1479
 msgid "Sort Alphabetically"
-msgstr "Сортувати за абеткою"
+msgstr "Сортуй за абеткою"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
-msgstr "Сортувати за останнім використанням"
+msgstr "Сортуй за останнім використанням"
 
 #: rustconn/src/sidebar_ui.rs:1485
 msgid "Connection list menu"
@@ -13542,7 +13542,7 @@ msgstr ""
 
 #: rustconn/src/vault_ops.rs:318
 msgid "Save to This Computer"
-msgstr "Зберегти на цей комп'ютер"
+msgstr "Збережи на цьому комп'ютері"
 
 #: rustconn/src/window/batch_edit.rs:47
 msgid "Select two or more connections to edit them together."
@@ -13747,7 +13747,7 @@ msgstr "Необов'язково — залиш порожнім для кор�
 
 #: rustconn/src/window/connection_dialogs.rs:486
 msgid "Create Another"
-msgstr "Створити ще одну"
+msgstr "Створи ще одну"
 
 #: rustconn/src/window/connection_dialogs.rs:494
 #: rustconn/src/window/edit_group.rs:235
@@ -15610,15 +15610,15 @@ msgstr "Надішли текста"
 
 #: rustconn/src/window/sessions.rs:102 rustconn/src/window/sessions.rs:188
 msgid "Terminate"
-msgstr "Завершуй"
+msgstr "Заверши"
 
 #: rustconn/src/window/sessions.rs:186
 msgid "Terminate Session?"
-msgstr "Завершуй сеанса?"
+msgstr "Завершити сеанс?"
 
 #: rustconn/src/window/sessions.rs:187
 msgid "Are you sure you want to terminate this session?"
-msgstr "Ви впевнені, що хочете завершити цього сеанса?"
+msgstr "Ви впевнені, що хочете завершити цей сеанс?"
 
 #: rustconn/src/window/sessions.rs:303
 msgid "{} — in a separate window"
@@ -15819,19 +15819,19 @@ msgstr "Устави (Ctrl+,)"
 
 #: rustconn/src/window/ui.rs:106
 msgid "Split Down (Ctrl+Shift+H)"
-msgstr "Розділити вниз (Ctrl+Shift+H)"
+msgstr "Розділи вниз (Ctrl+Shift+H)"
 
 #: rustconn/src/window/ui.rs:109
 msgid "Split Down"
-msgstr "Розділити вниз"
+msgstr "Розділи вниз"
 
 #: rustconn/src/window/ui.rs:113
 msgid "Split Right (Ctrl+Shift+S)"
-msgstr "Розділити праворуч (Ctrl+Shift+S)"
+msgstr "Розділи праворуч (Ctrl+Shift+S)"
 
 #: rustconn/src/window/ui.rs:116
 msgid "Split Right"
-msgstr "Розділити праворуч"
+msgstr "Розділи праворуч"
 
 #: rustconn/src/window/ui.rs:133
 msgid "Local Shell (Ctrl+Shift+T)"
