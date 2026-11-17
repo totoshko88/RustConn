@@ -148,7 +148,7 @@ pub fn create_header_bar() -> (
     bc_box.append(&bc_label);
     broadcast_toggle.set_child(Some(&bc_box));
     broadcast_toggle.set_tooltip_text(Some(&i18n(
-        "Mirror keystrokes to all split panels (Ctrl+Shift+B)",
+        "Mirror keystrokes to all split panes (Ctrl+Shift+B)",
     )));
     broadcast_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Toggle split broadcast",

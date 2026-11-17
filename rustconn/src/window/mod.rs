@@ -2007,7 +2007,7 @@ impl MainWindow {
         let window = self.window.clone();
 
         // Set up split view cleanup callback for when tabs are closed via TabView
-        // This ensures panels show "Empty Panel" placeholder when their session is closed
+        // This ensures panels show "Empty Pane" placeholder when their session is closed
         {
             let session_bridges_for_cleanup = self.session_split_bridges.clone();
             let split_view_for_cleanup = split_view.clone();

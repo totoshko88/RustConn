@@ -32,7 +32,7 @@ fn refuses_split_placement(
 ///
 /// Both entry points need the same "focus this pane first, then let the window
 /// action work on it" behaviour, so they are wired together: `win.close-pane`
-/// for the × button and "Close Connection", `win.pop-pane-to-tab` for the
+/// for the × button and "Close Pane", `win.pop-pane-to-tab` for the
 /// "Move to Own Tab" button and menu item (issue #252). Focusing is what makes
 /// an action target the panel the user pointed at — the panel's own focus
 /// gesture declines clicks that land on a button.
@@ -582,7 +582,7 @@ impl MainWindow {
                     if !hint_shown.get() && toggle.is_visible() {
                         hint_shown.set(true);
                         let hint = crate::i18n::i18n(
-                            "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes across split panels",
+                            "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes across split panes",
                         );
                         let toast = crate::toast::plain_toast(&hint);
                         toast.set_timeout(6);
@@ -1359,7 +1359,7 @@ impl MainWindow {
             // already (that tab uses Select Tab in its empty panels).
             if bridges_tabs.borrow().contains_key(&owner) {
                 toast(crate::i18n::i18n(
-                    "This tab already has a split. Remove it first, or use Select Tab in a panel.",
+                    "This tab already has a split. Remove it first, or use Select Tab in a pane.",
                 ));
                 return;
             }

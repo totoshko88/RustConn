@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:16+0200\n"
+"POT-Creation-Date: 2026-11-17 16:28+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -6559,7 +6559,7 @@ msgid "Log Content"
 msgstr "Jurnal məzmunu"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:2104
+#: rustconn/src/split_view/adapter.rs:2102
 msgid "Loading…"
 msgstr "Yüklənir…"
 
@@ -9927,7 +9927,11 @@ msgstr "Üfüqi böl"
 msgid "Split Vertical"
 msgstr "Şaquli böl"
 
-#: rustconn/src/dialogs/shortcuts.rs:220
+#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:198
+#: rustconn/src/split_view/adapter.rs:1339
+#: rustconn/src/split_view/adapter.rs:1344
+#: rustconn/src/split_view/adapter.rs:2062
+#: rustconn/src/split_view/adapter.rs:2072
 msgid "Close Pane"
 msgstr "Paneli bağla"
 
@@ -12883,15 +12887,11 @@ msgid "No smart folders"
 msgstr "Ağıllı qovluq yoxdur"
 
 #: rustconn/src/split_view/adapter.rs:48
-msgid "Drag to move this session to another panel or tab"
+msgid "Drag to move this session to another pane or tab"
 msgstr "Bu sessiyanı başqa panelə və ya taba köçürmək üçün sürükləyin"
 
-#: rustconn/src/split_view/adapter.rs:198
-msgid "Close Connection"
-msgstr "Bağlantını bağla"
-
 #: rustconn/src/split_view/adapter.rs:1018
-msgid "Untick to keep this panel out of the keystroke broadcast"
+msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "Bu paneli klaviş yayımından kənarda saxlamaq üçün işarəni götürün"
 
 #: rustconn/src/split_view/adapter.rs:1116
@@ -12900,7 +12900,7 @@ msgstr "Yayım: {}"
 
 #: rustconn/src/split_view/adapter.rs:1211
 #: rustconn/src/split_view/adapter.rs:1213
-msgid "Show panel actions"
+msgid "Show pane actions"
 msgstr "Panel əməliyyatlarını göstər"
 
 #: rustconn/src/split_view/adapter.rs:1302
@@ -12911,11 +12911,6 @@ msgstr "Bu sessiyanı bölünmüş görünüşdən çıxar və öz tabında gös
 msgid "Move this session out of the split into its own window"
 msgstr "Bu sessiyanı bölünmüş görünüşdən çıxarıb öz pəncərəsinə köçür"
 
-#: rustconn/src/split_view/adapter.rs:1339
-#: rustconn/src/split_view/adapter.rs:1344
-msgid "Close session"
-msgstr "Sessiyanı bağla"
-
 #: rustconn/src/split_view/adapter.rs:1371
 msgid "Close this pane?"
 msgstr "Bu paneli bağlamaq?"
@@ -12925,15 +12920,15 @@ msgid "The session in this pane will be disconnected and closed."
 msgstr "Bu paneldəki sessiya ayrılacaq və bağlanacaq."
 
 #: rustconn/src/split_view/adapter.rs:1597
-msgid "Terminal panel"
+msgid "Terminal pane"
 msgstr "Terminal paneli"
 
 #: rustconn/src/split_view/adapter.rs:1993
-msgid "Empty Panel"
+msgid "Empty Pane"
 msgstr "Boş panel"
 
 #: rustconn/src/split_view/adapter.rs:1994
-msgid "Select an existing tab to display in this panel"
+msgid "Select an existing tab to display in this pane"
 msgstr "Bu paneldə göstərmək üçün mövcud tab seçin"
 
 #: rustconn/src/split_view/adapter.rs:2004
@@ -12941,20 +12936,12 @@ msgid "Select Tab…"
 msgstr "Tab seç…"
 
 #: rustconn/src/split_view/adapter.rs:2005
-msgid "Choose an open tab to display in this panel"
+msgid "Choose an open tab to display in this pane"
 msgstr "Bu paneldə göstərmək üçün açıq tab seçin"
 
 #: rustconn/src/split_view/adapter.rs:2035
-msgid "Open a new local shell in this panel"
+msgid "Open a new local shell in this pane"
 msgstr "Bu paneldə yeni lokal shell aç"
-
-#: rustconn/src/split_view/adapter.rs:2062
-msgid "Close panel"
-msgstr "Paneli bağla"
-
-#: rustconn/src/split_view/adapter.rs:2073
-msgid "Close split view panel"
-msgstr "Bölünmüş görünüş panelini bağla"
 
 #: rustconn/src/split_view/bridge.rs:1881
 msgid "Basic Information"
@@ -14919,11 +14906,11 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Klaviatura ötürməsi söndürülüb — qısayollar bərpa edildi"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panels"
+msgid "Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr "Yayım aktivdir — klaviş vuruşları bütün bölünmüş panellərə ötürülür"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused panel only"
+msgid "Broadcast disabled — keystrokes go to focused pane only"
 msgstr "Yayım söndürülüb — klaviş vuruşları yalnız fokusdakı panelə gedir"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15732,7 +15719,7 @@ msgstr "Qovluq öz alt qovluqlarından birinə köçürülə bilməz"
 #: rustconn/src/window/split_view_actions.rs:585
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
-"across split panels"
+"across split panes"
 msgstr ""
 "İpucu: bölünmüş panellər arasında klaviş vuruşlarını ötürmək üçün "
 "Ctrl+Shift+B basın və ya Yayım düyməsindən istifadə edin"
@@ -15749,7 +15736,7 @@ msgstr ""
 
 #: rustconn/src/window/split_view_actions.rs:1362
 msgid ""
-"This tab already has a split. Remove it first, or use Select Tab in a panel."
+"This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr ""
 "Bu tab artıq bölünüb. Əvvəlcə bölməni silin və ya paneldə “Tab seç” "
 "funksiyasından istifadə edin."
@@ -15819,7 +15806,7 @@ msgid "Open Local Shell"
 msgstr "Lokal shell aç"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Klaviş vuruşlarını bütün bölünmüş panellərə ötür (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:154
@@ -15973,6 +15960,18 @@ msgstr "Bağlantı meneceri"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Close Connection"
+#~ msgstr "Bağlantını bağla"
+
+#~ msgid "Close session"
+#~ msgstr "Sessiyanı bağla"
+
+#~ msgid "Close panel"
+#~ msgstr "Paneli bağla"
+
+#~ msgid "Close split view panel"
+#~ msgstr "Bölünmüş görünüş panelini bağla"
 
 #~ msgid "This cluster will be permanently removed."
 #~ msgstr "Bu klaster həmişəlik silinəcək."

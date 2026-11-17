@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:16+0200\n"
+"POT-Creation-Date: 2026-11-17 16:28+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: French\n"
@@ -6639,7 +6639,7 @@ msgid "Log Content"
 msgstr "Contenu du journal"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:2104
+#: rustconn/src/split_view/adapter.rs:2102
 msgid "Loading…"
 msgstr "Chargement…"
 
@@ -10070,7 +10070,11 @@ msgstr "Diviser horizontalement"
 msgid "Split Vertical"
 msgstr "Diviser verticalement"
 
-#: rustconn/src/dialogs/shortcuts.rs:220
+#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:198
+#: rustconn/src/split_view/adapter.rs:1339
+#: rustconn/src/split_view/adapter.rs:1344
+#: rustconn/src/split_view/adapter.rs:2062
+#: rustconn/src/split_view/adapter.rs:2072
 msgid "Close Pane"
 msgstr "Fermer le panneau"
 
@@ -13062,15 +13066,11 @@ msgid "No smart folders"
 msgstr "Aucun dossier intelligent"
 
 #: rustconn/src/split_view/adapter.rs:48
-msgid "Drag to move this session to another panel or tab"
+msgid "Drag to move this session to another pane or tab"
 msgstr "Glisser pour déplacer cette session vers un autre panneau ou onglet"
 
-#: rustconn/src/split_view/adapter.rs:198
-msgid "Close Connection"
-msgstr "Fermer la connexion"
-
 #: rustconn/src/split_view/adapter.rs:1018
-msgid "Untick to keep this panel out of the keystroke broadcast"
+msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "Décochez pour exclure ce volet de la diffusion des frappes"
 
 #: rustconn/src/split_view/adapter.rs:1116
@@ -13079,7 +13079,7 @@ msgstr "Diffusion: {}"
 
 #: rustconn/src/split_view/adapter.rs:1211
 #: rustconn/src/split_view/adapter.rs:1213
-msgid "Show panel actions"
+msgid "Show pane actions"
 msgstr "Afficher les actions du panneau"
 
 #: rustconn/src/split_view/adapter.rs:1302
@@ -13092,11 +13092,6 @@ msgstr ""
 msgid "Move this session out of the split into its own window"
 msgstr "Déplacer cette session hors de la vue divisée vers sa propre fenêtre"
 
-#: rustconn/src/split_view/adapter.rs:1339
-#: rustconn/src/split_view/adapter.rs:1344
-msgid "Close session"
-msgstr "Fermer la session"
-
 #: rustconn/src/split_view/adapter.rs:1371
 msgid "Close this pane?"
 msgstr "Fermer ce panneau ?"
@@ -13106,15 +13101,15 @@ msgid "The session in this pane will be disconnected and closed."
 msgstr "La session de ce panneau sera déconnectée et fermée."
 
 #: rustconn/src/split_view/adapter.rs:1597
-msgid "Terminal panel"
+msgid "Terminal pane"
 msgstr "Panneau du terminal"
 
 #: rustconn/src/split_view/adapter.rs:1993
-msgid "Empty Panel"
+msgid "Empty Pane"
 msgstr "Panneau vide"
 
 #: rustconn/src/split_view/adapter.rs:1994
-msgid "Select an existing tab to display in this panel"
+msgid "Select an existing tab to display in this pane"
 msgstr "Sélectionner un onglet existant à afficher dans ce panneau"
 
 #: rustconn/src/split_view/adapter.rs:2004
@@ -13122,20 +13117,12 @@ msgid "Select Tab…"
 msgstr "Sélectionner un onglet…"
 
 #: rustconn/src/split_view/adapter.rs:2005
-msgid "Choose an open tab to display in this panel"
+msgid "Choose an open tab to display in this pane"
 msgstr "Choisir un onglet ouvert à afficher dans ce panneau"
 
 #: rustconn/src/split_view/adapter.rs:2035
-msgid "Open a new local shell in this panel"
+msgid "Open a new local shell in this pane"
 msgstr "Ouvrir un nouveau shell local dans ce panneau"
-
-#: rustconn/src/split_view/adapter.rs:2062
-msgid "Close panel"
-msgstr "Fermer le panneau"
-
-#: rustconn/src/split_view/adapter.rs:2073
-msgid "Close split view panel"
-msgstr "Fermer le panneau de vue divisée"
 
 #: rustconn/src/split_view/bridge.rs:1881
 msgid "Basic Information"
@@ -15145,13 +15132,13 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Passage direct du clavier désactivé — raccourcis restaurés"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panels"
+msgid "Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr ""
 "Diffusion activée — les frappes sont dupliquées dans tous les panneaux "
 "divisés"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused panel only"
+msgid "Broadcast disabled — keystrokes go to focused pane only"
 msgstr "Diffusion désactivée — les frappes ne vont que vers le panneau actif"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15969,7 +15956,7 @@ msgstr ""
 #: rustconn/src/window/split_view_actions.rs:585
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
-"across split panels"
+"across split panes"
 msgstr ""
 "Astuce : appuyez sur Ctrl+Maj+B ou utilisez le bouton « Diffusion » pour "
 "dupliquer les frappes vers tous les panneaux divisés"
@@ -15986,7 +15973,7 @@ msgstr ""
 
 #: rustconn/src/window/split_view_actions.rs:1362
 msgid ""
-"This tab already has a split. Remove it first, or use Select Tab in a panel."
+"This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr ""
 "Cet onglet est déjà fractionné. Retirez d’abord le fractionnement, ou "
 "utilisez « Sélectionner un onglet » dans un panneau."
@@ -16058,7 +16045,7 @@ msgid "Open Local Shell"
 msgstr "Ouvrir un shell local"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Dupliquer les frappes vers tous les panneaux divisés (Ctrl+Maj+B)"
 
 #: rustconn/src/window/ui.rs:154
@@ -16212,6 +16199,18 @@ msgstr "Gestionnaire de connexions"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connexion;terminal;distant;kubernetes;k8s;série;sftp;"
+
+#~ msgid "Close Connection"
+#~ msgstr "Fermer la connexion"
+
+#~ msgid "Close session"
+#~ msgstr "Fermer la session"
+
+#~ msgid "Close panel"
+#~ msgstr "Fermer le panneau"
+
+#~ msgid "Close split view panel"
+#~ msgstr "Fermer le panneau de vue divisée"
 
 #~ msgid "This cluster will be permanently removed."
 #~ msgstr "Ce cluster sera définitivement supprimé."

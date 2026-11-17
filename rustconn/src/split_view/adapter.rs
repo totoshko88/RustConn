@@ -45,7 +45,7 @@ const DRAG_HANDLE_CSS_CLASS: &str = "split-pane-drag-handle";
 /// A function rather than a constant so the literal stays inside `i18n()`,
 /// where `po/update-pot.sh` can extract it.
 fn drag_hint() -> String {
-    i18n("Drag to move this session to another panel or tab")
+    i18n("Drag to move this session to another pane or tab")
 }
 
 /// Adapts `SplitLayoutModel` to GTK widgets.
@@ -195,7 +195,7 @@ fn pane_menu_model(state: PaneMenuState) -> gio::Menu {
         Some("panel.detach-to-window"),
     );
     menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
-    menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
+    menu.append(Some(&i18n("Close Pane")), Some("panel.close"));
     menu
 }
 
@@ -1015,7 +1015,7 @@ impl SplitViewAdapter {
         // carries the same switch, see `setup_panel_context_menu`.
         broadcast_check.set_focus_on_click(false);
         broadcast_check.set_tooltip_text(Some(&i18n(
-            "Untick to keep this panel out of the keystroke broadcast",
+            "Untick to keep this pane out of the keystroke broadcast",
         )));
         let syncing = Rc::clone(&self.syncing_broadcast_checks);
         let callback = Rc::clone(&self.broadcast_toggled_callback);
@@ -1208,9 +1208,9 @@ impl SplitViewAdapter {
         // its TOUCH_TARGET_PX constant). The 16px symbolic icon stays visually
         // small inside the circular button; only the clickable area grows.
         reveal_arrow.set_size_request(44, 44);
-        reveal_arrow.set_tooltip_text(Some(&i18n("Show panel actions")));
+        reveal_arrow.set_tooltip_text(Some(&i18n("Show pane actions")));
         reveal_arrow.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Show panel actions",
+            "Show pane actions",
         ))]);
 
         // Click the arrow to toggle reveal
@@ -1336,12 +1336,12 @@ impl SplitViewAdapter {
 
         let close_button = Button::builder()
             .icon_name("window-close-symbolic")
-            .tooltip_text(i18n("Close session"))
+            .tooltip_text(i18n("Close Pane"))
             .build();
         close_button.add_css_class("flat");
         close_button.add_css_class("circular");
         close_button.add_css_class("panel-close-button");
-        close_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Close session"))]);
+        close_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Close Pane"))]);
         let close_callback_ref = Rc::clone(&self.close_panel_callback);
         // The hover reveal buttons are overlaid only on an OCCUPIED pane
         // (set_panel_content); an empty pane uses create_empty_placeholder's
@@ -1594,7 +1594,7 @@ impl SplitViewAdapter {
         container.add_css_class("split-panel");
 
         // Accessibility: label the panel for screen readers
-        container.update_property(&[gtk4::accessible::Property::Label(&i18n("Terminal panel"))]);
+        container.update_property(&[gtk4::accessible::Property::Label(&i18n("Terminal pane"))]);
 
         // Apply color border styling based on ColorId
         // The CSS class format is `split-panel-color-N` where N is the color index
@@ -1990,8 +1990,8 @@ impl SplitViewAdapter {
         // Use tab-symbolic icon to indicate this is for selecting tabs
         let status_page = adw::StatusPage::builder()
             .icon_name("tab-new-symbolic")
-            .title(i18n("Empty Panel"))
-            .description(i18n("Select an existing tab to display in this panel"))
+            .title(i18n("Empty Pane"))
+            .description(i18n("Select an existing tab to display in this pane"))
             .hexpand(true)
             .vexpand(true)
             .build();
@@ -2002,7 +2002,7 @@ impl SplitViewAdapter {
         // This is useful because AdwTabBar intercepts drag events
         let select_button = Button::builder()
             .label(i18n("Select Tab…"))
-            .tooltip_text(i18n("Choose an open tab to display in this panel"))
+            .tooltip_text(i18n("Choose an open tab to display in this pane"))
             .halign(Align::Center)
             .build();
         select_button.add_css_class("suggested-action");
@@ -2032,7 +2032,7 @@ impl SplitViewAdapter {
         // pair reads as one group.
         let shell_button = Button::builder()
             .label(i18n("Local Shell"))
-            .tooltip_text(i18n("Open a new local shell in this panel"))
+            .tooltip_text(i18n("Open a new local shell in this pane"))
             .halign(Align::Center)
             .build();
         shell_button.add_css_class("pill");
@@ -2059,7 +2059,7 @@ impl SplitViewAdapter {
         // Create the close button
         let close_button = Button::builder()
             .icon_name("window-close-symbolic")
-            .tooltip_text(i18n("Close panel"))
+            .tooltip_text(i18n("Close Pane"))
             .halign(Align::End)
             .valign(Align::Start)
             .margin_top(6)
@@ -2069,9 +2069,7 @@ impl SplitViewAdapter {
         close_button.add_css_class("flat");
         close_button.add_css_class("circular");
         close_button.add_css_class("panel-close-button");
-        close_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Close split view panel",
-        ))]);
+        close_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Close Pane"))]);
 
         // Create overlay to position close button over status page
         let overlay = Overlay::new();

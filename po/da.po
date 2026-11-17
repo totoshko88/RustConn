@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:16+0200\n"
+"POT-Creation-Date: 2026-11-17 16:28+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -6561,7 +6561,7 @@ msgid "Log Content"
 msgstr "Logindhold"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:2104
+#: rustconn/src/split_view/adapter.rs:2102
 msgid "Loading…"
 msgstr "Indlæser…"
 
@@ -9933,7 +9933,11 @@ msgstr "Opdel vandret"
 msgid "Split Vertical"
 msgstr "Opdel lodret"
 
-#: rustconn/src/dialogs/shortcuts.rs:220
+#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:198
+#: rustconn/src/split_view/adapter.rs:1339
+#: rustconn/src/split_view/adapter.rs:1344
+#: rustconn/src/split_view/adapter.rs:2062
+#: rustconn/src/split_view/adapter.rs:2072
 msgid "Close Pane"
 msgstr "Luk panelet"
 
@@ -12890,15 +12894,11 @@ msgid "No smart folders"
 msgstr "Ingen smarte mapper"
 
 #: rustconn/src/split_view/adapter.rs:48
-msgid "Drag to move this session to another panel or tab"
+msgid "Drag to move this session to another pane or tab"
 msgstr "Træk for at flytte denne session til et andet panel eller fane"
 
-#: rustconn/src/split_view/adapter.rs:198
-msgid "Close Connection"
-msgstr "Luk forbindelse"
-
 #: rustconn/src/split_view/adapter.rs:1018
-msgid "Untick to keep this panel out of the keystroke broadcast"
+msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "Fjern markeringen for at holde dette panel ude af tastaturudsendelsen"
 
 #: rustconn/src/split_view/adapter.rs:1116
@@ -12907,7 +12907,7 @@ msgstr "Udsendelse: {}"
 
 #: rustconn/src/split_view/adapter.rs:1211
 #: rustconn/src/split_view/adapter.rs:1213
-msgid "Show panel actions"
+msgid "Show pane actions"
 msgstr "Vis panelhandlinger"
 
 #: rustconn/src/split_view/adapter.rs:1302
@@ -12918,11 +12918,6 @@ msgstr "Fjern denne session fra den delte visning og vis den i sin egen fane"
 msgid "Move this session out of the split into its own window"
 msgstr "Flyt denne session ud af den opdelte visning til sit eget vindue"
 
-#: rustconn/src/split_view/adapter.rs:1339
-#: rustconn/src/split_view/adapter.rs:1344
-msgid "Close session"
-msgstr "Luk session"
-
 #: rustconn/src/split_view/adapter.rs:1371
 msgid "Close this pane?"
 msgstr "Luk denne rude?"
@@ -12932,15 +12927,15 @@ msgid "The session in this pane will be disconnected and closed."
 msgstr "Sessionen i denne rude afbrydes og lukkes."
 
 #: rustconn/src/split_view/adapter.rs:1597
-msgid "Terminal panel"
+msgid "Terminal pane"
 msgstr "Terminalpanel"
 
 #: rustconn/src/split_view/adapter.rs:1993
-msgid "Empty Panel"
+msgid "Empty Pane"
 msgstr "Tomt panel"
 
 #: rustconn/src/split_view/adapter.rs:1994
-msgid "Select an existing tab to display in this panel"
+msgid "Select an existing tab to display in this pane"
 msgstr "Vælg en eksisterende fane til visning i dette panel"
 
 #: rustconn/src/split_view/adapter.rs:2004
@@ -12948,20 +12943,12 @@ msgid "Select Tab…"
 msgstr "Vælg fane…"
 
 #: rustconn/src/split_view/adapter.rs:2005
-msgid "Choose an open tab to display in this panel"
+msgid "Choose an open tab to display in this pane"
 msgstr "Vælg en åben fane til visning i dette panel"
 
 #: rustconn/src/split_view/adapter.rs:2035
-msgid "Open a new local shell in this panel"
+msgid "Open a new local shell in this pane"
 msgstr "Åbn en ny lokal shell i dette panel"
-
-#: rustconn/src/split_view/adapter.rs:2062
-msgid "Close panel"
-msgstr "Luk panel"
-
-#: rustconn/src/split_view/adapter.rs:2073
-msgid "Close split view panel"
-msgstr "Luk opdelt visningspanel"
 
 #: rustconn/src/split_view/bridge.rs:1881
 msgid "Basic Information"
@@ -14936,11 +14923,11 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Tastaturgennemgang deaktiveret — genveje genoprettet"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panels"
+msgid "Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr "Udsendelse aktiveret — tastetryk spejles til alle opdelte paneler"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused panel only"
+msgid "Broadcast disabled — keystrokes go to focused pane only"
 msgstr "Udsendelse deaktiveret — tastetryk går kun til det aktive panel"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15752,7 +15739,7 @@ msgstr "Mappen kan ikke flyttes til en af sine egne undermapper"
 #: rustconn/src/window/split_view_actions.rs:585
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
-"across split panels"
+"across split panes"
 msgstr ""
 "Tip: tryk Ctrl+Shift+B eller brug knappen „Udsend“ for at spejle tastetryk "
 "til alle opdelte paneler"
@@ -15769,7 +15756,7 @@ msgstr ""
 
 #: rustconn/src/window/split_view_actions.rs:1362
 msgid ""
-"This tab already has a split. Remove it first, or use Select Tab in a panel."
+"This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr ""
 "Denne fane er allerede opdelt. Fjern først opdelingen, eller brug “Vælg "
 "fane” i et panel."
@@ -15839,7 +15826,7 @@ msgid "Open Local Shell"
 msgstr "Åbn lokal shell"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Spejl tastetryk til alle opdelte paneler (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:154
@@ -15993,6 +15980,18 @@ msgstr "Forbindelsesstyring"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Close Connection"
+#~ msgstr "Luk forbindelse"
+
+#~ msgid "Close session"
+#~ msgstr "Luk session"
+
+#~ msgid "Close panel"
+#~ msgstr "Luk panel"
+
+#~ msgid "Close split view panel"
+#~ msgstr "Luk opdelt visningspanel"
 
 #~ msgid "This cluster will be permanently removed."
 #~ msgstr "Denne klynge vil blive permanent fjernet."

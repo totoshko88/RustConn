@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:16+0200\n"
+"POT-Creation-Date: 2026-11-17 16:28+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -6390,7 +6390,7 @@ msgid "Log Content"
 msgstr "日志内容"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:2104
+#: rustconn/src/split_view/adapter.rs:2102
 msgid "Loading…"
 msgstr "加载中…"
 
@@ -9665,7 +9665,11 @@ msgstr "水平分割"
 msgid "Split Vertical"
 msgstr "垂直分割"
 
-#: rustconn/src/dialogs/shortcuts.rs:220
+#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:198
+#: rustconn/src/split_view/adapter.rs:1339
+#: rustconn/src/split_view/adapter.rs:1344
+#: rustconn/src/split_view/adapter.rs:2062
+#: rustconn/src/split_view/adapter.rs:2072
 msgid "Close Pane"
 msgstr "关闭窗格"
 
@@ -12550,15 +12554,11 @@ msgid "No smart folders"
 msgstr "无智能文件夹"
 
 #: rustconn/src/split_view/adapter.rs:48
-msgid "Drag to move this session to another panel or tab"
+msgid "Drag to move this session to another pane or tab"
 msgstr "拖动以将会话移动到其他面板或标签页"
 
-#: rustconn/src/split_view/adapter.rs:198
-msgid "Close Connection"
-msgstr "关闭连接"
-
 #: rustconn/src/split_view/adapter.rs:1018
-msgid "Untick to keep this panel out of the keystroke broadcast"
+msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "取消勾选可将此窗格排除在按键广播之外"
 
 #: rustconn/src/split_view/adapter.rs:1116
@@ -12567,7 +12567,7 @@ msgstr "广播：{}"
 
 #: rustconn/src/split_view/adapter.rs:1211
 #: rustconn/src/split_view/adapter.rs:1213
-msgid "Show panel actions"
+msgid "Show pane actions"
 msgstr "显示面板操作"
 
 #: rustconn/src/split_view/adapter.rs:1302
@@ -12578,11 +12578,6 @@ msgstr "将此会话从拆分视图中移除，并在其独立标签页中显示
 msgid "Move this session out of the split into its own window"
 msgstr "将此会话移出拆分视图至独立窗口"
 
-#: rustconn/src/split_view/adapter.rs:1339
-#: rustconn/src/split_view/adapter.rs:1344
-msgid "Close session"
-msgstr "关闭会话"
-
 #: rustconn/src/split_view/adapter.rs:1371
 msgid "Close this pane?"
 msgstr "关闭此窗格？"
@@ -12592,15 +12587,15 @@ msgid "The session in this pane will be disconnected and closed."
 msgstr "此窗格中的会话将断开连接并关闭。"
 
 #: rustconn/src/split_view/adapter.rs:1597
-msgid "Terminal panel"
+msgid "Terminal pane"
 msgstr "终端面板"
 
 #: rustconn/src/split_view/adapter.rs:1993
-msgid "Empty Panel"
+msgid "Empty Pane"
 msgstr "空面板"
 
 #: rustconn/src/split_view/adapter.rs:1994
-msgid "Select an existing tab to display in this panel"
+msgid "Select an existing tab to display in this pane"
 msgstr "选择一个现有标签页在此面板中显示"
 
 #: rustconn/src/split_view/adapter.rs:2004
@@ -12608,20 +12603,12 @@ msgid "Select Tab…"
 msgstr "选择标签页…"
 
 #: rustconn/src/split_view/adapter.rs:2005
-msgid "Choose an open tab to display in this panel"
+msgid "Choose an open tab to display in this pane"
 msgstr "选择一个打开的标签页在此面板中显示"
 
 #: rustconn/src/split_view/adapter.rs:2035
-msgid "Open a new local shell in this panel"
+msgid "Open a new local shell in this pane"
 msgstr "在此面板中打开新的本地 Shell"
-
-#: rustconn/src/split_view/adapter.rs:2062
-msgid "Close panel"
-msgstr "关闭面板"
-
-#: rustconn/src/split_view/adapter.rs:2073
-msgid "Close split view panel"
-msgstr "关闭分屏面板"
 
 #: rustconn/src/split_view/bridge.rs:1881
 msgid "Basic Information"
@@ -14511,11 +14498,11 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "键盘直通已禁用 — 快捷键已恢复"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panels"
+msgid "Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr "广播已启用 — 按键将镜像到所有分割面板"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused panel only"
+msgid "Broadcast disabled — keystrokes go to focused pane only"
 msgstr "广播已禁用 — 按键仅发送到当前焦点面板"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15306,7 +15293,7 @@ msgstr "无法将文件夹移动到它自己的子文件夹中"
 #: rustconn/src/window/split_view_actions.rs:585
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
-"across split panels"
+"across split panes"
 msgstr "提示：按 Ctrl+Shift+B 或使用“广播”按钮将按键镜像到所有分割面板"
 
 #: rustconn/src/window/split_view_actions.rs:627
@@ -15319,7 +15306,7 @@ msgstr "拆分视图不适用于外部查看器会话。请将此连接切换为
 
 #: rustconn/src/window/split_view_actions.rs:1362
 msgid ""
-"This tab already has a split. Remove it first, or use Select Tab in a panel."
+"This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr "此标签页已经拆分。请先移除拆分，或在面板中使用“选择标签页”。"
 
 #: rustconn/src/window/split_view_actions.rs:1389
@@ -15385,7 +15372,7 @@ msgid "Open Local Shell"
 msgstr "打开本地 Shell"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "将按键镜像到所有分割面板 (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:154
@@ -15539,6 +15526,18 @@ msgstr "连接管理器"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Close Connection"
+#~ msgstr "关闭连接"
+
+#~ msgid "Close session"
+#~ msgstr "关闭会话"
+
+#~ msgid "Close panel"
+#~ msgstr "关闭面板"
+
+#~ msgid "Close split view panel"
+#~ msgstr "关闭分屏面板"
 
 #~ msgid "This cluster will be permanently removed."
 #~ msgstr "此集群将被永久删除。"

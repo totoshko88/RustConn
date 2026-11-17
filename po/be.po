@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:16+0200\n"
+"POT-Creation-Date: 2026-11-17 16:28+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -6568,7 +6568,7 @@ msgid "Log Content"
 msgstr "Змесціва журнала"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:2104
+#: rustconn/src/split_view/adapter.rs:2102
 msgid "Loading…"
 msgstr "Загрузка…"
 
@@ -9952,7 +9952,11 @@ msgstr "Падзяліць гарызантальна"
 msgid "Split Vertical"
 msgstr "Падзяліць вертыкальна"
 
-#: rustconn/src/dialogs/shortcuts.rs:220
+#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:198
+#: rustconn/src/split_view/adapter.rs:1339
+#: rustconn/src/split_view/adapter.rs:1344
+#: rustconn/src/split_view/adapter.rs:2062
+#: rustconn/src/split_view/adapter.rs:2072
 msgid "Close Pane"
 msgstr "Закрыць панэль"
 
@@ -12912,15 +12916,11 @@ msgid "No smart folders"
 msgstr "Няма разумных тэчак"
 
 #: rustconn/src/split_view/adapter.rs:48
-msgid "Drag to move this session to another panel or tab"
+msgid "Drag to move this session to another pane or tab"
 msgstr "Перацягніце, каб перамясціць гэты сеанс у іншую панэль або ўкладку"
 
-#: rustconn/src/split_view/adapter.rs:198
-msgid "Close Connection"
-msgstr "Закрыць злучэнне"
-
 #: rustconn/src/split_view/adapter.rs:1018
-msgid "Untick to keep this panel out of the keystroke broadcast"
+msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr ""
 "Здыміце адзнаку, каб выключыць гэтую панэль з трансляцыі націсканняў клавіш"
 
@@ -12930,7 +12930,7 @@ msgstr "Трансляцыя: {}"
 
 #: rustconn/src/split_view/adapter.rs:1211
 #: rustconn/src/split_view/adapter.rs:1213
-msgid "Show panel actions"
+msgid "Show pane actions"
 msgstr "Паказваць дзеянні панэлі"
 
 #: rustconn/src/split_view/adapter.rs:1302
@@ -12942,11 +12942,6 @@ msgstr ""
 msgid "Move this session out of the split into its own window"
 msgstr "Перамясціць гэты сеанс з падзеленага выгляду ва ўласнае акно"
 
-#: rustconn/src/split_view/adapter.rs:1339
-#: rustconn/src/split_view/adapter.rs:1344
-msgid "Close session"
-msgstr "Закрыць сеанс"
-
 #: rustconn/src/split_view/adapter.rs:1371
 msgid "Close this pane?"
 msgstr "Закрыць гэтую панэль?"
@@ -12956,15 +12951,15 @@ msgid "The session in this pane will be disconnected and closed."
 msgstr "Сеанс у гэтай панэлі будзе адключаны і закрыты."
 
 #: rustconn/src/split_view/adapter.rs:1597
-msgid "Terminal panel"
+msgid "Terminal pane"
 msgstr "Панэль тэрмінала"
 
 #: rustconn/src/split_view/adapter.rs:1993
-msgid "Empty Panel"
+msgid "Empty Pane"
 msgstr "Пустая панэль"
 
 #: rustconn/src/split_view/adapter.rs:1994
-msgid "Select an existing tab to display in this panel"
+msgid "Select an existing tab to display in this pane"
 msgstr "Абярыце існуючую ўкладку для адлюстравання ў гэтай панэлі"
 
 #: rustconn/src/split_view/adapter.rs:2004
@@ -12972,20 +12967,12 @@ msgid "Select Tab…"
 msgstr "Абраць укладку…"
 
 #: rustconn/src/split_view/adapter.rs:2005
-msgid "Choose an open tab to display in this panel"
+msgid "Choose an open tab to display in this pane"
 msgstr "Абярыце адкрытую ўкладку для адлюстравання ў гэтай панэлі"
 
 #: rustconn/src/split_view/adapter.rs:2035
-msgid "Open a new local shell in this panel"
+msgid "Open a new local shell in this pane"
 msgstr "Адкрыць новую лакальную абалонку ў гэтай панэлі"
-
-#: rustconn/src/split_view/adapter.rs:2062
-msgid "Close panel"
-msgstr "Закрыць панэль"
-
-#: rustconn/src/split_view/adapter.rs:2073
-msgid "Close split view panel"
-msgstr "Закрыць панэль падзеленага выгляду"
 
 #: rustconn/src/split_view/bridge.rs:1881
 msgid "Basic Information"
@@ -14964,12 +14951,12 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Праходжанне клавіятуры вымкнута — скароты адноўлены"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panels"
+msgid "Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr ""
 "Трансляцыю ўключана — націсканні клавіш дублююцца ва ўсе панэлі падзелу"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused panel only"
+msgid "Broadcast disabled — keystrokes go to focused pane only"
 msgstr ""
 "Трансляцыю выключана — націсканні клавіш ідуць толькі ў актыўную панэль"
 
@@ -15785,7 +15772,7 @@ msgstr "Немагчыма перамясціць папку ў адну з яе
 #: rustconn/src/window/split_view_actions.rs:585
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
-"across split panels"
+"across split panes"
 msgstr ""
 "Падказка: націсніце Ctrl+Shift+B або скарыстайце кнопку «Трансляцыя», каб "
 "дубляваць націсканні клавіш ва ўсе панэлі падзелу"
@@ -15802,7 +15789,7 @@ msgstr ""
 
 #: rustconn/src/window/split_view_actions.rs:1362
 msgid ""
-"This tab already has a split. Remove it first, or use Select Tab in a panel."
+"This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr ""
 "Гэтая ўкладка ўжо падзелена. Спачатку выдаліце падзел або скарыстайцеся "
 "«Абраць укладку» ў панэлі."
@@ -15872,7 +15859,7 @@ msgid "Open Local Shell"
 msgstr "Адкрыць лакальную абалонку"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panels (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Дубляваць націсканні клавіш ва ўсе панэлі падзелу (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:154
@@ -16026,6 +16013,18 @@ msgstr "Менеджар злучэнняў"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Close Connection"
+#~ msgstr "Закрыць злучэнне"
+
+#~ msgid "Close session"
+#~ msgstr "Закрыць сеанс"
+
+#~ msgid "Close panel"
+#~ msgstr "Закрыць панэль"
+
+#~ msgid "Close split view panel"
+#~ msgstr "Закрыць панэль падзеленага выгляду"
 
 #~ msgid "This cluster will be permanently removed."
 #~ msgstr "Гэты кластар будзе выдалены назаўсёды."
