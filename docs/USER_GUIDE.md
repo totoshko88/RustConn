@@ -956,7 +956,7 @@ You can also paste options in the `-o Key=Value` format directly from the comman
 
 | Custom Options field | Resulting SSH flags |
 |---------------------|---------------------|
-| `StrictHostKeyChecking=no, ServerAliveInterval=60` | `-o StrictHostKeyChecking=no -o ServerAliveInterval=60` |
+| `ServerAliveInterval=60, Compression=yes` | `-o ServerAliveInterval=60 -o Compression=yes` |
 | `-o StrictHostKeyChecking=no, -o ServerAliveInterval=60` | Same result (prefix stripped) |
 | `ServerAliveCountMax=3` | `-o ServerAliveCountMax=3` |
 | `ProxyCommand=nc -X 5 -x proxy:1080 %h %p` | `-o ProxyCommand=nc -X 5 -x proxy:1080 %h %p` |

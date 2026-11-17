@@ -507,7 +507,7 @@ impl ConnectionDialog {
         // bastion follows `jump_host_id` references through the list.
         *self.full_connections_data.borrow_mut() = connections.to_vec();
 
-        let mut connections_data: Vec<(Option<Uuid>, String)> = vec![(None, "(None)".to_string())];
+        let mut connections_data: Vec<(Option<Uuid>, String)> = vec![(None, i18n("(None)"))];
 
         let mut sorted_conns: Vec<&Connection> = connections
             .iter()
@@ -1148,11 +1148,13 @@ impl ConnectionDialog {
 
         // Format custom options as "Key=Value, Key2=Value2"
         if !ssh.custom_options.is_empty() {
-            let opts: Vec<String> = ssh
+            // Sorted: a `HashMap` iterates in a different order on every open.
+            let mut opts: Vec<String> = ssh
                 .custom_options
                 .iter()
                 .map(|(k, v)| format!("{k}={v}"))
                 .collect();
+            opts.sort();
             self.ssh_options_entry.set_text(&opts.join(", "));
         }
 

@@ -14,7 +14,7 @@ use gtk4::{
 };
 use libadwaita as adw;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Widgets created by the General tab, replacing the previous 30-element tuple.
 pub(super) struct BasicTabWidgets {
@@ -228,7 +228,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let placeholder = if current_user.is_empty() {
         i18n("Username")
     } else {
-        format!("(default: {current_user})")
+        i18n_f("(default: {})", &[&current_user])
     };
     let username_entry = Entry::builder()
         .placeholder_text(&placeholder)
