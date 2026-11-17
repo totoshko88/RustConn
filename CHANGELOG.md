@@ -15,6 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Remove from Favorites in the Favorites group** — the context menu of a connection inside the ★ Favorites group offered **Add to Favorites**, because that copy of the row was built as not pinned to hide its star; clicking it removed the favorite anyway. The row now keeps the real pinned state and hides the star by a separate flag, so the menu says **Remove from Favorites** in both places. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/window/sorting.rs`, `docs/USER_GUIDE.md`)
+- **Switching OpenH264 off now sticks** — the **Use OpenH264** switch saved itself at once, but closing Settings wrote back the value it had when the dialog opened, so the codec could come back on after any other change; and the choice was applied to the decoder only after Settings had been opened once in a run. Closing Settings now keeps the saved value, and the choice is applied at startup. Required by the Cisco OpenH264 licence, which says the codec must be switchable off. (`rustconn/src/dialogs/settings/mod.rs`, `rustconn/src/dialogs/settings/clients_tab.rs`, `rustconn/src/app.rs`)
+- **Minimize to tray no longer hides the window when there is no tray** — closing the window hid it whenever the setting was on, even on a desktop with no tray host or after **Show icon** was switched on in the same run, leaving no way to bring it back. The window is hidden only when a tray icon really exists. **Show icon** now says that it needs a restart. (`rustconn/src/app.rs`, `rustconn/src/window/mod.rs`, `rustconn/src/dialogs/settings/ui_tab.rs`)
+- **Closing Settings or the shortcut recorder keeps keyboard passthrough on** — both put every application shortcut back, so Ctrl+N, Ctrl+F and the rest were taken from the session again while the passthrough indicator was still lit. Only the configured exceptions are restored while passthrough is on. (`rustconn/src/dialogs/settings/keybindings_tab.rs`, `rustconn/src/app.rs`)
+- **Ctrl+G and Ctrl+T reach a focused terminal** — they opened the password generator and the SSH tunnel manager over `abort` in emacs, nano and vim and `transpose-chars` in readline. They now join the single-Ctrl shortcuts that are handed to the terminal while it has focus. (`rustconn/src/app.rs`)
+- **Ctrl+Backspace and Shift+Escape can be recorded as shortcuts** — the recorder reset the binding on any Backspace and cancelled on any Escape, so the default Ctrl+Shift+Backspace (keyboard passthrough) could not be assigned again. Only a bare Backspace or Escape is a command now. (`rustconn/src/dialogs/settings/keybindings_tab.rs`)
+- **Shortcuts on the Keybindings page read as Ctrl+Shift+Q** — the page showed the raw GTK strings such as `<Control><Shift>q`. They now read like the shortcuts dialog, and alternatives are joined with " / ". (`rustconn/src/dialogs/settings/keybindings_tab.rs`)
+- **The external browser command is dimmed while the embedded browser is on** — **External browser command (tunnelled)** only applies when the embedded browser is off. (`rustconn/src/dialogs/settings/ui_tab.rs`)
+- **About dialog** — the debug information named the minimum supported Rust version as the compiler; the line is removed. **Get Support** opens GitHub Discussions instead of the donation page (the donation links stay in the link list), and the issue link uses the canonical `RustConn` path. (`rustconn/src/app.rs`)
+- **The Settings dialog is titled Settings** — it showed libadwaita's own "Preferences". (`rustconn/src/dialogs/settings/mod.rs`)
+
+### Changed
+
+- **The Custom SSH Agent Socket Path row is hidden in Settings → Secrets** — the value was saved but no ssh or SFTP launch read it, so the row promised an override that never applied; per-connection and per-group sockets are unaffected. A value already in the settings file is kept. Wiring it up is planned for 0.26. (`rustconn/src/dialogs/settings/ssh_agent_tab.rs`)
+
+### Documentation
+
+- **User Guide, Settings and shortcuts** — Monitoring is described as its own page, the Keybindings steps point to the Interface page and say when a shortcut is written to disk, the Logging rows carry their real names with a warning about recorded keystrokes, the Settings rows that were missing (toolbar on hover, terminal control shortcuts, remember passthrough, auto-capture, split-pane hover controls, directional tab-close items, scrollbar, right-click paste, Option as Meta, auto-hide sidebar, Use OpenH264) are listed, **Ctrl+Shift+A** is in the shortcut table, and Ctrl+M is no longer called sidebar-only. (`docs/USER_GUIDE.md`)
 
 ## [0.25.2] - 2026-11-17
 
