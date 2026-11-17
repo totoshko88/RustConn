@@ -800,9 +800,10 @@ pub fn bind_list_item(
         };
         expander.set_tooltip_text(Some(&tooltip));
 
-        // Show pin icon for pinned connections
+        // Show pin icon for pinned connections, except on the copy inside the
+        // Favorites group, where every row is a favorite by definition.
         if let Some(ref pin) = pin_icon {
-            pin.set_visible(item.is_pinned());
+            pin.set_visible(item.is_pinned() && !item.in_favorites());
         }
 
         // Setup status monitoring logic

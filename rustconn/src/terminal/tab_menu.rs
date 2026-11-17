@@ -1312,6 +1312,18 @@ impl TerminalNotebook {
         // sidebar selection is something else.
         if let Some(connection_id) = &state.connection {
             let edit_section = gio::Menu::new();
+            // Duplicate Tab (issue #437) opens another session of the tab's
+            // saved connection, the tab-side counterpart of the sidebar's
+            // **Open new session**. Addressed by connection id like Edit
+            // Connection…, so the sidebar selection does not matter. Named
+            // after the tab, as in GNOME Web and Console, so it is not confused
+            // with the sidebar's **Duplicate**, which copies the connection.
+            let duplicate = gio::MenuItem::new(Some(&i18n("Duplicate Tab")), None);
+            duplicate.set_action_and_target_value(
+                Some("win.open-new-session-by-id"),
+                Some(&connection_id.to_string().to_variant()),
+            );
+            edit_section.append_item(&duplicate);
             let edit = gio::MenuItem::new(Some(&i18n("Edit Connection…")), None);
             edit.set_action_and_target_value(
                 Some("win.edit-connection-by-id"),
@@ -1416,6 +1428,20 @@ mod tests {
     #[test]
     fn a_detachable_session_gets_the_menu_item() {
         assert!(offers_detach(DetachVerdict::Allowed));
+    }
+
+    #[test]
+    fn duplicate_tab_is_offered_only_for_a_saved_connection() {
+        // Issue #437.
+        let offered = actions_for(super::TabMenuState {
+            connection: Some(uuid::Uuid::new_v4()),
+            ..Default::default()
+        });
+        assert!(offered.iter().any(|a| a == "win.open-new-session-by-id"));
+        assert!(offered.iter().any(|a| a == "win.edit-connection-by-id"));
+
+        let hidden = actions_for(super::TabMenuState::default());
+        assert!(!hidden.iter().any(|a| a == "win.open-new-session-by-id"));
     }
 
     #[test]

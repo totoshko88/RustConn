@@ -557,6 +557,42 @@ impl MainWindow {
         });
         window.add_action(&open_new_session_action);
 
+        // The same force-launch addressed by connection id (issue #437), for the
+        // tab menu's **Duplicate Tab**: the tab knows its connection, and the
+        // sidebar selection may name another one.
+        let open_new_session_by_id_action =
+            gio::SimpleAction::new("open-new-session-by-id", Some(glib::VariantTy::STRING));
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let notebook_clone = terminal_notebook.clone();
+        let split_view_clone = self.split_view.clone();
+        let monitoring_clone = self.monitoring.clone();
+        let activity_clone = self.activity_coordinator.clone();
+        open_new_session_by_id_action.connect_activate(move |_, param| {
+            let Some(conn_id) = param
+                .and_then(glib::Variant::get::<String>)
+                .and_then(|s| Uuid::parse_str(&s).ok())
+            else {
+                tracing::warn!("open-new-session-by-id: malformed connection id");
+                return;
+            };
+            if state_clone.borrow().get_connection(conn_id).is_none() {
+                tracing::warn!(%conn_id, "open-new-session-by-id: connection no longer exists");
+                return;
+            }
+            sidebar_clone.update_connection_status(&conn_id.to_string(), "connecting");
+            Self::start_connection_with_credential_resolution(
+                state_clone.clone(),
+                notebook_clone.clone(),
+                split_view_clone.clone(),
+                sidebar_clone.clone(),
+                monitoring_clone.clone(),
+                conn_id,
+                Some(activity_clone.clone()),
+            );
+        });
+        window.add_action(&open_new_session_by_id_action);
+
         // Sidebar-driven split / window placement actions (issue #374).
         //
         // The split teardown actions (`win.pop-pane-to-tab`, `win.close-pane`)

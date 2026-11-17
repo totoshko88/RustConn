@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 22:12+0200\n"
+"POT-Creation-Date: 2026-11-17 13:50+0200\n"
 "PO-Revision-Date: 2026-06-14 09:46+0000\n"
 "Last-Translator: Albano Battistella\n"
 "Language-Team: Italian\n"
@@ -61,10 +61,10 @@ msgstr "OK"
 #: rustconn/src/window/connection_dialogs.rs:982
 #: rustconn/src/window/edit_group.rs:2046
 #: rustconn/src/window/edit_group.rs:2095
-#: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:453
-#: rustconn/src/window/mod.rs:3852 rustconn/src/window/mod.rs:3916
-#: rustconn/src/window/mod.rs:4932 rustconn/src/window/mod.rs:6027
+#: rustconn/src/window/group_broadcast.rs:267
+#: rustconn/src/window/key_setup.rs:1022 rustconn/src/window/mc_launch.rs:453
+#: rustconn/src/window/mod.rs:3839 rustconn/src/window/mod.rs:3903
+#: rustconn/src/window/mod.rs:4919 rustconn/src/window/mod.rs:6014
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
 #: rustconn/src/window/operations.rs:972 rustconn/src/window/operations.rs:1151
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -211,7 +211,7 @@ msgstr "Un'altra macro usa già questa scorciatoia"
 msgid "Command macro “{}”: {}"
 msgstr "Macro di comando «{}»: {}"
 
-#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:66
+#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:80
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
@@ -220,7 +220,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/embedded_rdp/connection.rs:2762
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
-#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:346
+#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:446
 #: rustconn/src/terminal/session_lifecycle.rs:756
 msgid "Session disconnected"
 msgstr "Sessione disconnessa"
@@ -269,7 +269,7 @@ msgstr "«{}» richiede quanto segue prima di potersi connettere."
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1060
 #: rustconn/src/sidebar_ui.rs:468 rustconn/src/smart_folder_ui.rs:437
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:6028
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:6015
 msgid "Connect"
 msgstr "Connetti"
 
@@ -308,7 +308,7 @@ msgstr "Inserisci password manualmente"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1262
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1266
 msgid "Open Settings"
 msgstr "Apri impostazioni"
 
@@ -475,7 +475,7 @@ msgstr "Questo cluster verrà rimosso definitivamente."
 #: rustconn/src/sidebar/saved_searches.rs:265 rustconn/src/sidebar_ui.rs:653
 #: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:459
 #: rustconn/src/window/clusters.rs:630 rustconn/src/window/edit_actions.rs:487
-#: rustconn/src/window/key_setup.rs:1011 rustconn/src/window/operations.rs:173
+#: rustconn/src/window/key_setup.rs:1023 rustconn/src/window/operations.rs:173
 #: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
 #: rustconn/src/window/templates.rs:151
 msgid "Delete"
@@ -1752,7 +1752,7 @@ msgstr ""
 "Chiave di ricerca: {}"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:45
-#: rustconn/src/window/edit_group.rs:779 rustconn/src/window/key_setup.rs:377
+#: rustconn/src/window/edit_group.rs:779 rustconn/src/window/key_setup.rs:389
 msgid "Select SSH Key"
 msgstr "Seleziona chiave SSH"
 
@@ -2784,7 +2784,7 @@ msgstr "Reindirizzamento stampante"
 msgid "Share your local printer with the remote session"
 msgstr "Condividi la stampante locale con la sessione remota"
 
-#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:6001
+#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:5988
 msgid "Microphone"
 msgstr "Microfono"
 
@@ -2792,7 +2792,7 @@ msgstr "Microfono"
 msgid "Send the local microphone to the remote session"
 msgstr "Invia il microfono locale alla sessione remota"
 
-#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:6004
+#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:5991
 msgid "Smart Cards"
 msgstr "Smart card"
 
@@ -3760,7 +3760,7 @@ msgstr "Agente SSH"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:6007
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5994
 msgid "Security Key (FIDO2)"
 msgstr "Chiave di sicurezza (FIDO2)"
 
@@ -4864,7 +4864,8 @@ msgstr "Copia"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1374
+#: rustconn/src/session_group_window.rs:103
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1378
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "Ferma"
@@ -4985,7 +4986,7 @@ msgstr "Copia interrotta"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/split_view/adapter.rs:1377
 #: rustconn/src/terminal/tab_menu.rs:743 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4933
+#: rustconn/src/window/mod.rs:4920
 msgid "Close"
 msgstr "Chiudi"
 
@@ -8909,7 +8910,7 @@ msgstr "Verifica… tocca la tua YubiKey quando lampeggia"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2801
 #: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:342
-#: rustconn/src/sidebar/view.rs:823
+#: rustconn/src/sidebar/view.rs:824
 msgid "Connected"
 msgstr "Connesso"
 
@@ -12096,7 +12097,7 @@ msgid "RDP session running in external window"
 msgstr "Sessione RDP nella finestra esterna"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3413
+#: rustconn/src/sidebar/view.rs:835 rustconn/src/window/mod.rs:3400
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Connessione fallita"
@@ -12470,9 +12471,27 @@ msgstr "Impossibile avviare lo script «{}»: {}"
 msgid "Auto-run script “{}” could not be loaded: {}"
 msgstr "Impossibile caricare lo script ad avvio automatico «{}»: {}"
 
-#: rustconn/src/session_group_window.rs:83
+#: rustconn/src/session_group_window.rs:97
 msgid "Move Tab to Main Window"
 msgstr "Sposta la scheda nella finestra principale"
+
+#: rustconn/src/session_group_window.rs:157
+#: rustconn/src/split_view/adapter.rs:188
+#: rustconn/src/split_view/adapter.rs:1009 rustconn/src/window/ui.rs:145
+msgid "Broadcast"
+msgstr "Broadcast"
+
+#: rustconn/src/session_group_window.rs:162
+msgid "Mirror keystrokes to all tabs in this window"
+msgstr "Rispecchia i tasti premuti su tutte le schede di questa finestra"
+
+#: rustconn/src/session_group_window.rs:164
+msgid "Toggle broadcast to all tabs in this window"
+msgstr "Attiva/disattiva trasmissione a tutte le schede di questa finestra"
+
+#: rustconn/src/session_group_window.rs:358
+msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgstr "Trasmissione attiva — tasti rispecchiati su {} schede di questa finestra"
 
 #: rustconn/src/sidebar/mod.rs:162
 msgid "Search… (? for help)"
@@ -12646,7 +12665,7 @@ msgstr "Importa — sincronizzato dal cloud"
 msgid "Sync error: {}"
 msgstr "Errore di sincronizzazione: {}"
 
-#: rustconn/src/sidebar/view.rs:828
+#: rustconn/src/sidebar/view.rs:829
 msgid "Connecting"
 msgstr "Connessione in corso"
 
@@ -12895,11 +12914,6 @@ msgstr "Nessuna cartella intelligente"
 #: rustconn/src/split_view/adapter.rs:48
 msgid "Drag to move this session to another panel or tab"
 msgstr "Trascina per spostare questa sessione in un altro pannello o scheda"
-
-#: rustconn/src/split_view/adapter.rs:188
-#: rustconn/src/split_view/adapter.rs:1009 rustconn/src/window/ui.rs:145
-msgid "Broadcast"
-msgstr "Broadcast"
 
 #: rustconn/src/split_view/adapter.rs:198
 msgid "Close Connection"
@@ -13386,31 +13400,35 @@ msgstr "Monitoraggio"
 msgid "Split with Other Tabs…"
 msgstr "Dividi con altre schede…"
 
-#: rustconn/src/terminal/tab_menu.rs:1315
+#: rustconn/src/terminal/tab_menu.rs:1321
+msgid "Duplicate Tab"
+msgstr "Duplica scheda"
+
+#: rustconn/src/terminal/tab_menu.rs:1327
 msgid "Edit Connection…"
 msgstr "Modifica connessione…"
 
-#: rustconn/src/terminal/tab_menu.rs:1331
+#: rustconn/src/terminal/tab_menu.rs:1343
 msgid "Save Output…"
 msgstr "Salva output…"
 
-#: rustconn/src/terminal/tab_menu.rs:1338
+#: rustconn/src/terminal/tab_menu.rs:1350
 msgid "Close Others"
 msgstr "Chiudi altre"
 
-#: rustconn/src/terminal/tab_menu.rs:1343
+#: rustconn/src/terminal/tab_menu.rs:1355
 msgid "Close to the Left"
 msgstr "Chiudi a sinistra"
 
-#: rustconn/src/terminal/tab_menu.rs:1344
+#: rustconn/src/terminal/tab_menu.rs:1356
 msgid "Close to the Right"
 msgstr "Chiudi a destra"
 
-#: rustconn/src/terminal/tab_menu.rs:1348
+#: rustconn/src/terminal/tab_menu.rs:1360
 msgid "Close All Ungrouped"
 msgstr "Chiudi tutte senza gruppo"
 
-#: rustconn/src/terminal/tab_menu.rs:1352
+#: rustconn/src/terminal/tab_menu.rs:1364
 msgid "Close All Tabs"
 msgstr "Chiudi tutte le schede"
 
@@ -13419,7 +13437,7 @@ msgid "Info"
 msgstr "Info"
 
 #: rustconn/src/toast.rs:307 rustconn/src/window/batch_edit.rs:241
-#: rustconn/src/window/key_setup.rs:868
+#: rustconn/src/window/key_setup.rs:880
 msgid "Undo"
 msgstr "Annulla"
 
@@ -13444,7 +13462,7 @@ msgid "Show Window"
 msgstr "Mostra finestra"
 
 #: rustconn/src/tray.rs:271 rustconn/src/tray.rs:639
-#: rustconn/src/window/sorting.rs:204
+#: rustconn/src/window/sorting.rs:205
 msgid "Favorites"
 msgstr "Preferiti"
 
@@ -13460,7 +13478,7 @@ msgstr "Connessione rapida…"
 msgid "{} Active Session(s)"
 msgstr "{} sessione/i attiva/e"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5984
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5971
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "La passphrase non apre il file portatile"
 
@@ -13659,8 +13677,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Host di salto non disponibile"
 
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3853
-#: rustconn/src/window/mod.rs:3919 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/mod.rs:3840
+#: rustconn/src/window/mod.rs:3906 rustconn/src/window/rdp_vnc.rs:788
 msgid "Connect Anyway"
 msgstr "Connetti comunque"
 
@@ -13919,11 +13937,11 @@ msgstr "Voce del vault non trovata per '{}'. Verrà richiesta una password."
 msgid "Connection failed. Host unreachable."
 msgstr "Connessione fallita. Host irraggiungibile."
 
-#: rustconn/src/window/detach_actions.rs:78
+#: rustconn/src/window/detach_actions.rs:82
 msgid "This session already has its own window."
 msgstr "Questa sessione ha già una finestra propria."
 
-#: rustconn/src/window/detach_actions.rs:80
+#: rustconn/src/window/detach_actions.rs:84
 msgid ""
 "This session is displayed by a separate viewer, which already runs in its "
 "own window."
@@ -13931,7 +13949,7 @@ msgstr ""
 "Questa sessione è mostrata da un visualizzatore esterno, che è già in "
 "esecuzione in una finestra propria."
 
-#: rustconn/src/window/detach_actions.rs:83
+#: rustconn/src/window/detach_actions.rs:87
 msgid ""
 "Remove the split layout from this tab before moving the session to its own "
 "window."
@@ -13939,22 +13957,28 @@ msgstr ""
 "Rimuovi la vista divisa da questa scheda prima di spostare la sessione in "
 "una finestra propria."
 
-#: rustconn/src/window/detach_actions.rs:86
+#: rustconn/src/window/detach_actions.rs:90
 msgid ""
 "This session is displayed in a split layout. Return it to its own tab first."
 msgstr ""
 "Questa sessione è mostrata in una vista divisa. Riportala prima nella sua "
 "scheda."
 
-#: rustconn/src/window/detach_actions.rs:224
-#: rustconn/src/window/detach_actions.rs:235
-#: rustconn/src/window/detach_actions.rs:242
+#: rustconn/src/window/detach_actions.rs:228
+#: rustconn/src/window/detach_actions.rs:239
+#: rustconn/src/window/detach_actions.rs:246
 msgid "Could not move the session to its own window."
 msgstr "Non è stato possibile spostare la sessione in una finestra propria."
 
-#: rustconn/src/window/detach_actions.rs:290
+#: rustconn/src/window/detach_actions.rs:294
 msgid "Could not move the session back to the main window."
 msgstr "Non è stato possibile riportare la sessione nella finestra principale."
+
+#: rustconn/src/window/detach_actions.rs:585
+#: rustconn/src/window/group_broadcast.rs:455
+msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgstr ""
+"Trasmissione di gruppo disabilitata — i tasti vanno solo alla scheda attiva"
 
 #: rustconn/src/window/edit_actions.rs:368
 msgid "Item restored"
@@ -14484,11 +14508,11 @@ msgstr "Comando da eseguire dopo il login"
 msgid "Leave Fullscreen"
 msgstr "Esci da schermo intero"
 
-#: rustconn/src/window/group_broadcast.rs:373
+#: rustconn/src/window/group_broadcast.rs:261
 msgid "Broadcast to all these tabs?"
 msgstr "Trasmettere a tutte queste schede?"
 
-#: rustconn/src/window/group_broadcast.rs:375
+#: rustconn/src/window/group_broadcast.rs:263
 msgid ""
 "Keystrokes will be sent to {} sessions at once, including tabs that are not "
 "visible. A mistyped command runs on all of them."
@@ -14496,18 +14520,13 @@ msgstr ""
 "I tasti premuti saranno inviati a {} sessioni contemporaneamente, incluse "
 "schede non visibili. Un comando digitato male viene eseguito su tutte."
 
-#: rustconn/src/window/group_broadcast.rs:380
+#: rustconn/src/window/group_broadcast.rs:268
 msgid "Enable Broadcast"
 msgstr "Abilita trasmissione"
 
-#: rustconn/src/window/group_broadcast.rs:422
+#: rustconn/src/window/group_broadcast.rs:440
 msgid "Group broadcast active — keystrokes mirrored to {} sessions"
 msgstr "Trasmissione di gruppo attiva — tasti rispecchiati su {} sessioni"
-
-#: rustconn/src/window/group_broadcast.rs:437
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
-msgstr ""
-"Trasmissione di gruppo disabilitata — i tasti vanno solo alla scheda attiva"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
 #: rustconn/src/window/operations.rs:1138
@@ -14574,41 +14593,41 @@ msgstr "Connessione «{}» aggiunta"
 msgid "Failed to add the connection"
 msgstr "Impossibile aggiungere la connessione"
 
-#: rustconn/src/window/key_setup.rs:668
+#: rustconn/src/window/key_setup.rs:680
 msgid "The connection could not be read. Try again."
 msgstr "Impossibile leggere la connessione. Riprovare."
 
-#: rustconn/src/window/key_setup.rs:855
+#: rustconn/src/window/key_setup.rs:867
 msgid "The key works, but the connection could not be switched to it: {}"
 msgstr ""
 "La chiave funziona, ma non è stato possibile passare la connessione ad essa: "
 "{}"
 
-#: rustconn/src/window/key_setup.rs:867
+#: rustconn/src/window/key_setup.rs:879
 msgid "'{}' now signs in with a key"
 msgstr "«{}» ora accede con una chiave"
 
-#: rustconn/src/window/key_setup.rs:895
+#: rustconn/src/window/key_setup.rs:907
 msgid "the application is busy"
 msgstr "l’applicazione è occupata"
 
-#: rustconn/src/window/key_setup.rs:899
+#: rustconn/src/window/key_setup.rs:911
 msgid "the connection no longer exists"
 msgstr "la connessione non esiste più"
 
-#: rustconn/src/window/key_setup.rs:902
+#: rustconn/src/window/key_setup.rs:914
 msgid "the connection is not an SSH connection"
 msgstr "la connessione non è una connessione SSH"
 
-#: rustconn/src/window/key_setup.rs:926
+#: rustconn/src/window/key_setup.rs:938
 msgid "Restored the previous sign-in settings for '{}'"
 msgstr "Ripristinate le impostazioni di accesso precedenti per «{}»"
 
-#: rustconn/src/window/key_setup.rs:933
+#: rustconn/src/window/key_setup.rs:945
 msgid "The previous sign-in settings could not be restored."
 msgstr "Impossibile ripristinare le impostazioni di accesso precedenti."
 
-#: rustconn/src/window/key_setup.rs:977
+#: rustconn/src/window/key_setup.rs:989
 msgid ""
 "Once the session is open and the host key is recorded, choose Set Up Key "
 "Authentication again."
@@ -14616,11 +14635,11 @@ msgstr ""
 "Quando la sessione è aperta e la chiave dell'host è registrata, scegliere di "
 "nuovo Configura autenticazione con chiave."
 
-#: rustconn/src/window/key_setup.rs:1005
+#: rustconn/src/window/key_setup.rs:1017
 msgid "Delete Generated Key?"
 msgstr "Eliminare la chiave generata?"
 
-#: rustconn/src/window/key_setup.rs:1007
+#: rustconn/src/window/key_setup.rs:1019
 msgid ""
 "The key files are removed from this computer. If the public key was already "
 "installed, it stays in the server's authorized_keys."
@@ -14716,30 +14735,30 @@ msgstr ""
 "Midnight Commander accede a questo server con essa. RustConn la conserva "
 "solo finché questa scheda di mc è aperta."
 
-#: rustconn/src/window/mod.rs:407
+#: rustconn/src/window/mod.rs:411
 msgid "The jump host set for “{}” no longer exists."
 msgstr "L'host di salto impostato per «{}» non esiste più."
 
-#: rustconn/src/window/mod.rs:411
+#: rustconn/src/window/mod.rs:415
 msgid "“{}” is set to use itself as its jump host."
 msgstr "«{}» è impostato per usare se stesso come host di salto."
 
-#: rustconn/src/window/mod.rs:423
+#: rustconn/src/window/mod.rs:427
 msgid "The setting is inherited from the group “{}”."
 msgstr "L'impostazione è ereditata dal gruppo «{}»."
 
-#: rustconn/src/window/mod.rs:428
+#: rustconn/src/window/mod.rs:432
 msgid "The setting is the Global Jump Host in Settings."
 msgstr "È l'host di salto globale nelle impostazioni."
 
-#: rustconn/src/window/mod.rs:433
+#: rustconn/src/window/mod.rs:437
 msgid ""
 "Connecting to “{}” now reaches the server directly, without a jump host."
 msgstr ""
 "La connessione a «{}» ora raggiunge il server direttamente, senza host di "
 "salto."
 
-#: rustconn/src/window/mod.rs:437
+#: rustconn/src/window/mod.rs:441
 msgid ""
 "Connecting to “{}” now skips that jump host and uses only the rest of its "
 "configured route."
@@ -14747,15 +14766,15 @@ msgstr ""
 "La connessione a «{}» ora salta quell'host di salto e usa solo il resto del "
 "percorso configurato."
 
-#: rustconn/src/window/mod.rs:1238 rustconn/src/window/mod.rs:1249
+#: rustconn/src/window/mod.rs:1242 rustconn/src/window/mod.rs:1253
 msgid "Dismiss"
 msgstr "Ignora"
 
-#: rustconn/src/window/mod.rs:1281
+#: rustconn/src/window/mod.rs:1285
 msgid "Open Log"
 msgstr "Apri registro"
 
-#: rustconn/src/window/mod.rs:1284
+#: rustconn/src/window/mod.rs:1288
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
@@ -14763,39 +14782,39 @@ msgstr ""
 "L'ultima volta RustConn si è chiuso in modo imprevisto. Un registro "
 "dell'arresto anomalo è stato salvato in locale."
 
-#: rustconn/src/window/mod.rs:1309
+#: rustconn/src/window/mod.rs:1313
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Impossibile aprire il registro dell'arresto anomalo. È salvato in {}"
 
-#: rustconn/src/window/mod.rs:1338
+#: rustconn/src/window/mod.rs:1342
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Tocca la tua chiave hardware per sbloccare il database delle password"
 
-#: rustconn/src/window/mod.rs:2926
+#: rustconn/src/window/mod.rs:2930
 msgid "Already running in an external window"
 msgstr "Già in esecuzione in una finestra esterna"
 
-#: rustconn/src/window/mod.rs:3209
+#: rustconn/src/window/mod.rs:3196
 msgid "Connection to ‘{}’ failed"
 msgstr "Connessione a ‘{}’ non riuscita"
 
-#: rustconn/src/window/mod.rs:3557 rustconn/src/window/mod.rs:3571
+#: rustconn/src/window/mod.rs:3544 rustconn/src/window/mod.rs:3558
 msgid "Pre-connect task failed: {}"
 msgstr "Attività pre-connessione fallita: {}"
 
-#: rustconn/src/window/mod.rs:3605
+#: rustconn/src/window/mod.rs:3592
 msgid "Port knock failed: {}"
 msgstr "Port knock non riuscito: {}"
 
-#: rustconn/src/window/mod.rs:3654
+#: rustconn/src/window/mod.rs:3641
 msgid "SPA failed: {}"
 msgstr "SPA non riuscito: {}"
 
-#: rustconn/src/window/mod.rs:3838
+#: rustconn/src/window/mod.rs:3825
 msgid "{} (via {})"
 msgstr "{} (tramite {})"
 
-#: rustconn/src/window/mod.rs:3844
+#: rustconn/src/window/mod.rs:3831
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14819,35 +14838,35 @@ msgstr ""
 "Se non hai fatto questa modifica, annulla: connettersi potrebbe inviare le "
 "credenziali salvate a un’altra macchina."
 
-#: rustconn/src/window/mod.rs:3849
+#: rustconn/src/window/mod.rs:3836
 msgid "Routing changed for “{}”"
 msgstr "Il percorso è cambiato per «{}»"
 
-#: rustconn/src/window/mod.rs:3913
+#: rustconn/src/window/mod.rs:3900
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Host di salto non disponibile per «{}»"
 
-#: rustconn/src/window/mod.rs:3918
+#: rustconn/src/window/mod.rs:3905
 msgid "Connect Directly"
 msgstr "Connetti direttamente"
 
-#: rustconn/src/window/mod.rs:4007 rustconn/src/window/mod.rs:4182
+#: rustconn/src/window/mod.rs:3994 rustconn/src/window/mod.rs:4169
 msgid "Connection “{}” created"
 msgstr "Connessione “{}” creata"
 
-#: rustconn/src/window/mod.rs:4443
+#: rustconn/src/window/mod.rs:4430
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4655
+#: rustconn/src/window/mod.rs:4642
 msgid "Settings saved"
 msgstr "Impostazioni salvate"
 
-#: rustconn/src/window/mod.rs:4692
+#: rustconn/src/window/mod.rs:4679
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Passphrase non salvata su questo computer"
 
-#: rustconn/src/window/mod.rs:4694
+#: rustconn/src/window/mod.rs:4681
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14859,11 +14878,11 @@ msgstr ""
 "nuovo dopo un riavvio. Scegli invece «Portachiavi di sistema» oppure "
 "verifica che RustConn possa scrivere nella sua cartella dati."
 
-#: rustconn/src/window/mod.rs:4740
+#: rustconn/src/window/mod.rs:4727
 msgid "Credentials Not Saved to Keyring"
 msgstr "Credenziali non salvate nel portachiavi"
 
-#: rustconn/src/window/mod.rs:4742
+#: rustconn/src/window/mod.rs:4729
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14874,17 +14893,17 @@ msgstr ""
 "che il servizio del portachiavi sia in esecuzione e sbloccato, poi salva di "
 "nuovo le impostazioni."
 
-#: rustconn/src/window/mod.rs:4926
+#: rustconn/src/window/mod.rs:4913
 msgid "Close RustConn?"
 msgstr "Chiudere RustConn?"
 
-#: rustconn/src/window/mod.rs:4928
+#: rustconn/src/window/mod.rs:4915
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr ""
 "{} schede di sessione sono aperte. Le connessioni attive verranno "
 "disconnesse."
 
-#: rustconn/src/window/mod.rs:4965
+#: rustconn/src/window/mod.rs:4952
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14892,7 +14911,7 @@ msgstr ""
 "Impossibile leggere le impostazioni, quindi vengono usati i valori "
 "predefiniti. Il file illeggibile è stato conservato come {}."
 
-#: rustconn/src/window/mod.rs:4970
+#: rustconn/src/window/mod.rs:4957
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14900,35 +14919,35 @@ msgstr ""
 "Queste impostazioni sono state salvate da una versione più recente di "
 "RustConn ({}). Viene conservato un backup prima di modificarle."
 
-#: rustconn/src/window/mod.rs:4995
+#: rustconn/src/window/mod.rs:4982
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Sincronizzazione cloud non riuscita per «{}»: {}"
 
-#: rustconn/src/window/mod.rs:5178
+#: rustconn/src/window/mod.rs:5165
 msgid "Startup connection not found"
 msgstr "Connessione di avvio non trovata"
 
-#: rustconn/src/window/mod.rs:5251
+#: rustconn/src/window/mod.rs:5238
 msgid "Failed to open .rdp file"
 msgstr "Impossibile aprire il file .rdp"
 
-#: rustconn/src/window/mod.rs:5287
+#: rustconn/src/window/mod.rs:5274
 msgid "Failed to open .vv file"
 msgstr "Impossibile aprire il file .vv"
 
-#: rustconn/src/window/mod.rs:5324
+#: rustconn/src/window/mod.rs:5311
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Il tunnel “{}” si è fermato: {}"
 
-#: rustconn/src/window/mod.rs:5340
+#: rustconn/src/window/mod.rs:5327
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Riconnessione del tunnel “{}” abbandonata: {}"
 
-#: rustconn/src/window/mod.rs:5900
+#: rustconn/src/window/mod.rs:5887
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Esportate con successo {} connessione/i. {} saltate."
 
-#: rustconn/src/window/mod.rs:5986
+#: rustconn/src/window/mod.rs:5973
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14938,11 +14957,11 @@ msgstr ""
 "nessuna delle password al suo interno può essere letta. Apri Impostazioni ▸ "
 "Segreti e inserisci la passphrase con cui è stato creato il file."
 
-#: rustconn/src/window/mod.rs:6021
+#: rustconn/src/window/mod.rs:6008
 msgid "Share Local Devices?"
 msgstr "Condividere i dispositivi locali?"
 
-#: rustconn/src/window/mod.rs:6023
+#: rustconn/src/window/mod.rs:6010
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
@@ -15763,14 +15782,14 @@ msgstr "Apri una sessione di terminale prima di eseguire uno snippet."
 msgid "Enter Variable Values"
 msgstr "Inserisci valori delle variabili"
 
-#: rustconn/src/window/sorting.rs:487 rustconn/src/window/sorting.rs:508
+#: rustconn/src/window/sorting.rs:488 rustconn/src/window/sorting.rs:509
 msgid ""
 "Imported folders are managed by sync and their structure cannot be changed"
 msgstr ""
 "Le cartelle importate sono gestite dalla sincronizzazione e la loro "
 "struttura non può essere modificata"
 
-#: rustconn/src/window/sorting.rs:519
+#: rustconn/src/window/sorting.rs:520
 msgid "Cannot move a folder into one of its own subfolders"
 msgstr "Impossibile spostare una cartella in una delle sue sottocartelle"
 

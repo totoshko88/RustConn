@@ -5,6 +5,17 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.3] - Unreleased
+
+### Added
+
+- **Broadcast in a cluster window — [#436](https://github.com/totoshko88/RustConn/issues/436)** — a cluster opened in its own window gets a **Broadcast** toggle in its header bar once it holds two or more terminal tabs. On (the toggle or Ctrl+Shift+A), a keystroke typed in any tab of the window goes to all of its terminal tabs; a banner names how many, and its **Stop** turns it off. Each cluster window has its own broadcast, independent of the main window's Group Broadcast and of other cluster windows, so separate clusters can take separate commands. More than five tabs ask for confirmation first, as Group Broadcast does. All broadcasts now share one re-entrancy guard, so a session in two of them does not get each character twice. (`rustconn/src/session_group_window.rs`, `rustconn/src/window/detach_actions.rs`, `rustconn/src/window/group_broadcast.rs`, `docs/USER_GUIDE.md`, `po/`)
+- **Duplicate Tab in the tab menu — [#437](https://github.com/totoshko88/RustConn/issues/437)** — right-click a tab with a saved connection → **Duplicate Tab** opens another session of that connection, what **Open new session** does in the sidebar, without selecting the connection there first. (`rustconn/src/terminal/tab_menu.rs`, `rustconn/src/window/terminal_actions.rs`, `docs/USER_GUIDE.md`, `po/`)
+
+### Fixed
+
+- **Remove from Favorites in the Favorites group** — the context menu of a connection inside the ★ Favorites group offered **Add to Favorites**, because that copy of the row was built as not pinned to hide its star; clicking it removed the favorite anyway. The row now keeps the real pinned state and hides the star by a separate flag, so the menu says **Remove from Favorites** in both places. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/window/sorting.rs`, `docs/USER_GUIDE.md`)
+
 ## [0.25.2] - 2026-11-17
 
 ### Fixed

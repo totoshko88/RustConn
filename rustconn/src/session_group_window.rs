@@ -30,6 +30,12 @@ const DEFAULT_HEIGHT: i32 = 720;
 /// Callback keyed by the session it concerns.
 type SessionCallback = Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>;
 
+/// Callback with no argument (the set of hosted tabs changed).
+type PlainCallback = Rc<RefCell<Option<Box<dyn Fn()>>>>;
+
+/// Callback with the state the user asked for (the broadcast button clicked).
+type ToggleCallback = Rc<RefCell<Option<Box<dyn Fn(bool)>>>>;
+
 /// One hosted session.
 struct Member {
     page: adw::TabPage,
@@ -50,8 +56,16 @@ pub struct SessionGroupWindow {
     closing: Rc<Cell<bool>>,
     /// Kept alive for its `clicked` handler.
     attach_button: Button,
+    /// Header toggle for broadcasting to every tab of this window (issue #436).
+    /// Shown only while two or more tabs can take part.
+    broadcast_toggle: gtk4::ToggleButton,
+    /// Shown while that broadcast is on, because it reaches tabs that are not
+    /// on screen. Its **Stop** button turns the broadcast off.
+    broadcast_banner: adw::Banner,
     on_close: SessionCallback,
     on_attach: SessionCallback,
+    on_members_changed: PlainCallback,
+    on_broadcast_toggled: ToggleCallback,
 }
 
 impl SessionGroupWindow {
@@ -84,12 +98,19 @@ impl SessionGroupWindow {
         attach_button.set_tooltip_text(Some(&attach_label));
         attach_button.update_property(&[gtk4::accessible::Property::Label(&attach_label)]);
 
+        let broadcast_toggle = Self::build_broadcast_toggle();
+        let broadcast_banner = crate::toast::plain_banner("");
+        broadcast_banner.set_button_label(Some(&i18n("Stop")));
+        broadcast_banner.add_css_class("accent");
+
         let header = adw::HeaderBar::new();
         header.set_title_widget(Some(&adw::WindowTitle::new(title, "")));
         header.pack_start(&attach_button);
+        header.pack_end(&broadcast_toggle);
 
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
+        toolbar_view.add_top_bar(&broadcast_banner);
         toolbar_view.add_top_bar(&tab_bar);
         toolbar_view.set_content(Some(&tab_view));
 
@@ -110,16 +131,65 @@ impl SessionGroupWindow {
             leaving: Rc::new(RefCell::new(Vec::new())),
             closing: Rc::new(Cell::new(false)),
             attach_button,
+            broadcast_toggle,
+            broadcast_banner,
             on_close: Rc::new(RefCell::new(None)),
             on_attach: Rc::new(RefCell::new(None)),
+            on_members_changed: Rc::new(RefCell::new(None)),
+            on_broadcast_toggled: Rc::new(RefCell::new(None)),
         });
         group.connect_close_page();
         group.connect_close_request();
         group.connect_attach_button();
+        group.connect_broadcast_controls();
         group.connect_focus_on_switch();
         group.keep_tabs_here();
         tracing::info!(group = title, "session group window created");
         group
+    }
+
+    /// The header toggle, styled like the main window's **Group Broadcast**.
+    fn build_broadcast_toggle() -> gtk4::ToggleButton {
+        let toggle = gtk4::ToggleButton::new();
+        let content = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+        let icon = gtk4::Image::from_icon_name("network-transmit-receive-symbolic");
+        icon.set_pixel_size(16);
+        let label = gtk4::Label::new(Some(&i18n("Broadcast")));
+        label.add_css_class("caption");
+        content.append(&icon);
+        content.append(&label);
+        toggle.set_child(Some(&content));
+        toggle.set_tooltip_text(Some(&i18n("Mirror keystrokes to all tabs in this window")));
+        toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            "Toggle broadcast to all tabs in this window",
+        ))]);
+        toggle.add_css_class("pill");
+        toggle.set_visible(false);
+        toggle
+    }
+
+    /// Reports clicks on the toggle and the banner's **Stop** as the state the
+    /// user asked for; the owner decides and calls [`Self::show_broadcast`].
+    fn connect_broadcast_controls(&self) {
+        let on_toggled = Rc::clone(&self.on_broadcast_toggled);
+        self.broadcast_toggle.connect_clicked(move |toggle| {
+            if let Some(ref callback) = *on_toggled.borrow() {
+                callback(toggle.is_active());
+            }
+        });
+        let on_toggled = Rc::clone(&self.on_broadcast_toggled);
+        self.broadcast_banner.connect_button_clicked(move |_| {
+            if let Some(ref callback) = *on_toggled.borrow() {
+                callback(false);
+            }
+        });
+    }
+
+    /// Runs the members-changed callback.
+    fn notify_members_changed(callback: &PlainCallback) {
+        if let Some(ref callback) = *callback.borrow() {
+            callback();
+        }
     }
 
     /// The session shown by `page`, if it is one of ours.
@@ -136,6 +206,7 @@ impl SessionGroupWindow {
         let leaving = Rc::clone(&self.leaving);
         let closing = Rc::clone(&self.closing);
         let on_close = Rc::clone(&self.on_close);
+        let on_members_changed = Rc::clone(&self.on_members_changed);
         let window = self.window.downgrade();
         self.tab_view.connect_close_page(move |tab_view, page| {
             let session = Self::session_of(&members.borrow(), page);
@@ -157,6 +228,9 @@ impl SessionGroupWindow {
                 }
             }
             tab_view.close_page_finish(page, true);
+            if session.is_some() {
+                Self::notify_members_changed(&on_members_changed);
+            }
 
             // A window with no tab left has nothing to show.
             if members.borrow().is_empty()
@@ -262,6 +336,32 @@ impl SessionGroupWindow {
             },
         );
         tracing::info!(session = %session_id, "session added to group window");
+        Self::notify_members_changed(&self.on_members_changed);
+    }
+
+    /// Every hosted session (order unspecified).
+    #[must_use]
+    pub fn sessions(&self) -> Vec<Uuid> {
+        self.members.borrow().keys().copied().collect()
+    }
+
+    /// Shows the broadcast toggle when `available`, and its state.
+    ///
+    /// `count` is how many tabs the broadcast reaches; it names them in the
+    /// banner, which is revealed while `active`.
+    pub fn show_broadcast(&self, available: bool, active: bool, count: usize) {
+        self.broadcast_toggle.set_visible(available || active);
+        self.broadcast_toggle.set_active(active);
+        if active {
+            self.broadcast_toggle.add_css_class("broadcasting");
+            self.broadcast_banner.set_title(&i18n_f(
+                "Broadcast active — keystrokes mirrored to {} tabs in this window",
+                &[&count.to_string()],
+            ));
+        } else {
+            self.broadcast_toggle.remove_css_class("broadcasting");
+        }
+        self.broadcast_banner.set_revealed(active);
     }
 
     /// Drops a session's tab without ending the session.
@@ -412,5 +512,22 @@ impl SessionGroupWindow {
         F: Fn(Uuid) + 'static,
     {
         *self.on_attach.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Sets the callback run after a tab is added or dropped.
+    pub fn set_on_members_changed<F>(&self, callback: F)
+    where
+        F: Fn() + 'static,
+    {
+        *self.on_members_changed.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Sets the callback run when the user asks to turn the broadcast on or
+    /// off, from the header toggle or the banner's **Stop**.
+    pub fn set_on_broadcast_toggled<F>(&self, callback: F)
+    where
+        F: Fn(bool) + 'static,
+    {
+        *self.on_broadcast_toggled.borrow_mut() = Some(Box::new(callback));
     }
 }

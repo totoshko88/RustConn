@@ -2367,6 +2367,7 @@ The **Display Mode** setting in the connection dialog (Advanced tab → Window M
 - **Tab Overview** — Click the grid icon (▦) at the right end of the tab bar, or press **Ctrl+Shift+O**, to open a full-screen grid view of all open tabs. Useful when you have many tabs open and need to visually locate a session. Click any thumbnail to switch to it.
 - **Tab Switcher** — Press **Ctrl+%** (or open Command Palette with **Ctrl+P** and type `%`) to fuzzy-search across all open tabs by name. Results show protocol type and tab group. Select and press Enter to switch instantly.
 - **Edit Connection** — Right-click a tab → **Edit Connection…** opens the editor for that tab's saved connection, whatever is selected in the sidebar (0.22.15+). Tabs with no saved connection behind them — the Welcome tab, a local shell, a quick connection — do not show it.
+- **Duplicate Tab** — Right-click a tab → **Duplicate Tab** opens another session of the tab's saved connection in a new tab, the same as **Open new session** in the sidebar, whatever is selected there ([#437](https://github.com/totoshko88/RustConn/issues/437)). It is shown on the same tabs as **Edit Connection…**. A password you typed by hand for the first session is not reused; the new session asks again unless the password is saved.
 - **Copy** — The same tab menu has a **Copy** section with the fields described under [Copy Menu](#copy-menu): host, port, address, username, password, SSH command and custom properties.
 - **Pin Tab** — Right-click a tab → **Pin Tab**. Pinned tabs stay at the left edge of the tab bar and are never scrolled out of view. Useful for long-running sessions you need constant access to. Right-click again → **Unpin Tab** to restore normal behavior.
 - **Save Output** — Right-click a terminal tab → **Save Output…** to write the session's full scrollback to a plain-text file (issue [#371](https://github.com/totoshko88/RustConn/issues/371)). A file chooser opens with a name derived from the session. The whole buffer is saved — its length is bounded by **Settings → Terminal → Scrollback lines** — so raise that limit beforehand if you need more history in the file. The item appears only for terminal sessions (SSH, local shell, Telnet, Serial); embedded RDP/VNC/Web tabs have no text buffer and do not show it. In a split tab the **focused pane** is saved — click the pane you want first, then open the menu.
@@ -3025,12 +3026,12 @@ The same reference is available in the application: **Tools → Scripts… → �
 Pin frequently used connections to a dedicated "Favorites" section at the top of the sidebar.
 
 **Pin a Connection:**
-- Right-click a connection → **Pin / Unpin**
+- Right-click a connection → **Add to Favorites**
 - The connection appears in the ★ Favorites group at the top of the sidebar
 
 **Unpin a Connection:**
-- Right-click a pinned connection → **Pin / Unpin**
-- The connection returns to its original group
+- Right-click the connection, either in the Favorites group or in its own group → **Remove from Favorites**
+- The connection leaves the Favorites group and stays in its own group
 
 Favorites persist across sessions. Pinned connections remain in their original group as well — the Favorites section shows a reference, not a move.
 
@@ -3399,7 +3400,7 @@ You can also select several connections in the sidebar and use **Create Cluster*
 - **Close All Ungrouped** closes everything *except* your open clusters
 - The tab switcher (**Ctrl+%**) shows the cluster name beside each member
 
-**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
+**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. **Broadcast in a cluster window:** once the window holds two or more terminal tabs, a **Broadcast** toggle appears at the right of its header bar ([#436](https://github.com/totoshko88/RustConn/issues/436)). Turn it on with the toggle or **Ctrl+Shift+A** and what you type in any tab of the window goes to all of its terminal tabs; a banner names how many tabs receive it, and its **Stop** button, the toggle or Ctrl+Shift+A turns it off. Each cluster window has its own broadcast, separate from the main window's [Group Broadcast](#group-broadcast), so two clusters in two windows can take different commands. More than five tabs ask for confirmation first, and embedded RDP, VNC and SPICE tabs are left out. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
 
 **Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters… (**Disconnect all cluster sessions**).
 

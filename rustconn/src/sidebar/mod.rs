@@ -2193,6 +2193,12 @@ mod imp {
         status: RefCell<String>,
         #[property(get, set)]
         is_pinned: RefCell<bool>,
+        /// Whether this row is the copy shown inside the virtual Favorites
+        /// group. Hides the star emblem there (every row in that group is a
+        /// favorite), while `is_pinned` keeps the connection's real state so
+        /// the context menu still offers **Remove from Favorites**.
+        #[property(get, set)]
+        in_favorites: RefCell<bool>,
         #[property(get, set)]
         icon: RefCell<String>,
         /// Cloud Sync mode for groups: "none", "master", or "import".
@@ -2244,6 +2250,7 @@ mod imp {
                 host: RefCell::default(),
                 status: RefCell::default(),
                 is_pinned: RefCell::default(),
+                in_favorites: RefCell::default(),
                 icon: RefCell::default(),
                 sync_mode: RefCell::default(),
                 sync_error: RefCell::default(),
