@@ -2179,6 +2179,18 @@ mod tests {
         );
     }
 
+    /// The exports that carry secrets say so in the question, before the
+    /// user answers yes.
+    #[test]
+    fn secret_bearing_exports_warn_in_the_question() {
+        for id in ["example-mikrotik-save-config", "example-eltex-save-config"] {
+            assert!(
+                example(id).contains("The log will contain secrets."),
+                "`{id}` must warn that the log contains secrets"
+            );
+        }
+    }
+
     /// MikroTik sends the absolute `/export`, so a session left inside
     /// `/interface` still exports the whole configuration.
     #[test]
