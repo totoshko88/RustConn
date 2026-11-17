@@ -3970,32 +3970,34 @@ impl MainWindow {
                     let conn_username = conn.username.clone();
                     let password_source = conn.password_source.clone();
                     let protocol = conn.protocol;
-                    if let Ok(mut state_mut) = state_for_cb.try_borrow_mut()
-                        && let Ok(conn_id) = state_mut.create_connection(conn)
-                    {
-                        Self::persist_wizard_password(
-                            &state_mut,
-                            conn_id,
-                            &password_source,
-                            password.as_ref(),
-                            &conn_name,
-                            &conn_host,
-                            conn_username.as_deref().unwrap_or(""),
-                            protocol,
-                        );
-                        drop(state_mut);
-                        let state_c = state_for_cb.clone();
-                        let sidebar_c = sidebar_for_cb.clone();
-                        let toast_c = toast_for_cb.clone();
-                        let name = conn_name;
-                        glib::idle_add_local_once(move || {
-                            Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
-                            toast_c.show_success(&crate::i18n::i18n_f(
-                                "Connection “{}” created",
-                                &[&name],
-                            ));
-                        });
-                    }
+                    let created = match state_for_cb.try_borrow_mut() {
+                        Ok(mut state_mut) => state_mut.create_connection(conn).map(|conn_id| {
+                            Self::persist_wizard_password(
+                                &state_mut,
+                                conn_id,
+                                &password_source,
+                                password.as_ref(),
+                                &conn_name,
+                                &conn_host,
+                                conn_username.as_deref().unwrap_or(""),
+                                protocol,
+                            );
+                        }),
+                        Err(_) => Err(crate::i18n::i18n("the application is busy")),
+                    };
+                    created?;
+                    let state_c = state_for_cb.clone();
+                    let sidebar_c = sidebar_for_cb.clone();
+                    let toast_c = toast_for_cb.clone();
+                    let name = conn_name;
+                    glib::idle_add_local_once(move || {
+                        Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
+                        toast_c.show_success(&crate::i18n::i18n_f(
+                            "Connection “{}” created",
+                            &[&name],
+                        ));
+                    });
+                    Ok(())
                 }
                 WizardResult::SaveAndConnect(conn, password) => {
                     let conn_id_outer = conn.id;
@@ -4004,36 +4006,38 @@ impl MainWindow {
                     let conn_username = conn.username.clone();
                     let password_source = conn.password_source.clone();
                     let protocol = conn.protocol;
-                    if let Ok(mut state_mut) = state_for_cb.try_borrow_mut()
-                        && let Ok(conn_id) = state_mut.create_connection(conn)
-                    {
-                        Self::persist_wizard_password(
-                            &state_mut,
-                            conn_id,
-                            &password_source,
-                            password.as_ref(),
-                            &conn_name,
-                            &conn_host,
-                            conn_username.as_deref().unwrap_or(""),
-                            protocol,
-                        );
-                        drop(state_mut);
-                        let state_c = state_for_cb.clone();
-                        let sidebar_c = sidebar_for_cb.clone();
-                        let window_w = window_weak.clone();
-                        glib::idle_add_local_once(move || {
-                            Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
-                            // Connect after sidebar refresh
-                            if let Some(win) = window_w.upgrade() {
-                                let variant = conn_id_outer.to_string().to_variant();
-                                gio::prelude::ActionGroupExt::activate_action(
-                                    &win,
-                                    "connect-to",
-                                    Some(&variant),
-                                );
-                            }
-                        });
-                    }
+                    let created = match state_for_cb.try_borrow_mut() {
+                        Ok(mut state_mut) => state_mut.create_connection(conn).map(|conn_id| {
+                            Self::persist_wizard_password(
+                                &state_mut,
+                                conn_id,
+                                &password_source,
+                                password.as_ref(),
+                                &conn_name,
+                                &conn_host,
+                                conn_username.as_deref().unwrap_or(""),
+                                protocol,
+                            );
+                        }),
+                        Err(_) => Err(crate::i18n::i18n("the application is busy")),
+                    };
+                    created?;
+                    let state_c = state_for_cb.clone();
+                    let sidebar_c = sidebar_for_cb.clone();
+                    let window_w = window_weak.clone();
+                    glib::idle_add_local_once(move || {
+                        Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
+                        // Connect after sidebar refresh
+                        if let Some(win) = window_w.upgrade() {
+                            let variant = conn_id_outer.to_string().to_variant();
+                            gio::prelude::ActionGroupExt::activate_action(
+                                &win,
+                                "connect-to",
+                                Some(&variant),
+                            );
+                        }
+                    });
+                    Ok(())
                 }
                 WizardResult::OpenAdvanced(partial) => {
                     // Open full dialog pre-filled with wizard data
@@ -4048,6 +4052,7 @@ impl MainWindow {
                             password,
                         );
                     }
+                    Ok(())
                 }
             }
         });
@@ -4146,31 +4151,33 @@ impl MainWindow {
                 let conn_username = new_conn.username.clone();
                 let password_source = new_conn.password_source.clone();
                 let protocol = new_conn.protocol;
-                if let Ok(mut state_mut) = state_for_cb.try_borrow_mut()
-                    && let Ok(conn_id) = state_mut.create_connection(new_conn)
-                {
-                    Self::persist_wizard_password(
-                        &state_mut,
-                        conn_id,
-                        &password_source,
-                        password.as_ref(),
-                        &conn_name,
-                        &conn_host,
-                        conn_username.as_deref().unwrap_or(""),
-                        protocol,
-                    );
-                    drop(state_mut);
-                    let state_c = state_for_cb.clone();
-                    let sidebar_c = sidebar_for_cb.clone();
-                    let toast_c = toast_for_cb.clone();
-                    glib::idle_add_local_once(move || {
-                        Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
-                        toast_c.show_success(&crate::i18n::i18n_f(
-                            "Connection “{}” created",
-                            &[&conn_name],
-                        ));
-                    });
-                }
+                let created = match state_for_cb.try_borrow_mut() {
+                    Ok(mut state_mut) => state_mut.create_connection(new_conn).map(|conn_id| {
+                        Self::persist_wizard_password(
+                            &state_mut,
+                            conn_id,
+                            &password_source,
+                            password.as_ref(),
+                            &conn_name,
+                            &conn_host,
+                            conn_username.as_deref().unwrap_or(""),
+                            protocol,
+                        );
+                    }),
+                    Err(_) => Err(crate::i18n::i18n("the application is busy")),
+                };
+                created?;
+                let state_c = state_for_cb.clone();
+                let sidebar_c = sidebar_for_cb.clone();
+                let toast_c = toast_for_cb.clone();
+                glib::idle_add_local_once(move || {
+                    Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
+                    toast_c.show_success(&crate::i18n::i18n_f(
+                        "Connection “{}” created",
+                        &[&conn_name],
+                    ));
+                });
+                Ok(())
             }
             WizardResult::SaveAndConnect(new_conn, password) => {
                 let conn_id_outer = new_conn.id;
@@ -4179,35 +4186,37 @@ impl MainWindow {
                 let conn_username = new_conn.username.clone();
                 let password_source = new_conn.password_source.clone();
                 let protocol = new_conn.protocol;
-                if let Ok(mut state_mut) = state_for_cb.try_borrow_mut()
-                    && let Ok(conn_id) = state_mut.create_connection(new_conn)
-                {
-                    Self::persist_wizard_password(
-                        &state_mut,
-                        conn_id,
-                        &password_source,
-                        password.as_ref(),
-                        &conn_name,
-                        &conn_host,
-                        conn_username.as_deref().unwrap_or(""),
-                        protocol,
-                    );
-                    drop(state_mut);
-                    let state_c = state_for_cb.clone();
-                    let sidebar_c = sidebar_for_cb.clone();
-                    let window_w = window_weak.clone();
-                    glib::idle_add_local_once(move || {
-                        Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
-                        if let Some(win) = window_w.upgrade() {
-                            let variant = conn_id_outer.to_string().to_variant();
-                            gio::prelude::ActionGroupExt::activate_action(
-                                &win,
-                                "connect-to",
-                                Some(&variant),
-                            );
-                        }
-                    });
-                }
+                let created = match state_for_cb.try_borrow_mut() {
+                    Ok(mut state_mut) => state_mut.create_connection(new_conn).map(|conn_id| {
+                        Self::persist_wizard_password(
+                            &state_mut,
+                            conn_id,
+                            &password_source,
+                            password.as_ref(),
+                            &conn_name,
+                            &conn_host,
+                            conn_username.as_deref().unwrap_or(""),
+                            protocol,
+                        );
+                    }),
+                    Err(_) => Err(crate::i18n::i18n("the application is busy")),
+                };
+                created?;
+                let state_c = state_for_cb.clone();
+                let sidebar_c = sidebar_for_cb.clone();
+                let window_w = window_weak.clone();
+                glib::idle_add_local_once(move || {
+                    Self::reload_sidebar_preserving_state(&state_c, &sidebar_c);
+                    if let Some(win) = window_w.upgrade() {
+                        let variant = conn_id_outer.to_string().to_variant();
+                        gio::prelude::ActionGroupExt::activate_action(
+                            &win,
+                            "connect-to",
+                            Some(&variant),
+                        );
+                    }
+                });
+                Ok(())
             }
             WizardResult::OpenAdvanced(new_partial) => {
                 if let Some(win) = window_weak.upgrade() {
@@ -4221,6 +4230,7 @@ impl MainWindow {
                         password,
                     );
                 }
+                Ok(())
             }
         });
 

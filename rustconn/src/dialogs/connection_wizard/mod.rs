@@ -45,8 +45,12 @@ pub enum WizardResult {
     OpenAdvanced(PartialConnection),
 }
 
-/// Callback type for wizard completion
-pub type WizardCallback = Rc<RefCell<Option<Box<dyn Fn(WizardResult)>>>>;
+/// Callback type for wizard completion.
+///
+/// `Err` carries a message for a result that could not be applied (the
+/// connection could not be created). The wizard then stays open with its input
+/// and shows the message.
+pub type WizardCallback = Rc<RefCell<Option<Box<dyn Fn(WizardResult) -> Result<(), String>>>>>;
 
 /// Partial connection data collected across wizard steps.
 /// Used to transfer state between pages and to the full dialog.
@@ -522,47 +526,50 @@ impl ConnectionWizard {
         let w = wizard.clone();
         wizard.auth_page.connect_save(move || {
             let (conn, password) = w.build_connection();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::Save(conn, password));
-            }
+            w.finish(WizardResult::Save(conn, password));
         });
 
         let w = wizard.clone();
         wizard.auth_page.connect_save_and_connect(move || {
             let (conn, password) = w.build_connection();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::SaveAndConnect(conn, password));
-            }
+            w.finish(WizardResult::SaveAndConnect(conn, password));
         });
 
         let w = wizard.clone();
         wizard.protocol_page.connect_advanced(move || {
             let partial = w.collect_partial();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::OpenAdvanced(partial));
-            }
+            w.finish(WizardResult::OpenAdvanced(partial));
         });
 
         let w = wizard.clone();
         wizard.connection_page.connect_advanced(move || {
             let partial = w.collect_partial();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::OpenAdvanced(partial));
-            }
+            w.finish(WizardResult::OpenAdvanced(partial));
         });
 
         let w = wizard.clone();
         wizard.auth_page.connect_advanced(move || {
             let partial = w.collect_partial();
-            w.dialog.close();
-            if let Some(ref cb) = *w.on_complete.borrow() {
-                cb(WizardResult::OpenAdvanced(partial));
-            }
+            w.finish(WizardResult::OpenAdvanced(partial));
         });
+    }
+
+    /// Hands `result` to the completion callback. The dialog closes when the
+    /// callback accepts it; on `Err` it stays open with its input and shows
+    /// the error.
+    fn finish(&self, result: WizardResult) {
+        let outcome = match *self.on_complete.borrow() {
+            Some(ref cb) => cb(result),
+            None => Ok(()),
+        };
+        match outcome {
+            Ok(()) => {
+                self.dialog.close();
+            }
+            Err(e) => {
+                crate::alert::show_error(&self.dialog, &i18n("Error Creating Connection"), &e);
+            }
+        }
     }
 
     /// Collect partial connection data from all pages
@@ -863,7 +870,7 @@ impl ConnectionWizard {
     }
 
     /// Connect completion callback
-    pub fn connect_complete<F: Fn(WizardResult) + 'static>(&self, f: F) {
+    pub fn connect_complete<F: Fn(WizardResult) -> Result<(), String> + 'static>(&self, f: F) {
         *self.on_complete.borrow_mut() = Some(Box::new(f));
     }
 }
