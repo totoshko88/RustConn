@@ -9,6 +9,9 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 1. [Getting Started](#getting-started)
 2. [Main Interface](#main-interface)
 3. [Connections](#connections)
+   - [Quick Connect](#quick-connect-ctrlshiftq)
+   - [Undo/Trash](#undotrash-functionality)
+   - [Command Macros](#command-macros)
 4. [Protocols](#protocols)
    - [SSH](#ssh)
    - [RDP](#rdp)
@@ -27,6 +30,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Split View](#split-view)
    - [Detached Session Windows](#detached-session-windows)
    - [Terminal Search](#terminal-search)
+   - [Status Indicators](#status-indicators)
    - [Session Restore & Reconnect](#session-restore)
    - [Session Logging](#session-logging)
    - [Session Recording](#session-recording)
@@ -50,6 +54,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Broadcast Input](#broadcast-input)
    - [Group Broadcast](#group-broadcast)
    - [Command Palette](#command-palette)
+   - [Run Local Script](#run-local-script)
    - [Global Variables](#global-variables)
    - [Password Generator](#password-generator)
    - [Wake-on-LAN](#wake-on-lan)
@@ -63,6 +68,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Adaptive UI](#adaptive-ui)
    - [Startup Action](#startup-action)
    - [Backup & Restore](#backup--restore)
+   - [Keyboard Passthrough Mode](#keyboard-passthrough-mode)
    - [Accessibility](#accessibility)
 9. [Import, Export & Migration](#import-export--migration)
    - [Import](#import-ctrli)
@@ -577,6 +583,21 @@ Behaviour worth knowing:
 | `Password:` | `${password}` | Password from vault |
 | `Verification code:` | `${OTP_CODE}` | Global variable (set before connecting) |
 | `Select environment` | `production` | Static text, no variable needed |
+
+### Command Macros
+
+A command macro is a named, single-line command that you type into a terminal with one shortcut. Macros belong to one connection.
+
+**Add a macro:** edit the connection → **Automation** tab → **Command Macros** → **Add Macro**. Fill in:
+
+- **Name** — a label for the list.
+- **Command** — one line; line breaks and control characters are refused.
+- **Shortcut** — a GTK accelerator such as `<Control><Alt>r`. It needs Ctrl, Alt or Super (F1–F24 may be used alone), and it may not reuse an application shortcut or another macro's. The editor checks this as you type.
+- **Run (append Enter)** — on by default. Switch it off to type the command without pressing Enter.
+
+**Use a macro:** press the shortcut while that connection's terminal has keyboard focus. In a split tab, the focused pane's connection is used. `${username}`, `${host}`, `${port}` and your [variables](#global-variables) are filled in; a variable whose value is `@ask:` is asked for first, and `${password}` uses the password the connection was opened with. If no password is available or a reference is undefined, nothing is sent and a toast says why.
+
+Macro shortcuts do nothing in RDP, VNC, SPICE and web sessions, while [keyboard passthrough](#keyboard-passthrough-mode) is on, and in detached session windows.
 
 ### Pre/Post Connection Tasks
 
@@ -2701,6 +2722,8 @@ Override terminal colors (background, foreground, cursor) on a per-connection ba
 - Right-click in sidebar → **New Group**
 - Right-click on group → **New Subgroup**
 
+To create several groups in a row, switch on **Create Another** in the New Group dialog: after **Create** the dialog stays open with its parent, credentials and description, and only the name is cleared.
+
 Group names must be unique among siblings sharing the same parent folder. You can have identically named groups under different parents (e.g. `Site A/RDP` and `Site B/RDP`). Moving or renaming a group into a parent that already contains a child with the same name is rejected.
 
 #### Group Operations
@@ -4254,7 +4277,7 @@ xdg-mime default io.github.totoshko88.RustConn.desktop application/x-virt-viewer
 #### From Remmina
 
 1. **File > Import > Remmina** → select data directory
-2. Review import preview → choose merge strategy → Import
+2. Pick the source → Import → check the result page → **Done** (if names already exist, choose **Skip Duplicates** or **Import All**)
 3. Re-enter passwords and verify SSH key paths after import
 
 > **Flatpak ↔ Flatpak:** If both RustConn and Remmina are installed as Flatpaks, the Remmina import button may show "Not Found" because Remmina stores its `.remmina` files inside its own sandbox (`~/.var/app/org.remmina.Remmina/data/remmina/`), which RustConn cannot access by default. See [Flatpak Sandbox Overrides → Remmina Import](#flatpak-sandbox-overrides) below for the fix.

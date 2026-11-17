@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Set Group… takes Enter and has focus** — the name field is focused when the dialog opens, Enter applies it, and **Apply** is off while the name is empty.
 - **The Welcome tab menu no longer offers Set Group…, Add to Broadcast and Monitor** — they did nothing there.
 - **The disconnected marker on a tab has a tooltip** — hovering the offline icon says **Session disconnected**.
+- **Ukrainian wording** — the confirm dialog read "Завершуй сеанса?" and now reads **Завершити сеанс?**; saved-search, split, sort, filter and Empty Trash actions use the imperative, and "немає", "змінна" and "підключення" follow the project glossary (**нема**, **змінниця**, **з'єднування**).
 
 ### Changed
 
@@ -76,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **User Guide, Settings and shortcuts** — Monitoring is described as its own page, the Keybindings steps point to the Interface page and say when a shortcut is written to disk, the Logging rows carry their real names with a warning about recorded keystrokes, the Settings rows that were missing (toolbar on hover, terminal control shortcuts, remember passthrough, auto-capture, split-pane hover controls, directional tab-close items, scrollbar, right-click paste, Option as Meta, auto-hide sidebar, Use OpenH264) are listed, **Ctrl+Shift+A** is in the shortcut table, and Ctrl+M is no longer called sidebar-only. (`docs/USER_GUIDE.md`)
 - **User guide matches the import, export, cluster and trash dialogs** — removed the Merge Strategies list and the Import Preview paragraph (neither exists; duplicates are handled by the Cancel / Skip Duplicates / Import All dialog), replaced "Export selected only" with the group filter, named the **Create**/**Save** button of the cluster dialog and noted the confirmation before a single delete. (`docs/USER_GUIDE.md`)
 - **User Guide** — the cluster section no longer says broadcast is only a split-view feature, the tab menu no longer lists a **Copy** section, **Move to New Window on Monitor N** is described as flat items, the group broadcast shortcut **Ctrl+Shift+A** is in the shortcut table, and the detached window section lists what it lacks.
+- **User Guide: command macros, Create Another, import steps, contents** — added a Command Macros section (Name, Command, Shortcut, Run), the New Group **Create Another** switch, replaced the Remmina migration step that named a merge strategy with the real result-page steps, and listed Quick Connect, Undo/Trash, Command Macros, Status Indicators, Run Local Script and Keyboard Passthrough in the contents.
 
 ## [0.25.2] - 2026-11-17
 
