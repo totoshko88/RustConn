@@ -15791,7 +15791,7 @@ msgstr "Дублюй натискання клавіш на всі вкладк�
 
 #: rustconn/src/window/ui.rs:178
 msgid "Toggle group broadcast"
-msgstr "Перемкнути групову трансляцію"
+msgstr "Перемкни групову трансляцію"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
