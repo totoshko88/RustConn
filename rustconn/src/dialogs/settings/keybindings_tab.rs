@@ -82,7 +82,7 @@ pub fn create_keybindings_page() -> (
 
             // Current accelerator label
             let accel_label = Label::builder()
-                .label(&def.default_accels)
+                .label(display_accels(&def.default_accels))
                 .css_classes(["dim-label", "keybinding-accel"])
                 .valign(gtk4::Align::Center)
                 .build();
@@ -257,14 +257,24 @@ fn show_shortcut_recorder(
                 return gtk4::glib::Propagation::Proceed;
             }
 
+            // Only a bare Escape/Backspace is a recorder command; with a
+            // modifier held (Ctrl+Shift+Backspace is a default binding) it is
+            // an ordinary key to record.
+            let bare = (state & gtk4::accelerator_get_default_mod_mask()).is_empty();
+            let reserved = recorder_command(
+                keyval == gtk4::gdk::Key::Escape,
+                keyval == gtk4::gdk::Key::BackSpace,
+                bare,
+            );
+
             // Escape cancels without changing the binding.
-            if keyval == gtk4::gdk::Key::Escape {
+            if reserved == Some(RecorderCommand::Cancel) {
                 dialog.close();
                 return gtk4::glib::Propagation::Stop;
             }
 
             // Backspace resets the binding to its default.
-            if keyval == gtk4::gdk::Key::BackSpace {
+            if reserved == Some(RecorderCommand::Reset) {
                 overrides.borrow_mut().reset(&action);
                 refresh_default_labels(&page_labels, &overrides.borrow());
                 dialog.close();
@@ -288,12 +298,12 @@ fn show_shortcut_recorder(
             {
                 // Show a conflict warning but still allow the assignment.
                 let warning = i18n_f("Conflicts with: {}", &[&conflict_label]);
-                accel_label.set_label(&format!("{accel}  \u{26A0}"));
+                accel_label.set_label(&format!("{}  \u{26A0}", display_accels(&accel)));
                 accel_label.set_tooltip_text(Some(&warning));
                 accel_label.remove_css_class("dim-label");
                 accel_label.add_css_class("warning");
             } else {
-                accel_label.set_label(&accel);
+                accel_label.set_label(&display_accels(&accel));
                 accel_label.set_tooltip_text(None);
                 accel_label.remove_css_class("warning");
                 accel_label.add_css_class("dim-label");
@@ -376,8 +386,8 @@ pub fn collect_keybinding_settings(
 ///
 /// Returns the translated label of the conflicting action, or `None`.
 ///
-/// Two sources have to be consulted: the rebindable registry, and the eleven
-/// fixed shortcuts that widget key controllers own — sidebar row actions, VTE
+/// Two sources have to be consulted: the rebindable registry, and the fixed
+/// shortcuts that widget key controllers own — sidebar row actions, VTE
 /// font zoom, the primary menu. The latter never reach `set_accels_for_action`,
 /// yet they occupy the combination just as firmly (issue #295).
 fn find_accel_conflict(
@@ -444,9 +454,39 @@ fn refresh_accel_labels(accel_labels: &AccelLabels) {
     }
 }
 
+/// Renders GTK accelerator strings the way the shortcuts dialog does
+/// (`<Control><Shift>q` becomes `Ctrl+Shift+Q`); alternatives join with " / ".
+/// A string GTK cannot parse is shown as written.
+fn display_accels(accels: &str) -> String {
+    accels
+        .split('|')
+        .map(|a| match gtk4::accelerator_parse(a) {
+            Some((key, mods)) => gtk4::accelerator_get_label(key, mods).to_string(),
+            None => a.to_owned(),
+        })
+        .collect::<Vec<_>>()
+        .join(" / ")
+}
+
+/// What a key press means to the shortcut recorder itself.
+#[derive(Debug, PartialEq, Eq)]
+enum RecorderCommand {
+    Cancel,
+    Reset,
+}
+
+/// Escape cancels and Backspace resets, but only without a modifier.
+fn recorder_command(is_escape: bool, is_backspace: bool, bare: bool) -> Option<RecorderCommand> {
+    match (bare, is_escape, is_backspace) {
+        (true, true, _) => Some(RecorderCommand::Cancel),
+        (true, _, true) => Some(RecorderCommand::Reset),
+        _ => None,
+    }
+}
+
 /// Sets an accelerator label's text and resets it to the neutral (non-warning) style.
 fn set_accel_label(label: &Label, accel: &str) {
-    label.set_label(accel);
+    label.set_label(&display_accels(accel));
     label.remove_css_class("warning");
     label.add_css_class("dim-label");
     label.set_tooltip_text(None);
@@ -472,9 +512,55 @@ fn suspend_accels(app: &gtk4::Application) {
 /// where present, defaults otherwise) after a recording session has ended.
 /// Also called on dialog close to guarantee accelerators are never left empty.
 pub fn restore_accels_with_overrides(app: &gtk4::Application, overrides: &KeybindingSettings) {
-    let defaults = default_keybindings();
-    for def in &defaults {
-        let accels = overrides.registered_accels(def);
+    let passthrough = crate::app::passthrough_active();
+    for def in &default_keybindings() {
+        let accels = accels_to_register(def, overrides, passthrough);
         app.set_accels_for_action(&def.action, &accels);
+    }
+}
+
+/// The accelerators an action should hold right now. In keyboard passthrough
+/// mode only the configured exceptions keep theirs, so closing Settings or the
+/// recorder must not bring every other shortcut back.
+fn accels_to_register<'a>(
+    def: &'a rustconn_core::config::keybindings::KeybindingDef,
+    overrides: &'a KeybindingSettings,
+    passthrough: bool,
+) -> Vec<&'a str> {
+    if passthrough && !overrides.passthrough_exceptions.contains(&def.action) {
+        return Vec::new();
+    }
+    overrides.registered_accels(def)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn modified_backspace_and_escape_are_recorded_not_commands() {
+        assert_eq!(
+            recorder_command(false, true, true),
+            Some(RecorderCommand::Reset)
+        );
+        assert_eq!(
+            recorder_command(true, false, true),
+            Some(RecorderCommand::Cancel)
+        );
+        // Ctrl+Shift+Backspace is a default binding: it must be recordable.
+        assert_eq!(recorder_command(false, true, false), None);
+        assert_eq!(recorder_command(true, false, false), None);
+    }
+
+    #[test]
+    fn passthrough_keeps_only_exceptions() {
+        let defs = default_keybindings();
+        let settings = KeybindingSettings {
+            passthrough_exceptions: vec![defs[0].action.clone()],
+            ..Default::default()
+        };
+        assert!(!accels_to_register(&defs[0], &settings, true).is_empty());
+        assert!(accels_to_register(&defs[1], &settings, true).is_empty());
+        assert!(!accels_to_register(&defs[1], &settings, false).is_empty());
     }
 }
