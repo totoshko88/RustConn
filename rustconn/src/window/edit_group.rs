@@ -290,6 +290,9 @@ pub fn show_edit_group_dialog(
     password_visibility_btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Toggle password visibility",
     ))]);
+    password_visibility_btn.update_state(&[gtk4::accessible::State::Pressed(
+        gtk4::AccessibleTristate::False,
+    )]);
     let password_load_btn = gtk4::Button::builder()
         .icon_name("folder-symbolic")
         .tooltip_text(i18n("Load password from vault"))
@@ -391,6 +394,12 @@ pub fn show_edit_group_dialog(
         let new_visible = !currently_visible;
         is_visible.set(new_visible);
         password_entry_clone.set_visibility(new_visible);
+        // Announce the toggle state to screen readers (icon change alone is invisible to them)
+        btn.update_state(&[gtk4::accessible::State::Pressed(if new_visible {
+            gtk4::AccessibleTristate::True
+        } else {
+            gtk4::AccessibleTristate::False
+        })]);
         if new_visible {
             btn.set_icon_name("view-conceal-symbolic");
         } else {
