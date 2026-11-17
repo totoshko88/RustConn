@@ -395,6 +395,15 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Tue Nov 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.3-0
+- Version bump to 0.25.3
+- Added: Broadcast toggle in a cluster window (#436), Duplicate Tab in the tab menu (#437)
+- Added: closing a cluster window with two or more sessions asks first
+- Fixed: closing the import dialog from the result page imports what it lists
+- Fixed: Favorites and search-result context menus, command palette tags and groups
+- Fixed: shortcut recorder, keyboard passthrough, terminal Ctrl+G / Ctrl+T
+- Changed: connection dialog has Cancel and confirms unsaved edits
+- Dependencies: clap 4.6.8, uuid 1.29.3, zeroize 1.9.2 and clap helpers; RUSTSEC-2026-0543 (chrono) accepted until 0.26
 * Tue Nov 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.2-0
 - Version bump to 0.25.2
 - Fixed: quitting while an SSH tunnel is starting no longer leaves ssh -N running

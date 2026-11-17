@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.25.3] - Unreleased
+## [0.25.3] - 2026-11-17
 
 ### Added
 
@@ -85,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 
 - **cargo-deny passes again** — RUSTSEC-2026-0543 (chrono is unmaintained, all versions, no patched release) is accepted in `deny.toml` and `.cargo/audit.toml` until chrono moves to `time` or `jiff` (0.26). (`deny.toml`, `.cargo/audit.toml`)
+- **Updated** (semver-compatible): clap 4.6.7→4.6.8, clap_complete 4.6.11→4.6.12, clap_derive 4.6.7→4.6.8, clap_lex 1.1.1→1.1.2, clap_mangen 0.3.3→0.3.4, uuid 1.29.2→1.29.3, zeroize 1.9.1→1.9.2.
 
 ## [0.25.2] - 2026-11-17
 
