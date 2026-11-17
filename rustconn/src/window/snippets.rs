@@ -907,6 +907,9 @@ pub fn execute_snippet_direct(
 ) {
     // Check if there's an active terminal
     if notebook.get_active_terminal().is_none() {
+        crate::toast::show_warning_toast_on_active_window(&i18n(
+            "Open a terminal session first before executing a snippet.",
+        ));
         return;
     }
 
