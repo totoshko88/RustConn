@@ -64,7 +64,7 @@ fn effective_accel(overrides: Option<&KeybindingSettings>, def: &KeybindingDef) 
 /// Shortcuts the application implements but does not offer for rebinding.
 ///
 /// The keybinding registry exists to drive the *Settings ▸ Keybindings* page, so
-/// it only holds actions the user can remap. These eleven are handled by widget
+/// it only holds actions the user can remap. These are handled by widget
 /// key controllers — sidebar row activation, VTE font zoom, the primary menu —
 /// and never reach `set_accels_for_action`, so a dialog built purely from the
 /// registry silently stopped documenting them. `F10` is one the project's own
