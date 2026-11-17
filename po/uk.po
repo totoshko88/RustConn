@@ -457,7 +457,7 @@ msgstr "Доєднайся до кластера в новому вікні"
 
 #: rustconn/src/dialogs/cluster.rs:717 rustconn/src/dialogs/cluster.rs:721
 msgid "Disconnect all cluster sessions"
-msgstr "Від'єднай усі сесії кластера"
+msgstr "Від'єднай усі сеанси кластера"
 
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
@@ -4535,11 +4535,11 @@ msgstr "Публічний ключ SSH"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:374
 msgid "Session TTL"
-msgstr "Час життя сесії"
+msgstr "Час життя сеансу"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:375
 msgid "Session duration in seconds (default: 1800)"
-msgstr "Тривалість сесії в секундах (типово: 1800)"
+msgstr "Тривалість сеансу в секундах (типово: 1800)"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:397
 msgid "Connect via Cloudflare Zero Trust"
@@ -10231,7 +10231,7 @@ msgstr "Зведення всіх з'єднувань"
 
 #: rustconn/src/dialogs/statistics.rs:253
 msgid "Total sessions"
-msgstr "Усього сесій"
+msgstr "Усього сеансів"
 
 #: rustconn/src/dialogs/statistics.rs:278
 msgid "Total time"
@@ -11229,7 +11229,7 @@ msgstr "Збережи поточний"
 
 #: rustconn/src/dialogs/workspace.rs:66 rustconn/src/dialogs/workspace.rs:68
 msgid "Save currently open sessions as a workspace"
-msgstr "Збережи поточні відкриті сесії як робочий простір"
+msgstr "Збережи поточні відкриті сеанси як робочий простір"
 
 #: rustconn/src/dialogs/workspace.rs:94
 msgid "Open a saved workspace to restore all its connections at once."
@@ -11274,7 +11274,7 @@ msgstr "Нема збережених профілів"
 
 #: rustconn/src/dialogs/workspace.rs:393
 msgid "Save your current sessions to create one"
-msgstr "Збережи поточні сесії, щоб створити профіль"
+msgstr "Збережи поточні сеанси, щоб створити профіль"
 
 #: rustconn/src/dialogs/workspace.rs:399
 msgid "{} connections"
@@ -11423,7 +11423,7 @@ msgstr "Не вдалося прочитати буфер обміну"
 
 #: rustconn/src/embedded_rdp/autotype.rs:157
 msgid "Type Text into Remote Session"
-msgstr "Набери текст у віддаленій сесії"
+msgstr "Набери текст у віддаленому сеансі"
 
 #: rustconn/src/embedded_rdp/autotype.rs:167
 msgid "Type Now"
@@ -11434,7 +11434,7 @@ msgid ""
 "Text entered here will be sent as keystrokes to the remote session. It will "
 "not be placed in the system clipboard."
 msgstr ""
-"Введений тут текст буде надіслано як натискання клавіш у віддалену сесію. "
+"Введений тут текст буде надіслано як натискання клавіш у віддалений сеанс. "
 "Він не потрапить до системного буфера обміну."
 
 #: rustconn/src/embedded_rdp/autotype.rs:202
@@ -13390,7 +13390,7 @@ msgstr "Швидке з'єднування…"
 
 #: rustconn/src/tray.rs:318 rustconn/src/tray.rs:677
 msgid "{} Active Session(s)"
-msgstr "{} активних сесій"
+msgstr "{} активних сеансів"
 
 #: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5962
 msgid "Passphrase Does Not Open the Portable File"
@@ -15841,7 +15841,7 @@ msgstr "SSH-тунелі…"
 
 #: rustconn/src/window/ui.rs:304
 msgid "Active Sessions…"
-msgstr "Активні сесії…"
+msgstr "Активні сеанси…"
 
 #: rustconn/src/window/ui.rs:305
 msgid "Connection History…"
@@ -15885,7 +15885,7 @@ msgstr "Передача клавіятури"
 
 #: rustconn/src/window/workspaces.rs:462
 msgid "No active sessions to save"
-msgstr "Нема активних сесій для збереження"
+msgstr "Нема активних сеансів для збереження"
 
 #: rustconn/src/window/workspaces.rs:557
 msgid "Save Workspace"
