@@ -121,7 +121,12 @@ pub fn create_ssh_agent_page() -> (
         }
     });
 
-    status_group.add(&custom_socket_entry);
+    // Not shown: `AppSettings.ssh_agent_socket` is saved but no ssh/sftp spawn
+    // path reads it (only per-connection and per-group sockets are resolved),
+    // so a visible row promised an override that never applied. The entry
+    // stays alive so a value already in config.toml round-trips unchanged.
+    // ponytail: wire it through `resolve_ssh_agent_socket` callers and show
+    // the row again in 0.26.
 
     page.add(&status_group);
 
