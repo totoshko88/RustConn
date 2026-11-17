@@ -2558,9 +2558,10 @@ impl MainWindow {
         window.connect_close_request(move |win| {
             // When minimize-to-tray is enabled the window only hides and the
             // app keeps running — no confirmation needed.
-            let minimize_to_tray = state_clone.try_borrow().is_ok_and(|s| {
-                s.settings().ui.minimize_to_tray && s.settings().ui.enable_tray_icon
-            });
+            let minimize_to_tray = crate::app::tray_is_active()
+                && state_clone.try_borrow().is_ok_and(|s| {
+                    s.settings().ui.minimize_to_tray && s.settings().ui.enable_tray_icon
+                });
 
             // Confirm before quitting with open sessions (GNOME HIG: protect
             // against accidental loss of active connections). Count tabless

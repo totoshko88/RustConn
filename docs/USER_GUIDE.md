@@ -3914,7 +3914,7 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 
 ### Terminal page
 
-**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select, confirm multi-line paste, remote clipboard (OSC 52), close tab on clean exit).
+**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect, show scrollbar), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select, right-click pastes, Option as Meta key (macOS), confirm multi-line paste, remote clipboard (OSC 52), close tab on clean exit).
 
 **Confirm multi-line paste:** When enabled (the default), pasting clipboard text that spans more than one line first shows a preview and asks you to confirm before it reaches the shell — a guard against pastejacking, where a page or program sneaks a command onto your clipboard so the next paste runs it. Turn it off to paste multi-line text immediately without the prompt.
 
@@ -3933,27 +3933,31 @@ set -g allow-passthrough on     # let wrapped sequences through untouched
 
 **Custom Themes:** Click the **+** button next to the theme dropdown to create a new custom theme. The theme editor lets you set background, foreground, cursor, and all 16 ANSI palette colors. Custom themes are saved to `~/.config/rustconn/custom_themes.json` and appear alongside built-in themes. Edit or delete custom themes with the pencil and trash buttons.
 
-**Logging group:** Enable Logging (global toggle), Log Directory, Retention Days, Logging Modes (activity, user input, terminal output), Timestamps.
+**Session Logging group:** Persist logs (global toggle), Directory, Retention (days), and what to record: Activity, User Input, Terminal Output, Timestamps. User Input records keystrokes, so a password typed at a prompt can end up in the log.
 
 ### Interface page
 
-**Appearance group:** Theme (System, Light, Dark), Language (UI language selector, restart required), Rendering (see below, restart required), Sidebar width (180–500 pixels, default 320), Resize sidebar by dragging (off by default; when on, drag the sidebar's inner edge to change the same Sidebar width within the same range, saved when you let go; hidden on narrow windows), Compact interface, Compact automatically on small windows, Sidebar row spacing, and Sidebar text size.
+**Appearance group:** Theme (System, Light, Dark), Language (UI language selector, restart required), Rendering (see below, restart required), Sidebar width (180–500 pixels, default 320), Resize sidebar by dragging (off by default; when on, drag the sidebar's inner edge to change the same Sidebar width within the same range, saved when you let go; hidden on narrow windows), Compact interface, Compact automatically on small windows, Open session toolbar on hover, Sidebar row spacing, Sidebar text size, Send terminal control shortcuts to the session, Remember keyboard passthrough, and Auto-capture shortcuts in remote desktop.
+
+**Send terminal control shortcuts to the session** lets single-Ctrl chords (Ctrl+F, P, N, W, H, M, I, G, T) reach a focused terminal instead of triggering the application shortcut. **Remember keyboard passthrough** restores the passthrough mode of the last session at startup. **Open session toolbar on hover** reveals the floating RDP/VNC toolbar when the pointer touches the top edge. **Auto-capture shortcuts in remote desktop** hands desktop shortcuts (Alt+Tab, Super) to a focused embedded remote desktop while passthrough is on.
 
 **Sidebar row spacing** and **Sidebar text size** tune the density of the connection list independently of Compact interface — the lever to reach for when you keep a large number of hosts in the sidebar and want more of them on screen at once. **Sidebar row spacing** is a slider from 0 to 12 pixels (default 7, the historical spacing) that sets the vertical gap above and below every connection row; lower it toward 0 for a tight, scan-many list and raise it for a roomier one. **Sidebar text size** scales only the connection-name labels — Small, Medium (the theme default) or Large — leaving the row icons, group arrows and status indicators at their usual size, so a smaller text size packs in more rows while a larger one aids readability. Both apply instantly as you change them (no restart) and are remembered across restarts. They are separate from **Compact interface**, which only tightens the window chrome (header bar, tab bar and toolbars) and no longer touches the connection list.
 
 **Rendering** chooses which GTK renderer draws the interface. Leave it on **Automatic** unless the interface is sluggish: RustConn then uses the GPU renderer, except where it is known to behave worse than software rasterisation — X11 sessions whose compositor paints menus blank until you hover them, and macOS running inside a virtual machine, where the virtual GPU offers no accelerated OpenGL and the GPU path becomes both slow and CPU-hungry. **Software (Cairo)** forces software rasterisation everywhere; pick it if the interface lags, scrolls in steps, or responds late to typing in an environment the automatic choice does not recognise. **Hardware (GPU)** forces the GPU renderer, which is the setting for an X11 session with a driver that works fine. A `GSK_RENDERER` environment variable, if you set one, overrides all three. The choice applies on the next start, because GTK reads it while it opens the first window.
 
-**Window group:** Remember size (restore window geometry on startup), Show connection in window title (appends the active connection name so time-tracking tools can attribute usage; off by default for privacy), Show hierarchy path in header (shows the active connection's group path — e.g. `AWS Test Lab / Prod` — as a subtitle under the connection name in the content header, GNOME-breadcrumb style; off by default, updates when the active tab changes, and is blank for a connection that sits in the root with no parent group; independent of the window title, so time-tracking tools are unaffected), Show connection name in split panes (compact per-pane header; on by default for new installations, while an existing configuration keeps its stored value — also serves as the pane drag handle).
+**Window group:** Remember size (restore window geometry on startup), Show connection in window title (appends the active connection name so time-tracking tools can attribute usage; off by default for privacy), Show hierarchy path in header (shows the active connection's group path — e.g. `AWS Test Lab / Prod` — as a subtitle under the connection name in the content header, GNOME-breadcrumb style; off by default, updates when the active tab changes, and is blank for a connection that sits in the root with no parent group; independent of the window title, so time-tracking tools are unaffected), Show connection name in split panes (compact per-pane header; on by default for new installations, while an existing configuration keeps its stored value — also serves as the pane drag handle), Hide hover controls in split panes, Show directional tab-close items (close tabs to the left/right/others in the tab menu).
 
 **Connections group:** Open a new session on every double-click — off by default, so a double-click on a connection that is already running focuses that session instead of duplicating it (hold Shift or Ctrl, or use right-click → Open new session, to force a second one). Turn it on if you routinely keep several concurrent sessions on the same host: every double-click then starts another session, and the modifier is no longer needed. On a running connection the first item of the sidebar context menu reads **Show Session** instead of **Connect**: it brings up the newest live session (or shows the "Already running in an external window" hint), whatever this setting says, and **Open new session** in the same menu starts another one.
 
+Also in this group: **Auto-hide the sidebar on connect**, and **Open tunnelled browser in the embedded browser** with a start page and, when the embedded browser is off, an external browser command.
+
 **Startup group:** On startup — Do nothing, Local Shell, or connect to a specific saved connection.
 
-**System Tray group:** Show icon, Minimize to tray (hide window instead of closing).
+**System Tray group:** Show icon (restart required), Minimize to tray (hide the window instead of closing it). The window is only hidden when a tray icon actually exists; on a desktop without tray support, closing the window closes it as usual.
 
 **Session Restore group:** Enabled, Ask first, Max age (1–168 hours).
 
-**Keybindings group:** Customizable keyboard shortcuts for 30+ actions across 6 categories. Record button to capture key combinations. Per-shortcut Reset and Reset All to Defaults.
+**Keybindings group:** Customizable keyboard shortcuts for 50+ actions across 6 categories. Record button to capture key combinations. Per-shortcut Reset and Reset All to Defaults.
 
 ### Secrets page
 
@@ -3982,19 +3986,23 @@ set -g allow-passthrough on     # let wrapped sequences through untouched
 
 **Clients group:** Auto-detected CLI tools with versions — Protocol Clients (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes) and Zero Trust (AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary, Hoop.dev). Searches PATH and user directories.
 
-**Media Codecs group:** **H.264 codec (Cisco OpenH264)** — a **Download** button enables hardware-style H.264 for the embedded RDP GFX pipeline on packaged installs. The embedded RDP client's H.264 decoder (OpenH264) only accepts Cisco's own published binary; the copy built into distribution packages is refused, so H.264 GFX otherwise falls back to the slower RemoteFX path. Clicking **Download** opens a confirm dialog naming exactly what will be downloaded, from where (`ciscobinary.openh264.org`), and under whose licence — because Cisco, not RustConn, provides the binary and holds the MPEG-LA patent licence for it, so the download is **user-initiated and opt-in** (nothing is fetched automatically, ever). On consent, RustConn downloads the official v2.6.0 blob, verifies its checksum, and caches it under `~/.cache/rustconn/openh264/`; the RDP GFX decoder picks it up on the **next RDP connection** — no application restart needed (already-open sessions keep their current path until reconnected). Once installed, the row shows **Installed ✓**. The same action is available headless as `rustconn-cli codec download-h264 --accept-cisco-license` (without the flag it only prints the licence and downloads nothing). Supported on x86_64/aarch64 Linux and x86_64/aarch64 macOS. You can also point `RUSTCONN_OPENH264` at a Cisco blob you downloaded yourself; that override still wins over the cached copy.
+**Media Codecs group:** **Use OpenH264** switches the downloaded codec on or off without deleting it; the choice is saved at once and stays off after a restart. **H.264 codec (Cisco OpenH264)** — a **Download** button enables hardware-style H.264 for the embedded RDP GFX pipeline on packaged installs. The embedded RDP client's H.264 decoder (OpenH264) only accepts Cisco's own published binary; the copy built into distribution packages is refused, so H.264 GFX otherwise falls back to the slower RemoteFX path. Clicking **Download** opens a confirm dialog naming exactly what will be downloaded, from where (`ciscobinary.openh264.org`), and under whose licence — because Cisco, not RustConn, provides the binary and holds the MPEG-LA patent licence for it, so the download is **user-initiated and opt-in** (nothing is fetched automatically, ever). On consent, RustConn downloads the official v2.6.0 blob, verifies its checksum, and caches it under `~/.cache/rustconn/openh264/`; the RDP GFX decoder picks it up on the **next RDP connection** — no application restart needed (already-open sessions keep their current path until reconnected). Once installed, the row shows **Installed ✓**. The same action is available headless as `rustconn-cli codec download-h264 --accept-cisco-license` (without the flag it only prints the licence and downloads nothing). Supported on x86_64/aarch64 Linux and x86_64/aarch64 macOS. You can also point `RUSTCONN_OPENH264` at a Cisco blob you downloaded yourself; that override still wins over the cached copy.
 
-**Monitoring group:** Enable monitoring (global toggle), Polling interval (1–60 seconds, default: 3), Reset Per-Connection Overrides (makes every connection follow the global toggle; per-connection polling intervals are kept), Visible Metrics (CPU, Memory, Disk, Network, Load Average, System Info).
+### Monitoring page
+
+**General group:** Enable monitoring (global toggle), Polling interval (1–60 seconds, default: 3), Reset Per-Connection Overrides (makes every connection follow the global toggle; per-connection polling intervals are kept). **Visible Metrics group:** CPU, Memory, Disk, Network, Load Average, System Info. **Activity Monitor group:** default mode, quiet period and silence timeout.
 
 ### Custom Keybindings
 
 Customize all keyboard shortcuts via Settings → Interface page → Keybindings.
 
-1. Open **Settings** (Ctrl+,) → **Keybindings** tab
+1. Open **Settings** (Ctrl+,) → **Interface** page → **Keybindings** group
 2. Find the action you want to change
 3. Click **Record** next to it
 4. Press the desired key combination
-5. The new shortcut is saved immediately
+5. The new shortcut works at once and is written to the settings file when you close Settings
+
+Press **Backspace** or **Escape** on their own to reset or cancel; with a modifier held (for example Ctrl+Backspace) they are recorded like any other key.
 
 Click the ↩ button next to any shortcut to reset it to default, or **Reset All to Defaults** at the bottom.
 
@@ -4031,7 +4039,7 @@ A session in an external viewer window is not affected by RustConn's passthrough
 
 **Automatic focus-based shortcut management (0.18.8+):**
 
-Independently from manual passthrough mode, RustConn automatically suspends single-modifier shortcuts (e.g. `Ctrl+W`) that conflict with terminal input when a terminal has focus, while keeping multi-modifier variants active (e.g. `Ctrl+Shift+W`). This means:
+Independently from manual passthrough mode, RustConn automatically suspends single-modifier shortcuts (e.g. `Ctrl+W`, including `Ctrl+G` and `Ctrl+T`) that conflict with terminal input when a terminal has focus, while keeping multi-modifier variants active (e.g. `Ctrl+Shift+W`). This means:
 - `Ctrl+W` in a focused terminal → sent to the remote session (shell word-delete)
 - `Ctrl+Shift+W` → still closes the tab (application shortcut)
 - If you remap "Close Tab" to a non-conflicting combo (e.g. `Ctrl+F4`), it works regardless of terminal focus
@@ -4877,6 +4885,8 @@ RustConn opens the KeePass database directly by file (`.kdbx`); it does not use 
 1. Requires `tray-icon` feature
 2. Check DE tray support
 3. Some DEs need extensions
+4. Turning on **Show icon** takes effect after a restart
+5. Without a tray icon, **Minimize to tray** does nothing: closing the window closes it
 
 ### KDE Plasma and Wayland
 
@@ -5005,7 +5015,7 @@ flatpak override --user --reset io.github.totoshko88.RustConn
 
 Press **Ctrl+?** for the searchable shortcuts dialog, and **F1** (or Menu → **Help**) to open this guide.
 
-Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Ctrl+M, Left, Right) only work when the sidebar has focus. In right-to-left layouts Left and Right swap.
+Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Left, Right) only work when the sidebar has focus. In right-to-left layouts Left and Right swap.
 
 ### Connections
 
@@ -5112,6 +5122,7 @@ markers appear; nothing else changes.
 | F1 | Help (opens this guide in the browser) |
 | Ctrl+Shift+Backspace | Toggle Keyboard Passthrough |
 | Ctrl+Shift+B | Toggle Split Broadcast |
+| Ctrl+Shift+A | Toggle Group Broadcast |
 | Ctrl+Q | Quit |
 
 > **Note:** Quitting with **Ctrl+Q** (or closing the window) while session tabs are open shows a "Close RustConn?" confirmation dialog with the number of open sessions (tabs plus [detached windows](#detached-session-windows)), instead of silently disconnecting everything. This is skipped when minimize-to-tray is enabled (the app keeps running in the tray).

@@ -71,6 +71,22 @@ fn collect_groups(widget: &gtk4::Widget, groups: &mut Vec<adw::PreferencesGroup>
     }
 }
 
+/// Carries the Media Codecs switch into the connection settings saved on close.
+///
+/// That switch persists itself the moment it flips (the OpenH264 licence needs
+/// the choice to stick even if the dialog is never closed cleanly), so the
+/// snapshot taken when the dialog opened holds a stale value. Saving it back
+/// would silently re-enable a codec the user turned off.
+fn with_live_openh264(
+    mut connection: rustconn_core::config::ConnectionSettings,
+    persisted: Option<bool>,
+) -> rustconn_core::config::ConnectionSettings {
+    if let Some(enabled) = persisted {
+        connection.use_openh264 = enabled;
+    }
+    connection
+}
+
 /// Main settings dialog using AdwPreferencesDialog (libadwaita 1.5+)
 #[expect(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct SettingsDialog {
@@ -226,6 +242,7 @@ impl SettingsDialog {
         let width = 800;
 
         let dialog = adw::PreferencesDialog::builder()
+            .title(i18n("Settings"))
             .search_enabled(true)
             .content_width(width)
             .build();
@@ -1836,7 +1853,10 @@ impl SettingsDialog {
                 logging,
                 secrets,
                 ui,
-                connection: settings_clone.borrow().connection.clone(),
+                connection: with_live_openh264(
+                    settings_clone.borrow().connection.clone(),
+                    clients_tab::persisted_use_openh264(),
+                ),
                 network: network_tab::collect_network_settings(
                     &network_proxy_jump_row_clone,
                     &network_jump_host_dropdown_clone,
@@ -2100,4 +2120,20 @@ fn build_highlight_rule_row(
     row.add_row(&background_row);
 
     row
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn closing_keeps_openh264_switched_off() {
+        let snapshot = rustconn_core::config::ConnectionSettings {
+            use_openh264: true,
+            ..Default::default()
+        };
+        assert!(!with_live_openh264(snapshot.clone(), Some(false)).use_openh264);
+        // Nothing readable on disk: keep the snapshot.
+        assert!(with_live_openh264(snapshot, None).use_openh264);
+    }
 }
