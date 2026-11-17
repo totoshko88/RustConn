@@ -474,7 +474,8 @@ impl ConnectionDialogData<'_> {
         // The SPA packet is sent only when both keys are set; one key alone
         // would be skipped without a word at connect time.
         if self.spa_enabled_toggle.is_active()
-            && (self.spa_rij_key_entry.text().is_empty() || self.spa_hmac_key_entry.text().is_empty())
+            && (self.spa_rij_key_entry.text().is_empty()
+                || self.spa_hmac_key_entry.text().is_empty())
         {
             return Err(i18n(
                 "Both the Rijndael key and the HMAC key are required for fwknop SPA",
