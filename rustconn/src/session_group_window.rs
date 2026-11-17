@@ -54,8 +54,8 @@ enum TileNode {
     Split {
         /// `true` puts `first` above `second`; `false` puts it to the left.
         horizontal: bool,
-        first: Box<TileNode>,
-        second: Box<TileNode>,
+        first: Box<Self>,
+        second: Box<Self>,
     },
 }
 
