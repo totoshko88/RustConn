@@ -246,6 +246,18 @@ impl WorkspaceManagerDialog {
                 .build();
             alert.set_extra_child(Some(&entry));
 
+            // Nothing to rename to while the name is empty or unchanged.
+            alert.set_response_enabled("rename", false);
+            {
+                let alert = alert.clone();
+                let current_name = current_name.clone();
+                entry.connect_changed(move |e| {
+                    let name = e.text();
+                    let name = name.trim();
+                    alert.set_response_enabled("rename", !name.is_empty() && name != current_name);
+                });
+            }
+
             let cb_clone = cb_rename.clone();
             alert.connect_response(None, move |_, response| {
                 if response != "rename" {
