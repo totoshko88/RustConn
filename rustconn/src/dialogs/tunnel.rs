@@ -426,13 +426,13 @@ fn build_tunnel_row(
         (
             "media-playback-stop-symbolic",
             i18n("Stop Tunnel"),
-            i18n("Stop tunnel"),
+            i18n("Stop Tunnel"),
         )
     } else {
         (
             "media-playback-start-symbolic",
             i18n("Start Tunnel"),
-            i18n("Start tunnel"),
+            i18n("Start Tunnel"),
         )
     };
 

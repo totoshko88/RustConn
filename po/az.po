@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -414,7 +414,8 @@ msgstr "Hamısını seç"
 msgid "Deselect All"
 msgstr "Seçimi ləğv et"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "Klasterni redaktə et"
 
@@ -450,10 +451,6 @@ msgstr "Klasterə yeni pəncərədə qoşul"
 msgid "Disconnect all cluster sessions"
 msgstr "Bütün klaster sessiyalarının bağlantısını kəs"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "Klasterni redaktə et"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Klasterni sil"
@@ -466,7 +463,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "Əmr paneli"
 
@@ -773,8 +770,8 @@ msgstr "Qayda əlavə et"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
-msgstr "WOL (Wake On LAN)"
+msgid "Wake-on-LAN"
+msgstr "WOL (Wake-on-LAN)"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
 #: rustconn/src/dialogs/connection/advanced_tab.rs:662
@@ -1560,12 +1557,9 @@ msgid "New Connection (Advanced)"
 msgstr "Yeni bağlantı (qabaqcıl)"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
+#: rustconn/src/dialogs/connection/dialog/construction.rs:211
 msgid "Test Connection"
 msgstr "Bağlantını yoxla"
-
-#: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
-msgstr "Bağlantını sına"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
 #: rustconn/src/dialogs/connection/general_tab.rs:145
@@ -7127,7 +7121,8 @@ msgid "Play recording"
 msgstr "Yazını səsləndir"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
 msgstr "Yazının adını dəyiş"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
@@ -7135,12 +7130,9 @@ msgid "Delete recording"
 msgstr "Yazını sil"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
 msgstr "Yazını ixrac et"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "Yazının adını dəyiş"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7191,10 +7183,6 @@ msgstr "Yazı silinə bilmədi"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "Yazı silinə bilmədi: {}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "Yazını ixrac et"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9289,7 +9277,8 @@ msgstr ""
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Lokal shell"
@@ -9778,12 +9767,12 @@ msgstr "Seçilmiş elementin adını dəyiş"
 msgid "Duplicate connection (sidebar)"
 msgstr "Bağlantını dublikat et (yan panel)"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
-msgstr "Bağlantını köçür"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
+msgstr "Bağlantını kopyala"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
 msgstr "Bağlantını yapışdır"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
@@ -9851,6 +9840,7 @@ msgstr "Yeni qrup"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Sürətli qoşulma"
@@ -9960,7 +9950,7 @@ msgstr "Növbəti panelə fokusla"
 msgid "Reconnect Session"
 msgstr "Sessiyaya yenidən qoşul"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "Tam ekranı dəyiş"
 
@@ -9976,11 +9966,11 @@ msgstr "Yığcam interfeysi dəyiş"
 msgid "Toggle Keyboard Passthrough"
 msgstr "Klaviatura ötürməsini dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "Bölünmüş yayımı dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "Qrup yayımını dəyiş"
 
@@ -10143,7 +10133,7 @@ msgstr "Standart:"
 msgid "Default value"
 msgstr "Standart dəyər"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "Fraqmenti redaktə et"
 
@@ -10673,20 +10663,12 @@ msgstr "Port yönləndirməsi konfiqurasiya edilməyib"
 msgid "Stopped unexpectedly"
 msgstr "Gözlənilmədən dayandı"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "Tuneli dayandır"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "Tuneli dayandır"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "Tuneli başlat"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "Tuneli başlat"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11333,10 +11315,6 @@ msgstr "{} seansı - {} (daxili)"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "{} seansı - {} (xarici pəncərə)"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "Tam ekranı aç/bağla"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12700,7 +12678,7 @@ msgid "Duplicate via Wizard…"
 msgstr "Sehrbaz vasitəsilə dublikat yarat…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "Yeni sessiya aç"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12738,7 +12716,7 @@ msgid "Start Recording"
 msgstr "Yazmanı başlat"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "İzləməni dayandır"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12782,12 +12760,8 @@ msgstr "Seçilmiş bağlantıları birlikdə redaktə et"
 msgid "Select all connections"
 msgstr "Bütün bağlantıları seç"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
-msgstr "Seçimi təmizlə"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
 msgstr "Seçimi təmizlə"
 
 #: rustconn/src/sidebar_ui.rs:1300
@@ -12806,8 +12780,8 @@ msgstr "Bağlantıları seç"
 msgid "Toggle multi-select mode for connections"
 msgstr "Bağlantılar üçün çoxseçim rejimini aç/bağla"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
 msgstr "Əlifba sırası ilə çeşidlə"
 
 #: rustconn/src/sidebar_ui.rs:1360
@@ -12861,10 +12835,6 @@ msgstr "Fraqmentləri idarə et"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "Alətlər"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "Əlifba sırası ilə çeşidlə"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -12999,18 +12969,6 @@ msgstr "Faylları sessiyalara sürüşdürüb buraxın"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "Yeni bağlantı"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "Sürətli qoşulma"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "Əmr palitrası"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "Lokal shell"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -13970,14 +13928,14 @@ msgid "Failed to delete permanently: {}"
 msgstr "Birdəfəlik silmək alınmadı: {}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
 msgstr ""
-"Wake On LAN konfiqurasiya edilməyib. MAC ünvanı təyin etmək üçün bağlantını "
+"Wake-on-LAN konfiqurasiya edilməyib. MAC ünvanı təyin etmək üçün bağlantını "
 "redaktə edin."
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "{} ünvanına Wake On LAN göndərildi — host-un onlayn olması gözlənilir…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "{} ünvanına Wake-on-LAN göndərildi — host-un onlayn olması gözlənilir…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -13988,8 +13946,8 @@ msgid "{} did not come online after WoL"
 msgstr "{} WoL-dan sonra onlayn olmadı"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
-msgstr "Wake On LAN paketi göndərilə bilmədi. Şəbəkə icazələrini yoxlayın."
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
+msgstr "Wake-on-LAN paketi göndərilə bilmədi. Şəbəkə icazələrini yoxlayın."
 
 #: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
@@ -15653,13 +15611,9 @@ msgstr "Fraqmentlərdə axtar…"
 msgid "Execute"
 msgstr "İcra et"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
 msgstr "Fraqmenti icra et"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "Fraqmenti redaktə et"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15680,10 +15634,6 @@ msgstr "Fraqment silinə bilmədi"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "Fraqmentin silinməsi alınmadı: {}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "Fraqmenti icra et"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15809,10 +15759,6 @@ msgstr "Lokal shell aç"
 msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Klaviş vuruşlarını bütün bölünmüş panellərə ötür (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "Bölünmüş yayımı dəyiş"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "Qrup yayımı"
@@ -15820,10 +15766,6 @@ msgstr "Qrup yayımı"
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "Klaviş vuruşlarını yayım qrupundakı bütün tablara ötür"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "Qrup yayımını dəyiş"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -15862,8 +15804,8 @@ msgid "Password Generator…"
 msgstr "Parol generatoru…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
-msgstr "Wake On LAN…"
+msgid "Wake-on-LAN…"
+msgstr "Wake-on-LAN…"
 
 #: rustconn/src/window/ui.rs:294
 msgid "Network Scan…"
@@ -15904,14 +15846,6 @@ msgstr "Bağlantıları idxal et…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "Bağlantıları eksport et…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "Bağlantını kopyala"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "Bağlantını yapışdır"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -15960,6 +15894,60 @@ msgstr "Bağlantı meneceri"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "Klasterni redaktə et"
+
+#~ msgid "Test connection"
+#~ msgstr "Bağlantını sına"
+
+#~ msgid "Rename recording"
+#~ msgstr "Yazının adını dəyiş"
+
+#~ msgid "Export recording"
+#~ msgstr "Yazını ixrac et"
+
+#~ msgid "Copy connection"
+#~ msgstr "Bağlantını köçür"
+
+#~ msgid "Paste connection"
+#~ msgstr "Bağlantını yapışdır"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "Tuneli dayandır"
+
+#~ msgid "Start tunnel"
+#~ msgstr "Tuneli başlat"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "Tam ekranı aç/bağla"
+
+#~ msgid "Clear selection"
+#~ msgstr "Seçimi təmizlə"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "Əlifba sırası ilə çeşidlə"
+
+#~ msgid "Quick connect"
+#~ msgstr "Sürətli qoşulma"
+
+#~ msgid "Command palette"
+#~ msgstr "Əmr palitrası"
+
+#~ msgid "Local shell"
+#~ msgstr "Lokal shell"
+
+#~ msgid "Execute snippet"
+#~ msgstr "Fraqmenti icra et"
+
+#~ msgid "Edit snippet"
+#~ msgstr "Fraqmenti redaktə et"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "Bölünmüş yayımı dəyiş"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "Qrup yayımını dəyiş"
 
 #~ msgid "Close Connection"
 #~ msgstr "Bağlantını bağla"

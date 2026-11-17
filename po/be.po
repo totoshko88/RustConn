@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -415,7 +415,8 @@ msgstr "Абраць усё"
 msgid "Deselect All"
 msgstr "Зняць выбар"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "Рэдагаваць кластар"
 
@@ -452,10 +453,6 @@ msgstr "Злучыцца з кластарам у новым акне"
 msgid "Disconnect all cluster sessions"
 msgstr "Адключыць усе сесіі кластара"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "Рэдагаваць кластар"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Выдаліць кластар"
@@ -466,7 +463,7 @@ msgstr "Кластары не вызначаны. Націсніце 'Новы �
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "Палітра каманд"
 
@@ -771,8 +768,8 @@ msgstr "Дадаць правіла"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
-msgstr "Wake On LAN"
+msgid "Wake-on-LAN"
+msgstr "Wake-on-LAN"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
 #: rustconn/src/dialogs/connection/advanced_tab.rs:662
@@ -1559,11 +1556,8 @@ msgid "New Connection (Advanced)"
 msgstr "Новае злучэнне (дадаткова)"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
-msgid "Test Connection"
-msgstr "Тэставаць злучэнне"
-
 #: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
+msgid "Test Connection"
 msgstr "Тэставаць злучэнне"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
@@ -7144,20 +7138,18 @@ msgid "Play recording"
 msgstr "Прайграць запіс"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
-msgstr "Перайменаваць запіс"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
+msgstr "Перайменаванне запісу"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
 msgid "Delete recording"
 msgstr "Выдаліць запіс"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
-msgstr "Экспартаваць запіс"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "Перайменаванне запісу"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
+msgstr "Экспарт запісу"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7208,10 +7200,6 @@ msgstr "Не ўдалося выдаліць запіс"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "Не ўдалося выдаліць запіс: {}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "Экспарт запісу"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9313,7 +9301,8 @@ msgstr "Адпраўляць прэфікс Escape замест складзен
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Лакальная абалонка"
@@ -9803,13 +9792,13 @@ msgstr "Перайменаваць абраны элемент"
 msgid "Duplicate connection (sidebar)"
 msgstr "Дубліраваць падключэнне (бакавая панэль)"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
-msgstr "Капіраваць падключэнне"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
+msgstr "Капіяваць злучэнне"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
-msgstr "Уставіць падключэнне"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
+msgstr "Уставіць злучэнне"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
 msgid "Connect to selected"
@@ -9876,6 +9865,7 @@ msgstr "Новая група"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Хуткае злучэнне"
@@ -9985,7 +9975,7 @@ msgstr "Перайсці да наступнай панэлі"
 msgid "Reconnect Session"
 msgstr "Перазлучыць сеанс"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "Поўнаэкранны рэжым"
 
@@ -10001,11 +9991,11 @@ msgstr "Пераключыць сціслы інтэрфейс"
 msgid "Toggle Keyboard Passthrough"
 msgstr "Пераключыць прамую перадачу клавіятуры"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "Пераключыць рассыланне ў падзеленым выглядзе"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "Пераключыць групавую трансляцыю"
 
@@ -10168,7 +10158,7 @@ msgstr "Па змаўчанні:"
 msgid "Default value"
 msgstr "Значэнне па змаўчанні"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "Рэдагаваць фрагмент"
 
@@ -10698,20 +10688,12 @@ msgstr "Перанакіраванні партоў не наладжаны"
 msgid "Stopped unexpectedly"
 msgstr "Спынена нечакана"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "Спыніць тунель"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "Спыніць тунель"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "Запусціць тунель"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "Запусціць тунель"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11359,10 +11341,6 @@ msgstr "Сеанс {} - {} (убудаваны)"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "Сеанс {} - {} (знешняе акно)"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "Пераключыць поўнаэкранны рэжым"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12729,7 +12707,7 @@ msgid "Duplicate via Wizard…"
 msgstr "Дубляваць праз майстар…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "Адкрыць новы сеанс"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12767,7 +12745,7 @@ msgid "Start Recording"
 msgstr "Пачаць запіс"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "Спыніць адсочванне"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12811,12 +12789,8 @@ msgstr "Рэдагуй выбраныя злучэнні разам"
 msgid "Select all connections"
 msgstr "Абраць усе злучэнні"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
-msgstr "Ачысціць выбар"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
 msgstr "Ачысціць выбар"
 
 #: rustconn/src/sidebar_ui.rs:1300
@@ -12835,8 +12809,8 @@ msgstr "Выбраць злучэнні"
 msgid "Toggle multi-select mode for connections"
 msgstr "Пераключыць рэжым множнага вылучэння злучэнняў"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
 msgstr "Сартаваць па алфавіце"
 
 #: rustconn/src/sidebar_ui.rs:1360
@@ -12890,10 +12864,6 @@ msgstr "Кіраванне фрагментамі"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "Інструменты"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "Сартаваць па алфавіце"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -13030,18 +13000,6 @@ msgstr "Перацягванне файлаў у сесіі"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "Новае злучэнне"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "Хуткае злучэнне"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "Палітра каманд"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "Лакальная абалонка"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -14011,12 +13969,12 @@ msgid "Failed to delete permanently: {}"
 msgstr "Не ўдалося выдаліць назаўсёды: {}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
-msgstr "Wake On LAN не наладжаны. Адрэдагуйце злучэнне, каб задаць MAC-адрас."
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
+msgstr "Wake-on-LAN не наладжаны. Адрэдагуйце злучэнне, каб задаць MAC-адрас."
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "Wake On LAN адпраўлены на {} — чакаем, пакуль хост стане даступным…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "Wake-on-LAN адпраўлены на {} — чакаем, пакуль хост стане даступным…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -14027,8 +13985,8 @@ msgid "{} did not come online after WoL"
 msgstr "{} не з'явіўся ў сетцы пасля WoL"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
-msgstr "Не ўдалося адправіць пакет Wake On LAN. Праверце сеткавыя дазволы."
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
+msgstr "Не ўдалося адправіць пакет Wake-on-LAN. Праверце сеткавыя дазволы."
 
 #: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
@@ -15707,13 +15665,9 @@ msgstr "Пошук фрагментаў…"
 msgid "Execute"
 msgstr "Выканаць"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
 msgstr "Выканаць фрагмент"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "Рэдагаваць фрагмент"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15734,10 +15688,6 @@ msgstr "Не ўдалося выдаліць фрагмент"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "Не ўдалося выдаліць фрагмент: {}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "Выканаць фрагмент"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15862,10 +15812,6 @@ msgstr "Адкрыць лакальную абалонку"
 msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Дубляваць націсканні клавіш ва ўсе панэлі падзелу (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "Пераключыць трансляцыю падзелу"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "Групавая трансляцыя"
@@ -15873,10 +15819,6 @@ msgstr "Групавая трансляцыя"
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "Дубляваць націсканні клавіш на ўсе ўкладкі групы трансляцыі"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "Пераключыць групавую трансляцыю"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -15915,8 +15857,8 @@ msgid "Password Generator…"
 msgstr "Генератар пароляў…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
-msgstr "Wake On LAN…"
+msgid "Wake-on-LAN…"
+msgstr "Wake-on-LAN…"
 
 #: rustconn/src/window/ui.rs:294
 msgid "Network Scan…"
@@ -15957,14 +15899,6 @@ msgstr "Імпартаваць злучэнні…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "Экспартаваць злучэнні…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "Капіяваць злучэнне"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "Уставіць злучэнне"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -16013,6 +15947,60 @@ msgstr "Менеджар злучэнняў"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "Рэдагаваць кластар"
+
+#~ msgid "Test connection"
+#~ msgstr "Тэставаць злучэнне"
+
+#~ msgid "Rename recording"
+#~ msgstr "Перайменаваць запіс"
+
+#~ msgid "Export recording"
+#~ msgstr "Экспартаваць запіс"
+
+#~ msgid "Copy connection"
+#~ msgstr "Капіраваць падключэнне"
+
+#~ msgid "Paste connection"
+#~ msgstr "Уставіць падключэнне"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "Спыніць тунель"
+
+#~ msgid "Start tunnel"
+#~ msgstr "Запусціць тунель"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "Пераключыць поўнаэкранны рэжым"
+
+#~ msgid "Clear selection"
+#~ msgstr "Ачысціць выбар"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "Сартаваць па алфавіце"
+
+#~ msgid "Quick connect"
+#~ msgstr "Хуткае злучэнне"
+
+#~ msgid "Command palette"
+#~ msgstr "Палітра каманд"
+
+#~ msgid "Local shell"
+#~ msgstr "Лакальная абалонка"
+
+#~ msgid "Execute snippet"
+#~ msgstr "Выканаць фрагмент"
+
+#~ msgid "Edit snippet"
+#~ msgstr "Рэдагаваць фрагмент"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "Пераключыць трансляцыю падзелу"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "Пераключыць групавую трансляцыю"
 
 #~ msgid "Close Connection"
 #~ msgstr "Закрыць злучэнне"

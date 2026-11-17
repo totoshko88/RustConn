@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -416,7 +416,8 @@ msgstr "Markera alla"
 msgid "Deselect All"
 msgstr "Avmarkera alla"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "Redigera kluster"
 
@@ -451,10 +452,6 @@ msgstr "Anslut till kluster i ett nytt fönster"
 msgid "Disconnect all cluster sessions"
 msgstr "Koppla från alla klustersessioner"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "Redigera kluster"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Ta bort kluster"
@@ -465,7 +462,7 @@ msgstr "Inga kluster definierade. Klicka på 'Nytt kluster' för att skapa ett."
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "Kommandopalett"
 
@@ -770,8 +767,8 @@ msgstr "Lägg till regel"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
-msgstr "Wake On LAN"
+msgid "Wake-on-LAN"
+msgstr "Wake-on-LAN"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
 #: rustconn/src/dialogs/connection/advanced_tab.rs:662
@@ -1559,11 +1556,8 @@ msgid "New Connection (Advanced)"
 msgstr "Ny anslutning (avancerat)"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
-msgid "Test Connection"
-msgstr "Testa anslutning"
-
 #: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
+msgid "Test Connection"
 msgstr "Testa anslutning"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
@@ -7126,7 +7120,8 @@ msgid "Play recording"
 msgstr "Spela upp inspelning"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
 msgstr "Byt namn på inspelning"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
@@ -7134,12 +7129,9 @@ msgid "Delete recording"
 msgstr "Ta bort inspelning"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
 msgstr "Exportera inspelning"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "Byt namn på inspelning"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7190,10 +7182,6 @@ msgstr "Det gick inte att ta bort inspelningen"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "Det gick inte att ta bort inspelningen: {}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "Exportera inspelning"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9297,7 +9285,8 @@ msgstr "Skicka Escape-prefix istället för sammansatta tecken (för vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Lokalt skal"
@@ -9789,12 +9778,12 @@ msgstr "Byt namn på valt objekt"
 msgid "Duplicate connection (sidebar)"
 msgstr "Duplicera anslutning (sidofält)"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
 msgstr "Kopiera anslutning"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
 msgstr "Klistra in anslutning"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
@@ -9862,6 +9851,7 @@ msgstr "Ny grupp"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Snabbanslutning"
@@ -9971,7 +9961,7 @@ msgstr "Fokusera nästa panel"
 msgid "Reconnect Session"
 msgstr "Återanslut session"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "Växla helskärm"
 
@@ -9987,11 +9977,11 @@ msgstr "Växla kompakt gränssnitt"
 msgid "Toggle Keyboard Passthrough"
 msgstr "Växla tangentbordsgenomsläpp"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "Växla sändning i delad vy"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "Växla gruppsändning"
 
@@ -10154,7 +10144,7 @@ msgstr "Standard:"
 msgid "Default value"
 msgstr "Standardvärde"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "Redigera utdrag"
 
@@ -10684,20 +10674,12 @@ msgstr "Inga portvidarebefordringar konfigurerade"
 msgid "Stopped unexpectedly"
 msgstr "Stoppades oväntat"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "Stoppa tunnel"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "Stoppa tunnel"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "Starta tunnel"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "Starta tunnel"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11348,10 +11330,6 @@ msgstr "{}-session - {} (inbäddad)"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "{}-session - {} (externt fönster)"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "Växla helskärm"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12716,7 +12694,7 @@ msgid "Duplicate via Wizard…"
 msgstr "Duplicera via guide…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "Öppna ny session"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12754,7 +12732,7 @@ msgid "Start Recording"
 msgstr "Starta inspelning"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "Sluta spåra"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12798,13 +12776,9 @@ msgstr "Redigera valda anslutningar tillsammans"
 msgid "Select all connections"
 msgstr "Välj alla anslutningar"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
 msgstr "Rensa markering"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
-msgstr "Rensa val"
 
 #: rustconn/src/sidebar_ui.rs:1300
 msgid "Delete selected connections"
@@ -12822,8 +12796,8 @@ msgstr "Välj anslutningar"
 msgid "Toggle multi-select mode for connections"
 msgstr "Växla läge för flerval av anslutningar"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
 msgstr "Sortera alfabetiskt"
 
 #: rustconn/src/sidebar_ui.rs:1360
@@ -12877,10 +12851,6 @@ msgstr "Hantera utdrag"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "Verktyg"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "Sortera alfabetiskt"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -13016,18 +12986,6 @@ msgstr "Dra och släpp filer till sessioner"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "Ny anslutning"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "Snabbanslutning"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "Kommandopalett"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "Lokalt skal"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -13996,14 +13954,14 @@ msgid "Failed to delete permanently: {}"
 msgstr "Det gick inte att ta bort permanent: {}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
 msgstr ""
-"Inget Wake On LAN konfigurerat. Redigera anslutningen för att ange en MAC-"
+"Inget Wake-on-LAN konfigurerat. Redigera anslutningen för att ange en MAC-"
 "adress."
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "Wake On LAN skickat till {} — väntar på att värden ska komma online…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "Wake-on-LAN skickat till {} — väntar på att värden ska komma online…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -14014,8 +13972,8 @@ msgid "{} did not come online after WoL"
 msgstr "{} kom inte online efter WoL"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
-msgstr "Kunde inte skicka Wake On LAN-paket. Kontrollera nätverksbehörigheter."
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
+msgstr "Kunde inte skicka Wake-on-LAN-paket. Kontrollera nätverksbehörigheter."
 
 #: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
@@ -15689,13 +15647,9 @@ msgstr "Sök utdrag…"
 msgid "Execute"
 msgstr "Kör"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
-msgstr "Kör kodsnutt"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "Redigera kodsnutt"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
+msgstr "Kör utdrag"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15716,10 +15670,6 @@ msgstr "Det gick inte att ta bort kodsnutten"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "Det gick inte att ta bort kodsnutten: {}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "Kör utdrag"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15845,10 +15795,6 @@ msgstr "Öppna lokalt skal"
 msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Spegla tangenttryckningar till alla delade paneler (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "Växla delad sändning"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "Gruppsändning"
@@ -15856,10 +15802,6 @@ msgstr "Gruppsändning"
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "Spegla tangenttryckningar till alla flikar i sändningsgruppen"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "Växla gruppsändning"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -15898,8 +15840,8 @@ msgid "Password Generator…"
 msgstr "Lösenordsgenerator…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
-msgstr "Wake On LAN…"
+msgid "Wake-on-LAN…"
+msgstr "Wake-on-LAN…"
 
 #: rustconn/src/window/ui.rs:294
 msgid "Network Scan…"
@@ -15940,14 +15882,6 @@ msgstr "Importera anslutningar…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "Exportera anslutningar…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "Kopiera anslutning"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "Klistra in anslutning"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -15996,6 +15930,60 @@ msgstr "Anslutningshanterare"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;anslutning;terminal;fjärr;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "Redigera kluster"
+
+#~ msgid "Test connection"
+#~ msgstr "Testa anslutning"
+
+#~ msgid "Rename recording"
+#~ msgstr "Byt namn på inspelning"
+
+#~ msgid "Export recording"
+#~ msgstr "Exportera inspelning"
+
+#~ msgid "Copy connection"
+#~ msgstr "Kopiera anslutning"
+
+#~ msgid "Paste connection"
+#~ msgstr "Klistra in anslutning"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "Stoppa tunnel"
+
+#~ msgid "Start tunnel"
+#~ msgstr "Starta tunnel"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "Växla helskärm"
+
+#~ msgid "Clear selection"
+#~ msgstr "Rensa val"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "Sortera alfabetiskt"
+
+#~ msgid "Quick connect"
+#~ msgstr "Snabbanslutning"
+
+#~ msgid "Command palette"
+#~ msgstr "Kommandopalett"
+
+#~ msgid "Local shell"
+#~ msgstr "Lokalt skal"
+
+#~ msgid "Execute snippet"
+#~ msgstr "Kör kodsnutt"
+
+#~ msgid "Edit snippet"
+#~ msgstr "Redigera kodsnutt"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "Växla delad sändning"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "Växla gruppsändning"
 
 #~ msgid "Close Connection"
 #~ msgstr "Stäng anslutning"

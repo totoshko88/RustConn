@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-06-14 09:46+0000\n"
 "Last-Translator: Albano Battistella\n"
 "Language-Team: Italian\n"
@@ -417,7 +417,8 @@ msgstr "Seleziona tutto"
 msgid "Deselect All"
 msgstr "Deseleziona tutto"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "Modifica cluster"
 
@@ -452,10 +453,6 @@ msgstr "Connetti al cluster in una nuova finestra"
 msgid "Disconnect all cluster sessions"
 msgstr "Disconnetti tutte le sessioni del cluster"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "Modifica cluster"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Elimina cluster"
@@ -466,7 +463,7 @@ msgstr "Nessun cluster definito. Fai clic su 'Nuovo cluster' per crearne uno."
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "Tavolozza comandi"
 
@@ -772,8 +769,8 @@ msgstr "Aggiungi regola"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
-msgstr "Wake On LAN"
+msgid "Wake-on-LAN"
+msgstr "Wake-on-LAN"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
 #: rustconn/src/dialogs/connection/advanced_tab.rs:662
@@ -1572,11 +1569,8 @@ msgid "New Connection (Advanced)"
 msgstr "Nuova connessione (avanzate)"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
-msgid "Test Connection"
-msgstr "Testa connessione"
-
 #: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
+msgid "Test Connection"
 msgstr "Testa connessione"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
@@ -7187,7 +7181,8 @@ msgid "Play recording"
 msgstr "Riproduci registrazione"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
 msgstr "Rinomina registrazione"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
@@ -7195,12 +7190,9 @@ msgid "Delete recording"
 msgstr "Elimina registrazione"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
 msgstr "Esporta registrazione"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "Rinomina registrazione"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7251,10 +7243,6 @@ msgstr "Impossibile eliminare la registrazione"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "Impossibile eliminare la registrazione: {}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "Esporta registrazione"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9363,7 +9351,8 @@ msgstr "Invia prefisso Escape invece dei caratteri composti (per vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Shell locale"
@@ -9865,12 +9854,12 @@ msgstr "Rinomina elemento selezionato"
 msgid "Duplicate connection (sidebar)"
 msgstr "Duplica connessione (barra laterale)"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
 msgstr "Copia connessione"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
 msgstr "Incolla connessione"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
@@ -9938,6 +9927,7 @@ msgstr "Nuovo gruppo"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Connessione rapida"
@@ -10047,7 +10037,7 @@ msgstr "Attiva il pannello successivo"
 msgid "Reconnect Session"
 msgstr "Riconnetti sessione"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "Attiva/disattiva schermo intero"
 
@@ -10063,11 +10053,11 @@ msgstr "Interfaccia compatta"
 msgid "Toggle Keyboard Passthrough"
 msgstr "Passaggio diretto della tastiera"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "Trasmissione nella vista divisa"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "Attiva/disattiva trasmissione di gruppo"
 
@@ -10234,7 +10224,7 @@ msgstr "Predefinito:"
 msgid "Default value"
 msgstr "Valore predefinito"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "Modifica frammento"
 
@@ -10765,20 +10755,12 @@ msgstr "Nessun inoltro porte configurato"
 msgid "Stopped unexpectedly"
 msgstr "Fermato in modo inatteso"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "Ferma tunnel"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "Ferma tunnel"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "Avvia tunnel"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "Avvia tunnel"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11434,10 +11416,6 @@ msgstr "Sessione {} - {} (integrata)"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "Sessione {} - {} (finestra esterna)"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "Attiva/disattiva schermo intero"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12804,7 +12782,7 @@ msgid "Duplicate via Wizard…"
 msgstr "Duplica tramite procedura guidata…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "Apri nuova sessione"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12842,7 +12820,7 @@ msgid "Start Recording"
 msgstr "Avvia registrazione"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "Interrompi il monitoraggio"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12886,12 +12864,8 @@ msgstr "Modifica le connessioni selezionate insieme"
 msgid "Select all connections"
 msgstr "Seleziona tutte le connessioni"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
-msgstr "Cancella selezione"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
 msgstr "Cancella selezione"
 
 #: rustconn/src/sidebar_ui.rs:1300
@@ -12910,8 +12884,8 @@ msgstr "Seleziona connessioni"
 msgid "Toggle multi-select mode for connections"
 msgstr "Attiva/disattiva la modalità di selezione multipla delle connessioni"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
 msgstr "Ordina alfabeticamente"
 
 #: rustconn/src/sidebar_ui.rs:1360
@@ -12965,10 +12939,6 @@ msgstr "Gestisci frammenti"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "Strumenti"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "Ordina alfabeticamente"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -13106,18 +13076,6 @@ msgstr "Trascina e rilascia file nelle sessioni"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "Nuova connessione"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "Connessione rapida"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "Tavolozza comandi"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "Shell locale"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -14087,14 +14045,14 @@ msgid "Failed to delete permanently: {}"
 msgstr "Impossibile eliminare definitivamente: {}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
 msgstr ""
-"Wake On LAN non configurato. Modifica la connessione per impostare un "
+"Wake-on-LAN non configurato. Modifica la connessione per impostare un "
 "indirizzo MAC."
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "Wake On LAN inviato a {} — in attesa che l'host sia online…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "Wake-on-LAN inviato a {} — in attesa che l'host sia online…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -14105,9 +14063,9 @@ msgid "{} did not come online after WoL"
 msgstr "{} non è andato online dopo WoL"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
 msgstr ""
-"Impossibile inviare il pacchetto Wake On LAN. Controlla i permessi di rete."
+"Impossibile inviare il pacchetto Wake-on-LAN. Controlla i permessi di rete."
 
 #: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
@@ -15794,13 +15752,9 @@ msgstr "Cerca frammenti…"
 msgid "Execute"
 msgstr "Esegui"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
 msgstr "Esegui frammento"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "Modifica frammento"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15821,10 +15775,6 @@ msgstr "Impossibile eliminare lo snippet"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "L’eliminazione dello snippet non è riuscita: {}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "Esegui frammento"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15953,10 +15903,6 @@ msgstr "Apri shell locale"
 msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Duplica le digitazioni in tutti i pannelli divisi (Ctrl+Maiusc+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "Attiva/disattiva il broadcast a vista divisa"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "Trasmissione di gruppo"
@@ -15965,10 +15911,6 @@ msgstr "Trasmissione di gruppo"
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr ""
 "Rispecchia i tasti premuti su tutte le schede del gruppo di trasmissione"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "Attiva/disattiva trasmissione di gruppo"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -16007,8 +15949,8 @@ msgid "Password Generator…"
 msgstr "Generatore di password…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
-msgstr "Wake On LAN…"
+msgid "Wake-on-LAN…"
+msgstr "Wake-on-LAN…"
 
 #: rustconn/src/window/ui.rs:294
 msgid "Network Scan…"
@@ -16049,14 +15991,6 @@ msgstr "Importa connessioni…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "Esporta connessioni…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "Copia connessione"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "Incolla connessione"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -16105,6 +16039,60 @@ msgstr "Gestore connessioni"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connessione;terminal;remote;kubernetes;k8s;seriale;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "Modifica cluster"
+
+#~ msgid "Test connection"
+#~ msgstr "Testa connessione"
+
+#~ msgid "Rename recording"
+#~ msgstr "Rinomina registrazione"
+
+#~ msgid "Export recording"
+#~ msgstr "Esporta registrazione"
+
+#~ msgid "Copy connection"
+#~ msgstr "Copia connessione"
+
+#~ msgid "Paste connection"
+#~ msgstr "Incolla connessione"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "Ferma tunnel"
+
+#~ msgid "Start tunnel"
+#~ msgstr "Avvia tunnel"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "Attiva/disattiva schermo intero"
+
+#~ msgid "Clear selection"
+#~ msgstr "Cancella selezione"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "Ordina alfabeticamente"
+
+#~ msgid "Quick connect"
+#~ msgstr "Connessione rapida"
+
+#~ msgid "Command palette"
+#~ msgstr "Tavolozza comandi"
+
+#~ msgid "Local shell"
+#~ msgstr "Shell locale"
+
+#~ msgid "Execute snippet"
+#~ msgstr "Esegui frammento"
+
+#~ msgid "Edit snippet"
+#~ msgstr "Modifica frammento"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "Attiva/disattiva il broadcast a vista divisa"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "Attiva/disattiva trasmissione di gruppo"
 
 #~ msgid "Close Connection"
 #~ msgstr "Chiudi connessione"

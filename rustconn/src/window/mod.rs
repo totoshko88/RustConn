@@ -2914,7 +2914,7 @@ impl MainWindow {
     /// Connects to a connection at a specific position with split view support.
     ///
     /// Smart double-click (R7): unless `force_new` is set (a Shift/Ctrl modifier
-    /// was held or the "Open new session" menu item was used), an existing live
+    /// was held or the "Open New Session" menu item was used), an existing live
     /// session for the connection is focused instead of spawning a duplicate.
     /// An embedded session is focused in place (R7.1/7.2/7.4); an external-only
     /// session shows an informational toast (a foreign OS window cannot be

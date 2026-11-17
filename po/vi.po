@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -411,7 +411,8 @@ msgstr "Chọn tất cả"
 msgid "Deselect All"
 msgstr "Bỏ chọn tất cả"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "Sửa cụm"
 
@@ -445,10 +446,6 @@ msgstr "Kết nối tới cụm trong cửa sổ mới"
 msgid "Disconnect all cluster sessions"
 msgstr "Ngắt kết nối mọi phiên của cụm"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "Sửa cụm"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Xóa cụm"
@@ -459,7 +456,7 @@ msgstr "Chưa có cụm nào. Nhấn “Cụm mới” để tạo."
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "Bảng lệnh"
 
@@ -763,8 +760,8 @@ msgstr "Thêm quy tắc"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
-msgstr "Wake On LAN"
+msgid "Wake-on-LAN"
+msgstr "Wake-on-LAN"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
 #: rustconn/src/dialogs/connection/advanced_tab.rs:662
@@ -1550,11 +1547,8 @@ msgid "New Connection (Advanced)"
 msgstr "Kết nối mới (nâng cao)"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
-msgid "Test Connection"
-msgstr "Kiểm tra kết nối"
-
 #: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
+msgid "Test Connection"
 msgstr "Kiểm tra kết nối"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
@@ -7097,7 +7091,8 @@ msgid "Play recording"
 msgstr "Phát bản ghi"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
 msgstr "Đổi tên bản ghi"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
@@ -7105,12 +7100,9 @@ msgid "Delete recording"
 msgstr "Xóa bản ghi"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
 msgstr "Xuất bản ghi"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "Đổi tên bản ghi"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7161,10 +7153,6 @@ msgstr "Không thể xóa bản ghi"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "Không thể xóa bản ghi: {}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "Xuất bản ghi"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9260,7 +9248,8 @@ msgstr "Gửi tiền tố Escape thay vì ký tự ghép (cho vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Shell cục bộ"
@@ -9750,12 +9739,12 @@ msgstr "Đổi tên mục đã chọn"
 msgid "Duplicate connection (sidebar)"
 msgstr "Nhân bản kết nối (thanh bên)"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
 msgstr "Sao chép kết nối"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
 msgstr "Dán kết nối"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
@@ -9823,6 +9812,7 @@ msgstr "Nhóm mới"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Kết nối nhanh"
@@ -9932,7 +9922,7 @@ msgstr "Chuyển tới khung tiếp theo"
 msgid "Reconnect Session"
 msgstr "Kết nối lại phiên"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "Bật/tắt toàn màn hình"
 
@@ -9948,11 +9938,11 @@ msgstr "Bật/tắt giao diện thu gọn"
 msgid "Toggle Keyboard Passthrough"
 msgstr "Bật/tắt chuyển thẳng bàn phím"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "Bật/tắt phát đồng loạt trong chế độ chia"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "Bật/tắt phát đồng loạt theo nhóm"
 
@@ -10115,7 +10105,7 @@ msgstr "Mặc định:"
 msgid "Default value"
 msgstr "Giá trị mặc định"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "Sửa đoạn lệnh"
 
@@ -10643,20 +10633,12 @@ msgstr "Chưa cấu hình chuyển tiếp cổng nào"
 msgid "Stopped unexpectedly"
 msgstr "Đã dừng bất ngờ"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "Dừng đường hầm"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "Dừng đường hầm"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "Khởi chạy đường hầm"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "Khởi chạy đường hầm"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11301,10 +11283,6 @@ msgstr "Phiên {} - {} (nhúng)"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "Phiên {} - {} (cửa sổ ngoài)"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "Bật/tắt toàn màn hình"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12656,7 +12634,7 @@ msgid "Duplicate via Wizard…"
 msgstr "Nhân bản qua trình hướng dẫn…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "Mở phiên mới"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12694,7 +12672,7 @@ msgid "Start Recording"
 msgstr "Bắt đầu ghi"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "Ngừng theo dõi"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12738,12 +12716,8 @@ msgstr "Sửa các kết nối đã chọn cùng lúc"
 msgid "Select all connections"
 msgstr "Chọn tất cả kết nối"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
-msgstr "Bỏ chọn"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
 msgstr "Bỏ chọn"
 
 #: rustconn/src/sidebar_ui.rs:1300
@@ -12762,8 +12736,8 @@ msgstr "Chọn kết nối"
 msgid "Toggle multi-select mode for connections"
 msgstr "Bật/tắt chế độ chọn nhiều kết nối"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
 msgstr "Sắp xếp theo bảng chữ cái"
 
 #: rustconn/src/sidebar_ui.rs:1360
@@ -12817,10 +12791,6 @@ msgstr "Quản lý đoạn lệnh"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "Công cụ"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "Sắp xếp theo bảng chữ cái"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -12955,18 +12925,6 @@ msgstr "Kéo thả tệp vào phiên"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "Kết nối mới"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "Kết nối nhanh"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "Bảng lệnh"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "Shell cục bộ"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -13925,12 +13883,12 @@ msgid "Failed to delete permanently: {}"
 msgstr "Không thể xóa vĩnh viễn: {}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
-msgstr "Chưa cấu hình Wake On LAN. Hãy sửa kết nối để đặt địa chỉ MAC."
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
+msgstr "Chưa cấu hình Wake-on-LAN. Hãy sửa kết nối để đặt địa chỉ MAC."
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "Đã gửi Wake On LAN tới {} — đang chờ máy chủ trực tuyến…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "Đã gửi Wake-on-LAN tới {} — đang chờ máy chủ trực tuyến…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -13941,8 +13899,8 @@ msgid "{} did not come online after WoL"
 msgstr "{} không trực tuyến sau khi gửi WoL"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
-msgstr "Gửi gói Wake On LAN thất bại. Hãy kiểm tra quyền mạng."
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
+msgstr "Gửi gói Wake-on-LAN thất bại. Hãy kiểm tra quyền mạng."
 
 #: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
@@ -15606,13 +15564,9 @@ msgstr "Tìm đoạn lệnh…"
 msgid "Execute"
 msgstr "Thực thi"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
 msgstr "Thực thi đoạn lệnh"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "Sửa đoạn lệnh"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15633,10 +15587,6 @@ msgstr "Không thể xóa đoạn lệnh"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "Xóa đoạn lệnh thất bại: {}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "Thực thi đoạn lệnh"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15759,10 +15709,6 @@ msgstr "Mở shell cục bộ"
 msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Sao chép thao tác gõ phím tới mọi khung chia (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "Bật/tắt phát đồng loạt trong chế độ chia"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "Phát đồng loạt theo nhóm"
@@ -15770,10 +15716,6 @@ msgstr "Phát đồng loạt theo nhóm"
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "Sao chép thao tác gõ phím tới mọi thẻ trong nhóm phát đồng loạt"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "Bật/tắt phát đồng loạt theo nhóm"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -15812,8 +15754,8 @@ msgid "Password Generator…"
 msgstr "Trình tạo mật khẩu…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
-msgstr "Wake On LAN…"
+msgid "Wake-on-LAN…"
+msgstr "Wake-on-LAN…"
 
 #: rustconn/src/window/ui.rs:294
 msgid "Network Scan…"
@@ -15854,14 +15796,6 @@ msgstr "Nhập kết nối…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "Xuất kết nối…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "Sao chép kết nối"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "Dán kết nối"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -15912,6 +15846,60 @@ msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubern
 msgstr ""
 "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;kết "
 "nối;terminal;remote;từ xa;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "Sửa cụm"
+
+#~ msgid "Test connection"
+#~ msgstr "Kiểm tra kết nối"
+
+#~ msgid "Rename recording"
+#~ msgstr "Đổi tên bản ghi"
+
+#~ msgid "Export recording"
+#~ msgstr "Xuất bản ghi"
+
+#~ msgid "Copy connection"
+#~ msgstr "Sao chép kết nối"
+
+#~ msgid "Paste connection"
+#~ msgstr "Dán kết nối"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "Dừng đường hầm"
+
+#~ msgid "Start tunnel"
+#~ msgstr "Khởi chạy đường hầm"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "Bật/tắt toàn màn hình"
+
+#~ msgid "Clear selection"
+#~ msgstr "Bỏ chọn"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "Sắp xếp theo bảng chữ cái"
+
+#~ msgid "Quick connect"
+#~ msgstr "Kết nối nhanh"
+
+#~ msgid "Command palette"
+#~ msgstr "Bảng lệnh"
+
+#~ msgid "Local shell"
+#~ msgstr "Shell cục bộ"
+
+#~ msgid "Execute snippet"
+#~ msgstr "Thực thi đoạn lệnh"
+
+#~ msgid "Edit snippet"
+#~ msgstr "Sửa đoạn lệnh"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "Bật/tắt phát đồng loạt trong chế độ chia"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "Bật/tắt phát đồng loạt theo nhóm"
 
 #~ msgid "Close Connection"
 #~ msgstr "Đóng kết nối"

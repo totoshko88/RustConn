@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -415,7 +415,8 @@ msgstr "Vybrať všetko"
 msgid "Deselect All"
 msgstr "Zrušiť výber"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "Upraviť klaster"
 
@@ -451,10 +452,6 @@ msgstr "Pripojiť ku klastru v novom okne"
 msgid "Disconnect all cluster sessions"
 msgstr "Odpojiť všetky relácie klastra"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "Upraviť klaster"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Odstrániť klaster"
@@ -469,7 +466,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "Paleta príkazov"
 
@@ -773,8 +770,8 @@ msgstr "Pridať pravidlo"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
-msgstr "Wake On LAN"
+msgid "Wake-on-LAN"
+msgstr "Wake-on-LAN"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
 #: rustconn/src/dialogs/connection/advanced_tab.rs:662
@@ -1562,12 +1559,9 @@ msgid "New Connection (Advanced)"
 msgstr "Nové pripojenie (pokročilé)"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
+#: rustconn/src/dialogs/connection/dialog/construction.rs:211
 msgid "Test Connection"
 msgstr "Otestovať pripojenie"
-
-#: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
-msgstr "Testovať pripojenie"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
 #: rustconn/src/dialogs/connection/general_tab.rs:145
@@ -7145,7 +7139,8 @@ msgid "Play recording"
 msgstr "Prehrať nahrávku"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
 msgstr "Premenovať nahrávku"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
@@ -7153,12 +7148,9 @@ msgid "Delete recording"
 msgstr "Odstrániť nahrávku"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
 msgstr "Exportovať nahrávku"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "Premenovať nahrávku"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7209,10 +7201,6 @@ msgstr "Nahrávku sa nepodarilo odstrániť"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "Nahrávku sa nepodarilo odstrániť: {}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "Exportovať nahrávku"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9311,7 +9299,8 @@ msgstr "Odosielať prefix Escape namiesto zložených znakov (pre vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Miestny shell"
@@ -9802,12 +9791,12 @@ msgstr "Premenovať vybranú položku"
 msgid "Duplicate connection (sidebar)"
 msgstr "Duplikovať pripojenie (bočný panel)"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
 msgstr "Kopírovať pripojenie"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
 msgstr "Vložiť pripojenie"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
@@ -9875,6 +9864,7 @@ msgstr "Nová skupina"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Rýchle pripojenie"
@@ -9984,7 +9974,7 @@ msgstr "Prejsť na nasledujúci panel"
 msgid "Reconnect Session"
 msgstr "Znovu pripojiť reláciu"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "Prepnúť celú obrazovku"
 
@@ -10000,11 +9990,11 @@ msgstr "Prepnúť kompaktné rozhranie"
 msgid "Toggle Keyboard Passthrough"
 msgstr "Prepnúť priame odovzdávanie klávesnice"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "Prepnúť vysielanie v rozdelenom zobrazení"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "Prepnúť skupinové vysielanie"
 
@@ -10168,7 +10158,7 @@ msgstr "Predvolené:"
 msgid "Default value"
 msgstr "Predvolená hodnota"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "Upraviť úryvok"
 
@@ -10698,20 +10688,12 @@ msgstr "Žiadne presmerovanie portov"
 msgid "Stopped unexpectedly"
 msgstr "Neočakávane zastavené"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "Zastaviť tunel"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "Zastaviť tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "Spustiť tunel"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "Spustiť tunel"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11358,10 +11340,6 @@ msgstr "Relácia {} - {} (vložená)"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "Relácia {} - {} (externé okno)"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "Prepnúť celú obrazovku"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12728,7 +12706,7 @@ msgid "Duplicate via Wizard…"
 msgstr "Duplikovať cez sprievodcu…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "Otvoriť novú reláciu"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12766,7 +12744,7 @@ msgid "Start Recording"
 msgstr "Spustiť nahrávanie"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "Zastaviť sledovanie"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12810,12 +12788,8 @@ msgstr "Upraviť vybrané pripojenia spoločne"
 msgid "Select all connections"
 msgstr "Vybrať všetky pripojenia"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
-msgstr "Zrušiť výber"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
 msgstr "Zrušiť výber"
 
 #: rustconn/src/sidebar_ui.rs:1300
@@ -12834,8 +12808,8 @@ msgstr "Vybrať pripojenia"
 msgid "Toggle multi-select mode for connections"
 msgstr "Prepnúť režim viacnásobného výberu pripojení"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
 msgstr "Zoradiť abecedne"
 
 #: rustconn/src/sidebar_ui.rs:1360
@@ -12889,10 +12863,6 @@ msgstr "Správa úryvkov"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "Nástroje"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "Zoradiť abecedne"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -13030,18 +13000,6 @@ msgstr "Pretiahnite súbory do relácií"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "Nové pripojenie"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "Rýchle pripojenie"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "Paleta príkazov"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "Miestny shell"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -14017,12 +13975,12 @@ msgid "Failed to delete permanently: {}"
 msgstr "Natrvalo odstrániť sa nepodarilo: {}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
-msgstr "Wake On LAN nie je nastavené. Upravte pripojenie a zadajte MAC adresu."
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
+msgstr "Wake-on-LAN nie je nastavené. Upravte pripojenie a zadajte MAC adresu."
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "Wake On LAN odoslaný na {} — čakanie na spustenie hosta…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "Wake-on-LAN odoslaný na {} — čakanie na spustenie hosta…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -14033,10 +13991,10 @@ msgid "{} did not come online after WoL"
 msgstr "{} sa nespustil po WoL"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
 msgstr ""
-"Nepodarilo sa odoslať paket Wake On LAN. Skontrolujte sieťové "
-"oprávnenia.Nepodarilo sa odoslať paket Wake On LAN. Skontrolujte sieťové "
+"Nepodarilo sa odoslať paket Wake-on-LAN. Skontrolujte sieťové "
+"oprávnenia.Nepodarilo sa odoslať paket Wake-on-LAN. Skontrolujte sieťové "
 "oprávnenia."
 
 #: rustconn/src/window/edit_actions.rs:757
@@ -15714,13 +15672,9 @@ msgstr "Hľadať úryvky…"
 msgid "Execute"
 msgstr "Spustiť"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
-msgstr "Spustiť fragment"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "Upraviť fragment"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
+msgstr "Spustiť úryvok"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15741,10 +15695,6 @@ msgstr "Úryvok sa nepodarilo odstrániť"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "Odstránenie úryvku zlyhalo: {}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "Spustiť úryvok"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15874,10 +15824,6 @@ msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr ""
 "Duplikovať stlačenia kláves do všetkých rozdelených panelov (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "Prepnúť vysielanie pri rozdelenom zobrazení"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "Skupinové vysielanie"
@@ -15885,10 +15831,6 @@ msgstr "Skupinové vysielanie"
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "Zrkadliť stlačenia klávesov do všetkých kariet skupiny vysielania"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "Prepnúť skupinové vysielanie"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -15927,8 +15869,8 @@ msgid "Password Generator…"
 msgstr "Generátor hesiel…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
-msgstr "Wake On LAN…"
+msgid "Wake-on-LAN…"
+msgstr "Wake-on-LAN…"
 
 #: rustconn/src/window/ui.rs:294
 msgid "Network Scan…"
@@ -15969,14 +15911,6 @@ msgstr "Importovať pripojenia…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "Exportovať pripojenia…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "Kopírovať pripojenie"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "Vložiť pripojenie"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -16025,6 +15959,60 @@ msgstr "Správca pripojení"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;pripojenie;terminál;vzdialený;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "Upraviť klaster"
+
+#~ msgid "Test connection"
+#~ msgstr "Testovať pripojenie"
+
+#~ msgid "Rename recording"
+#~ msgstr "Premenovať nahrávku"
+
+#~ msgid "Export recording"
+#~ msgstr "Exportovať nahrávku"
+
+#~ msgid "Copy connection"
+#~ msgstr "Kopírovať pripojenie"
+
+#~ msgid "Paste connection"
+#~ msgstr "Vložiť pripojenie"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "Zastaviť tunel"
+
+#~ msgid "Start tunnel"
+#~ msgstr "Spustiť tunel"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "Prepnúť celú obrazovku"
+
+#~ msgid "Clear selection"
+#~ msgstr "Zrušiť výber"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "Zoradiť abecedne"
+
+#~ msgid "Quick connect"
+#~ msgstr "Rýchle pripojenie"
+
+#~ msgid "Command palette"
+#~ msgstr "Paleta príkazov"
+
+#~ msgid "Local shell"
+#~ msgstr "Miestny shell"
+
+#~ msgid "Execute snippet"
+#~ msgstr "Spustiť fragment"
+
+#~ msgid "Edit snippet"
+#~ msgstr "Upraviť fragment"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "Prepnúť vysielanie pri rozdelenom zobrazení"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "Prepnúť skupinové vysielanie"
 
 #~ msgid "Close Connection"
 #~ msgstr "Zavrieť pripojenie"

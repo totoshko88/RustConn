@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -414,7 +414,8 @@ msgstr "Vælg alle"
 msgid "Deselect All"
 msgstr "Fravælg alle"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "Redigér klynge"
 
@@ -449,10 +450,6 @@ msgstr "Opret forbindelse til klynge i et nyt vindue"
 msgid "Disconnect all cluster sessions"
 msgstr "Afbryd alle klyngesessioner"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "Redigér klynge"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Slet klynge"
@@ -463,7 +460,7 @@ msgstr "Ingen klynger defineret. Klik på 'Ny klynge' for at oprette en."
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "Kommandopalette"
 
@@ -768,8 +765,8 @@ msgstr "Tilføj regel"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
-msgstr "Wake On LAN"
+msgid "Wake-on-LAN"
+msgstr "Wake-on-LAN"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
 #: rustconn/src/dialogs/connection/advanced_tab.rs:662
@@ -1556,11 +1553,8 @@ msgid "New Connection (Advanced)"
 msgstr "Ny forbindelse (avanceret)"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
-msgid "Test Connection"
-msgstr "Test forbindelse"
-
 #: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
+msgid "Test Connection"
 msgstr "Test forbindelse"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
@@ -7128,7 +7122,8 @@ msgid "Play recording"
 msgstr "Afspil optagelse"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
 msgstr "Omdøb optagelse"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
@@ -7136,12 +7131,9 @@ msgid "Delete recording"
 msgstr "Slet optagelse"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
 msgstr "Eksportér optagelse"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "Omdøb optagelse"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7192,10 +7184,6 @@ msgstr "Optagelsen kunne ikke slettes"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "Optagelsen kunne ikke slettes: {}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "Eksportér optagelse"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9292,7 +9280,8 @@ msgstr "Send Escape-præfiks i stedet for sammensatte tegn (til vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Lokal shell"
@@ -9784,12 +9773,12 @@ msgstr "Omdøb valgt element"
 msgid "Duplicate connection (sidebar)"
 msgstr "Duplikér forbindelse (sidebjælke)"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
 msgstr "Kopiér forbindelse"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
 msgstr "Indsæt forbindelse"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
@@ -9857,6 +9846,7 @@ msgstr "Ny gruppe"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Hurtig forbindelse"
@@ -9966,7 +9956,7 @@ msgstr "Fokusér næste panel"
 msgid "Reconnect Session"
 msgstr "Genopret sessionsforbindelse"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "Skift fuldskærm"
 
@@ -9982,11 +9972,11 @@ msgstr "Skift kompakt grænseflade"
 msgid "Toggle Keyboard Passthrough"
 msgstr "Skift tastaturgennemgang"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "Skift udsendelse i delt visning"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "Slå gruppeudsendelse til/fra"
 
@@ -10149,7 +10139,7 @@ msgstr "Standard:"
 msgid "Default value"
 msgstr "Standardværdi"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "Redigér uddrag"
 
@@ -10679,20 +10669,12 @@ msgstr "Ingen portvideresendelser konfigureret"
 msgid "Stopped unexpectedly"
 msgstr "Stoppede uventet"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "Stop tunnel"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "Stop tunnel"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "Start tunnel"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "Start tunnel"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11340,10 +11322,6 @@ msgstr "{}-session - {} (indlejret)"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "{}-session - {} (eksternt vindue)"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "Skift fuldskærm"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12707,7 +12685,7 @@ msgid "Duplicate via Wizard…"
 msgstr "Duplikér via guide…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "Åbn ny session"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12745,7 +12723,7 @@ msgid "Start Recording"
 msgstr "Start optagelse"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "Stop sporing"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12789,13 +12767,9 @@ msgstr "Rediger valgte forbindelser sammen"
 msgid "Select all connections"
 msgstr "Vælg alle forbindelser"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
 msgstr "Ryd markering"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
-msgstr "Ryd valg"
 
 #: rustconn/src/sidebar_ui.rs:1300
 msgid "Delete selected connections"
@@ -12813,8 +12787,8 @@ msgstr "Vælg forbindelser"
 msgid "Toggle multi-select mode for connections"
 msgstr "Skift tilstand for flervalg af forbindelser"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
 msgstr "Sortér alfabetisk"
 
 #: rustconn/src/sidebar_ui.rs:1360
@@ -12868,10 +12842,6 @@ msgstr "Administrér uddrag"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "Værktøjer"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "Sortér alfabetisk"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -13006,18 +12976,6 @@ msgstr "Træk og slip filer til sessioner"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "Ny forbindelse"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "Hurtig forbindelse"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "Kommandopalette"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "Lokal shell"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -13984,14 +13942,14 @@ msgid "Failed to delete permanently: {}"
 msgstr "Kunne ikke slette permanent: {}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
 msgstr ""
-"Wake On LAN er ikke konfigureret. Rediger forbindelsen for at angive en MAC-"
+"Wake-on-LAN er ikke konfigureret. Rediger forbindelsen for at angive en MAC-"
 "adresse."
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "Wake On LAN sendt til {} — venter på at værten kommer online…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "Wake-on-LAN sendt til {} — venter på at værten kommer online…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -14002,8 +13960,8 @@ msgid "{} did not come online after WoL"
 msgstr "{} kom ikke online efter WoL"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
-msgstr "Kunne ikke sende Wake On LAN-pakke. Kontroller netværkstilladelser."
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
+msgstr "Kunne ikke sende Wake-on-LAN-pakke. Kontroller netværkstilladelser."
 
 #: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
@@ -15673,13 +15631,9 @@ msgstr "Søg uddrag…"
 msgid "Execute"
 msgstr "Udfør"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
-msgstr "Kør uddrag"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "Redigér uddrag"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
+msgstr "Udfør uddrag"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15700,10 +15654,6 @@ msgstr "Udklippet kunne ikke slettes"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "Udklippet kunne ikke slettes: {}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "Udfør uddrag"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15829,10 +15779,6 @@ msgstr "Åbn lokal shell"
 msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Spejl tastetryk til alle opdelte paneler (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "Skift opdelt udsendelse"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "Gruppeudsendelse"
@@ -15840,10 +15786,6 @@ msgstr "Gruppeudsendelse"
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "Spejl tastetryk til alle faneblade i udsendelsesgruppen"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "Slå gruppeudsendelse til/fra"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -15882,8 +15824,8 @@ msgid "Password Generator…"
 msgstr "Adgangskodegenerator…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
-msgstr "Wake On LAN…"
+msgid "Wake-on-LAN…"
+msgstr "Wake-on-LAN…"
 
 #: rustconn/src/window/ui.rs:294
 msgid "Network Scan…"
@@ -15924,14 +15866,6 @@ msgstr "Importér forbindelser…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "Eksportér forbindelser…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "Kopiér forbindelse"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "Indsæt forbindelse"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -15980,6 +15914,60 @@ msgstr "Forbindelsesstyring"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "Redigér klynge"
+
+#~ msgid "Test connection"
+#~ msgstr "Test forbindelse"
+
+#~ msgid "Rename recording"
+#~ msgstr "Omdøb optagelse"
+
+#~ msgid "Export recording"
+#~ msgstr "Eksportér optagelse"
+
+#~ msgid "Copy connection"
+#~ msgstr "Kopiér forbindelse"
+
+#~ msgid "Paste connection"
+#~ msgstr "Indsæt forbindelse"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "Stop tunnel"
+
+#~ msgid "Start tunnel"
+#~ msgstr "Start tunnel"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "Skift fuldskærm"
+
+#~ msgid "Clear selection"
+#~ msgstr "Ryd valg"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "Sortér alfabetisk"
+
+#~ msgid "Quick connect"
+#~ msgstr "Hurtig forbindelse"
+
+#~ msgid "Command palette"
+#~ msgstr "Kommandopalette"
+
+#~ msgid "Local shell"
+#~ msgstr "Lokal shell"
+
+#~ msgid "Execute snippet"
+#~ msgstr "Kør uddrag"
+
+#~ msgid "Edit snippet"
+#~ msgstr "Redigér uddrag"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "Skift opdelt udsendelse"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "Slå gruppeudsendelse til/fra"
 
 #~ msgid "Close Connection"
 #~ msgstr "Luk forbindelse"

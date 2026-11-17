@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -403,7 +403,8 @@ msgstr "全选"
 msgid "Deselect All"
 msgstr "取消全选"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "编辑集群"
 
@@ -437,10 +438,6 @@ msgstr "在新窗口中连接到集群"
 msgid "Disconnect all cluster sessions"
 msgstr "断开所有集群会话"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "编辑集群"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "删除集群"
@@ -451,7 +448,7 @@ msgstr "未定义集群。点击'新建集群'创建一个。"
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "命令面板"
 
@@ -753,7 +750,7 @@ msgstr "添加规则"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
+msgid "Wake-on-LAN"
 msgstr "局域网唤醒"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
@@ -1515,11 +1512,8 @@ msgid "New Connection (Advanced)"
 msgstr "新建连接（高级）"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
-msgid "Test Connection"
-msgstr "测试连接"
-
 #: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
+msgid "Test Connection"
 msgstr "测试连接"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
@@ -6938,7 +6932,8 @@ msgid "Play recording"
 msgstr "播放录像"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
 msgstr "重命名录像"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
@@ -6946,12 +6941,9 @@ msgid "Delete recording"
 msgstr "删除录像"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
 msgstr "导出录像"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "重命名录像"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7002,10 +6994,6 @@ msgstr "无法删除录制内容"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "无法删除录制内容：{}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "导出录像"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9045,7 +9033,8 @@ msgstr "发送 Escape 前缀而非组合字符（适用于 vim/emacs）"
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "本地 Shell"
@@ -9516,12 +9505,12 @@ msgstr "重命名所选项目"
 msgid "Duplicate connection (sidebar)"
 msgstr "复制连接（侧边栏）"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
 msgstr "复制连接"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
 msgstr "粘贴连接"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
@@ -9589,6 +9578,7 @@ msgstr "新建组"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "快速连接"
@@ -9698,7 +9688,7 @@ msgstr "聚焦下一个窗格"
 msgid "Reconnect Session"
 msgstr "重新连接会话"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "切换全屏"
 
@@ -9714,11 +9704,11 @@ msgstr "切换紧凑界面"
 msgid "Toggle Keyboard Passthrough"
 msgstr "切换键盘直通"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "切换拆分视图广播"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "切换群组广播"
 
@@ -9881,7 +9871,7 @@ msgstr "默认值："
 msgid "Default value"
 msgstr "默认值"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "编辑代码片段"
 
@@ -10407,20 +10397,12 @@ msgstr "未配置端口转发"
 msgid "Stopped unexpectedly"
 msgstr "意外停止"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "停止隧道"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "停止隧道"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "启动隧道"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "启动隧道"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11050,10 +11032,6 @@ msgstr "{} 会话 - {}（嵌入）"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "{} 会话 - {}（外部窗口）"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "切换全屏"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12367,7 +12345,7 @@ msgid "Duplicate via Wizard…"
 msgstr "通过向导复制…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "打开新会话"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12405,7 +12383,7 @@ msgid "Start Recording"
 msgstr "开始录制"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "停止跟踪"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12449,12 +12427,8 @@ msgstr "一起编辑选中的连接"
 msgid "Select all connections"
 msgstr "选择所有连接"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
-msgstr "清除选择"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
 msgstr "清除选择"
 
 #: rustconn/src/sidebar_ui.rs:1300
@@ -12473,9 +12447,9 @@ msgstr "选择连接"
 msgid "Toggle multi-select mode for connections"
 msgstr "切换连接的多选模式"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
-msgstr "按字母顺序排序"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
+msgstr "按字母排序"
 
 #: rustconn/src/sidebar_ui.rs:1360
 msgid "Sort connections alphabetically"
@@ -12528,10 +12502,6 @@ msgstr "管理代码片段"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "工具"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "按字母排序"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -12666,18 +12636,6 @@ msgstr "拖放文件到会话"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "新建连接"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "快速连接"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "命令面板"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "本地 shell"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -13607,12 +13565,12 @@ msgid "Failed to delete permanently: {}"
 msgstr "无法永久删除：{}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
-msgstr "未配置网络唤醒 (Wake On LAN)。请编辑连接以设置 MAC 地址。"
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
+msgstr "未配置网络唤醒 (Wake-on-LAN)。请编辑连接以设置 MAC 地址。"
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "已发送 Wake On LAN 到 {} — 等待主机上线…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "已发送 Wake-on-LAN 到 {} — 等待主机上线…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -13623,8 +13581,8 @@ msgid "{} did not come online after WoL"
 msgstr "{} 在 WoL 后未上线"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
-msgstr "发送 Wake On LAN 数据包失败。请检查网络权限。"
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
+msgstr "发送 Wake-on-LAN 数据包失败。请检查网络权限。"
 
 #: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
@@ -15229,13 +15187,9 @@ msgstr "搜索代码片段…"
 msgid "Execute"
 msgstr "执行"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
-msgstr "执行片段"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "编辑片段"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
+msgstr "执行代码片段"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15256,10 +15210,6 @@ msgstr "无法删除代码片段"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "删除代码片段失败：{}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "执行代码片段"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15375,10 +15325,6 @@ msgstr "打开本地 Shell"
 msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "将按键镜像到所有分割面板 (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "切换分割视图广播"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "群组广播"
@@ -15386,10 +15332,6 @@ msgstr "群组广播"
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "将按键镜像到广播组中的所有标签页"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "切换群组广播"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -15428,7 +15370,7 @@ msgid "Password Generator…"
 msgstr "密码生成器…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
+msgid "Wake-on-LAN…"
 msgstr "网络唤醒…"
 
 #: rustconn/src/window/ui.rs:294
@@ -15470,14 +15412,6 @@ msgstr "导入连接…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "导出连接…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "复制连接"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "粘贴连接"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -15526,6 +15460,60 @@ msgstr "连接管理器"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "编辑集群"
+
+#~ msgid "Test connection"
+#~ msgstr "测试连接"
+
+#~ msgid "Rename recording"
+#~ msgstr "重命名录像"
+
+#~ msgid "Export recording"
+#~ msgstr "导出录像"
+
+#~ msgid "Copy connection"
+#~ msgstr "复制连接"
+
+#~ msgid "Paste connection"
+#~ msgstr "粘贴连接"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "停止隧道"
+
+#~ msgid "Start tunnel"
+#~ msgstr "启动隧道"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "切换全屏"
+
+#~ msgid "Clear selection"
+#~ msgstr "清除选择"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "按字母顺序排序"
+
+#~ msgid "Quick connect"
+#~ msgstr "快速连接"
+
+#~ msgid "Command palette"
+#~ msgstr "命令面板"
+
+#~ msgid "Local shell"
+#~ msgstr "本地 shell"
+
+#~ msgid "Execute snippet"
+#~ msgstr "执行片段"
+
+#~ msgid "Edit snippet"
+#~ msgstr "编辑片段"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "切换分割视图广播"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "切换群组广播"
 
 #~ msgid "Close Connection"
 #~ msgstr "关闭连接"

@@ -764,7 +764,7 @@ Temporary connection without saving:
 | Copy/Paste | Ctrl+C / Ctrl+V (sidebar focus) or Menu → Copy/Paste Connection |
 | Delete | Delete key or right-click → Delete (moves to Trash) |
 | Move to Group | Drag-drop or right-click → Move to Group |
-| Open new session | Right-click → Open new session (a second session of a connection that already runs) |
+| Open New Session | Right-click → Open New Session (a second session of a connection that already runs) |
 | Duplicate via Wizard | Right-click → Duplicate via Wizard… |
 | Disconnect | Right-click a connected row → Disconnect |
 | Set Up Key Authentication | Right-click an SSH row → Set Up Key Authentication… |
@@ -2390,7 +2390,7 @@ rustconn-cli update "My RDP" --window-mode external
 - External Window mode for RDP uses FreeRDP. The Flatpak bundles the SDL3 client and the snap the X11 client (`xfreerdp3`) — no separate installation needed. On native installs, RustConn auto-detects the installed FreeRDP clients in priority order: on a Wayland session `sdl-freerdp3` > `sdl-freerdp` > `wlfreerdp3` > `wlfreerdp` > `xfreerdp3` > `xfreerdp`, on an X11 session the `xfreerdp*` clients first. `rustconn-cli connect` uses the same order and the connection's pinned client.
 - The VNC protocol tab also has its own **Client Mode** (Embedded/External) setting. When the window mode is External, it takes precedence over the protocol-level Client Mode.
 
-**External-session tracking:** an external-viewer session gets no notebook tab. Instead it is surfaced in the sidebar with a window emblem next to the connected status, and its right-click menu adds **Disconnect** (closes a RustConn-owned viewer such as TigerVNC/FreeRDP/remote-viewer) and **Stop tracking** (deregisters without closing the viewer). Owned viewers are closed automatically when you quit RustConn. Detaching viewers that RustConn cannot control (Remmina, KRDC, Vinagre) keep running independently: if you close such a viewer window yourself, the sidebar keeps showing the session as connected until you select **Stop tracking**. A double-click on a connection that already runs in an external window shows an "Already running in an external window" hint instead of opening a duplicate — use **Open new session** to force a second one.
+**External-session tracking:** an external-viewer session gets no notebook tab. Instead it is surfaced in the sidebar with a window emblem next to the connected status, and its right-click menu adds **Disconnect** (closes a RustConn-owned viewer such as TigerVNC/FreeRDP/remote-viewer) and **Stop Tracking** (deregisters without closing the viewer). Owned viewers are closed automatically when you quit RustConn. Detaching viewers that RustConn cannot control (Remmina, KRDC, Vinagre) keep running independently: if you close such a viewer window yourself, the sidebar keeps showing the session as connected until you select **Stop Tracking**. A double-click on a connection that already runs in an external window shows an "Already running in an external window" hint instead of opening a duplicate — use **Open New Session** to force a second one.
 
 ### Tab Management
 
@@ -2400,7 +2400,7 @@ rustconn-cli update "My RDP" --window-mode external
 - **Tab Overview** — Click the grid icon (▦) at the right end of the tab bar, or press **Ctrl+Shift+O**, to open a full-screen grid view of all open tabs. Useful when you have many tabs open and need to visually locate a session. Click any thumbnail to switch to it.
 - **Tab Switcher** — Press **Ctrl+%** (or open Command Palette with **Ctrl+P** and type `%`) to fuzzy-search across all open tabs by name. Results show protocol type and tab group. Select and press Enter to switch instantly.
 - **Edit Connection** — Right-click a tab → **Edit Connection…** opens the editor for that tab's saved connection, whatever is selected in the sidebar (0.22.15+). Tabs with no saved connection behind them — the Welcome tab, a local shell, a quick connection — do not show it.
-- **Duplicate Tab** — Right-click a tab → **Duplicate Tab** opens another session of the tab's saved connection in a new tab, the same as **Open new session** in the sidebar, whatever is selected there ([#437](https://github.com/totoshko88/RustConn/issues/437)). It is shown on the same tabs as **Edit Connection…**. A password you typed by hand for the first session is not reused; the new session asks again unless the password is saved.
+- **Duplicate Tab** — Right-click a tab → **Duplicate Tab** opens another session of the tab's saved connection in a new tab, the same as **Open New Session** in the sidebar, whatever is selected there ([#437](https://github.com/totoshko88/RustConn/issues/437)). It is shown on the same tabs as **Edit Connection…**. A password you typed by hand for the first session is not reused; the new session asks again unless the password is saved.
 - **Pin Tab** — Right-click a tab → **Pin Tab**. Pinned tabs stay at the left edge of the tab bar and are never scrolled out of view. Useful for long-running sessions you need constant access to. Right-click again → **Unpin Tab** to restore normal behavior.
 - **Save Output** — Right-click a terminal tab → **Save Output…** to write the session's full scrollback to a plain-text file (issue [#371](https://github.com/totoshko88/RustConn/issues/371)). A file chooser opens with a name derived from the session. The whole buffer is saved — its length is bounded by **Settings → Terminal → Scrollback lines** — so raise that limit beforehand if you need more history in the file. The item appears only for terminal sessions (SSH, local shell, Telnet, Serial); embedded RDP/VNC/Web tabs have no text buffer and do not show it. In a split tab the **focused pane** is saved — click the pane you want first, then open the menu.
 
@@ -3586,7 +3586,7 @@ A VS Code-style quick launcher with fuzzy search. Type to filter, then select wi
 | `%` | Open Tabs | Fuzzy search open tabs by name; Enter to switch |
 | `!` | Snippets | List saved snippets; Enter runs one after a confirmation |
 
-With only `@` or `#` typed, the palette lists every tag or group (groups of any depth); pick one to narrow the list to its connections. Choosing a connection that already runs shows its session, as **Show Session** does in the sidebar; use the sidebar's **Open new session** for a second one.
+With only `@` or `#` typed, the palette lists every tag or group (groups of any depth); pick one to narrow the list to its connections. Choosing a connection that already runs shows its session, as **Show Session** does in the sidebar; use the sidebar's **Open New Session** for a second one.
 
 The palette shows up to 20 results with match highlighting. Results are ranked by fuzzy match score. In `%` mode, results include protocol type and tab group name for quick identification.
 
@@ -3715,11 +3715,11 @@ Wake sleeping machines before connecting by sending WoL magic packets.
 3. Optionally set broadcast address and port
 4. Save
 
-**Send WoL from sidebar:** Right-click connection → **Wake On LAN**. After sending, RustConn polls the host (every 5s for up to 5 minutes) and auto-connects when online.
+**Send WoL from sidebar:** Right-click connection → **Wake-on-LAN**. After sending, RustConn polls the host (every 5s for up to 5 minutes) and auto-connects when online.
 
 **Auto-WoL on connect:** If a connection has WoL configured, a magic packet is sent automatically when you connect (fire-and-forget).
 
-**Standalone WoL dialog:** Menu → Tools → **Wake On LAN...**
+**Standalone WoL dialog:** Menu → Tools → **Wake-on-LAN...**
 
 All GUI sends use 3 retries at 500 ms intervals for reliability.
 
@@ -3969,7 +3969,7 @@ set -g allow-passthrough on     # let wrapped sequences through untouched
 
 **Window group:** Remember size (restore window geometry on startup), Show connection in window title (appends the active connection name so time-tracking tools can attribute usage; off by default for privacy), Show hierarchy path in header (shows the active connection's group path — e.g. `AWS Test Lab / Prod` — as a subtitle under the connection name in the content header, GNOME-breadcrumb style; off by default, updates when the active tab changes, and is blank for a connection that sits in the root with no parent group; independent of the window title, so time-tracking tools are unaffected), Show connection name in split panes (compact per-pane header; on by default for new installations, while an existing configuration keeps its stored value — also serves as the pane drag handle), Hide hover controls in split panes, Show directional tab-close items (close tabs to the left/right/others in the tab menu).
 
-**Connections group:** Open a new session on every double-click — off by default, so a double-click on a connection that is already running focuses that session instead of duplicating it (hold Shift or Ctrl, or use right-click → Open new session, to force a second one). Turn it on if you routinely keep several concurrent sessions on the same host: every double-click then starts another session, and the modifier is no longer needed. On a running connection the first item of the sidebar context menu reads **Show Session** instead of **Connect**: it brings up the newest live session (or shows the "Already running in an external window" hint), whatever this setting says, and **Open new session** in the same menu starts another one.
+**Connections group:** Open a new session on every double-click — off by default, so a double-click on a connection that is already running focuses that session instead of duplicating it (hold Shift or Ctrl, or use right-click → Open New Session, to force a second one). Turn it on if you routinely keep several concurrent sessions on the same host: every double-click then starts another session, and the modifier is no longer needed. On a running connection the first item of the sidebar context menu reads **Show Session** instead of **Connect**: it brings up the newest live session (or shows the "Already running in an external window" hint), whatever this setting says, and **Open New Session** in the same menu starts another one.
 
 Also in this group: **Auto-hide the sidebar on connect**, and **Open tunnelled browser in the embedded browser** with a start page and, when the embedded browser is off, an external browser command.
 
@@ -5132,7 +5132,7 @@ markers appear; nothing else changes.
 | Ctrl+H | Connection History |
 | Ctrl+Shift+I | Statistics |
 | Ctrl+G | Password Generator |
-| Ctrl+Shift+L | Wake On LAN |
+| Ctrl+Shift+L | Wake-on-LAN |
 | Ctrl+T | SSH Tunnel Manager |
 | F10 | Open Menu (suspended in passthrough mode) |
 | Ctrl+? | Keyboard Shortcuts |

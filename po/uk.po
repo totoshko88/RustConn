@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-17 16:28+0200\n"
+"POT-Creation-Date: 2026-11-17 16:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -421,7 +421,8 @@ msgstr "Обери все"
 msgid "Deselect All"
 msgstr "Зніми вибір"
 
-#: rustconn/src/dialogs/cluster.rs:466
+#: rustconn/src/dialogs/cluster.rs:466 rustconn/src/dialogs/cluster.rs:726
+#: rustconn/src/dialogs/cluster.rs:729
 msgid "Edit Cluster"
 msgstr "Редагуй кластера"
 
@@ -458,10 +459,6 @@ msgstr "Доєднайся до кластера в новому вікні"
 msgid "Disconnect all cluster sessions"
 msgstr "Від'єднай усі сесії кластера"
 
-#: rustconn/src/dialogs/cluster.rs:726 rustconn/src/dialogs/cluster.rs:729
-msgid "Edit cluster"
-msgstr "Редагуй кластера"
-
 #: rustconn/src/dialogs/cluster.rs:733 rustconn/src/dialogs/cluster.rs:737
 msgid "Delete cluster"
 msgstr "Вилучи кластера"
@@ -472,7 +469,7 @@ msgstr "Нема кластерів. Натисни «Новий кластер�
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2308
 msgid "Command Palette"
 msgstr "Палітра команд"
 
@@ -777,8 +774,8 @@ msgstr "Додай правило"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:653
 #: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:609 rustconn/src/smart_folder_ui.rs:452
-msgid "Wake On LAN"
-msgstr "Wake On LAN"
+msgid "Wake-on-LAN"
+msgstr "Wake-on-LAN"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:654
 #: rustconn/src/dialogs/connection/advanced_tab.rs:662
@@ -1565,11 +1562,8 @@ msgid "New Connection (Advanced)"
 msgstr "Новий з'єднок (додатково)"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:210
-msgid "Test Connection"
-msgstr "Перевір з'єднок"
-
 #: rustconn/src/dialogs/connection/dialog/construction.rs:211
-msgid "Test connection"
+msgid "Test Connection"
 msgstr "Перевір з'єднок"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:265
@@ -7131,7 +7125,8 @@ msgid "Play recording"
 msgstr "Відтвори запис"
 
 #: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
-msgid "Rename recording"
+#: rustconn/src/dialogs/recording.rs:519
+msgid "Rename Recording"
 msgstr "Перейменуй запис"
 
 #: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
@@ -7139,12 +7134,9 @@ msgid "Delete recording"
 msgstr "Вилучи запис"
 
 #: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
-msgid "Export recording"
+#: rustconn/src/dialogs/recording.rs:654
+msgid "Export Recording"
 msgstr "Експортуй запис"
-
-#: rustconn/src/dialogs/recording.rs:519
-msgid "Rename Recording"
-msgstr "Перейменування запису"
 
 #: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
@@ -7195,10 +7187,6 @@ msgstr "Не вдалося вилучити запис"
 #: rustconn/src/dialogs/recording.rs:626
 msgid "The recording could not be deleted: {}"
 msgstr "Не вдалося вилучити запис: {}"
-
-#: rustconn/src/dialogs/recording.rs:654
-msgid "Export Recording"
-msgstr "Експорт запису"
 
 #: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
@@ -9292,7 +9280,8 @@ msgstr "Відправляти Escape замість складених симв
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2309 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Локальна оболонка"
@@ -9788,13 +9777,13 @@ msgstr "Перейменуй вибраний елемент"
 msgid "Duplicate connection (sidebar)"
 msgstr "Дублюй з'єднок (бічна панель)"
 
-#: rustconn/src/dialogs/shortcuts.rs:92
-msgid "Copy connection"
-msgstr "Копіюй з'єднок"
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:318
+msgid "Copy Connection"
+msgstr "Скопіюй з'єднок"
 
-#: rustconn/src/dialogs/shortcuts.rs:93
-msgid "Paste connection"
-msgstr "Встав з'єднок"
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:320
+msgid "Paste Connection"
+msgstr "Устав з'єднок"
 
 #: rustconn/src/dialogs/shortcuts.rs:94
 msgid "Connect to selected"
@@ -9862,6 +9851,7 @@ msgstr "Нова група"
 
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:736
 #: rustconn/src/sidebar_ui.rs:1468 rustconn/src/split_view/bridge.rs:2147
+#: rustconn/src/split_view/bridge.rs:2307
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Швидке з'єднування"
@@ -9971,7 +9961,7 @@ msgstr "Перейди до наступної панелі"
 msgid "Reconnect Session"
 msgstr "Перепід'єднай сеанс"
 
-#: rustconn/src/dialogs/shortcuts.rs:227
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
 msgid "Toggle Fullscreen"
 msgstr "Перемкни повноекранний режим"
 
@@ -9987,11 +9977,11 @@ msgstr "Перемкни компактний інтерфейс"
 msgid "Toggle Keyboard Passthrough"
 msgstr "Перемкни передачу клавіятури"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
 msgid "Toggle Split Broadcast"
 msgstr "Перемкни трансляцію розділеного вигляду"
 
-#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
 msgid "Toggle Group Broadcast"
 msgstr "Перемкни групову трансляцію"
 
@@ -10154,7 +10144,7 @@ msgstr "Типово:"
 msgid "Default value"
 msgstr "Значина типово"
 
-#: rustconn/src/dialogs/snippet.rs:419
+#: rustconn/src/dialogs/snippet.rs:419 rustconn/src/window/snippets.rs:408
 msgid "Edit Snippet"
 msgstr "Редагуй сніпета"
 
@@ -10684,20 +10674,12 @@ msgstr "Перенаправлення портів не налаштовані"
 msgid "Stopped unexpectedly"
 msgstr "Зупинено неочікувано"
 
-#: rustconn/src/dialogs/tunnel.rs:428
+#: rustconn/src/dialogs/tunnel.rs:428 rustconn/src/dialogs/tunnel.rs:429
 msgid "Stop Tunnel"
 msgstr "Зупини тунель"
 
-#: rustconn/src/dialogs/tunnel.rs:429
-msgid "Stop tunnel"
-msgstr "Зупини тунель"
-
-#: rustconn/src/dialogs/tunnel.rs:434
+#: rustconn/src/dialogs/tunnel.rs:434 rustconn/src/dialogs/tunnel.rs:435
 msgid "Start Tunnel"
-msgstr "Запусти тунель"
-
-#: rustconn/src/dialogs/tunnel.rs:435
-msgid "Start tunnel"
 msgstr "Запусти тунель"
 
 #: rustconn/src/dialogs/tunnel.rs:458
@@ -11345,10 +11327,6 @@ msgstr "Сеанс {} - {} (вбудований)"
 #: rustconn/src/embedded.rs:249
 msgid "{} session - {} (external window)"
 msgstr "Сеанс {} - {} (у зовнішньому вікні)"
-
-#: rustconn/src/embedded.rs:258
-msgid "Toggle fullscreen"
-msgstr "Перемкни повноекранний режим"
 
 #: rustconn/src/embedded.rs:259
 msgid "Release keyboard/mouse grab"
@@ -12705,7 +12683,7 @@ msgid "Duplicate via Wizard…"
 msgstr "Дублюй через майстер…"
 
 #: rustconn/src/sidebar_ui.rs:516
-msgid "Open new session"
+msgid "Open New Session"
 msgstr "Відкрий новий сеанс"
 
 #: rustconn/src/sidebar_ui.rs:561 rustconn/src/split_view/adapter.rs:194
@@ -12743,7 +12721,7 @@ msgid "Start Recording"
 msgstr "Почни запис"
 
 #: rustconn/src/sidebar_ui.rs:643
-msgid "Stop tracking"
+msgid "Stop Tracking"
 msgstr "Припини відстеження"
 
 #: rustconn/src/sidebar_ui.rs:687
@@ -12787,12 +12765,8 @@ msgstr "Редагуй вибрані з'єднки разом"
 msgid "Select all connections"
 msgstr "Обери всі з'єднки"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1288 rustconn/src/sidebar_ui.rs:1290
 msgid "Clear Selection"
-msgstr "Очисть вибір"
-
-#: rustconn/src/sidebar_ui.rs:1290
-msgid "Clear selection"
 msgstr "Очисть вибір"
 
 #: rustconn/src/sidebar_ui.rs:1300
@@ -12811,8 +12785,8 @@ msgstr "Обери з'єднки"
 msgid "Toggle multi-select mode for connections"
 msgstr "Перемкни режим множинного вибору з'єднків"
 
-#: rustconn/src/sidebar_ui.rs:1357
-msgid "Sort alphabetically"
+#: rustconn/src/sidebar_ui.rs:1357 rustconn/src/sidebar_ui.rs:1479
+msgid "Sort Alphabetically"
 msgstr "Сортуй за абеткою"
 
 #: rustconn/src/sidebar_ui.rs:1360
@@ -12866,10 +12840,6 @@ msgstr "Керування сніпетами"
 #: rustconn/src/sidebar_ui.rs:1461 rustconn/src/window/ui.rs:299
 msgid "Tools"
 msgstr "Інструменти"
-
-#: rustconn/src/sidebar_ui.rs:1479
-msgid "Sort Alphabetically"
-msgstr "Сортуй за абеткою"
 
 #: rustconn/src/sidebar_ui.rs:1482
 msgid "Sort by Recent Use"
@@ -13006,18 +12976,6 @@ msgstr "Перетягування файлів до сеансів"
 #: rustconn/src/split_view/bridge.rs:2306
 msgid "New connection"
 msgstr "Нове з'єднування"
-
-#: rustconn/src/split_view/bridge.rs:2307
-msgid "Quick connect"
-msgstr "Швидке з'єднування"
-
-#: rustconn/src/split_view/bridge.rs:2308
-msgid "Command palette"
-msgstr "Палітра команд"
-
-#: rustconn/src/split_view/bridge.rs:2309
-msgid "Local shell"
-msgstr "Локальна оболонка"
 
 #: rustconn/src/split_view/bridge.rs:2311
 msgid "Split vertical / horizontal"
@@ -13984,12 +13942,12 @@ msgid "Failed to delete permanently: {}"
 msgstr "Не вдалося вилучити назавжди: {}"
 
 #: rustconn/src/window/edit_actions.rs:626
-msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
-msgstr "Wake On LAN не налаштовано. Відредагуй з'єднок, щоб задати MAC-адресу."
+msgid "No Wake-on-LAN configured. Edit the connection to set a MAC address."
+msgstr "Wake-on-LAN не налаштовано. Відредагуй з'єднок, щоб задати MAC-адресу."
 
 #: rustconn/src/window/edit_actions.rs:654
-msgid "Wake On LAN sent to {} — waiting for host to come online…"
-msgstr "Wake On LAN надіслано до {} — очікування на запуск госта…"
+msgid "Wake-on-LAN sent to {} — waiting for host to come online…"
+msgstr "Wake-on-LAN надіслано до {} — очікування на запуск госта…"
 
 #: rustconn/src/window/edit_actions.rs:695
 msgid "{} is online — connecting…"
@@ -14000,8 +13958,8 @@ msgid "{} did not come online after WoL"
 msgstr "{} не з'явився онлайн після WoL"
 
 #: rustconn/src/window/edit_actions.rs:722
-msgid "Failed to send Wake On LAN packet. Check network permissions."
-msgstr "Не вдалося надіслати пакет Wake On LAN. Перевір мережеві дозволи."
+msgid "Failed to send Wake-on-LAN packet. Check network permissions."
+msgstr "Не вдалося надіслати пакет Wake-on-LAN. Перевір мережеві дозволи."
 
 #: rustconn/src/window/edit_actions.rs:757
 msgid "Checking if {} is online…"
@@ -15677,13 +15635,9 @@ msgstr "Пошук сніпетів…"
 msgid "Execute"
 msgstr "Виконай"
 
-#: rustconn/src/window/snippets.rs:402
-msgid "Execute snippet"
+#: rustconn/src/window/snippets.rs:402 rustconn/src/window/snippets.rs:616
+msgid "Execute Snippet"
 msgstr "Виконай сніпета"
-
-#: rustconn/src/window/snippets.rs:408
-msgid "Edit snippet"
-msgstr "Редагуй сніпета"
 
 #: rustconn/src/window/snippets.rs:414
 msgid "Delete snippet"
@@ -15704,10 +15658,6 @@ msgstr "Не вдалося вилучити сніпет"
 #: rustconn/src/window/snippets.rs:516
 msgid "Deleting the snippet failed: {}"
 msgstr "Вилучення сніпету не вдалося: {}"
-
-#: rustconn/src/window/snippets.rs:616
-msgid "Execute Snippet"
-msgstr "Виконай сніпета"
 
 #: rustconn/src/window/snippets.rs:646
 msgid "No snippets available"
@@ -15833,10 +15783,6 @@ msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr ""
 "Дублюй натискання клавіш до всіх панелей розділеного вигляду (Ctrl+Shift+B)"
 
-#: rustconn/src/window/ui.rs:154
-msgid "Toggle split broadcast"
-msgstr "Перемкни трансляцію розділеного вигляду"
-
 #: rustconn/src/window/ui.rs:169
 msgid "Group Broadcast"
 msgstr "Групова трансляція"
@@ -15844,10 +15790,6 @@ msgstr "Групова трансляція"
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr "Дублюй натискання клавіш на всі вкладки групи трансляції"
-
-#: rustconn/src/window/ui.rs:178
-msgid "Toggle group broadcast"
-msgstr "Перемкни групову трансляцію"
 
 #: rustconn/src/window/ui.rs:190
 msgid "Passthrough"
@@ -15886,8 +15828,8 @@ msgid "Password Generator…"
 msgstr "Ґенератор паролів…"
 
 #: rustconn/src/window/ui.rs:293
-msgid "Wake On LAN…"
-msgstr "Wake On LAN…"
+msgid "Wake-on-LAN…"
+msgstr "Wake-on-LAN…"
 
 #: rustconn/src/window/ui.rs:294
 msgid "Network Scan…"
@@ -15928,14 +15870,6 @@ msgstr "Імпортуй з'єднки…"
 #: rustconn/src/window/ui.rs:317
 msgid "Export Connections…"
 msgstr "Експортуй з'єднки…"
-
-#: rustconn/src/window/ui.rs:318
-msgid "Copy Connection"
-msgstr "Скопіюй з'єднок"
-
-#: rustconn/src/window/ui.rs:320
-msgid "Paste Connection"
-msgstr "Устав з'єднок"
 
 #: rustconn/src/window/ui.rs:333
 msgid "Components…"
@@ -15984,6 +15918,60 @@ msgstr "Менеджер підключень"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;з'єднок;термінал;віддалений;kubernetes;k8s;послідовний;sftp;"
+
+#~ msgid "Edit cluster"
+#~ msgstr "Редагуй кластера"
+
+#~ msgid "Test connection"
+#~ msgstr "Перевір з'єднок"
+
+#~ msgid "Rename recording"
+#~ msgstr "Перейменуй запис"
+
+#~ msgid "Export recording"
+#~ msgstr "Експортуй запис"
+
+#~ msgid "Copy connection"
+#~ msgstr "Копіюй з'єднок"
+
+#~ msgid "Paste connection"
+#~ msgstr "Встав з'єднок"
+
+#~ msgid "Stop tunnel"
+#~ msgstr "Зупини тунель"
+
+#~ msgid "Start tunnel"
+#~ msgstr "Запусти тунель"
+
+#~ msgid "Toggle fullscreen"
+#~ msgstr "Перемкни повноекранний режим"
+
+#~ msgid "Clear selection"
+#~ msgstr "Очисть вибір"
+
+#~ msgid "Sort alphabetically"
+#~ msgstr "Сортуй за абеткою"
+
+#~ msgid "Quick connect"
+#~ msgstr "Швидке з'єднування"
+
+#~ msgid "Command palette"
+#~ msgstr "Палітра команд"
+
+#~ msgid "Local shell"
+#~ msgstr "Локальна оболонка"
+
+#~ msgid "Execute snippet"
+#~ msgstr "Виконай сніпета"
+
+#~ msgid "Edit snippet"
+#~ msgstr "Редагуй сніпета"
+
+#~ msgid "Toggle split broadcast"
+#~ msgstr "Перемкни трансляцію розділеного вигляду"
+
+#~ msgid "Toggle group broadcast"
+#~ msgstr "Перемкни групову трансляцію"
 
 #~ msgid "Close Connection"
 #~ msgstr "Закрий з'єднок"

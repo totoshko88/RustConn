@@ -208,7 +208,7 @@ impl ConnectionDialog {
         }
         let test_btn = Button::from_icon_name("network-transmit-receive-symbolic");
         test_btn.set_tooltip_text(Some(&i18n("Test Connection")));
-        test_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Test connection"))]);
+        test_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Test Connection"))]);
         let save_btn = Button::with_label(&i18n("Create"));
         save_btn.add_css_class("suggested-action");
         header.pack_start(&cancel_btn);

@@ -723,10 +723,10 @@ impl ClusterListDialog {
 
         let edit_button = Button::builder()
             .icon_name("document-edit-symbolic")
-            .tooltip_text(i18n("Edit cluster"))
+            .tooltip_text(i18n("Edit Cluster"))
             .css_classes(["flat"])
             .build();
-        edit_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Edit cluster"))]);
+        edit_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Edit Cluster"))]);
 
         let delete_button = Button::builder()
             .icon_name("user-trash-symbolic")
