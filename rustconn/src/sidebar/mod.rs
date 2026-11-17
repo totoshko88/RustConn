@@ -1531,8 +1531,11 @@ impl ConnectionSidebar {
                     item.downcast::<ConnectionItem>().ok()
                 };
 
+                // A pinned connection has two rows (Favorites and its own group),
+                // so the same id can be selected twice; every caller wants it once.
                 if let Some(conn_item) = conn_item
                     && let Ok(uuid) = Uuid::parse_str(&conn_item.id())
+                    && !ids.contains(&uuid)
                 {
                     ids.push(uuid);
                 }
@@ -1642,7 +1645,14 @@ impl ConnectionSidebar {
             let row_obj: &glib::Object = row.upcast_ref();
             for i in 0..model.n_items() {
                 if model.item(i).as_ref() == Some(row_obj) {
-                    view::select_single_position(&model, i);
+                    if view::select_for_context_menu(&model, i) {
+                        let point = gtk4::graphene::Point::new(x as f32, y as f32);
+                        let (ex, ey) = list_view
+                            .compute_point(&expander, &point)
+                            .map_or((16.0, 16.0), |p| (f64::from(p.x()), f64::from(p.y())));
+                        sidebar_ui::show_multi_select_context_menu(&expander, ex, ey, activation);
+                        return true;
+                    }
                     break;
                 }
             }
@@ -1767,6 +1777,20 @@ impl ConnectionSidebar {
             drop_indicator.hide();
             return gdk::DragAction::empty();
         };
+
+        // Favorites, Trash and its items, and the Favorites copy of a connection
+        // take no drop: a copy would move the connection out of its real group
+        // and the rest do nothing. Refuse it so no "into" highlight is shown.
+        if Self::get_item_from_widget(&row_widget).is_some_and(|item| {
+            let id = item.id();
+            id == PINNED_GROUP_ID
+                || id == trash::TRASH_GROUP_ID
+                || trash::parse_trash_item_id(&id).is_some()
+                || item.in_favorites()
+        }) {
+            drop_indicator.hide();
+            return gdk::DragAction::empty();
+        }
 
         // Get the row widget's allocation to determine position within it
         let (_, row_height) = row_widget.preferred_size();

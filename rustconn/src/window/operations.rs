@@ -996,6 +996,13 @@ fn perform_bulk_delete(
 
     if let Ok(mut state_mut) = state.try_borrow_mut() {
         for id in &selected_ids {
+            // Name first: once deleted, the id no longer resolves, and a UUID
+            // in the error list tells the user nothing.
+            let name = state_mut
+                .get_connection(*id)
+                .map(|c| c.name.clone())
+                .or_else(|| state_mut.get_group(*id).map(|g| g.name.clone()))
+                .unwrap_or_else(|| id.to_string());
             // Try to delete as connection first, then as group
             let delete_result = state_mut
                 .delete_connection(*id)
@@ -1007,7 +1014,7 @@ fn perform_bulk_delete(
                     // The items wait in the trash, with their vault credentials,
                     // until Empty Trash; the Trash row restores them.
                 }
-                Err(e) => failures.push(format!("{id}: {e}")),
+                Err(e) => failures.push(format!("{name}: {e}")),
             }
         }
     }

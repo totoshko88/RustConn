@@ -29,7 +29,7 @@ pub type SharedSidebar = Rc<ConnectionSidebar>;
 /// still carries `conn.is_pinned`, so its context menu offers **Remove from
 /// Favorites** like the copy at the connection's real place. Passing `false`
 /// for `is_pinned` instead used to make that menu say **Add to Favorites**.
-fn build_connection_item(
+pub(super) fn build_connection_item(
     sidebar: &SharedSidebar,
     conn: &rustconn_core::models::Connection,
     in_favorites: bool,
