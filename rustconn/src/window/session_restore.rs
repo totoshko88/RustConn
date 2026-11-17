@@ -22,7 +22,7 @@ use adw::prelude::*;
 use libadwaita as adw;
 use rustconn_core::session::{SessionRestoreData, SessionRestoreState, SessionType};
 
-use crate::i18n::{i18n, i18n_f};
+use crate::i18n::{i18n, ni18n_f};
 use crate::state::SharedAppState;
 use crate::terminal::LOCAL_SHELL_PROTOCOL;
 use crate::window::types::{SharedNotebook, SharedSidebar};
@@ -190,8 +190,10 @@ pub fn restore_previous_sessions(ctx: RestoreContext, window: &gtk4::Window) {
     let count = snapshot.session_count();
     let dialog = adw::AlertDialog::new(
         Some(&i18n("Restore previous session?")),
-        Some(&i18n_f(
+        Some(&ni18n_f(
+            "Reopen the {} connection that was open when RustConn last closed.",
             "Reopen the {} connections that were open when RustConn last closed.",
+            u32::try_from(count).unwrap_or(u32::MAX),
             &[&count.to_string()],
         )),
     );
@@ -269,8 +271,10 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
 
     tracing::info!(restored, missing, "Session restore finished");
     if missing > 0 {
-        crate::toast::show_warning_toast_on_active_window(&i18n_f(
-            "{} restored connections no longer exist",
+        crate::toast::show_warning_toast_on_active_window(&ni18n_f(
+            "{} connection from the saved session no longer exists",
+            "{} connections from the saved session no longer exist",
+            u32::try_from(missing).unwrap_or(u32::MAX),
             &[&missing.to_string()],
         ));
     }

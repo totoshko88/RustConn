@@ -755,7 +755,7 @@ Temporary connection without saving:
 ### Undo/Trash Functionality
 
 Deleted items are moved to Trash and can be restored:
-- After deleting, an "Undo" notification appears
+- A single connection or group is deleted after a confirmation dialog; then an "Undo" notification appears
 - Click "Undo" to restore the deleted item
 - Deleting several selected items at once also moves them to Trash; there is no "Undo" notification for that, so use the Trash row
 - Items stay in Trash, with their saved vault credentials, until you choose **Empty Trash**
@@ -3398,7 +3398,7 @@ A cluster is a named set of connections you open together — a rack, a Kubernet
 
 **Create a cluster:**
 1. Menu → Tools → **Clusters…**
-2. Click **New Cluster** → enter a name → tick the member connections → **Save**
+2. Click **New Cluster** → enter a name → tick the member connections → **Create** (**Save** when editing an existing cluster)
 
 You can also select several connections in the sidebar and use **Create Cluster** in the bulk-action bar.
 
@@ -4140,14 +4140,9 @@ gtk-enable-animations=false
 
 Double-click source to start import immediately.
 
-**Merge Strategies:**
-- **Skip Existing** — Keep current connections, skip duplicates
-- **Overwrite** — Replace existing connections with imported data
-- **Rename** — Import as new connections with a suffix
-
 **Duplicate Handling:** If imported connections have names that already exist, RustConn shows a dialog with the duplicate count and three choices — **Cancel**, **Skip Duplicates**, or **Import All** — instead of silently creating renamed copies.
 
-**Import Preview:** For large imports (10+ connections), a preview is shown before applying.
+**Applying the import:** the result page lists what was found. Nothing is added to your connection list until you click **Done**; closing the dialog from the result page (Esc or ✕) does the same as **Done**.
 
 **Import Source Details:**
 
@@ -4173,7 +4168,7 @@ Double-click source to start import immediately.
 
 **Supported formats:** SSH Config, Remmina profiles, Asbru-CM, Ansible inventory, Royal TS (.rtsz), MobaXterm (.mxtsessions), SecureCRT (.ini), RDP files (.rdp), RustConn Native (.rcn).
 
-Options: Export selected only.
+Options: filter by group.
 
 > **Passwords are never exported.** No export format writes a password, in any
 > form. A connection stores only a *password source* (Vault, Prompt, Variable,

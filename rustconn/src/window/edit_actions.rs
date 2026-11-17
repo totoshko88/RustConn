@@ -351,7 +351,17 @@ impl MainWindow {
                         _ => return,
                     };
 
-                    if result.is_ok() {
+                    if let Err(e) = &result {
+                        drop(state_mut);
+                        tracing::warn!(%e, item_type, %id, "Failed to restore deleted item");
+                        if let Some(win) = window_weak.upgrade() {
+                            crate::toast::show_toast_on_window(
+                                &win,
+                                &crate::i18n::i18n("Restore failed"),
+                                crate::toast::ToastType::Error,
+                            );
+                        }
+                    } else {
                         drop(state_mut);
                         let state = state_clone.clone();
                         let sidebar = sidebar_clone.clone();

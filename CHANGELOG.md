@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Closing the import dialog from the result page now imports what it lists** — the result page said "Successfully imported N connection(s)", yet the connections were added only when **Done** was clicked, so Esc or ✕ lost them. Closing the dialog from the result page now does what **Done** does. (`rustconn/src/dialogs/import/mod.rs`)
+- **Deleting a cluster asks once** — the cluster list asked "Delete Cluster?" and then the cluster manager asked again with a different text. Only the second dialog, which names the cluster, remains. (`rustconn/src/dialogs/cluster.rs`)
+- **Editing a cluster offers Save, not Create** — the header button of the cluster dialog is now a text button, **Create** for a new cluster and **Save** when editing. (`rustconn/src/dialogs/cluster.rs`)
+- **A failed Undo or Restore says so** — when restoring a deleted connection or group failed, the **Undo** button of the toast and **Restore** in the Trash did nothing and said nothing. A **Restore failed** error toast appears and the cause is logged. (`rustconn/src/window/edit_actions.rs`)
+- **A partly failed Move names the items** — the "Move Partially Complete" dialog listed UUIDs; it lists names. (`rustconn/src/window/operations.rs`)
+- **Workspace dialogs no longer swallow input or errors** — **Save** in Save Workspace stays disabled while the name is empty, **Rename** while it is empty or unchanged, and a failed delete or rename shows an error dialog instead of only logging. (`rustconn/src/window/workspaces.rs`, `rustconn/src/dialogs/workspace.rs`)
+- **Singular and plural in the session-restore texts** — "Reopen the 1 connections…" and "1 restored connections no longer exist" now use plural forms in every language; the second reads "connection from the saved session no longer exists". (`rustconn/src/window/session_restore.rs`, `po/`)
+- **Run Snippet from the context menu without a terminal says so** — the menu item did nothing; it now shows the toast "Open a terminal session first before executing a snippet." (`rustconn/src/window/snippets.rs`)
+- **Success toasts have the success type** — "Recording exported/imported successfully" and "Connection copied to clipboard" were shown as plain info. (`rustconn/src/dialogs/recording.rs`, `rustconn/src/window/operations.rs`)
+- **Escape closes OK-only alerts through their own response** — `show_alert` and `show_error` set the close response to **OK**. (`rustconn/src/alert.rs`)
 - **Remove from Favorites in the Favorites group** — the context menu of a connection inside the ★ Favorites group offered **Add to Favorites**, because that copy of the row was built as not pinned to hide its star; clicking it removed the favorite anyway. The row now keeps the real pinned state and hides the star by a separate flag, so the menu says **Remove from Favorites** in both places. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/window/sorting.rs`, `docs/USER_GUIDE.md`)
 - **Search results keep the connection's real state and name** — a row in the sidebar search results was built without its state, so the menu of a favorite offered **Add to Favorites** and a connected one lacked **Show Session**, **Open new session** and **Disconnect**, and its name carried a relevance prefix (`★★★ srv`) that **Rename** and the delete dialog then showed. Results are now built by the same function as the tree rows and keep the plain name; their order is still by relevance. (`rustconn/src/window/mod.rs`, `rustconn/src/window/sorting.rs`)
 - **The Favorites group has no dead context menu** — right-clicking the virtual ★ Favorites group opened the group menu whose **Rename**, **Edit**, **Delete** and others silently did nothing. It now opens no menu. (`rustconn/src/sidebar/view.rs`)
@@ -57,6 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Duplicate as Range shows a syntax example** — the dialog text now names `web[01-10]`. (`rustconn/src/window/operations.rs`)
 
+
+### Documentation
+
+- **User guide matches the import, export, cluster and trash dialogs** — removed the Merge Strategies list and the Import Preview paragraph (neither exists; duplicates are handled by the Cancel / Skip Duplicates / Import All dialog), replaced "Export selected only" with the group filter, named the **Create**/**Save** button of the cluster dialog and noted the confirmation before a single delete. (`docs/USER_GUIDE.md`)
 
 ## [0.25.2] - 2026-11-17
 

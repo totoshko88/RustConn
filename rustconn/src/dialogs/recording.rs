@@ -690,7 +690,7 @@ impl RecordingsDialog {
                             crate::toast::show_toast_on_window(
                                 win,
                                 &i18n("Recording exported successfully"),
-                                crate::toast::ToastType::Info,
+                                crate::toast::ToastType::Success,
                             );
                         }
                     }
@@ -809,7 +809,7 @@ impl RecordingsDialog {
                     crate::toast::show_toast_on_window(
                         &win,
                         &i18n("Recording imported successfully"),
-                        crate::toast::ToastType::Info,
+                        crate::toast::ToastType::Success,
                     );
                 }
                 // Refresh the list so the imported recording appears immediately
