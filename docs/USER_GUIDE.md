@@ -138,21 +138,24 @@ the sidebar is shown or hidden.
 - **Content header** — the active connection's name, with its group path shown
   underneath as a subtitle when **Show hierarchy path in header** is on (Settings
   → Interface).
-- **Sidebar bottom toolbar** — five one-click icons: History, Sort A–Z, Sort by
-  recent, Password Vault, Smart Folders.
+- **Sidebar bottom toolbar** — six one-click icons: History, Select Connections
+  (a toggle), Sort A–Z, Sort by recent, Password Vault, Smart Folders.
 
 ### Components
 
 - **Sidebar header** — search toggle + "Connections" title + a list menu (⋯)
-  with **Select Connections**, **Sort Alphabetically** and **Sort by Recent Use**.
+  with **New Connection**, **New Connection (Advanced)…**, **New Group**, the
+  **Manage Clusters**, **Manage Workspaces** and **Manage Snippets** managers,
+  **Quick Connect**, **Import…**, **Export…**, **Sort Alphabetically** and
+  **Sort by Recent Use**.
 - **Content header** — connection name (and optional group-path subtitle), plus
   the terminal/shell, split-view and primary-menu (☰) buttons on the right. The
   primary menu holds everything else: New Connection, New Group, Quick Connect,
   the Tools and Sessions managers, Import/Export, Settings.
 - **Sidebar** — Connection tree with groups (alphabetically sorted, collapsible
   via F9 or on narrow windows)
-- **Sidebar bottom toolbar** — History, Sort A–Z, Sort by recent usage, Password
-  Vault, Smart Folders (five standalone icons)
+- **Sidebar bottom toolbar** — History, Select Connections (toggle), Sort A–Z,
+  Sort by recent usage, Password Vault, Smart Folders (six standalone icons)
 - **Session Area** — Active sessions in tabs
 - **Toast Overlay** — Non-blocking notifications
 
@@ -169,7 +172,7 @@ history; with no match, or an empty field, Enter opens nothing (0.25.1+).
 
 Filter connections by protocol from the **Filter** menu button in the search row:
 - Open the menu and tick one or more protocols (SSH, RDP, VNC, SPICE, Telnet,
-  Serial, ZeroTrust, Kubernetes, Web)
+  WinRM, Serial, ZeroTrust, Kubernetes, Web)
 - Several protocols can be ticked at once (OR logic); ZeroTrust matches every
   provider
 - The Filter button turns accent-coloured while any protocol is ticked
@@ -737,6 +740,10 @@ Temporary connection without saving:
 | Copy/Paste | Ctrl+C / Ctrl+V (sidebar focus) or Menu → Copy/Paste Connection |
 | Delete | Delete key or right-click → Delete (moves to Trash) |
 | Move to Group | Drag-drop or right-click → Move to Group |
+| Open new session | Right-click → Open new session (a second session of a connection that already runs) |
+| Duplicate via Wizard | Right-click → Duplicate via Wizard… |
+| Disconnect | Right-click a connected row → Disconnect |
+| Set Up Key Authentication | Right-click an SSH row → Set Up Key Authentication… |
 | Run Snippet | Right-click → Run Snippet... (sends snippet to active session) |
 | Start/Stop Recording | Right-click connected session → Start/Stop Recording |
 
@@ -753,7 +760,8 @@ Deleted items are moved to Trash and can be restored:
 
 **The Trash row:** while the trash holds anything, a 🗑 **Trash** row appears at the bottom of the sidebar tree, like the Favorites group at the top. Expand it to see the deleted connections and groups.
 - Right-click an item → **Restore** puts it back (the same action as the "Undo" notification)
-- Right-click the row or an item → **Empty Trash** asks for confirmation, then removes everything in the trash for good, including saved vault credentials. This cannot be undone
+- Right-click an item → **Delete Permanently…** asks for confirmation, then removes that one item for good, with its saved vault credentials. This cannot be undone
+- Right-click the **Trash** row → **Empty Trash** asks for confirmation, then removes everything in the trash for good, including saved vault credentials. This cannot be undone
 - The row disappears when the last item is restored or the trash is emptied
 - Items in the Trash row cannot be connected, edited or dragged; restore them first
 
@@ -2325,7 +2333,7 @@ rustconn-cli add --name "Grafana" --protocol web --host "https://grafana.interna
 | Web | Embedded WebKitGTK tab (Linux) or system/custom browser (external) |
 | Local Shell | Local VTE terminal tab (user's default shell) |
 
-**Local Shell:** Open a local terminal tab without connecting to any remote host. Useful as a quick terminal emulator or for running local commands alongside remote sessions. Start via Menu → File → Local Shell, the startup action (Settings → Interface → Startup → Local Shell), or `rustconn --shell`.
+**Local Shell:** Open a local terminal tab without connecting to any remote host. Useful as a quick terminal emulator or for running local commands alongside remote sessions. Start via the ☰ menu → Local Shell, the startup action (Settings → Interface → Startup → Local Shell), or `rustconn --shell`.
 
 **Custom Shell Command:** Configure a custom command for Local Shell in Settings → Terminal → Local Shell → Command. When set, Local Shell runs this command instead of the default login shell. Examples:
 - `fish` — use Fish shell instead of bash
@@ -2700,7 +2708,7 @@ Group names must be unique among siblings sharing the same parent folder. You ca
 
 #### Drag and Drop in the Sidebar
 
-The drop zone inside a row decides what happens, for both connections and folders:
+The drop zone inside a row decides what happens, for both connections and folders. Favorites, Trash, the items under them, and the copies of connections shown in Favorites take no drop: no highlight appears and nothing moves.
 
 | Drop target | Result |
 |-------------|--------|
@@ -2713,11 +2721,9 @@ A folder cannot be dropped into itself or into one of its own subfolders — suc
 #### Group Operations Mode (Bulk Actions)
 
 Group Operations Mode enables bulk actions on multiple connections at once. It is
-toggled from the sidebar's list menu **(⋯) → Select Connections** (the old
-permanent sidebar icon was removed in 0.23.0); right-click → **Group
-Operations** still works too.
-
-**Activate:** Sidebar list menu (⋯) → **Select Connections**, or right-click → Group Operations
+toggled with the **Select Connections** button in the sidebar's bottom toolbar. The
+mode switches the list to multi-selection and shows the bulk-actions bar; it adds
+no checkboxes.
 
 **Available actions in the bulk-actions bar:**
 
@@ -2725,18 +2731,18 @@ Operations** still works too.
 |--------|--------|
 | New Group | Create a new group |
 | Move to Group | Move all selected connections to a chosen group |
+| Batch Edit | Edit the selected connections together |
 | Select All | Select all visible connections |
-| Clear | Deselect all |
-| Delete | Delete all selected connections (with confirmation) |
+| Clear Selection | Deselect all (stays in the mode) |
+| Delete Selected | Move all selected connections and groups to Trash (with confirmation) |
 
 **Workflow:**
 
-1. Sidebar list menu (⋯) → **Select Connections** to enter Group Operations Mode
-2. Checkboxes appear next to each connection in the sidebar
-3. Select individual connections by clicking their checkboxes, or use **Select All**
-4. Choose an action: **Move to Group** or **Delete**
-5. Confirm the action in the dialog
-6. Untick **Select Connections** in the menu (or press Escape) to exit Group Operations Mode
+1. Click **Select Connections** in the sidebar's bottom toolbar to enter Group Operations Mode
+2. Select rows with **Ctrl+click** (add or remove one) or **Shift+click** (a range), or use **Select All**
+3. Choose an action in the bar. Right-clicking a selected row keeps the selection and opens a menu with the same bulk actions plus **Run Local Script…**
+4. Confirm the action in the dialog
+5. Click **Select Connections** again to leave the mode. **Escape** only clears the selection
 
 This is useful for reorganizing large numbers of connections, cleaning up after an import, or bulk-deleting obsolete entries.
 
@@ -3041,7 +3047,7 @@ Smart Folders are dynamic, filter-based views that automatically group connectio
 
 **Create a Smart Folder:**
 
-1. Right-click in the **Smart Folders** sidebar section → **New Smart Folder**
+1. Click **+** in the **Smart Folders** sidebar section header, or right-click empty space in the connection list → **New Smart Folder**
 2. Enter a name
 3. Configure filter criteria (all filters use AND logic):
 
@@ -3482,7 +3488,7 @@ Where a knock *sequence* can be replayed or observed by anyone watching the wire
 
 ### Run Local Script
 
-Runs a script from this computer on several hosts: a `.ps1` file in PowerShell on WinRM hosts, any other file with bash on SSH hosts, and shows a result for each one. Right-click a connection, a group or a multi-selection → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
+Runs a script from this computer on several hosts: a `.ps1` file in PowerShell on WinRM hosts, any other file with bash on SSH hosts, and shows a result for each one. Right-click a connection, a group or a multi-selection (keep Ctrl/Shift+click selected rows; right-clicking one of them keeps the selection) → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
 
 - The script reaches each host over stdin and runs under `bash`, as the login user. Nothing is saved on the host, and `bash` must be installed there.
 - It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
@@ -3550,6 +3556,9 @@ A VS Code-style quick launcher with fuzzy search. Type to filter, then select wi
 | `@` | Tags | Filter connections by tag |
 | `#` | Groups | Filter connections by group |
 | `%` | Open Tabs | Fuzzy search open tabs by name; Enter to switch |
+| `!` | Snippets | List saved snippets; Enter runs one after a confirmation |
+
+With only `@` or `#` typed, the palette lists every tag or group (groups of any depth); pick one to narrow the list to its connections. Choosing a connection that already runs shows its session, as **Show Session** does in the sidebar; use the sidebar's **Open new session** for a second one.
 
 The palette shows up to 20 results with match highlighting. Results are ranked by fuzzy match score. In `%` mode, results include protocol type and tab group name for quick identification.
 
@@ -3990,7 +3999,7 @@ When working in remote sessions with TUI applications (nvim, tmux, htop, mc), Ru
 **Toggle passthrough:**
 - Press **Ctrl+Shift+Backspace** (works in both normal and passthrough mode)
 - Or use the menu: ☰ → Keyboard Passthrough
-- Or use the command palette: Ctrl+P → "Toggle Keyboard Passthrough"
+- Or use the command palette: Ctrl+Shift+P → "Toggle Keyboard Passthrough"
 
 **When passthrough is active:**
 - All application shortcuts are disabled (Ctrl+N, Ctrl+F, Ctrl+P, etc. go to the terminal)
