@@ -24,15 +24,15 @@ pub type SharedSidebar = Rc<ConnectionSidebar>;
 /// any reload — a rename, a duplicate, a pin toggle, a re-sort, a drag-drop —
 /// silently cleared all three for every connection.
 ///
-/// `pinned` drives the star emblem and is passed in rather than read from
-/// `conn.is_pinned`: the copy shown inside the Favorites group passes `false` so
-/// the emblem does not repeat on rows that are all favorites by definition,
-/// while the copy at the connection's real place passes `conn.is_pinned` to mark
-/// it there.
-fn build_connection_item(
+/// `in_favorites` marks the copy shown inside the Favorites group. It only hides
+/// the star emblem there, where every row is a favorite by definition; the row
+/// still carries `conn.is_pinned`, so its context menu offers **Remove from
+/// Favorites** like the copy at the connection's real place. Passing `false`
+/// for `is_pinned` instead used to make that menu say **Add to Favorites**.
+pub(super) fn build_connection_item(
     sidebar: &SharedSidebar,
     conn: &rustconn_core::models::Connection,
-    pinned: bool,
+    in_favorites: bool,
 ) -> ConnectionItem {
     let id = conn.id.to_string();
     let protocol = get_protocol_string(&conn.protocol_config);
@@ -45,9 +45,10 @@ fn build_connection_item(
         &protocol,
         &conn.host,
         &status,
-        pinned,
+        conn.is_pinned,
         conn.icon.as_deref().unwrap_or(""),
     );
+    item.set_in_favorites(in_favorites);
     item.set_description(conn.description.as_deref().unwrap_or(""));
     item.set_browser_tunnel(rustconn_core::ssh_tunnel::supports_browser_tunnel(conn));
     if let Some(indicators) = sidebar.row_indicators(&id) {
@@ -195,7 +196,7 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
     // exists twice in the store — see `ConnectionSidebar::update_items_with_id`.
     //
     // The star emoji sets this synthetic group apart from ordinary folders, which
-    // carry the plain folder icon. Its children are built with `pinned = false`
+    // carry the plain folder icon. Its children are built with `in_favorites`
     // so the star emblem does not repeat on every row inside a group that is, by
     // definition, entirely favorites — the emblem's job is to mark a favorite at
     // its real place elsewhere in the tree.
@@ -203,7 +204,7 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
         let favorites_item =
             ConnectionItem::new_group_with_icon(PINNED_GROUP_ID, &i18n("Favorites"), "⭐");
         for conn in &pinned {
-            favorites_item.add_child(&build_connection_item(sidebar, conn, false));
+            favorites_item.add_child(&build_connection_item(sidebar, conn, true));
         }
         store.append(&favorites_item);
     }
@@ -238,7 +239,7 @@ pub fn rebuild_sidebar_sorted(state: &SharedAppState, sidebar: &SharedSidebar) {
 
     // Add sorted ungrouped connections
     for conn in &ungrouped {
-        store.append(&build_connection_item(sidebar, conn, conn.is_pinned));
+        store.append(&build_connection_item(sidebar, conn, false));
     }
 
     // The virtual Trash row closes the tree, and only exists while the trash
@@ -297,7 +298,7 @@ pub fn add_sorted_group_children(
     });
 
     for conn in &connections {
-        parent_item.add_child(&build_connection_item(sidebar, conn, conn.is_pinned));
+        parent_item.add_child(&build_connection_item(sidebar, conn, false));
     }
 }
 

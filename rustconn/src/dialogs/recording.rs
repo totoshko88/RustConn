@@ -383,10 +383,10 @@ impl RecordingsDialog {
             .build();
         play_button.update_property(&[gtk4::accessible::Property::Label(&play_label)]);
 
-        let rename_label = format!("{} {}", i18n("Rename recording"), display);
+        let rename_label = format!("{} {}", i18n("Rename Recording"), display);
         let rename_button = Button::builder()
             .icon_name("document-edit-symbolic")
-            .tooltip_text(i18n("Rename recording"))
+            .tooltip_text(i18n("Rename Recording"))
             .css_classes(["flat"])
             .valign(gtk4::Align::Center)
             .build();
@@ -401,10 +401,10 @@ impl RecordingsDialog {
             .build();
         delete_button.update_property(&[gtk4::accessible::Property::Label(&delete_label)]);
 
-        let export_label = format!("{} {}", i18n("Export recording"), display);
+        let export_label = format!("{} {}", i18n("Export Recording"), display);
         let export_button = Button::builder()
             .icon_name("media-floppy-symbolic")
-            .tooltip_text(i18n("Export recording"))
+            .tooltip_text(i18n("Export Recording"))
             .css_classes(["flat"])
             .valign(gtk4::Align::Center)
             .build();
@@ -690,7 +690,7 @@ impl RecordingsDialog {
                             crate::toast::show_toast_on_window(
                                 win,
                                 &i18n("Recording exported successfully"),
-                                crate::toast::ToastType::Info,
+                                crate::toast::ToastType::Success,
                             );
                         }
                     }
@@ -809,7 +809,7 @@ impl RecordingsDialog {
                     crate::toast::show_toast_on_window(
                         &win,
                         &i18n("Recording imported successfully"),
-                        crate::toast::ToastType::Info,
+                        crate::toast::ToastType::Success,
                     );
                 }
                 // Refresh the list so the imported recording appears immediately

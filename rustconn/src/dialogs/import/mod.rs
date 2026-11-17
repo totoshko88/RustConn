@@ -521,6 +521,22 @@ impl ImportDialog {
         let result_cell = self.result.clone();
         let on_complete = self.on_complete.clone();
 
+        // Closing from the result page (Esc, ✕) applies the import exactly as
+        // "Done" does, so the "Successfully imported" summary stays true. Done
+        // takes the result first, which makes this a no-op after it.
+        {
+            let result_cell = result_cell.clone();
+            let on_complete = on_complete.clone();
+            dialog.connect_closed(move |_| {
+                let pending = result_cell.borrow_mut().take();
+                if pending.is_some()
+                    && let Some(ref cb) = *on_complete.borrow()
+                {
+                    cb(pending);
+                }
+            });
+        }
+
         // Wire import button click to do_import()
         import_button.connect_clicked(move |btn| {
             let current_page = stack.visible_child_name();
@@ -615,6 +631,24 @@ impl ImportDialog {
         let source_name_cell = self.source_name.clone();
         let on_complete_with_source = self.on_complete_with_source.clone();
         let parent_window = self.parent.clone();
+
+        // Closing from the result page (Esc, ✕) applies the import exactly as
+        // "Done" does, so the "Successfully imported" summary stays true. Done
+        // takes the result first, which makes this a no-op after it.
+        {
+            let result_cell = result_cell.clone();
+            let source_name_cell = source_name_cell.clone();
+            let on_complete_with_source = on_complete_with_source.clone();
+            dialog.connect_closed(move |_| {
+                let pending = result_cell.borrow_mut().take();
+                if pending.is_some()
+                    && let Some(ref cb) = *on_complete_with_source.borrow()
+                {
+                    let source = source_name_cell.borrow().clone();
+                    cb(pending, source);
+                }
+            });
+        }
 
         // Wire import button click to do_import()
         import_button.connect_clicked(move |btn| {

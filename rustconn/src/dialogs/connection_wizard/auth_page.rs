@@ -457,6 +457,26 @@ impl AuthPage {
         self.key_file_path.borrow().clone()
     }
 
+    /// Selects the authentication method and key file of an existing
+    /// connection. Call after [`Self::configure_for_protocol`], which resets
+    /// them. The password is never copied.
+    pub fn restore_partial(&self, partial: &super::PartialConnection) {
+        if let Some(ref method) = partial.auth_method
+            && let Some(index) = self.all_methods.borrow().iter().position(|m| m == method)
+        {
+            self.method_row
+                .set_selected(u32::try_from(index).unwrap_or(0));
+        }
+        if let Some(ref path) = partial.key_path {
+            let display = path
+                .file_name()
+                .map_or_else(|| path.to_string_lossy(), |n| n.to_string_lossy());
+            self.key_file_label.set_label(&display);
+            self.key_file_label.remove_css_class("dim-label");
+            *self.key_file_path.borrow_mut() = Some(path.clone());
+        }
+    }
+
     /// Pre-fill the icon field (emoji or icon name).
     ///
     /// Used when the wizard is opened from an existing connection, so

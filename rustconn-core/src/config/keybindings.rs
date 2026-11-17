@@ -449,7 +449,7 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
         KeybindingDef::new(
             "win.wake-on-lan",
             "<Control><Shift>l",
-            "Wake On LAN",
+            "Wake-on-LAN",
             Application,
         ),
         KeybindingDef::new(

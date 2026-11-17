@@ -557,7 +557,7 @@ pub fn duplicate_selected_as_range(
     let dialog = adw::AlertDialog::new(
         Some(&i18n_f("Duplicate ‘{}’ as a Range", &[&source.name])),
         Some(&i18n(
-            "Creates one copy per number. A leading zero in the first number keeps the numbers padded.",
+            "Creates one copy per number, for example web[01-10]. A leading zero in the first number keeps the numbers padded.",
         )),
     );
     let rows = adw::PreferencesGroup::new();
@@ -871,7 +871,7 @@ pub fn copy_selected_connection(
                 crate::toast::show_toast_on_window(
                     window,
                     &i18n("Connection copied to clipboard"),
-                    crate::toast::ToastType::Info,
+                    crate::toast::ToastType::Success,
                 );
             }
             Err(e) => {
@@ -996,6 +996,13 @@ fn perform_bulk_delete(
 
     if let Ok(mut state_mut) = state.try_borrow_mut() {
         for id in &selected_ids {
+            // Name first: once deleted, the id no longer resolves, and a UUID
+            // in the error list tells the user nothing.
+            let name = state_mut
+                .get_connection(*id)
+                .map(|c| c.name.clone())
+                .or_else(|| state_mut.get_group(*id).map(|g| g.name.clone()))
+                .unwrap_or_else(|| id.to_string());
             // Try to delete as connection first, then as group
             let delete_result = state_mut
                 .delete_connection(*id)
@@ -1007,7 +1014,7 @@ fn perform_bulk_delete(
                     // The items wait in the trash, with their vault credentials,
                     // until Empty Trash; the Trash row restores them.
                 }
-                Err(e) => failures.push(format!("{id}: {e}")),
+                Err(e) => failures.push(format!("{name}: {e}")),
             }
         }
     }
@@ -1287,14 +1294,24 @@ pub fn show_move_selected_to_group_dialog(
             for conn_id in &connection_ids {
                 match state_mut.move_connection_to_group(*conn_id, target_group) {
                     Ok(()) => success_count += 1,
-                    Err(e) => failures.push(format!("{conn_id}: {e}")),
+                    Err(e) => {
+                        let name = state_mut
+                            .get_connection(*conn_id)
+                            .map_or_else(|| conn_id.to_string(), |c| c.name.clone());
+                        failures.push(format!("{name}: {e}"));
+                    }
                 }
             }
             // Move groups
             for group_id in &group_ids_to_move {
                 match state_mut.move_group_to_parent(*group_id, target_group) {
                     Ok(()) => success_count += 1,
-                    Err(e) => failures.push(format!("{group_id}: {e}")),
+                    Err(e) => {
+                        let name = state_mut
+                            .get_group(*group_id)
+                            .map_or_else(|| group_id.to_string(), |g| g.name.clone());
+                        failures.push(format!("{name}: {e}"));
+                    }
                 }
             }
         }

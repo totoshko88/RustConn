@@ -16,7 +16,7 @@ use rustconn_core::models::{ConnectionTemplate, ProtocolType};
 use uuid::Uuid;
 
 use crate::dialogs::widgets::dialog_pack_action;
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Template manager dialog for listing and managing templates
 pub struct TemplateManagerDialog {
@@ -459,11 +459,11 @@ fn append_template_row(list: &ListBox, template: &ConnectionTemplate) {
     } else {
         let mut parts = Vec::new();
         if !template.host.is_empty() {
-            parts.push(format!("Host: {}", template.host));
+            parts.push(i18n_f("Host: {}", &[&template.host]));
         }
-        parts.push(format!("Port: {}", template.port));
+        parts.push(i18n_f("Port: {}", &[&template.port.to_string()]));
         if let Some(ref user) = template.username {
-            parts.push(format!("User: {user}"));
+            parts.push(i18n_f("User: {}", &[user]));
         }
         parts.join(" | ")
     };

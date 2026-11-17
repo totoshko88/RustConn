@@ -1,3 +1,25 @@
+rustconn (0.25.3-1) unstable; urgency=medium
+
+  * Version bump to 0.25.3
+  * Added: Broadcast toggle in a cluster window (#436)
+  * Added: Duplicate Tab in the tab menu (#437)
+  * Added: closing a cluster window with two or more sessions asks first
+  * Fixed: closing the import dialog from the result page imports what
+    it lists
+  * Fixed: Remove from Favorites inside the Favorites group, and search
+    results keep the real state and name of a connection
+  * Fixed: command palette tags, groups and running sessions; shortcut
+    recorder, keyboard passthrough and terminal Ctrl+G / Ctrl+T
+  * Fixed: connection editor keeps window mode, dynamic-folder flag and
+    post-login scripts; the wizard keeps its input on failure
+  * Changed: connection dialog has Cancel and confirms unsaved edits;
+    one spelling per menu item; Ukrainian wording uses the word for session consistently
+  * Dependencies: clap 4.6.8, clap_complete 4.6.12, clap_derive 4.6.8,
+    clap_lex 1.1.2, clap_mangen 0.3.4, uuid 1.29.3, zeroize 1.9.2;
+    RUSTSEC-2026-0543 (chrono) accepted until 0.26
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 17 Nov 2026 12:00:00 +0200
+
 rustconn (0.25.2-1) unstable; urgency=medium
 
   * Version bump to 0.25.2

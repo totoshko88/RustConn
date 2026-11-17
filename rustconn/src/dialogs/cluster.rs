@@ -37,6 +37,7 @@ pub struct ClusterDialog {
     search_entry: gtk4::SearchEntry,
     select_all_btn: Button,
     deselect_all_btn: Button,
+    save_btn: Button,
     parent: Option<gtk4::Widget>,
 }
 
@@ -64,11 +65,10 @@ impl ClusterDialog {
             .content_height(580)
             .build();
 
-        // Header bar with Create icon button (GNOME HIG)
+        // Header bar with a text action button: "Create" for a new cluster,
+        // "Save" once `set_cluster` switches the dialog to editing.
         let header = adw::HeaderBar::new();
-        let save_btn = Button::from_icon_name("list-add-symbolic");
-        save_btn.set_tooltip_text(Some(&i18n("Create")));
-        save_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Create"))]);
+        let save_btn = Button::with_label(&i18n("Create"));
         save_btn.add_css_class("suggested-action");
         dialog_pack_action(&header, &save_btn);
 
@@ -281,6 +281,7 @@ impl ClusterDialog {
             search_entry,
             select_all_btn,
             deselect_all_btn,
+            save_btn,
             parent: parent_widget,
         }
     }
@@ -463,6 +464,7 @@ impl ClusterDialog {
     pub fn set_cluster(&self, cluster: &Cluster) {
         *self.editing_id.borrow_mut() = Some(cluster.id);
         self.dialog.set_title(&i18n("Edit Cluster"));
+        self.save_btn.set_label(&i18n("Save"));
         self.name_entry.set_text(&cluster.name);
         // Seed the pattern; set_text triggers connect_changed, which refreshes
         // the live-preview count on its own.
@@ -721,10 +723,10 @@ impl ClusterListDialog {
 
         let edit_button = Button::builder()
             .icon_name("document-edit-symbolic")
-            .tooltip_text(i18n("Edit cluster"))
+            .tooltip_text(i18n("Edit Cluster"))
             .css_classes(["flat"])
             .build();
-        edit_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Edit cluster"))]);
+        edit_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Edit Cluster"))]);
 
         let delete_button = Button::builder()
             .icon_name("user-trash-symbolic")
@@ -817,30 +819,12 @@ impl ClusterListDialog {
                 }
             });
 
+            // The confirmation is asked once, by the caller (`window/clusters.rs`).
             let on_delete_clone = self.on_delete.clone();
-            let dialog_weak = self.dialog.downgrade();
             cluster_row.delete_button.connect_clicked(move |_| {
-                let Some(dlg) = dialog_weak.upgrade() else {
-                    return;
-                };
-                let alert = adw::AlertDialog::builder()
-                    .heading(i18n("Delete Cluster?"))
-                    .body(i18n("This cluster will be permanently removed."))
-                    .build();
-                alert.add_response("cancel", &i18n("Cancel"));
-                alert.add_response("delete", &i18n("Delete"));
-                alert.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
-                alert.set_default_response(Some("cancel"));
-                alert.set_close_response("cancel");
-                let on_delete_inner = on_delete_clone.clone();
-                alert.connect_response(None, move |_, response| {
-                    if response == "delete"
-                        && let Some(ref cb) = *on_delete_inner.borrow()
-                    {
-                        cb(cluster_id);
-                    }
-                });
-                alert.present(Some(&dlg));
+                if let Some(ref cb) = *on_delete_clone.borrow() {
+                    cb(cluster_id);
+                }
             });
 
             self.clusters_list.append(&cluster_row.row);

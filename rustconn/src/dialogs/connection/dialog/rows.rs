@@ -25,7 +25,7 @@ use uuid::Uuid;
 use super::{
     CommandMacroRow, ConnectionDialog, CustomPropertyRow, ExpectRuleRow, LocalVariableRow,
 };
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 impl ConnectionDialog {
     /// Creates a custom property row widget
@@ -1127,9 +1127,9 @@ impl ConnectionDialog {
                 match regex::Regex::new(&rule.pattern) {
                     Ok(re) => {
                         if re.is_match(&test_text) {
-                            result_clone.set_text(&format!(
-                                "✓ Matched pattern: \"{}\"\n  Response: \"{}\"",
-                                rule.pattern, rule.response
+                            result_clone.set_text(&i18n_f(
+                                "Matched pattern: “{}”\nResponse: “{}”",
+                                &[&rule.pattern, &rule.response],
                             ));
                             result_clone.remove_css_class("dim-label");
                             result_clone.remove_css_class("error");
@@ -1139,8 +1139,10 @@ impl ConnectionDialog {
                         }
                     }
                     Err(e) => {
-                        result_clone
-                            .set_text(&format!("✗ Invalid pattern \"{}\": {}", rule.pattern, e));
+                        result_clone.set_text(&i18n_f(
+                            "Invalid pattern “{}”: {}",
+                            &[&rule.pattern, &e.to_string()],
+                        ));
                         result_clone.remove_css_class("dim-label");
                         result_clone.remove_css_class("success");
                         result_clone.add_css_class("error");

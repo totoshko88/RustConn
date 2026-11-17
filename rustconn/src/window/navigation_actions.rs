@@ -283,9 +283,9 @@ impl MainWindow {
             }
 
             let message = if new_state {
-                crate::i18n::i18n("Broadcast enabled — keystrokes mirrored to all split panels")
+                crate::i18n::i18n("Broadcast enabled — keystrokes mirrored to all split panes")
             } else {
-                crate::i18n::i18n("Broadcast disabled — keystrokes go to focused panel only")
+                crate::i18n::i18n("Broadcast disabled — keystrokes go to focused pane only")
             };
             toast_for_action.show_toast(&message);
         });

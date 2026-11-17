@@ -30,6 +30,16 @@ yanked = "warn"
 # Last reviewed: 2026-11-13
 # Next review: when picky, sspi or ironrdp-connector publishes a new version.
 #
+# - RUSTSEC-2026-0543: chrono 0.4.x is unmaintained (informational, not a
+#   vulnerability; published 2026-09-14). All versions are affected, so there is
+#   no patched release. The advisory recommends jiff or time. chrono is a direct
+#   dependency used across several crates, so `unmaintained = "workspace"` makes
+#   it fail the check. Migrating to time/jiff is a 0.26 item, not a
+#   maintenance fix. Mirrored in .cargo/audit.toml.
+# Last reviewed: 2026-11-17
+# Next review: at 0.26 planning, or when chrono publishes a release or an
+# official successor notice.
+#
 # RUSTSEC-2026-0244 (gettext-rs `setlocale` unsound off the main thread) used to
 # be ignored here. It was removed from this list when the advisory was actually
 # resolved (issue #267), which is why no version is named: it is fixed rather
@@ -67,6 +77,7 @@ yanked = "warn"
 # new major version.
 ignore = [
     "RUSTSEC-2023-0071",
+    "RUSTSEC-2026-0543",
 ]
 
 [licenses]

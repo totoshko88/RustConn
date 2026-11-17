@@ -148,10 +148,10 @@ pub fn create_header_bar() -> (
     bc_box.append(&bc_label);
     broadcast_toggle.set_child(Some(&bc_box));
     broadcast_toggle.set_tooltip_text(Some(&i18n(
-        "Mirror keystrokes to all split panels (Ctrl+Shift+B)",
+        "Mirror keystrokes to all split panes (Ctrl+Shift+B)",
     )));
     broadcast_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Toggle split broadcast",
+        "Toggle Split Broadcast",
     ))]);
     broadcast_toggle.set_action_name(Some("win.toggle-broadcast"));
     broadcast_toggle.add_css_class("pill");
@@ -175,7 +175,7 @@ pub fn create_header_bar() -> (
         "Mirror keystrokes to all tabs in the broadcast group",
     )));
     group_broadcast_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Toggle group broadcast",
+        "Toggle Group Broadcast",
     ))]);
     group_broadcast_toggle.set_action_name(Some("win.toggle-group-broadcast"));
     group_broadcast_toggle.add_css_class("pill");
@@ -290,7 +290,7 @@ pub fn create_app_menu() -> gio::Menu {
         Some(&i18n("Password Generator…")),
         Some("win.password-generator"),
     );
-    tools_section_sep.append(Some(&i18n("Wake On LAN…")), Some("win.wake-on-lan-dialog"));
+    tools_section_sep.append(Some(&i18n("Wake-on-LAN…")), Some("win.wake-on-lan-dialog"));
     tools_section_sep.append(Some(&i18n("Network Scan…")), Some("win.network-scan"));
     tools_section_sep.append(Some(&i18n("SSH Tunnels…")), Some("win.ssh-tunnels"));
     tools_submenu.append_section(None, &tools_section_sep);

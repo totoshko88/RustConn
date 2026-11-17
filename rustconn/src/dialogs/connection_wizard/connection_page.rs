@@ -798,6 +798,54 @@ impl ConnectionPage {
         }
     }
 
+    /// Fills the protocol-specific rows (Serial, Kubernetes, Zero Trust, Web)
+    /// and the jump host from an existing connection. Call after
+    /// [`Self::configure_for_protocol`], which resets them.
+    pub fn restore_partial(&self, partial: &super::PartialConnection) {
+        const BAUD_RATES: [u32; 7] = [9600, 19_200, 38_400, 57_600, 115_200, 230_400, 460_800];
+        if let Some(ref device) = partial.serial_device {
+            self.device_row.set_text(device);
+        }
+        if let Some(baud) = partial.serial_baud
+            && let Some(index) = BAUD_RATES.iter().position(|b| *b == baud)
+        {
+            self.baud_row
+                .set_selected(u32::try_from(index).unwrap_or(0));
+        }
+        let set = |row: &adw::EntryRow, value: &Option<String>| {
+            if let Some(value) = value {
+                row.set_text(value);
+            }
+        };
+        set(&self.k8s_context_row, &partial.k8s_context);
+        set(&self.k8s_namespace_row, &partial.k8s_namespace);
+        set(&self.k8s_pod_row, &partial.k8s_pod);
+        set(&self.k8s_container_row, &partial.k8s_container);
+        if let Some(provider) = partial.zt_provider
+            && let Some(index) = super::ZT_WIZARD_PROVIDERS
+                .iter()
+                .position(|p| *p == provider)
+        {
+            self.zt_provider_row
+                .set_selected(u32::try_from(index).unwrap_or(0));
+        }
+        set(&self.zt_command_row, &partial.zt_command);
+        set(&self.zt_field1_row, &partial.zt_field1);
+        set(&self.zt_field2_row, &partial.zt_field2);
+        set(&self.zt_field3_row, &partial.zt_field3);
+        set(&self.url_row, &partial.url);
+        if let Some(jump) = partial.jump_host_id
+            && let Some(index) = self
+                .jump_host_ids
+                .borrow()
+                .iter()
+                .position(|id| *id == Some(jump))
+        {
+            self.jump_host_dropdown
+                .set_selected(u32::try_from(index).unwrap_or(0));
+        }
+    }
+
     #[must_use]
     pub fn selected_jump_host(&self) -> Option<Uuid> {
         let idx = self.jump_host_dropdown.selected() as usize;

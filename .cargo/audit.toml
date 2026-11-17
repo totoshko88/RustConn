@@ -16,6 +16,12 @@
 #   Last reviewed: 2026-11-13
 #   Next review: when picky, sspi or ironrdp-connector publishes a new version.
 #
+# - RUSTSEC-2026-0543: chrono is unmaintained (informational, all versions
+#   affected, no patched release; advisory suggests jiff or time). chrono is a
+#   direct dependency used across crates; migration is a 0.26 item.
+#   Last reviewed: 2026-11-17
+#   Next review: at 0.26 planning, or when chrono publishes a release.
+#
 # RUSTSEC-2026-0244 (gettext-rs `setlocale` unsound off the main thread) used to
 # be listed here. It was dropped when the advisory was resolved (issue #267)
 # rather than at some release boundary, so no version is named: gettext-rs 0.8
@@ -27,4 +33,4 @@
 # (issue #271). Do not re-add the ignore.
 
 [advisories]
-ignore = ["RUSTSEC-2023-0071"]
+ignore = ["RUSTSEC-2023-0071", "RUSTSEC-2026-0543"]

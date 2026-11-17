@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::config::ConfigManager;
 use crate::config::merge::{SharedBase, merge_three_way, same_entries, shared_base, try_lock_base};
 use crate::error::{ConfigError, ConfigResult};
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig};
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, WindowMode};
 use crate::monitoring::MonitoringOverride;
 use crate::sync::SyncMode;
 
@@ -433,6 +433,20 @@ impl ConnectionManager {
         updated.window_geometry = existing.window_geometry;
         updated.is_pinned = existing.is_pinned;
         updated.pin_order = existing.pin_order;
+        // Fields the editor has no widget for. It builds a fresh `Connection`
+        // that holds their defaults, so a default value means "not supplied"
+        // and the stored one stays. A caller that sets a non-default value (a
+        // sync apply) wins.
+        // ponytail: an update cannot reset these to their default; the CLI
+        // writes the file directly, so only `update_connection` callers see this.
+        if updated.window_mode == WindowMode::default() {
+            updated.window_mode = existing.window_mode;
+        }
+        updated.remember_window_position |= existing.remember_window_position;
+        updated.is_dynamic |= existing.is_dynamic;
+        if updated.automation.post_login_scripts.is_empty() {
+            updated.automation.post_login_scripts = existing.automation.post_login_scripts.clone();
+        }
         // The connection editor builds a fresh `Connection`, which would drop
         // the Group Sync link to the Master's copy and turn the next sync's
         // rename on the Master back into a delete + create. A caller that
@@ -3252,6 +3266,45 @@ mod tests {
             conn.is_pinned,
             "editing an unrelated field must not clear the favorite"
         );
+    }
+
+    /// The editor builds a fresh `Connection` with defaults for the fields it
+    /// has no widget for (`window_mode`, `remember_window_position`,
+    /// `is_dynamic`, `post_login_scripts`); an edit must not reset them.
+    #[tokio::test]
+    async fn update_connection_preserves_fields_without_editor_widgets() {
+        let (mut manager, _temp) = create_test_manager();
+        let id = manager
+            .create_connection(
+                "Original".to_string(),
+                "example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+        let mut stored = manager.get_connection(id).unwrap().clone();
+        stored.window_mode = WindowMode::External;
+        stored.remember_window_position = true;
+        stored.is_dynamic = true;
+        stored.automation.post_login_scripts = vec!["echo hi".to_string()];
+        manager.update_connection(id, stored.clone()).unwrap();
+
+        // Editor-style update: fresh Connection, only the name differs.
+        let mut fresh = Connection::new(
+            "Renamed".to_string(),
+            stored.host.clone(),
+            stored.port,
+            stored.protocol_config,
+        );
+        fresh.id = id;
+        manager.update_connection(id, fresh).unwrap();
+
+        let after = manager.get_connection(id).unwrap();
+        assert_eq!(after.name, "Renamed");
+        assert_eq!(after.window_mode, WindowMode::External);
+        assert!(after.remember_window_position);
+        assert!(after.is_dynamic);
+        assert_eq!(after.automation.post_login_scripts, ["echo hi"]);
     }
 
     /// New favorites append after existing ones rather than colliding at 0.

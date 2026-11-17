@@ -116,6 +116,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.25.3" date="2026-11-17">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.3</url>
+      <description>
+        <p>Version 0.25.3 - cluster window broadcast, Duplicate Tab and many fixes:</p>
+        <ul>
+          <li>A cluster window has a Broadcast toggle that sends typing to all of its terminal tabs.</li>
+          <li>Duplicate Tab in the tab menu opens another session of the same connection.</li>
+          <li>Closing a cluster window with several sessions asks first.</li>
+          <li>Closing the import dialog from the result page imports the listed connections.</li>
+          <li>Favorites, search results, the command palette and the shortcut recorder behave correctly.</li>
+          <li>The connection dialog has Cancel and confirms unsaved edits.</li>
+          <li>Updated dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.25.2" date="2026-11-17">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.2</url>
       <description>

@@ -185,6 +185,7 @@ impl CommandPaletteDialog {
             let items_clone = palette.items.clone();
             let on_action = palette.on_action.clone();
             let dialog_clone = dialog.clone();
+            let entry_clone = search_entry.clone();
             let key_controller = EventControllerKey::new();
             key_controller.connect_key_pressed(move |_, keyval, _, _| {
                 match keyval {
@@ -198,6 +199,7 @@ impl CommandPaletteDialog {
                             &items_clone,
                             &on_action,
                             &dialog_clone,
+                            &entry_clone,
                         );
                         gtk4::glib::Propagation::Stop
                     }
@@ -234,19 +236,19 @@ impl CommandPaletteDialog {
             let items_clone = palette.items.clone();
             let on_action = palette.on_action.clone();
             let dialog_clone = dialog.clone();
+            let entry_clone = search_entry.clone();
             list_box.connect_row_activated(move |_, row| {
                 let idx = row.index();
                 if idx >= 0 {
-                    let items_ref = items_clone.borrow();
                     #[expect(
                         clippy::cast_sign_loss,
                         reason = "value is non-negative by construction in this code path"
                     )]
-                    if let Some(item) = items_ref.get(idx as usize) {
-                        if let Some(ref cb) = *on_action.borrow() {
-                            cb(item.action.clone());
-                        }
-                        dialog_clone.close();
+                    // Cloned so the borrow is gone before `run_item` can trigger a
+                    // re-filter that borrows `items` mutably.
+                    let item = items_clone.borrow().get(idx as usize).cloned();
+                    if let Some(item) = item {
+                        Self::run_item(&item, &on_action, &dialog_clone, &entry_clone);
                     }
                 }
             });
@@ -596,22 +598,43 @@ impl CommandPaletteDialog {
         items: &Rc<RefCell<Vec<PaletteItem>>>,
         on_action: &PaletteCallback,
         dialog: &adw::Dialog,
+        entry: &gtk4::SearchEntry,
     ) {
         if let Some(row) = list_box.selected_row() {
             let idx = row.index();
             if idx >= 0 {
-                let items_ref = items.borrow();
                 #[expect(
                     clippy::cast_sign_loss,
                     reason = "value is non-negative by construction in this code path"
                 )]
-                if let Some(item) = items_ref.get(idx as usize) {
-                    if let Some(ref cb) = *on_action.borrow() {
-                        cb(item.action.clone());
-                    }
-                    dialog.close();
+                // Cloned so the borrow is gone before `run_item` can re-filter.
+                let item = items.borrow().get(idx as usize).cloned();
+                if let Some(item) = item {
+                    Self::run_item(&item, on_action, dialog, entry);
                 }
             }
         }
+    }
+
+    /// Runs an item. A `win.search:<text>` item (a tag or group listed by `@` or
+    /// `#`) is not a window action: it drills down by putting `<text>` into the
+    /// palette's own entry and keeps the palette open.
+    fn run_item(
+        item: &PaletteItem,
+        on_action: &PaletteCallback,
+        dialog: &adw::Dialog,
+        entry: &gtk4::SearchEntry,
+    ) {
+        if let CommandPaletteAction::GtkAction(name) = &item.action
+            && let Some(text) = name.strip_prefix("win.search:")
+        {
+            entry.set_text(text);
+            entry.set_position(-1);
+            return;
+        }
+        if let Some(ref cb) = *on_action.borrow() {
+            cb(item.action.clone());
+        }
+        dialog.close();
     }
 }

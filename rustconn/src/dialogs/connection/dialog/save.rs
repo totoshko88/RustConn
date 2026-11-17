@@ -539,7 +539,9 @@ impl ConnectionDialog {
         let spa_port_spin = spa_port_spin.clone();
         let spa_allow_ip_combo = spa_allow_ip_combo.clone();
 
-        save_btn.connect_clicked(move |_| {
+        // Builds the widget snapshot and hands it to `f`; shared by the save
+        // button and the unsaved-changes check, which must read the same form.
+        let with_data: FormReader = Rc::new(move |f| {
             let local_variables = Self::collect_local_variables(&variables_rows);
             let collected_expect_rules = expect_rules.borrow().clone();
             let collected_command_macros = command_macros.borrow().clone();
@@ -802,35 +804,133 @@ impl ConnectionDialog {
                 spa_port_spin: &spa_port_spin,
                 spa_allow_ip_combo: &spa_allow_ip_combo,
             };
+            f(&data, &collected_command_macros);
+        });
 
-            if let Err(err) = data.validate() {
-                alert::show_error(&dialog, &i18n("Validation Error"), &err);
-                return;
-            }
-            // Command macros: no empty or control-character command, and a
-            // keybind the dispatcher will actually register. The same rules
-            // drive each row's inline message.
-            let keybindings = state
-                .try_borrow()
-                .map(|s| s.settings().keybindings.clone())
-                .unwrap_or_default();
-            if let Err(err) =
-                crate::command_macros::validate_for_save(&collected_command_macros, &keybindings)
-            {
-                alert::show_error(&dialog, &i18n("Validation Error"), &err);
-                return;
-            }
+        Self::guard_unsaved_changes(&dialog, &with_data);
 
-            if let Some(result) = data.build_connection() {
-                // Password saving is handled by the caller (edit_dialogs,
-                // connection_dialogs, templates) after the on_save callback
-                // to avoid duplicate vault writes.
-
-                if let Some(ref cb) = *on_save.borrow() {
-                    cb(Some(result));
+        let with_data_for_save = Rc::clone(&with_data);
+        save_btn.connect_clicked(move |_| {
+            with_data_for_save(&mut |data, collected_command_macros| {
+                if let Err(err) = data.validate() {
+                    alert::show_error(&dialog, &i18n("Validation Error"), &err);
+                    return;
                 }
-                dialog.close();
-            }
+                // Command macros: no empty or control-character command, and a
+                // keybind the dispatcher will actually register. The same rules
+                // drive each row's inline message.
+                let keybindings = state
+                    .try_borrow()
+                    .map(|s| s.settings().keybindings.clone())
+                    .unwrap_or_default();
+                if let Err(err) =
+                    crate::command_macros::validate_for_save(collected_command_macros, &keybindings)
+                {
+                    alert::show_error(&dialog, &i18n("Validation Error"), &err);
+                    return;
+                }
+
+                if let Some(result) = data.build_connection() {
+                    // Password saving is handled by the caller (edit_dialogs,
+                    // connection_dialogs, templates) after the on_save callback
+                    // to avoid duplicate vault writes.
+
+                    if let Some(ref cb) = *on_save.borrow() {
+                        cb(Some(result));
+                    }
+                    dialog.force_close();
+                }
+            });
         });
     }
+
+    /// Asks before the dialog closes with edits that were not saved.
+    ///
+    /// Cancel, Escape and the close gesture all arrive as `close-attempt`
+    /// because `can-close` is off; Save ends with `force_close`. The form has
+    /// no dirty flag, so the first key press or click (seen in the capture
+    /// phase, before the widget handles it) records what the form builds to,
+    /// and closing compares that with what it builds to now. A dialog the user
+    /// never touched closes at once, which also keeps fields that fill in
+    /// after the dialog opens (agent keys, jump hosts) from counting as edits.
+    fn guard_unsaved_changes(dialog: &adw::Dialog, with_data: &FormReader) {
+        dialog.set_can_close(false);
+        let signature: Rc<dyn Fn() -> Option<String>> = {
+            let with_data = Rc::clone(with_data);
+            Rc::new(move || form_signature(&with_data))
+        };
+        let baseline: Rc<RefCell<Option<Option<String>>>> = Rc::new(RefCell::new(None));
+
+        let arm = {
+            let signature = Rc::clone(&signature);
+            let baseline = Rc::clone(&baseline);
+            Rc::new(move || {
+                if baseline.borrow().is_none() {
+                    *baseline.borrow_mut() = Some(signature());
+                }
+            })
+        };
+        let target: gtk4::Widget = dialog.child().unwrap_or_else(|| dialog.clone().upcast());
+        let keys = gtk4::EventControllerKey::new();
+        keys.set_propagation_phase(gtk4::PropagationPhase::Capture);
+        let arm_keys = Rc::clone(&arm);
+        keys.connect_key_pressed(move |_, _, _, _| {
+            arm_keys();
+            gtk4::glib::Propagation::Proceed
+        });
+        target.add_controller(keys);
+        let clicks = gtk4::GestureClick::new();
+        clicks.set_propagation_phase(gtk4::PropagationPhase::Capture);
+        clicks.connect_pressed(move |_, _, _, _| arm());
+        target.add_controller(clicks);
+
+        dialog.connect_close_attempt(move |dialog| {
+            let changed = baseline
+                .borrow()
+                .as_ref()
+                .is_some_and(|before| *before != signature());
+            if !changed {
+                dialog.force_close();
+                return;
+            }
+            let confirm = adw::AlertDialog::new(
+                Some(&i18n("Discard Changes?")),
+                Some(&i18n("Your changes to this connection will be lost.")),
+            );
+            confirm.add_response("keep", &i18n("Keep Editing"));
+            confirm.add_response("discard", &i18n("Discard"));
+            confirm.set_response_appearance("discard", adw::ResponseAppearance::Destructive);
+            confirm.set_default_response(Some("keep"));
+            confirm.set_close_response("keep");
+            let dialog_for_response = dialog.clone();
+            confirm.connect_response(None, move |_, response| {
+                if response == "discard" {
+                    dialog_for_response.force_close();
+                }
+            });
+            confirm.present(Some(dialog));
+        });
+    }
+}
+
+/// Reads the connection dialog's widgets: calls `f` with the form data and the
+/// collected command macros.
+type FormReader = Rc<dyn Fn(&mut dyn FnMut(&ConnectionDialogData<'_>, &[CommandMacro]))>;
+
+/// What the form builds to, without ids and timestamps, for change detection.
+/// `None` when the form does not build yet. Kept in memory only, never logged.
+fn form_signature(with_data: &FormReader) -> Option<String> {
+    let mut signature = None;
+    with_data(&mut |data, _| {
+        signature = data.build_connection().and_then(|result| {
+            let mut value = serde_json::to_value(&result.connection).ok()?;
+            if let Some(object) = value.as_object_mut() {
+                for key in ["id", "created_at", "updated_at"] {
+                    object.remove(key);
+                }
+            }
+            Some(format!("{value}|password:{}", result.password.is_some()))
+        });
+    });
+    signature
 }

@@ -190,6 +190,23 @@ impl DetachedSessionWindow {
         toast_overlay.set_child(Some(&toolbar_view));
         window.set_content(Some(&toast_overlay));
 
+        // The header is hidden in fullscreen and there is no hover reveal, so
+        // say how to get out. A toast, not a banner: it is a hint, not a state.
+        // ponytail: names F11 as shipped; a rebinding is not followed, upgrade
+        // with the shared hover-reveal helper mentioned above.
+        {
+            let toast_overlay = toast_overlay.downgrade();
+            window.connect_fullscreened_notify(move |win| {
+                if win.is_fullscreen()
+                    && let Some(overlay) = toast_overlay.upgrade()
+                {
+                    overlay.add_toast(crate::toast::plain_toast(&i18n(
+                        "Press F11 to leave fullscreen",
+                    )));
+                }
+            });
+        }
+
         // Per-window wiring the main window gets in `app.rs`: the non-Latin
         // layout accelerator fallback plus the compact chrome. `set_compact_prefs`
         // already iterates every application window, so later preference changes

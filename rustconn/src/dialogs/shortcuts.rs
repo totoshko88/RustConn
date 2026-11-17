@@ -64,7 +64,7 @@ fn effective_accel(overrides: Option<&KeybindingSettings>, def: &KeybindingDef) 
 /// Shortcuts the application implements but does not offer for rebinding.
 ///
 /// The keybinding registry exists to drive the *Settings ▸ Keybindings* page, so
-/// it only holds actions the user can remap. These eleven are handled by widget
+/// it only holds actions the user can remap. These are handled by widget
 /// key controllers — sidebar row activation, VTE font zoom, the primary menu —
 /// and never reach `set_accels_for_action`, so a dialog built purely from the
 /// registry silently stopped documenting them. `F10` is one the project's own
@@ -89,8 +89,8 @@ fn fixed_shortcuts(category: KeybindingCategory) -> Vec<HelpEntry> {
             ),
             entry("F2", i18n("Rename selected item")),
             entry("<Control>d", i18n("Duplicate connection (sidebar)")),
-            entry("<Control>c", i18n("Copy connection")),
-            entry("<Control>v", i18n("Paste connection")),
+            entry("<Control>c", i18n("Copy Connection")),
+            entry("<Control>v", i18n("Paste Connection")),
             entry("Return", i18n("Connect to selected")),
             entry("Right", i18n("Expand selected group (sidebar)")),
             entry("Left", i18n("Collapse group, or go to parent (sidebar)")),
@@ -184,7 +184,7 @@ fn i18n_markers() -> Vec<String> {
         i18n("Connection History"),
         i18n("Statistics"),
         i18n("Password Generator"),
-        i18n("Wake On LAN"),
+        i18n("Wake-on-LAN"),
         i18n("SSH Tunnel Manager"),
         // Connections
         i18n("New Connection"),

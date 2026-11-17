@@ -46,6 +46,18 @@ use crate::i18n::{i18n, i18n_f};
 /// threshold is a deliberate speed bump, not a hard limit.
 pub const GROUP_BROADCAST_CONFIRM_THRESHOLD: usize = 5;
 
+thread_local! {
+    /// The one re-entrancy guard every [`GroupBroadcast`] shares.
+    ///
+    /// The main window has one broadcast and each cluster window its own
+    /// (issue #436). A session can sit in two of them at once — added to the
+    /// main window's set, then moved to a cluster window — and a keystroke fed
+    /// by one broadcast fires `commit` in the other. With a guard per broadcast
+    /// the second would mirror the fed text back, so every character arrived
+    /// twice. GTK runs on one thread, so a thread-local is the whole scope.
+    static BROADCAST_BUSY: Rc<Cell<bool>> = Rc::new(Cell::new(false));
+}
+
 /// Window-owned state for cross-tab keystroke broadcast.
 ///
 /// Cheaply cloneable: every field is an `Rc`, so the value can be cloned into
@@ -60,9 +72,10 @@ pub struct GroupBroadcast {
     /// Whether mirroring is currently on. `false` makes every wired handler a
     /// no-op regardless of membership.
     active: Rc<Cell<bool>>,
-    /// Shared re-entrancy guard across all wired commit handlers. Set while a
-    /// broadcast pass feeds the other members, so their own `commit` signals do
-    /// not re-broadcast.
+    /// Shared re-entrancy guard across all wired commit handlers, and across
+    /// every `GroupBroadcast` (see `BROADCAST_BUSY`). Set while a broadcast pass
+    /// feeds the other members, so their own `commit` signals do not
+    /// re-broadcast.
     busy: Rc<Cell<bool>>,
     /// Sessions whose `commit` handler is already wired, for idempotency.
     wired: Rc<RefCell<HashSet<Uuid>>>,
@@ -81,7 +94,7 @@ impl GroupBroadcast {
         Self {
             members: Rc::new(RefCell::new(HashSet::new())),
             active: Rc::new(Cell::new(false)),
-            busy: Rc::new(Cell::new(false)),
+            busy: BROADCAST_BUSY.with(Rc::clone),
             wired: Rc::new(RefCell::new(HashSet::new())),
         }
     }
@@ -235,6 +248,35 @@ pub fn wire_group_broadcast_for_session(
     });
 }
 
+/// Asks before broadcasting to more than [`GROUP_BROADCAST_CONFIRM_THRESHOLD`]
+/// sessions; runs `on_accept` only when the user enables it.
+///
+/// Shared by the main window's group broadcast and a cluster window's
+/// broadcast (issue #436), so both ask the same question the same way.
+pub fn confirm_large_group_broadcast<F>(window: &adw::ApplicationWindow, count: usize, on_accept: F)
+where
+    F: Fn() + 'static,
+{
+    let dialog = adw::AlertDialog::new(
+        Some(&i18n("Broadcast to all these tabs?")),
+        Some(&i18n_f(
+            "Keystrokes will be sent to {} sessions at once, including tabs that are not visible. A mistyped command runs on all of them.",
+            &[&count.to_string()],
+        )),
+    );
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("enable", &i18n("Enable Broadcast"));
+    dialog.set_response_appearance("enable", adw::ResponseAppearance::Destructive);
+    dialog.set_default_response(Some("cancel"));
+    dialog.set_close_response("cancel");
+    dialog.connect_response(None, move |_, response| {
+        if response == "enable" {
+            on_accept();
+        }
+    });
+    dialog.present(Some(window));
+}
+
 impl MainWindow {
     /// Registers the group-broadcast window actions and keeps the header toggle
     /// and the active-broadcast banner in sync (issue #329).
@@ -310,7 +352,16 @@ impl MainWindow {
             let turning_on = !group.is_active();
             if turning_on && group.member_count() > GROUP_BROADCAST_CONFIRM_THRESHOLD {
                 if let Some(win) = window_weak.upgrade() {
-                    Self::confirm_large_group_broadcast(&win, group.member_count());
+                    let win_for_accept = win.downgrade();
+                    confirm_large_group_broadcast(&win, group.member_count(), move || {
+                        if let Some(win) = win_for_accept.upgrade() {
+                            gio::prelude::ActionGroupExt::activate_action(
+                                &win,
+                                "group-broadcast-confirmed",
+                                None,
+                            );
+                        }
+                    });
                 }
                 return;
             }
@@ -365,39 +416,6 @@ impl MainWindow {
         });
     }
 
-    /// Confirmation for enabling group broadcast on more than
-    /// [`GROUP_BROADCAST_CONFIRM_THRESHOLD`] sessions. Accepting activates the
-    /// one-shot `group-broadcast-confirmed` action, which enables directly.
-    fn confirm_large_group_broadcast(window: &adw::ApplicationWindow, count: usize) {
-        let dialog = adw::AlertDialog::new(
-            Some(&i18n("Broadcast to all these tabs?")),
-            Some(&i18n_f(
-                "Keystrokes will be sent to {} sessions at once, including tabs that are not visible. A mistyped command runs on all of them.",
-                &[&count.to_string()],
-            )),
-        );
-        dialog.add_response("cancel", &i18n("Cancel"));
-        dialog.add_response("enable", &i18n("Enable Broadcast"));
-        dialog.set_response_appearance("enable", adw::ResponseAppearance::Destructive);
-        dialog.set_default_response(Some("cancel"));
-        dialog.set_close_response("cancel");
-
-        let window_weak = window.downgrade();
-        dialog.connect_response(None, move |_, response| {
-            if response != "enable" {
-                return;
-            }
-            if let Some(win) = window_weak.upgrade() {
-                gio::prelude::ActionGroupExt::activate_action(
-                    &win,
-                    "group-broadcast-confirmed",
-                    None,
-                );
-            }
-        });
-        dialog.present(Some(window));
-    }
-
     /// Applies a new active state: wires members, updates the action/toggle,
     /// shows or hides the banner, and toasts the change.
     fn apply_group_broadcast_state(
@@ -437,6 +455,8 @@ impl MainWindow {
                 "Group broadcast disabled — keystrokes go to the focused tab only",
             ));
         }
+        // Stopping from a tab outside the set leaves nothing to show.
+        Self::update_group_broadcast_toggle(group, notebook, toggle, action);
     }
 
     /// Toggles a session's membership in the broadcast set and refreshes chrome.
@@ -482,7 +502,8 @@ impl MainWindow {
     }
 
     /// Shows the group toggle when the active tab is a member and the set has
-    /// two or more members; hides it otherwise. Also reflects the active state.
+    /// two or more members, or whenever the broadcast is active; hides it
+    /// otherwise. Also reflects the active state.
     fn update_group_broadcast_toggle(
         group: &GroupBroadcast,
         notebook: &SharedNotebook,
@@ -492,12 +513,15 @@ impl MainWindow {
         let active_is_member = notebook
             .get_active_session_id()
             .is_some_and(|sid| group.contains(sid));
-        let show = active_is_member && group.member_count() >= 2;
+        let active = group.is_active();
+        // An active broadcast stays switchable off from any tab: the banner's
+        // Stop button and Ctrl+Shift+A use this action, and the mode reaches
+        // tabs the user may not be looking at.
+        let show = (active_is_member && group.member_count() >= 2) || active;
 
         toggle.set_visible(show);
         action.set_enabled(show);
         if show {
-            let active = group.is_active();
             toggle.set_active(active);
             action.set_state(&active.to_variant());
             if active {
@@ -582,6 +606,19 @@ mod tests {
         assert!(ran);
         assert!(inner_ran);
         assert!(gb.with_busy_guard(|| {}));
+    }
+
+    // A cluster window's broadcast and the main window's share one guard
+    // (issue #436), so text fed by one is not mirrored back by the other.
+    #[test]
+    fn separate_broadcasts_share_the_busy_guard() {
+        let main = GroupBroadcast::new();
+        let cluster_window = GroupBroadcast::new();
+        let ran = main.with_busy_guard(|| {
+            assert!(!cluster_window.with_busy_guard(|| {}));
+        });
+        assert!(ran);
+        assert!(cluster_window.with_busy_guard(|| {}));
     }
 
     // toggle() flips membership and reports the resulting state.

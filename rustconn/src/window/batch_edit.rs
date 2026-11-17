@@ -84,6 +84,9 @@ pub fn show_batch_edit_dialog(
     let group_check = gtk4::CheckButton::new();
     group_check.set_valign(gtk4::Align::Center);
     group_check.set_tooltip_text(Some(&i18n("Apply group change")));
+    group_check.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Apply group change",
+    ))]);
 
     // Build hierarchical group list: index 0 = "(No Group)"
     let mut group_ids: Vec<Option<Uuid>> = vec![None];
@@ -123,6 +126,9 @@ pub fn show_batch_edit_dialog(
     let tags_check = gtk4::CheckButton::new();
     tags_check.set_valign(gtk4::Align::Center);
     tags_check.set_tooltip_text(Some(&i18n("Apply tags change")));
+    tags_check.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Apply tags change",
+    ))]);
     let tags_row = adw::EntryRow::builder()
         .title(i18n("Tags (comma-separated, replaces existing)"))
         .build();
@@ -133,6 +139,9 @@ pub fn show_batch_edit_dialog(
     let icon_check = gtk4::CheckButton::new();
     icon_check.set_valign(gtk4::Align::Center);
     icon_check.set_tooltip_text(Some(&i18n("Apply icon change")));
+    icon_check.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Apply icon change",
+    ))]);
     let icon_row = adw::EntryRow::builder()
         .title(i18n("Icon (emoji or GTK icon name, empty clears)"))
         .build();
@@ -215,10 +224,10 @@ pub fn show_batch_edit_dialog(
                 let Some(original) = state_mut.get_connection(*conn_id).cloned() else {
                     continue;
                 };
+                // The group is not set on `modified`: a group change goes through
+                // `move_connection_to_group` below, which also moves the Vault
+                // entry whose key depends on the group.
                 let mut modified = original.clone();
-                if group_check.is_active() {
-                    modified.group_id = target_group;
-                }
                 if tags_check.is_active() {
                     modified.tags.clone_from(&tags);
                 }
@@ -230,8 +239,17 @@ pub fn show_batch_edit_dialog(
                     };
                 }
                 if state_mut.update_connection(*conn_id, modified).is_ok() {
+                    let moved = if group_check.is_active() && original.group_id != target_group {
+                        state_mut.move_connection_to_group(*conn_id, target_group)
+                    } else {
+                        Ok(())
+                    };
+                    if let Err(e) = &moved {
+                        tracing::warn!(%conn_id, error = %e, "Batch Edit: group change failed");
+                    }
+                    let applied = moved.is_ok();
                     snapshot.push(original);
-                    updated += 1;
+                    updated += usize::from(applied);
                 }
             }
         }
@@ -246,7 +264,17 @@ pub fn show_batch_edit_dialog(
         toast.connect_button_clicked(move |_| {
             if let Ok(mut state_mut) = undo_state.try_borrow_mut() {
                 for original in &snapshot {
-                    let _ = state_mut.update_connection(original.id, original.clone());
+                    // Restore everything but the group, then move back through
+                    // the path that also moves the Vault entry.
+                    let current_group = state_mut.get_connection(original.id).map(|c| c.group_id);
+                    let mut restored = original.clone();
+                    if let Some(group_id) = current_group {
+                        restored.group_id = group_id;
+                    }
+                    let _ = state_mut.update_connection(original.id, restored);
+                    if current_group.is_some_and(|group_id| group_id != original.group_id) {
+                        let _ = state_mut.move_connection_to_group(original.id, original.group_id);
+                    }
                 }
             }
             MainWindow::reload_sidebar_preserving_state(&undo_state, &undo_sidebar);
