@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The connection wizard keeps its input and shows the error when creating the connection fails** — **Save**, **Save & Connect** and **Duplicate via Wizard…** closed the wizard before the connection was created and dropped a failure silently. The wizard now stays open and shows **Error Creating Connection** with the reason. (`rustconn/src/dialogs/connection_wizard/mod.rs`, `rustconn/src/window/mod.rs`)
 - **Batch Edit moves the Vault credential with the connection** — changing the group of several connections in **Batch Edit** left a `Vault` password under the old group path, so the connections asked for it again. The group change now goes through `move_connection_to_group`, as **Move to Group** does, and so does its **Undo**. The check boxes in front of the fields also have an accessible label now. (`rustconn/src/window/batch_edit.rs`)
 - **An invalid port knock sequence is reported on Save** — the connection dialog dropped a sequence it could not parse and closed as if it had been saved. **Save** now stops with the format hint. (`rustconn/src/dialogs/connection/builders.rs`)
+- **Enter confirms the `@ask:` prompt** — the prompt for `@ask:` variables now focuses its first field and Enter in a text or secret field answers **Connect**. (`rustconn/src/dialogs/ask_prompt.rs`)
 
 ## [0.25.2] - 2026-11-17
 
