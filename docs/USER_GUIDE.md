@@ -3062,10 +3062,11 @@ Why it is written that way:
 and `show interfaces status` to `cisco-inventory-<device>-<timestamp>.log`
 with the same prompt, mode and confirmation checks. Bundled scripts are added
 on first run and refreshed automatically when a new version ships; an edit to
-an `example-*` script is copied to `<id>.rsc.bak` before it is replaced, so
+an `example-*` script is copied to `<id>.rsc.bak` (then `.bak.1`, `.bak.2`; an
+existing backup is never overwritten) before it is replaced, so
 save your adaptation under a new id to keep it in the library.
 
-Twenty-seven more bundled profiles keep the same confirmation, timestamped-log
+Twenty-eight more bundled profiles keep the same confirmation, timestamped-log
 and read-only behaviour with each vendor's prompt and commands. Between them
 they cover the brands most often seen in CIS and Chinese networks:
 
@@ -3073,12 +3074,13 @@ they cover the brands most often seen in CIS and Chinese networks:
 |---------|---------------|--------|--------------------|
 | `example-huawei-save-config` | user view `<host>`; system view `[host]` is refused | `screen-length 0 temporary` | `display current-configuration` |
 | `example-h3c-save-config` | user view `<host>`; system view `[host]` is refused | `screen-length disable` | `display current-configuration` |
+| `example-openwrt-save-uci` | root shell `root@host:~#`; a non-root shell is refused | none — BusyBox prints in one go | `uci export` |
 | `example-hsgq-save-config` | enable mode `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show current-config` |
-| `example-dlink-xstack-save-config` | administrator prompt `<host>#`; `(config)#` is refused | `disable clipaging` | `show configuration running` |
-| `example-dlink-dgs1210-save-config` | administrator prompt `<model>:<account>#` | `pager` directive | `show config` |
-| `example-tplink-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-dlink-xstack-save-config` | administrator prompt `<host>#`; `(config)#` is refused | `disable clipaging` | `show configuration running` (not verified on hardware) |
+| `example-dlink-dgs1210-save-config` | administrator prompt `<model>:<account>#` | `pager` directive | `show config` (not verified on hardware) |
+| `example-tplink-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` (not verified on hardware) |
 | `example-ruijie-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `terminal length 0` | `show running-config` |
-| `example-zte-save-config` | administrator `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-zte-save-config` | administrator `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` (not verified on hardware) |
 | `example-mikrotik-save-config` | any RouterOS prompt `[admin@host] >` | none — RouterOS does not paginate | `/export verbose`; RouterOS 7 adds `show-sensitive` after reading the major version |
 | `example-eltex-save-config` | privileged `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config detailed` (includes keys, so the log holds secrets) |
 | `example-bdcom-save-config` | administrator `<host>#`; the `_config#` prompt is refused | `terminal length 0` | `show running-config` |
@@ -3100,7 +3102,7 @@ they cover the brands most often seen in CIS and Chinese networks:
 | `example-allied-save-config` | privileged EXEC `awplus#` | `terminal length 0` | `show running-config` |
 
 `example-huawei-olt-provision-ont` is the write counterpart for SmartAX GPON
-OLTs. It asks for the service VLAN, uplink frame/slot and port, PON slot and
+OLTs. It follows the vendor guides and is not verified on hardware. It asks for the service VLAN, uplink frame/slot and port, PON slot and
 port, ONT ID and serial number, service and line profile IDs, existing DBA and
 traffic table IDs, Ethernet port count and description, pre-filling every
 answer with an example value (only the serial number has no default). Every
@@ -3122,6 +3124,10 @@ prompt with a space while the `expect` waits, so a device that cannot disable
 paging still produces a complete transcript. If a model uses different pager
 text, add it to that expression; otherwise the `expect` times out rather than
 saving a truncated file.
+
+The pager text is removed from what the script reads, not from the log: the
+transcript file is a raw copy of the terminal output, so it can still contain
+the pager text (`--More--` and the like) between pages.
 
 Only two of these CLIs offer a documented way to include secrets:
 `/export verbose show-sensitive` on RouterOS 7 (RouterOS 6 includes them by
