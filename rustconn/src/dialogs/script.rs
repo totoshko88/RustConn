@@ -145,6 +145,7 @@ impl ScriptDialog {
         // logic keeps working when nothing matches.
         let search = SearchEntry::new();
         search.set_placeholder_text(Some(&i18n("Search")));
+        search.update_property(&[gtk4::accessible::Property::Label(&i18n("Search"))]);
         {
             let query = Rc::new(RefCell::new(String::new()));
             let filter_query = query.clone();
