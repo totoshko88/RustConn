@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.25.4] - Unreleased
+## [0.25.4] - 2026-11-18
 
 ### Added
 
@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The password show/hide button tells screen readers its state** — in the connection and group dialogs the button now reports as pressed while the password is visible; before, only its icon changed. (`rustconn/src/window/connection_dialogs.rs`, `rustconn/src/window/edit_group.rs`)
 
 
+### Dependencies
+- **bytes 1.12.1 → 1.12.2**, **zip 9.6.1 → 9.7.0**
 ## [0.25.3] - 2026-11-17
 
 ### Added

@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.25.3
+Version:        0.25.4
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,13 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Nov 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.4-0
+- Version bump to 0.25.4
+- Added: Tile Tabs in a cluster window (#436); vendor save-config scripts, pager instruction, Huawei OLT provisioning, ask ... default, ${CWD} and private log paths
+- Fixed: cluster dialog size, hidden protocol fields kept on edit, smart folder delete asks first, Scripts dialog Run state, hidden answers stay hidden
+- Changed: Scripts dialog redesigned as a two-pane layout; bundled examples refreshed with a backup; script API break for ScriptHost implementors
+- Dependencies: bytes 1.12.2, zip 9.7.0
+
 * Tue Nov 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.3-0
 - Version bump to 0.25.3
 - Added: Broadcast toggle in a cluster window (#436), Duplicate Tab in the tab menu (#437)

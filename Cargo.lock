@@ -570,9 +570,9 @@ checksum = "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495"
 
 [[package]]
 name = "bytes"
-version = "1.12.1"
+version = "1.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
+checksum = "776dfebd015e2d8732c684a2c71003674ccb49457b539b9e82151ba38e96dd7c"
 
 [[package]]
 name = "bzip2"
@@ -4850,7 +4850,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.25.3"
+version = "0.25.4"
 dependencies = [
  "async-channel",
  "chrono",
@@ -4890,7 +4890,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.25.3"
+version = "0.25.4"
 dependencies = [
  "chrono",
  "clap",
@@ -4913,7 +4913,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.25.3"
+version = "0.25.4"
 dependencies = [
  "aes 0.9.4",
  "ar",
@@ -4990,7 +4990,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.25.3"
+version = "0.25.4"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -4999,18 +4999,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.25.3"
+version = "0.25.4"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.25.3"
+version = "0.25.4"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-lock-sys"
-version = "0.25.3"
+version = "0.25.4"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5019,7 +5019,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.25.3"
+version = "0.25.4"
 dependencies = [
  "libc",
  "nix",
@@ -7311,9 +7311,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.6.1"
+version = "9.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "953a376f4930ed5af88e1e65948385f76866b45e7f75b21ac275327d0eeb9b46"
+checksum = "08687262e7c0f1284b259686f322805a8adaa8ef4d7210e76448950b3f083bf7"
 dependencies = [
  "aes 0.9.4",
  "bzip2",

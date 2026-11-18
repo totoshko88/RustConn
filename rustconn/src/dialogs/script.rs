@@ -36,7 +36,16 @@ fn seed_bundled_examples(manager: &ScriptManager) {
 
 fn seed_examples(manager: &ScriptManager, examples: &[(&str, &str)]) {
     for (id, source) in examples {
-        let current = manager.load_script(id).ok();
+        let current = match manager.load_script(id) {
+            Ok(text) => Some(text),
+            // No file yet: seed it. Any other failure means a file exists
+            // that cannot be read; replacing it would lose it unbacked.
+            Err(_) if !manager.scripts_dir().join(format!("{id}.rsc")).exists() => None,
+            Err(error) => {
+                tracing::warn!(%error, id, "could not read a bundled example; leaving it unchanged");
+                continue;
+            }
+        };
         if current.as_deref() == Some(*source) {
             continue;
         }
@@ -51,7 +60,9 @@ fn seed_examples(manager: &ScriptManager, examples: &[(&str, &str)]) {
                 continue;
             }
         }
-        let _ = manager.save_script(id, source);
+        if let Err(error) = manager.save_script(id, source) {
+            tracing::warn!(%error, id, "could not write a bundled example");
+        }
     }
 }
 
@@ -600,7 +611,37 @@ impl ScriptDialog {
                             stop_btn_finish.set_sensitive(false);
                         });
 
-                    match crate::script_runner::ScriptRunner::start_for_session(
+                    // The running state is set before the runner starts: a
+                    // script that ends on its first step calls `on_finish`
+                    // before `start_for_session` returns, and that callback
+                    // must be the last word, not be overwritten afterwards.
+                    *started_run.borrow_mut() = Some(std::time::Instant::now());
+                    *session_run.borrow_mut() = Some(session_id);
+                    running_run.set(true);
+                    run_btn_run.set_sensitive(false);
+                    stop_run.set_sensitive(true);
+                    status_run.set_label(&i18n("Script running… 0.0 s"));
+                    // Elapsed time, refreshed five times a second. The
+                    // script itself needs no wall clock: the runner is
+                    // event-driven, so this label is the only place a
+                    // duration is shown.
+                    let status_tick = status_run.clone();
+                    let started_tick = started_run.clone();
+                    *ticker_run.borrow_mut() = Some(glib::timeout_add_local(
+                        std::time::Duration::from_millis(200),
+                        move || {
+                            let Some(started) = *started_tick.borrow() else {
+                                return glib::ControlFlow::Break;
+                            };
+                            let seconds = started.elapsed().as_secs_f64();
+                            status_tick.set_label(&i18n_f(
+                                "Script running… {} s",
+                                &[&format!("{seconds:.1}")],
+                            ));
+                            glib::ControlFlow::Continue
+                        },
+                    ));
+                    if let Err(e) = crate::script_runner::ScriptRunner::start_for_session(
                         &source,
                         session_id,
                         connection_id,
@@ -611,38 +652,15 @@ impl ScriptDialog {
                         runtime,
                         Some(on_finish),
                     ) {
-                        Ok(()) => {
-                            *started_run.borrow_mut() = Some(std::time::Instant::now());
-                            *session_run.borrow_mut() = Some(session_id);
-                            running_run.set(true);
-                            run_btn_run.set_sensitive(false);
-                            stop_run.set_sensitive(true);
-                            status_run.set_label(&i18n("Script running… 0.0 s"));
-                            // Elapsed time, refreshed five times a second. The
-                            // script itself needs no wall clock: the runner is
-                            // event-driven, so this label is the only place a
-                            // duration is shown.
-                            let status_tick = status_run.clone();
-                            let started_tick = started_run.clone();
-                            *ticker_run.borrow_mut() = Some(glib::timeout_add_local(
-                                std::time::Duration::from_millis(200),
-                                move || {
-                                    let Some(started) = *started_tick.borrow() else {
-                                        return glib::ControlFlow::Break;
-                                    };
-                                    let seconds = started.elapsed().as_secs_f64();
-                                    status_tick.set_label(&i18n_f(
-                                        "Script running… {} s",
-                                        &[&format!("{seconds:.1}")],
-                                    ));
-                                    glib::ControlFlow::Continue
-                                },
-                            ));
+                        if let Some(source) = ticker_run.borrow_mut().take() {
+                            source.remove();
                         }
-                        Err(e) => {
-                            status_run
-                                .set_label(&format!("{}: {e}", i18n("Could not start script")));
-                        }
+                        *started_run.borrow_mut() = None;
+                        *session_run.borrow_mut() = None;
+                        running_run.set(false);
+                        run_btn_run.set_sensitive(true);
+                        stop_run.set_sensitive(false);
+                        status_run.set_label(&format!("{}: {e}", i18n("Could not start script")));
                     }
                 }
                 Err(e) => {

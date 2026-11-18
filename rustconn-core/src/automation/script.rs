@@ -637,7 +637,11 @@ impl ScriptEngine {
                 variable,
             } => {
                 let prompt = self.substitute(&prompt);
-                let default = default.as_ref().map(|d| self.substitute(d));
+                // A default built from a hidden answer would show it in clear.
+                let default = default
+                    .as_ref()
+                    .filter(|d| !self.mentions_hidden(d))
+                    .map(|d| self.substitute(d));
                 self.ask_var = Some(variable);
                 self.ask_hidden = !echo;
                 self.pending = PendingKind::Ask;
@@ -725,8 +729,13 @@ impl ScriptEngine {
                 host.run_command(&command, Some(timeout_ms.unwrap_or(RUN_TIMEOUT_CEILING_MS)));
             }
             ScriptStep::Set { var, value } => {
+                // A value built from a hidden answer is as hidden as it.
+                let hidden = self.mentions_hidden(&value);
                 let value = self.substitute(&value);
-                self.set_var(var, value);
+                self.set_var(var.clone(), value);
+                if hidden {
+                    self.hidden_vars.insert(var);
+                }
                 self.advance();
             }
             ScriptStep::Goto { label } => match self.jump(&label) {
@@ -955,6 +964,15 @@ impl ScriptEngine {
                 }
             })
             .into_owned()
+    }
+
+    /// True when `text` references a variable that holds a hidden answer.
+    fn mentions_hidden(&self, text: &str) -> bool {
+        VARIABLE_REF.captures_iter(text).any(|caps| {
+            caps.get(1)
+                .or_else(|| caps.get(2))
+                .is_some_and(|m| self.hidden_vars.contains(m.as_str()))
+        })
     }
 
     /// [`Self::substitute`] for a command line handed to `sh -c`.
@@ -2202,6 +2220,44 @@ mod tests {
         assert!(!host.events.iter().any(|event| event.starts_with("log:")));
     }
 
+    /// Copying a hidden answer with `set` must not launder it.
+    #[test]
+    fn a_copy_of_a_hidden_answer_stays_hidden() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse(
+            "ask \"Secret:\" hide secret\nset copy \"x-${secret}\"\nlog \"${copy}.log\"\n",
+        )
+        .unwrap();
+        engine.pump(&mut host);
+        engine.on_ask_result(Some("hunter2".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert!(
+            engine
+                .error()
+                .is_some_and(|error| error.contains("hidden answer")),
+            "{:?}",
+            engine.error()
+        );
+        assert!(!host.events.iter().any(|event| event.starts_with("log:")));
+    }
+    /// An `ask` default must not show a hidden answer in clear text.
+    #[test]
+    fn ask_default_never_offers_a_hidden_answer() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse(
+            "ask \"Secret:\" hide secret\nask \"Again:\" default $secret again\n",
+        )
+        .unwrap();
+        engine.pump(&mut host);
+        engine.on_ask_result(Some("hunter2".to_string()));
+        engine.pump(&mut host);
+        assert!(
+            host.events.iter().all(|event| !event.contains("hunter2")),
+            "{:?}",
+            host.events
+        );
+    }
     /// A failed capture must not leave the script claiming it saved something.
     #[test]
     fn a_log_that_cannot_be_opened_stops_the_script() {
