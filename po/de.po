@@ -1165,7 +1165,7 @@ msgstr ""
 "Befehl leiten"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:538
-msgid "Postpend Command"
+msgid "Filter Command"
 msgstr "Nachbearbeitungsbefehl"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:539
@@ -10114,7 +10114,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Übertragung an geteilte Ansicht umschalten"
 
 #: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
-msgid "Toggle Group Broadcast"
+msgid "Toggle Tab Broadcast"
 msgstr "Gruppen-Broadcast umschalten"
 
 #: rustconn/src/dialogs/shortcuts.rs:362
@@ -12132,7 +12132,7 @@ msgid "Script sent"
 msgstr "Skript gesendet"
 
 #: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
-msgid "Run Snippet?"
+msgid "Execute Snippet?"
 msgstr "Snippet ausführen?"
 
 #: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
@@ -13514,11 +13514,11 @@ msgid "Remove from Group"
 msgstr "Aus Gruppe entfernen"
 
 #: rustconn/src/terminal/tab_menu.rs:1288
-msgid "Remove from Broadcast"
+msgid "Remove from Tab Broadcast"
 msgstr "Aus Broadcast entfernen"
 
 #: rustconn/src/terminal/tab_menu.rs:1290
-msgid "Add to Broadcast"
+msgid "Add to Tab Broadcast"
 msgstr "Zum Broadcast hinzufügen"
 
 #: rustconn/src/terminal/tab_menu.rs:1312
@@ -16061,7 +16061,7 @@ msgstr ""
 "Tastatureingaben auf alle geteilten Bereiche spiegeln (Strg+Umschalt+B)"
 
 #: rustconn/src/window/ui.rs:169
-msgid "Group Broadcast"
+msgid "Tab Broadcast"
 msgstr "Gruppen-Broadcast"
 
 #: rustconn/src/window/ui.rs:175

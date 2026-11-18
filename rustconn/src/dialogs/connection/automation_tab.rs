@@ -535,7 +535,7 @@ fn create_postpend_section() -> (adw::PreferencesGroup, adw::SwitchRow, Entry, E
         .build();
 
     let expander = adw::ExpanderRow::builder()
-        .title(i18n("Postpend Command"))
+        .title(i18n("Filter Command"))
         .subtitle(i18n("e.g., ChromaTerm for syntax highlighting"))
         .show_enable_switch(false)
         .build();

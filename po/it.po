@@ -1162,7 +1162,7 @@ msgstr ""
 "evidenziarlo o elaborarlo"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:538
-msgid "Postpend Command"
+msgid "Filter Command"
 msgstr "Comando di post-elaborazione"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:539
@@ -10082,7 +10082,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Trasmissione nella vista divisa"
 
 #: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
-msgid "Toggle Group Broadcast"
+msgid "Toggle Tab Broadcast"
 msgstr "Attiva/disattiva trasmissione di gruppo"
 
 #: rustconn/src/dialogs/shortcuts.rs:362
@@ -12074,7 +12074,7 @@ msgid "Script sent"
 msgstr "Script inviato"
 
 #: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
-msgid "Run Snippet?"
+msgid "Execute Snippet?"
 msgstr "Eseguire il frammento?"
 
 #: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
@@ -13455,11 +13455,11 @@ msgid "Remove from Group"
 msgstr "Rimuovi dal gruppo"
 
 #: rustconn/src/terminal/tab_menu.rs:1288
-msgid "Remove from Broadcast"
+msgid "Remove from Tab Broadcast"
 msgstr "Rimuovi dalla trasmissione"
 
 #: rustconn/src/terminal/tab_menu.rs:1290
-msgid "Add to Broadcast"
+msgid "Add to Tab Broadcast"
 msgstr "Aggiungi alla trasmissione"
 
 #: rustconn/src/terminal/tab_menu.rs:1312
@@ -15965,7 +15965,7 @@ msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Duplica le digitazioni in tutti i pannelli divisi (Ctrl+Maiusc+B)"
 
 #: rustconn/src/window/ui.rs:169
-msgid "Group Broadcast"
+msgid "Tab Broadcast"
 msgstr "Trasmissione di gruppo"
 
 #: rustconn/src/window/ui.rs:175

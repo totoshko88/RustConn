@@ -1168,7 +1168,7 @@ msgstr ""
 "დამუშავებისთვის"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:538
-msgid "Postpend Command"
+msgid "Filter Command"
 msgstr "გამონატანის დამუშავების ბრძანება"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:539
@@ -10040,7 +10040,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Split Broadcast-ის გადართვა"
 
 #: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
-msgid "Toggle Group Broadcast"
+msgid "Toggle Tab Broadcast"
 msgstr "ჯგუფური მაუწყებლობის გადართვა"
 
 #: rustconn/src/dialogs/shortcuts.rs:362
@@ -12018,7 +12018,7 @@ msgid "Script sent"
 msgstr "სკრიპტი გაგზავნილია"
 
 #: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
-msgid "Run Snippet?"
+msgid "Execute Snippet?"
 msgstr "გავუშვა ფრაგმენტი?"
 
 #: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
@@ -13391,11 +13391,11 @@ msgid "Remove from Group"
 msgstr "ჯგუფიდან წაშლა"
 
 #: rustconn/src/terminal/tab_menu.rs:1288
-msgid "Remove from Broadcast"
+msgid "Remove from Tab Broadcast"
 msgstr "მაუწყებლობიდან ამოშლა"
 
 #: rustconn/src/terminal/tab_menu.rs:1290
-msgid "Add to Broadcast"
+msgid "Add to Tab Broadcast"
 msgstr "მაუწყებლობაში დამატება"
 
 #: rustconn/src/terminal/tab_menu.rs:1312
@@ -15895,7 +15895,7 @@ msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "კლავიშების ასახვა ყველა გაყოფილი პანელზე (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:169
-msgid "Group Broadcast"
+msgid "Tab Broadcast"
 msgstr "ჯგუფური მაუწყებლობა"
 
 #: rustconn/src/window/ui.rs:175
