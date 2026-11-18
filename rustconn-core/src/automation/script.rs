@@ -2303,8 +2303,7 @@ mod tests {
     /// The script log must not carry the text the `pager` expression removes.
     #[test]
     fn log_output_drops_pager_prompts() {
-        let mut engine =
-            ScriptEngine::parse("pager \"---- More ----\"\nprint \"x\"\n").unwrap();
+        let mut engine = ScriptEngine::parse("pager \"---- More ----\"\nprint \"x\"\n").unwrap();
         let mut host = FakeHost::default();
         engine.pump(&mut host);
         let mut log = Vec::new();
@@ -2321,7 +2320,10 @@ mod tests {
     #[test]
     fn log_output_is_untouched_without_pager() {
         let mut engine = ScriptEngine::parse("print \"x\"\n").unwrap();
-        assert_eq!(engine.filter_log_output(b"a---- More ----b"), b"a---- More ----b");
+        assert_eq!(
+            engine.filter_log_output(b"a---- More ----b"),
+            b"a---- More ----b"
+        );
     }
 
     /// A failed capture must not leave the script claiming it saved something.
