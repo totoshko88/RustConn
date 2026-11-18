@@ -1,3 +1,26 @@
+rustconn (0.25.4-1) unstable; urgency=medium
+
+  * Version bump to 0.25.4
+  * Added: Tile Tabs in a cluster window shows every tab in a grid (#436)
+  * Added: vendor save-config and inventory scripts, the pager
+    instruction, Huawei OLT ONT provisioning, ask ... default, ${CWD} and
+    private log paths
+  * Fixed: New/Edit Cluster dialog fits its content
+  * Fixed: editing a connection keeps protocol fields the editor cannot
+    show
+  * Fixed: deleting a smart folder asks first
+  * Fixed: Run in the Scripts dialog no longer stays disabled; a copy of
+    a hidden answer stays hidden; an unreadable bundled example is not
+    overwritten
+  * Changed: Scripts dialog redesigned as a two-pane layout; bundled
+    examples are refreshed with a backup of local edits; script API break
+    for ScriptHost implementors
+  * Improved: script library search and layout; password show/hide state
+    for screen readers
+  * Dependencies: bytes 1.12.2, zip 9.7.0
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 18 Nov 2026 12:00:00 +0200
+
 rustconn (0.25.3-1) unstable; urgency=medium
 
   * Version bump to 0.25.3

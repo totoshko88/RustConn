@@ -447,6 +447,7 @@ impl ConnectionManager {
         if updated.automation.post_login_scripts.is_empty() {
             updated.automation.post_login_scripts = existing.automation.post_login_scripts.clone();
         }
+        preserve_hidden_protocol_fields(&existing.protocol_config, &mut updated.protocol_config);
         // The connection editor builds a fresh `Connection`, which would drop
         // the Group Sync link to the Master's copy and turn the next sync's
         // rename on the Master back into a delete + create. A caller that
@@ -2341,6 +2342,50 @@ fn eq_ignore_case(a: &str, b: &str) -> bool {
     }
 }
 
+/// Keeps the `protocol_config` fields the connection editor has no widget for.
+///
+/// The editor rebuilds the whole config, so these come back as defaults: MOSH
+/// `custom_args`, the `username` of Cloudflare Access / Teleport / Tailscale,
+/// RDP `script_paste_via_clipboard` (always rebuilt as `true`) and a Kubernetes
+/// shell outside the editor's four choices. A default value means "not
+/// supplied" and the stored one stays.
+// ponytail: an update cannot reset these to their default; the CLI writes the
+// file directly, so only `update_connection` callers see this.
+fn preserve_hidden_protocol_fields(existing: &ProtocolConfig, updated: &mut ProtocolConfig) {
+    use crate::models::ZeroTrustProviderConfig as Zt;
+    match (existing, updated) {
+        (ProtocolConfig::Mosh(old), ProtocolConfig::Mosh(new)) => {
+            if new.custom_args.is_empty() {
+                new.custom_args.clone_from(&old.custom_args);
+            }
+        }
+        (ProtocolConfig::Rdp(old), ProtocolConfig::Rdp(new)) => {
+            new.script_paste_via_clipboard &= old.script_paste_via_clipboard;
+        }
+        (ProtocolConfig::Kubernetes(old), ProtocolConfig::Kubernetes(new)) => {
+            const EDITOR_SHELLS: [&str; 4] = ["/bin/sh", "/bin/bash", "/bin/ash", "/bin/zsh"];
+            if new.shell == "/bin/sh" && !EDITOR_SHELLS.contains(&old.shell.as_str()) {
+                new.shell.clone_from(&old.shell);
+            }
+        }
+        (ProtocolConfig::ZeroTrust(old), ProtocolConfig::ZeroTrust(new)) => {
+            match (&old.provider_config, &mut new.provider_config) {
+                (Zt::CloudflareAccess(o), Zt::CloudflareAccess(n)) if n.username.is_none() => {
+                    n.username.clone_from(&o.username);
+                }
+                (Zt::Teleport(o), Zt::Teleport(n)) if n.username.is_none() => {
+                    n.username.clone_from(&o.username);
+                }
+                (Zt::TailscaleSsh(o), Zt::TailscaleSsh(n)) if n.username.is_none() => {
+                    n.username.clone_from(&o.username);
+                }
+                _ => {}
+            }
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::TempDir;
@@ -2791,6 +2836,60 @@ mod tests {
         let conn = manager.get_connection(id).unwrap();
         assert_eq!(conn.name, "Updated Server");
         assert_eq!(conn.host, "new.example.com");
+    }
+
+    /// Editing only the name must keep the protocol fields the editor cannot show.
+    #[tokio::test]
+    async fn update_keeps_protocol_fields_the_editor_has_no_widget_for() {
+        use crate::models::{
+            TeleportConfig, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
+        };
+        let (mut manager, _temp) = create_test_manager();
+
+        let mut mosh = Connection::new_mosh("m".into(), "h".into(), 22);
+        if let ProtocolConfig::Mosh(c) = &mut mosh.protocol_config {
+            c.custom_args = vec!["--local".into()];
+        }
+        let mut rdp = Connection::new_rdp("r".into(), "h".into(), 3389);
+        if let ProtocolConfig::Rdp(c) = &mut rdp.protocol_config {
+            c.script_paste_via_clipboard = false;
+        }
+        let mut k8s = Connection::new_kubernetes("k".into());
+        if let ProtocolConfig::Kubernetes(c) = &mut k8s.protocol_config {
+            c.shell = "/usr/bin/fish".into();
+        }
+        let mut zt = Connection::new_ssh("z".into(), "h".into(), 22);
+        zt.protocol_config = ProtocolConfig::ZeroTrust(ZeroTrustConfig {
+            provider: ZeroTrustProvider::Teleport,
+            provider_config: ZeroTrustProviderConfig::Teleport(TeleportConfig {
+                host: "h".into(),
+                username: Some("root".into()),
+                cluster: None,
+            }),
+            custom_args: Vec::new(),
+        });
+
+        for stored in [mosh, rdp, k8s, zt] {
+            let id = manager.create_connection_from(stored.clone()).unwrap();
+            // What the editor sends back: the hidden fields at their defaults.
+            let mut edited = stored.clone();
+            match &mut edited.protocol_config {
+                ProtocolConfig::Mosh(c) => c.custom_args.clear(),
+                ProtocolConfig::Rdp(c) => c.script_paste_via_clipboard = true,
+                ProtocolConfig::Kubernetes(c) => c.shell = "/bin/sh".into(),
+                ProtocolConfig::ZeroTrust(ZeroTrustConfig {
+                    provider_config: ZeroTrustProviderConfig::Teleport(t),
+                    ..
+                }) => t.username = None,
+                _ => unreachable!(),
+            }
+            edited.name = "renamed".into();
+            manager.update_connection(id, edited).unwrap();
+            assert_eq!(
+                manager.get_connection(id).unwrap().protocol_config,
+                stored.protocol_config
+            );
+        }
     }
 
     #[tokio::test]

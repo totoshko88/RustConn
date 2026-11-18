@@ -19,6 +19,7 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Button, gio, glib};
 use libadwaita as adw;
+use rustconn_core::split::{BalancedSplitStep, balanced_split_plan};
 use uuid::Uuid;
 
 use crate::i18n::{i18n, i18n_f};
@@ -39,7 +40,318 @@ type ToggleCallback = Rc<RefCell<Option<Box<dyn Fn(bool)>>>>;
 /// One hosted session.
 struct Member {
     page: adw::TabPage,
+    /// The session's content box. It sits in the page's slot box, or in a tile
+    /// while the window is tiled.
+    content: gtk4::Box,
     connection_id: Uuid,
+}
+
+/// Where each tile of the grid goes: the tree the balanced split plan makes.
+#[derive(Debug, PartialEq, Eq)]
+enum TileNode {
+    /// The tile at this index (tab order).
+    Leaf(usize),
+    Split {
+        /// `true` puts `first` above `second`; `false` puts it to the left.
+        horizontal: bool,
+        first: Box<Self>,
+        second: Box<Self>,
+    },
+}
+
+impl TileNode {
+    /// Replaces the leaf `target` with a split of it and the new leaf `new`.
+    fn split_leaf(&mut self, target: usize, new: usize, horizontal: bool) -> bool {
+        match self {
+            Self::Leaf(index) if *index == target => {
+                *self = Self::Split {
+                    horizontal,
+                    first: Box::new(Self::Leaf(target)),
+                    second: Box::new(Self::Leaf(new)),
+                };
+                true
+            }
+            Self::Leaf(_) => false,
+            Self::Split { first, second, .. } => {
+                first.split_leaf(target, new, horizontal)
+                    || second.split_leaf(target, new, horizontal)
+            }
+        }
+    }
+
+    /// The leaf indices, left to right and top to bottom.
+    #[cfg(test)]
+    fn leaves(&self, out: &mut Vec<usize>) {
+        match self {
+            Self::Leaf(index) => out.push(*index),
+            Self::Split { first, second, .. } => {
+                first.leaves(out);
+                second.leaves(out);
+            }
+        }
+    }
+}
+
+/// Turns a balanced split plan into a tree. Leaf `0` is the first tile; step
+/// `i` adds leaf `i + 1`.
+fn tile_tree(plan: &[BalancedSplitStep]) -> TileNode {
+    let mut root = TileNode::Leaf(0);
+    for (i, step) in plan.iter().enumerate() {
+        root.split_leaf(step.target, i + 1, step.horizontal);
+    }
+    root
+}
+
+/// Tile mode: every tab of the window side by side in a balanced grid.
+///
+/// A tab page holds a *slot* box and the session content lives in it. In tile
+/// mode the content moves into a tile and the tab view stays as it is (hidden),
+/// so the selected page, close, move-back and broadcast all work unchanged.
+struct TileView {
+    tab_view: adw::TabView,
+    tab_bar: adw::TabBar,
+    stack: gtk4::Stack,
+    tiles: gtk4::Box,
+    toggle: gtk4::ToggleButton,
+    toggle_label: gtk4::Label,
+    members: Rc<RefCell<HashMap<Uuid, Member>>>,
+    tiled: Cell<bool>,
+}
+
+impl TileView {
+    /// Takes `content` out of the box that holds it.
+    fn lift(content: &gtk4::Box) {
+        if let Some(parent) = content.parent().and_downcast::<gtk4::Box>() {
+            parent.remove(content);
+        }
+    }
+
+    /// Whether keyboard focus is already inside `content`.
+    fn holds_focus(content: &gtk4::Box) -> bool {
+        content
+            .root()
+            .and_downcast::<gtk4::Window>()
+            .and_then(|window| gtk4::prelude::RootExt::focus(&window))
+            .is_some_and(|focus| {
+                focus == *content.upcast_ref::<gtk4::Widget>() || focus.is_ancestor(content)
+            })
+    }
+
+    fn focus_content(content: &gtk4::Box) {
+        let content = content.clone();
+        glib::idle_add_local_once(move || {
+            content.child_focus(gtk4::DirectionType::TabForward);
+        });
+    }
+
+    /// The content of the selected tab.
+    fn selected_content(&self) -> Option<gtk4::Box> {
+        let page = self.tab_view.selected_page()?;
+        self.members
+            .borrow()
+            .values()
+            .find(|member| member.page == page)
+            .map(|member| member.content.clone())
+    }
+
+    /// Shows or hides the toggle and keeps the grid in step with the tabs.
+    /// Call it after the set of tabs changed.
+    fn refresh(&self) {
+        let count = self.members.borrow().len();
+        self.toggle.set_visible(count >= 2);
+        if self.tiled.get() {
+            if count >= 2 {
+                self.rebuild();
+            } else {
+                self.exit();
+            }
+        }
+    }
+
+    fn set_toggle_state(&self, tiled: bool) {
+        let (label, tooltip) = if tiled {
+            (i18n("Show Tabs"), i18n("Go back to one tab at a time"))
+        } else {
+            (
+                i18n("Tile Tabs"),
+                i18n("Show all tabs of this window side by side"),
+            )
+        };
+        self.toggle_label.set_label(&label);
+        self.toggle.set_tooltip_text(Some(&tooltip));
+        self.toggle
+            .update_property(&[gtk4::accessible::Property::Label(&label)]);
+        self.toggle.set_active(tiled);
+    }
+
+    fn enter(&self) {
+        if self.tiled.get() || self.members.borrow().len() < 2 {
+            self.set_toggle_state(self.tiled.get());
+            return;
+        }
+        self.tiled.set(true);
+        self.tab_bar.set_visible(false);
+        self.stack.set_visible_child_name("tiles");
+        self.set_toggle_state(true);
+        self.rebuild();
+    }
+
+    fn exit(&self) {
+        self.tiled.set(false);
+        for member in self.members.borrow().values() {
+            Self::lift(&member.content);
+            if let Some(slot) = member.page.child().downcast_ref::<gtk4::Box>() {
+                slot.append(&member.content);
+            }
+        }
+        self.clear_tiles();
+        self.stack.set_visible_child_name("tabs");
+        self.tab_bar.set_visible(true);
+        self.set_toggle_state(false);
+        if let Some(content) = self.selected_content() {
+            Self::focus_content(&content);
+        }
+    }
+
+    fn clear_tiles(&self) {
+        while let Some(child) = self.tiles.first_child() {
+            self.tiles.remove(&child);
+        }
+    }
+
+    /// Builds the grid again from the tabs that are left, in tab order.
+    fn rebuild(&self) {
+        let mut ordered: Vec<(i32, adw::TabPage, gtk4::Box)> = self
+            .members
+            .borrow()
+            .values()
+            .map(|member| {
+                (
+                    self.tab_view.page_position(&member.page),
+                    member.page.clone(),
+                    member.content.clone(),
+                )
+            })
+            .collect();
+        ordered.sort_by_key(|(position, _, _)| *position);
+        for (_, _, content) in &ordered {
+            Self::lift(content);
+        }
+        self.clear_tiles();
+        if ordered.is_empty() {
+            return;
+        }
+
+        let plan = balanced_split_plan(
+            f64::from(self.stack.width()),
+            f64::from(self.stack.height()),
+            ordered.len() - 1,
+        );
+        let cells: Vec<gtk4::Box> = ordered
+            .iter()
+            .map(|(_, page, content)| self.build_tile(page, content))
+            .collect();
+        let root = Self::build_widget(&tile_tree(&plan), &cells);
+        self.tiles.append(&root);
+        if let Some(content) = self.selected_content() {
+            Self::focus_content(&content);
+        }
+    }
+
+    /// One tile: a narrow title (tab name, disconnected mark) over the session.
+    fn build_tile(&self, page: &adw::TabPage, content: &gtk4::Box) -> gtk4::Box {
+        let cell = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        cell.add_css_class("split-panel");
+        cell.set_hexpand(true);
+        cell.set_vexpand(true);
+
+        let title = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+        title.set_margin_start(6);
+        title.set_margin_end(6);
+        let label = gtk4::Label::new(None);
+        label.add_css_class("caption");
+        label.set_xalign(0.0);
+        label.set_hexpand(true);
+        label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+        page.bind_property("title", &label, "label")
+            .sync_create()
+            .build();
+        let indicator = gtk4::Image::new();
+        indicator.set_pixel_size(12);
+        page.bind_property("indicator-icon", &indicator, "gicon")
+            .sync_create()
+            .build();
+        page.bind_property("indicator-icon", &indicator, "visible")
+            .sync_create()
+            .transform_to(|_, icon: Option<gio::Icon>| Some(icon.is_some()))
+            .build();
+        page.bind_property("indicator-tooltip", &indicator, "tooltip-text")
+            .sync_create()
+            .build();
+        title.append(&label);
+        title.append(&indicator);
+        cell.append(&title);
+
+        content.set_vexpand(true);
+        cell.append(content);
+
+        // The focused tile is the selected tab, so every action that works on
+        // the selected tab acts on it.
+        let focus = gtk4::EventControllerFocus::new();
+        let tab_view = self.tab_view.clone();
+        let page = page.clone();
+        let cell_weak = cell.downgrade();
+        focus.connect_enter(move |_| {
+            tab_view.set_selected_page(&page);
+            if let Some(cell) = cell_weak.upgrade() {
+                cell.add_css_class("focused-panel");
+            }
+        });
+        let cell_weak = cell.downgrade();
+        focus.connect_leave(move |_| {
+            if let Some(cell) = cell_weak.upgrade() {
+                cell.remove_css_class("focused-panel");
+            }
+        });
+        cell.add_controller(focus);
+        cell
+    }
+
+    fn build_widget(node: &TileNode, cells: &[gtk4::Box]) -> gtk4::Widget {
+        match node {
+            TileNode::Leaf(index) => cells[*index].clone().upcast(),
+            TileNode::Split {
+                horizontal,
+                first,
+                second,
+            } => {
+                let orientation = if *horizontal {
+                    gtk4::Orientation::Vertical
+                } else {
+                    gtk4::Orientation::Horizontal
+                };
+                let paned = gtk4::Paned::new(orientation);
+                paned.set_hexpand(true);
+                paned.set_vexpand(true);
+                paned.set_resize_start_child(true);
+                paned.set_resize_end_child(true);
+                paned.set_shrink_start_child(false);
+                paned.set_shrink_end_child(false);
+                paned.set_start_child(Some(&Self::build_widget(first, cells)));
+                paned.set_end_child(Some(&Self::build_widget(second, cells)));
+                // Halves, once the size is known; the user may drag it later.
+                let placed = Cell::new(false);
+                paned.connect_notify_local(Some("max-position"), move |paned, _| {
+                    let max = paned.max_position();
+                    if !placed.get() && max > 0 {
+                        placed.set(true);
+                        paned.set_position(max / 2);
+                    }
+                });
+                paned.upcast()
+            }
+        }
+    }
 }
 
 /// A top-level window with a tab per hosted session.
@@ -48,6 +360,8 @@ pub struct SessionGroupWindow {
     tab_view: adw::TabView,
     toast_overlay: adw::ToastOverlay,
     members: Rc<RefCell<HashMap<Uuid, Member>>>,
+    /// Tile mode (issue #436). Not remembered between openings of the window.
+    tiling: Rc<TileView>,
     /// Sessions whose page is being dropped because the session moved away or
     /// already ended, so the `close-page` handler must not end it (again).
     leaving: Rc<RefCell<Vec<Uuid>>>,
@@ -103,16 +417,35 @@ impl SessionGroupWindow {
         broadcast_banner.set_button_label(Some(&i18n("Stop")));
         broadcast_banner.add_css_class("accent");
 
+        let (tile_toggle, tile_label) = Self::build_tile_toggle();
+        let stack = gtk4::Stack::new();
+        let tiles = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        stack.add_named(&tab_view, Some("tabs"));
+        stack.add_named(&tiles, Some("tiles"));
+        stack.set_visible_child_name("tabs");
+        let members = Rc::new(RefCell::new(HashMap::new()));
+        let tiling = Rc::new(TileView {
+            tab_view: tab_view.clone(),
+            tab_bar: tab_bar.clone(),
+            stack: stack.clone(),
+            tiles,
+            toggle: tile_toggle.clone(),
+            toggle_label: tile_label,
+            members: Rc::clone(&members),
+            tiled: Cell::new(false),
+        });
+
         let header = adw::HeaderBar::new();
         header.set_title_widget(Some(&adw::WindowTitle::new(title, "")));
         header.pack_start(&attach_button);
         header.pack_end(&broadcast_toggle);
+        header.pack_end(&tile_toggle);
 
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.add_top_bar(&broadcast_banner);
         toolbar_view.add_top_bar(&tab_bar);
-        toolbar_view.set_content(Some(&tab_view));
+        toolbar_view.set_content(Some(&stack));
 
         let toast_overlay = adw::ToastOverlay::new();
         toast_overlay.set_child(Some(&toolbar_view));
@@ -127,7 +460,8 @@ impl SessionGroupWindow {
             window,
             tab_view,
             toast_overlay,
-            members: Rc::new(RefCell::new(HashMap::new())),
+            members,
+            tiling,
             leaving: Rc::new(RefCell::new(Vec::new())),
             closing: Rc::new(Cell::new(false)),
             attach_button,
@@ -142,10 +476,43 @@ impl SessionGroupWindow {
         group.connect_close_request();
         group.connect_attach_button();
         group.connect_broadcast_controls();
+        group.connect_tile_toggle(&tile_toggle);
         group.connect_focus_on_switch();
         group.keep_tabs_here();
         tracing::info!(group = title, "session group window created");
         group
+    }
+
+    /// The header toggle for tile mode; hidden until two tabs exist.
+    fn build_tile_toggle() -> (gtk4::ToggleButton, gtk4::Label) {
+        let toggle = gtk4::ToggleButton::new();
+        let content = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+        let icon = gtk4::Image::from_icon_name("view-grid-symbolic");
+        icon.set_pixel_size(16);
+        let label = gtk4::Label::new(Some(&i18n("Tile Tabs")));
+        label.add_css_class("caption");
+        content.append(&icon);
+        content.append(&label);
+        toggle.set_child(Some(&content));
+        toggle.set_tooltip_text(Some(&i18n("Show all tabs of this window side by side")));
+        toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Tile Tabs"))]);
+        toggle.add_css_class("pill");
+        toggle.set_visible(false);
+        (toggle, label)
+    }
+
+    /// Enters or leaves tile mode when the user clicks the toggle.
+    fn connect_tile_toggle(&self, toggle: &gtk4::ToggleButton) {
+        let tiling = Rc::downgrade(&self.tiling);
+        toggle.connect_clicked(move |toggle| {
+            if let Some(tiling) = tiling.upgrade() {
+                if toggle.is_active() {
+                    tiling.enter();
+                } else {
+                    tiling.exit();
+                }
+            }
+        });
     }
 
     /// The header toggle, styled like the main window's **Group Broadcast**.
@@ -207,6 +574,7 @@ impl SessionGroupWindow {
         let closing = Rc::clone(&self.closing);
         let on_close = Rc::clone(&self.on_close);
         let on_members_changed = Rc::clone(&self.on_members_changed);
+        let tiling = Rc::downgrade(&self.tiling);
         let window = self.window.downgrade();
         self.tab_view.connect_close_page(move |tab_view, page| {
             let session = Self::session_of(&members.borrow(), page);
@@ -229,6 +597,9 @@ impl SessionGroupWindow {
             }
             tab_view.close_page_finish(page, true);
             if session.is_some() {
+                if let Some(tiling) = tiling.upgrade() {
+                    tiling.refresh();
+                }
                 Self::notify_members_changed(&on_members_changed);
             }
 
@@ -332,8 +703,21 @@ impl SessionGroupWindow {
 
     /// Puts keyboard focus into the session of the tab that was switched to.
     fn connect_focus_on_switch(&self) {
-        self.tab_view.connect_selected_page_notify(|tab_view| {
+        let tiling = Rc::downgrade(&self.tiling);
+        self.tab_view.connect_selected_page_notify(move |tab_view| {
             if let Some(page) = tab_view.selected_page() {
+                if let Some(tiling) = tiling.upgrade()
+                    && tiling.tiled.get()
+                {
+                    // The session is in a tile; a click there selected this
+                    // page, and a key switch has to move focus to the tile.
+                    if let Some(content) = tiling.selected_content()
+                        && !TileView::holds_focus(&content)
+                    {
+                        TileView::focus_content(&content);
+                    }
+                    return;
+                }
                 let child = page.child();
                 glib::idle_add_local_once(move || {
                     child.child_focus(gtk4::DirectionType::TabForward);
@@ -353,7 +737,9 @@ impl SessionGroupWindow {
         protocol: &str,
         content: &gtk4::Box,
     ) {
-        let page = self.tab_view.append(content);
+        let slot = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        slot.append(content);
+        let page = self.tab_view.append(&slot);
         page.set_title(title);
         let icon = rustconn_core::protocol::icons::get_protocol_icon_by_name(protocol);
         page.set_icon(Some(&gio::ThemedIcon::new(icon)));
@@ -361,10 +747,12 @@ impl SessionGroupWindow {
             session_id,
             Member {
                 page,
+                content: content.clone(),
                 connection_id,
             },
         );
         tracing::info!(session = %session_id, "session added to group window");
+        self.tiling.refresh();
         Self::notify_members_changed(&self.on_members_changed);
     }
 
@@ -560,5 +948,113 @@ impl SessionGroupWindow {
         F: Fn(bool) + 'static,
     {
         *self.on_broadcast_toggled.borrow_mut() = Some(Box::new(callback));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn leaves_of(count: usize) -> Vec<usize> {
+        let plan = balanced_split_plan(1280.0, 720.0, count - 1);
+        let mut leaves = Vec::new();
+        tile_tree(&plan).leaves(&mut leaves);
+        leaves
+    }
+
+    #[test]
+    fn one_tab_is_a_single_leaf() {
+        assert_eq!(tile_tree(&[]), TileNode::Leaf(0));
+    }
+
+    #[test]
+    fn two_tabs_split_the_wide_area_side_by_side() {
+        let plan = balanced_split_plan(1280.0, 720.0, 1);
+        assert_eq!(
+            tile_tree(&plan),
+            TileNode::Split {
+                horizontal: false,
+                first: Box::new(TileNode::Leaf(0)),
+                second: Box::new(TileNode::Leaf(1)),
+            }
+        );
+    }
+
+    #[test]
+    fn every_tab_gets_exactly_one_tile() {
+        for count in 1..=9 {
+            let mut leaves = leaves_of(count);
+            leaves.sort_unstable();
+            assert_eq!(leaves, (0..count).collect::<Vec<_>>(), "{count} tabs");
+        }
+    }
+
+    /// Entering and leaving tile mode hands each session's content back to its
+    /// own slot, and closing a tile rebuilds the grid from the tabs left.
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact session_group_window::tests::tile_and_untile_keep_every_content`"]
+    fn tile_and_untile_keep_every_content() {
+        if libadwaita::init().is_err() {
+            return;
+        }
+        let tab_view = adw::TabView::new();
+        let tab_bar = adw::TabBar::builder().view(&tab_view).build();
+        let stack = gtk4::Stack::new();
+        let tiles = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        stack.add_named(&tab_view, Some("tabs"));
+        stack.add_named(&tiles, Some("tiles"));
+        let members = Rc::new(RefCell::new(HashMap::new()));
+        let view = TileView {
+            tab_view: tab_view.clone(),
+            tab_bar,
+            stack,
+            tiles,
+            toggle: gtk4::ToggleButton::new(),
+            toggle_label: gtk4::Label::new(None),
+            members: Rc::clone(&members),
+            tiled: Cell::new(false),
+        };
+        let add = |name: &str| {
+            let content = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+            let slot = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+            slot.append(&content);
+            let page = tab_view.append(&slot);
+            page.set_title(name);
+            let id = Uuid::new_v4();
+            members.borrow_mut().insert(
+                id,
+                Member {
+                    page,
+                    content: content.clone(),
+                    connection_id: Uuid::new_v4(),
+                },
+            );
+            (id, content, slot)
+        };
+        let (first, content_a, slot_a) = add("a");
+        let (_, content_b, slot_b) = add("b");
+        view.refresh();
+        assert!(view.toggle.is_visible());
+
+        view.enter();
+        assert!(view.tiled.get());
+        assert!(content_a.parent().is_some_and(|p| p != slot_a));
+        assert!(content_b.parent().is_some_and(|p| p != slot_b));
+
+        // A third tab joins: the grid is rebuilt and holds all three.
+        let (_, content_c, _) = add("c");
+        view.refresh();
+        assert!(content_c.parent().is_some());
+        assert!(content_a.parent().is_some_and(|p| p != slot_a));
+
+        // One tab goes away: two tiles are left.
+        members.borrow_mut().remove(&first);
+        view.refresh();
+        assert!(view.tiled.get());
+
+        view.exit();
+        assert!(!view.tiled.get());
+        assert_eq!(content_b.parent().as_ref(), Some(slot_b.upcast_ref()));
+        assert_eq!(view.tiles.first_child(), None);
     }
 }

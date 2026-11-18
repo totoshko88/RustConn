@@ -41,6 +41,17 @@ static VARIABLE_REF: LazyLock<Regex> = LazyLock::new(|| {
         .expect("static regex")
 });
 
+/// Built-ins a script may use. `CWD` lets a log path be absolute without a
+/// literal OS path in the script; `ENV_*` stays out, as in `substitute`.
+fn script_builtin(name: &str) -> Option<String> {
+    if name == "CWD" {
+        return std::env::current_dir()
+            .ok()
+            .map(|path| path.to_string_lossy().into_owned());
+    }
+    crate::variables::builtin_temporal(name)
+}
+
 /// How long a step with no explicit timeout waits before giving up.
 pub const DEFAULT_TIMEOUT_MS: u32 = 10_000;
 
@@ -85,6 +96,13 @@ pub enum ScriptStep {
         /// Timeout in milliseconds; `None` uses [`DEFAULT_TIMEOUT_MS`].
         timeout_ms: Option<u32>,
     },
+    /// Answers the device's pager prompt with a space while a pattern wait is
+    /// pending, so devices that cannot disable paging still dump the whole
+    /// configuration.
+    Pager {
+        /// Regex matching the pager prompt, e.g. `--More--`.
+        pattern: String,
+    },
     /// Guesses the current prompt (host-side) and stores it.
     GetPrompt {
         /// Script variable receiving the guessed prompt.
@@ -103,6 +121,8 @@ pub enum ScriptStep {
         prompt: String,
         /// Whether the input is masked (secret).
         echo: bool,
+        /// Pre-filled answer; the user can edit it before accepting.
+        default: Option<String>,
         /// Script variable receiving the answer.
         variable: String,
     },
@@ -327,14 +347,19 @@ pub trait ScriptHost {
     fn print_message(&mut self, text: &str);
 
     /// Sets or clears the script's output log file.
-    fn set_log(&mut self, path: Option<&str>);
+    ///
+    /// Returns `false` when `Some(path)` could not be opened; the script then
+    /// stops instead of pretending the capture was written. Clearing the log
+    /// (`None`) always succeeds.
+    fn set_log(&mut self, path: Option<&str>) -> bool;
 
     /// Guesses the current prompt of the session.
     fn get_prompt(&mut self) -> Option<String>;
 
     /// Shows an input dialog; the answer arrives via
-    /// [`ScriptEngine::on_ask_result`].
-    fn ask(&mut self, prompt: &str, echo: bool);
+    /// [`ScriptEngine::on_ask_result`]. A `default` is offered as the
+    /// pre-filled, editable answer.
+    fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>);
 
     /// Shows a message window.
     fn message(&mut self, text: &str, ok_button: bool);
@@ -377,6 +402,10 @@ pub trait ScriptHost {
 /// A variable may hold an `ask … hide` answer, so `Debug` names variables
 /// without their values, and every value is zeroized when it is replaced or
 /// the engine is dropped.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "independent flags (masked ask, cancelled, finished, pager reply); a state enum would conflate them"
+)]
 pub struct ScriptEngine {
     program: ScriptProgram,
     pc: usize,
@@ -386,8 +415,10 @@ pub struct ScriptEngine {
     /// pattern is re-tried on every output chunk and `if_goto` may run in a
     /// loop, so compiling each time would dominate the GTK thread.
     regex_cache: HashMap<String, Regex>,
-    /// Variables currently holding an `ask … hide` answer. `run` refuses them:
-    /// a command line is readable by every local user in the process table.
+    /// Variables currently holding an `ask … hide` answer. `run` and `log`
+    /// refuse them: a command line is readable by every local user in the
+    /// process table, and a log path becomes a file name and a terminal
+    /// message.
     hidden_vars: std::collections::HashSet<String>,
     /// Whether the pending `ask` masks its answer.
     ask_hidden: bool,
@@ -406,6 +437,11 @@ pub struct ScriptEngine {
     session_uuid_var: Option<String>,
     session_tmp_uuid_var: Option<String>,
     expect_pattern: Option<String>,
+    /// Regex of the device's pager prompt, set by `pager`.
+    pager_pattern: Option<String>,
+    /// A pager prompt was answered; `pump` must send a space before the
+    /// suspended step runs again.
+    pager_armed: bool,
 }
 
 impl ScriptEngine {
@@ -443,6 +479,8 @@ impl ScriptEngine {
             session_uuid_var: None,
             session_tmp_uuid_var: None,
             expect_pattern: None,
+            pager_pattern: None,
+            pager_armed: false,
         }
     }
 
@@ -490,6 +528,12 @@ impl ScriptEngine {
     pub fn pump(&mut self, host: &mut dyn ScriptHost) {
         // Bounded loop: every iteration either advances `pc` or suspends.
         while !self.finished && !self.canceled && self.pending == PendingKind::None {
+            if self.pager_armed {
+                self.pager_armed = false;
+                // The paused step runs again on the buffer with the pager text
+                // removed, so it can match the real prompt or arm another page.
+                host.send(&KeySequence::parse(" ").unwrap_or_default());
+            }
             if self.steps_executed >= MAX_STEPS_EXECUTED {
                 self.finish(Some(format!(
                     "Script exceeded the {MAX_STEPS_EXECUTED}-instruction limit (runaway loop?)"
@@ -553,6 +597,10 @@ impl ScriptEngine {
                     let _ = timeout_ms;
                 }
             }
+            ScriptStep::Pager { pattern } => {
+                self.pager_pattern = Some(pattern);
+                self.advance();
+            }
             ScriptStep::GetPrompt { variable } => {
                 if let Some(prompt) = host.get_prompt() {
                     self.set_var(variable, prompt);
@@ -560,8 +608,22 @@ impl ScriptEngine {
                 self.advance();
             }
             ScriptStep::Log { path } => {
-                host.set_log(path.as_deref());
-                self.advance();
+                let path = match path {
+                    Some(path) => match self.substitute_for_log(&path) {
+                        Ok(path) => Some(path),
+                        Err(reason) => {
+                            self.finish(Some(format!("Refusing to log: {reason}")));
+                            return;
+                        }
+                    },
+                    None => None,
+                };
+                if host.set_log(path.as_deref()) {
+                    self.advance();
+                } else {
+                    let path = path.unwrap_or_default();
+                    self.finish(Some(format!("Could not open the script log file: {path}")));
+                }
             }
             ScriptStep::Print(text) => {
                 let text = self.substitute(&text);
@@ -571,13 +633,19 @@ impl ScriptEngine {
             ScriptStep::Ask {
                 prompt,
                 echo,
+                default,
                 variable,
             } => {
                 let prompt = self.substitute(&prompt);
+                // A default built from a hidden answer would show it in clear.
+                let default = default
+                    .as_ref()
+                    .filter(|d| !self.mentions_hidden(d))
+                    .map(|d| self.substitute(d));
                 self.ask_var = Some(variable);
                 self.ask_hidden = !echo;
                 self.pending = PendingKind::Ask;
-                host.ask(&prompt, echo);
+                host.ask(&prompt, echo, default.as_deref());
             }
             ScriptStep::Message { text, ok_button } => {
                 let text = self.substitute(&text);
@@ -661,8 +729,13 @@ impl ScriptEngine {
                 host.run_command(&command, Some(timeout_ms.unwrap_or(RUN_TIMEOUT_CEILING_MS)));
             }
             ScriptStep::Set { var, value } => {
+                // A value built from a hidden answer is as hidden as it.
+                let hidden = self.mentions_hidden(&value);
                 let value = self.substitute(&value);
-                self.set_var(var, value);
+                self.set_var(var.clone(), value);
+                if hidden {
+                    self.hidden_vars.insert(var);
+                }
                 self.advance();
             }
             ScriptStep::Goto { label } => match self.jump(&label) {
@@ -721,10 +794,39 @@ impl ScriptEngine {
         };
         if satisfied {
             self.pending = PendingKind::None;
-            true
-        } else {
-            false
+            return true;
         }
+        // A pager prompt gets a space instead of failing the wait; the
+        // suspended step then runs again with the pager text removed.
+        if matches!(
+            self.pending,
+            PendingKind::Expect | PendingKind::Capture | PendingKind::ReadLine
+        ) && self.answer_pager()
+        {
+            self.pending = PendingKind::None;
+            return true;
+        }
+        false
+    }
+
+    /// Removes one pager prompt from the buffer and arms a space. Returns
+    /// whether a `pager` pattern is set and matched.
+    fn answer_pager(&mut self) -> bool {
+        let Some(pattern) = self.pager_pattern.clone() else {
+            return false;
+        };
+        let Some(regex) = self.compiled(&pattern) else {
+            return false;
+        };
+        let Some(range) = regex
+            .find(&self.buffer)
+            .map(|found| found.start()..found.end())
+        else {
+            return false;
+        };
+        self.buffer.replace_range(range, "");
+        self.pager_armed = true;
+        true
     }
 
     /// Fires when a `wait` timer expires or a pattern-wait times out.
@@ -844,7 +946,9 @@ impl ScriptEngine {
         self.variables.get(name).cloned().unwrap_or_default()
     }
 
-    /// Substitutes `$name` / `${name}` references using the script's variables.
+    /// Substitutes `$name` / `${name}` references using the script's variables,
+    /// the date/time built-ins and `CWD`. `ENV_*` is deliberately left literal:
+    /// a script must not pull an environment secret onto a command line.
     fn substitute(&self, text: &str) -> String {
         VARIABLE_REF
             .replace_all(text, |caps: &regex::Captures<'_>| {
@@ -854,11 +958,21 @@ impl ScriptEngine {
                         .variables
                         .get(name)
                         .cloned()
+                        .or_else(|| script_builtin(name))
                         .unwrap_or_else(|| caps[0].to_string()),
                     None => caps[0].to_string(),
                 }
             })
             .into_owned()
+    }
+
+    /// True when `text` references a variable that holds a hidden answer.
+    fn mentions_hidden(&self, text: &str) -> bool {
+        VARIABLE_REF.captures_iter(text).any(|caps| {
+            caps.get(1)
+                .or_else(|| caps.get(2))
+                .is_some_and(|m| self.hidden_vars.contains(m.as_str()))
+        })
     }
 
     /// [`Self::substitute`] for a command line handed to `sh -c`.
@@ -873,8 +987,13 @@ impl ScriptEngine {
         let command = VARIABLE_REF
             .replace_all(text, |caps: &regex::Captures<'_>| {
                 let name = caps.get(1).or_else(|| caps.get(2)).map(|m| m.as_str());
-                let Some((name, value)) = name.and_then(|n| self.variables.get(n).map(|v| (n, v)))
-                else {
+                let Some((name, value)) = name.and_then(|n| {
+                    self.variables
+                        .get(n)
+                        .cloned()
+                        .or_else(|| script_builtin(n))
+                        .map(|value| (n, value))
+                }) else {
                     return caps[0].to_string();
                 };
                 if rejected.is_none() {
@@ -882,16 +1001,49 @@ impl ScriptEngine {
                         rejected = Some(format!(
                             "variable '{name}' holds a hidden answer and is never put on a command line"
                         ));
-                    } else if let Err(e) = VariableManager::validate_command_value(name, value) {
+                    } else if let Err(e) = VariableManager::validate_command_value(name, &value) {
                         rejected = Some(e.to_string());
                     }
                 }
-                value.clone()
+                value
             })
             .into_owned();
         match rejected {
             Some(reason) => Err(reason),
             None => Ok(command),
+        }
+    }
+
+    /// [`Self::substitute`] for a log path.
+    ///
+    /// A hidden `ask` answer is refused here for the same reason `run`
+    /// refuses it: a path ends up in a file name, a terminal message and
+    /// possibly a backup, so a secret must not become part of it.
+    fn substitute_for_log(&self, text: &str) -> Result<String, String> {
+        let mut rejected: Option<String> = None;
+        let path = VARIABLE_REF
+            .replace_all(text, |caps: &regex::Captures<'_>| {
+                let name = caps.get(1).or_else(|| caps.get(2)).map(|m| m.as_str());
+                let Some((name, value)) = name.and_then(|n| {
+                    self.variables
+                        .get(n)
+                        .cloned()
+                        .or_else(|| script_builtin(n))
+                        .map(|value| (n, value))
+                }) else {
+                    return caps[0].to_string();
+                };
+                if rejected.is_none() && self.hidden_vars.contains(name) {
+                    rejected = Some(format!(
+                        "variable '{name}' holds a hidden answer and is never used in a log path"
+                    ));
+                }
+                value
+            })
+            .into_owned();
+        match rejected {
+            Some(reason) => Err(reason),
+            None => Ok(path),
         }
     }
 
@@ -1278,6 +1430,14 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
                 timeout_ms,
             })
         }
+        "pager" => {
+            let pattern = pattern(&arg(1)?);
+            Regex::new(&pattern).map_err(|e| ScriptParseError::InvalidRegex {
+                line: line_no,
+                message: e.to_string(),
+            })?;
+            Ok(ScriptStep::Pager { pattern })
+        }
         "getprompt" => {
             let variable = var_name(&arg(1)?);
             Ok(ScriptStep::GetPrompt { variable })
@@ -1293,19 +1453,29 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
         }
         "ask" => {
             let prompt = arg(1)?;
-            let last = tokens
-                .last()
-                .cloned()
-                .ok_or_else(|| ScriptParseError::MissingArgument {
-                    line: line_no,
-                    message: "ask needs a variable".to_string(),
-                })?;
-            let echo = !tokens.iter().any(|t| t == "hide");
-            let variable = if echo && tokens.len() == 2 {
-                var_name(&prompt)
-            } else {
-                var_name(&last)
-            };
+            let mut echo = true;
+            let mut default = None;
+            let mut variable = None;
+            let mut i = 2;
+            while let Some(token) = tokens.get(i) {
+                match token.as_str() {
+                    "hide" => echo = false,
+                    "default" => {
+                        let value = tokens.get(i + 1).cloned().ok_or_else(|| {
+                            ScriptParseError::MissingArgument {
+                                line: line_no,
+                                message: "default needs a value".to_string(),
+                            }
+                        })?;
+                        default = Some(value);
+                        i += 1;
+                    }
+                    _ => variable = Some(var_name(token)),
+                }
+                i += 1;
+            }
+            // `ask "Prompt"` derives the variable from the prompt text.
+            let variable = variable.unwrap_or_else(|| var_name(&prompt));
             if variable.is_empty() {
                 return Err(ScriptParseError::MissingArgument {
                     line: line_no,
@@ -1315,6 +1485,7 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
             Ok(ScriptStep::Ask {
                 prompt,
                 echo,
+                default,
                 variable,
             })
         }
@@ -1489,6 +1660,7 @@ mod tests {
     struct FakeHost {
         events: Vec<String>,
         prompt: Option<String>,
+        log_fails: bool,
     }
 
     impl ScriptHost for FakeHost {
@@ -1498,14 +1670,16 @@ mod tests {
         fn print_message(&mut self, text: &str) {
             self.events.push(format!("print:{text}"));
         }
-        fn set_log(&mut self, path: Option<&str>) {
+        fn set_log(&mut self, path: Option<&str>) -> bool {
             self.events.push(format!("log:{}", path.unwrap_or("")));
+            path.is_none() || !self.log_fails
         }
         fn get_prompt(&mut self) -> Option<String> {
             self.prompt.clone()
         }
-        fn ask(&mut self, prompt: &str, echo: bool) {
-            self.events.push(format!("ask:{prompt}:{echo}"));
+        fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>) {
+            self.events
+                .push(format!("ask:{prompt}:{echo}:{}", default.unwrap_or("")));
         }
         fn message(&mut self, text: &str, ok_button: bool) {
             self.events.push(format!("msg:{text}:{ok_button}"));
@@ -1544,6 +1718,33 @@ mod tests {
         let mut engine = ScriptEngine::parse(source).expect("script should parse");
         engine.pump(host);
         engine
+    }
+
+    /// A `pager` pattern answers the device's pager prompt with a space and
+    /// keeps the same `expect` waiting, so a device that cannot disable
+    /// paging still reaches its final prompt.
+    #[test]
+    fn pager_answers_the_more_prompt_and_keeps_waiting() {
+        let mut host = FakeHost::default();
+        let mut engine =
+            ScriptEngine::parse("pager \"---- More .*----\"\nexpect \"R1#\\s*$\" 30\n").unwrap();
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+
+        assert!(engine.on_output(b"line 1\r\n---- More ( Press 'Q' to break ) ----"));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+        assert_eq!(host.events, vec!["send: "]);
+
+        assert!(engine.on_output(b"line 2\r\n---- More ( Press 'Q' to break ) ----"));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+        assert_eq!(host.events, vec!["send: ", "send: "]);
+
+        assert!(engine.on_output(b"line 3\r\nR1# "));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert_eq!(engine.error(), None);
     }
 
     #[test]
@@ -1672,11 +1873,38 @@ mod tests {
         let mut engine = ScriptEngine::parse("ask \"Value:\" hide val\nprint $val\n").unwrap();
         engine.pump(&mut host);
         assert_eq!(engine.pending(), PendingKind::Ask);
-        assert_eq!(host.events, vec!["ask:Value::false"]);
+        assert_eq!(host.events, vec!["ask:Value::false:"]);
         engine.on_ask_result(Some("hunter2".to_string()));
         engine.pump(&mut host);
         assert!(engine.is_finished());
-        assert_eq!(host.events, vec!["ask:Value::false", "print:hunter2"]);
+        assert_eq!(host.events, vec!["ask:Value::false:", "print:hunter2"]);
+    }
+
+    #[test]
+    fn ask_offers_a_substituted_default() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse(
+            "set vlan 500\nask \"VLAN:\" default $vlan hide value\nprint $value\n",
+        )
+        .unwrap();
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        assert_eq!(host.events, vec!["ask:VLAN::false:500"]);
+        engine.on_ask_result(Some("600".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert_eq!(host.events, vec!["ask:VLAN::false:500", "print:600"]);
+    }
+
+    #[test]
+    fn ask_default_without_a_variable_derives_it_from_the_prompt() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse("ask \"Port\" default \"22\"\nprint $Port\n").unwrap();
+        engine.pump(&mut host);
+        assert_eq!(host.events, vec!["ask:Port:true:22"]);
+        engine.on_ask_result(Some("22".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.variable("Port"), Some("22"));
     }
 
     #[test]
@@ -1931,5 +2159,132 @@ mod tests {
         engine.pump(&mut host);
         assert!(engine.error().is_none());
         assert_eq!(host.events, vec!["print:a;b"]);
+    }
+
+    /// A `log` path may be built from script variables and the clock, which is
+    /// what lets a backup script name its file after the host and the date.
+    #[test]
+    fn log_path_substitutes_variables_and_the_clock() {
+        let mut host = FakeHost::default();
+        let mut engine =
+            ScriptEngine::parse("set name backup\nlog \"${name}-${DATE_Y}.log\"\n").unwrap();
+        engine.pump(&mut host);
+
+        let path = host
+            .events
+            .iter()
+            .find_map(|event| event.strip_prefix("log:"))
+            .expect("the log step runs");
+        let year = path
+            .strip_prefix("backup-")
+            .and_then(|rest| rest.strip_suffix(".log"))
+            .expect("both references resolve");
+        assert_eq!(year.len(), 4);
+        assert!(year.chars().all(|c| c.is_ascii_digit()), "{year}");
+    }
+
+    /// `${CWD}` makes the default backup path absolute without putting an OS
+    /// path in the script, so the question can show where the file will land.
+    #[test]
+    fn cwd_builtin_resolves_to_the_process_directory() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse("log \"${CWD}/backup.log\"\n").unwrap();
+        engine.pump(&mut host);
+        let cwd = std::env::current_dir().expect("current directory");
+        assert_eq!(
+            host.events,
+            vec![format!("log:{}/backup.log", cwd.display())]
+        );
+    }
+
+    /// A hidden answer must not become a file name, a terminal message or a
+    /// backup path, exactly as it must not reach a `run` command line.
+    #[test]
+    fn log_path_rejects_a_hidden_answer() {
+        let mut host = FakeHost::default();
+        let mut engine =
+            ScriptEngine::parse("ask \"Secret:\" hide secret\nlog \"${secret}.log\"\n").unwrap();
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        engine.on_ask_result(Some("hunter2".to_string()));
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert!(
+            engine
+                .error()
+                .is_some_and(|error| error.contains("hidden answer")),
+            "{:?}",
+            engine.error()
+        );
+        assert!(!host.events.iter().any(|event| event.starts_with("log:")));
+    }
+
+    /// Copying a hidden answer with `set` must not launder it.
+    #[test]
+    fn a_copy_of_a_hidden_answer_stays_hidden() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse(
+            "ask \"Secret:\" hide secret\nset copy \"x-${secret}\"\nlog \"${copy}.log\"\n",
+        )
+        .unwrap();
+        engine.pump(&mut host);
+        engine.on_ask_result(Some("hunter2".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert!(
+            engine
+                .error()
+                .is_some_and(|error| error.contains("hidden answer")),
+            "{:?}",
+            engine.error()
+        );
+        assert!(!host.events.iter().any(|event| event.starts_with("log:")));
+    }
+    /// An `ask` default must not show a hidden answer in clear text.
+    #[test]
+    fn ask_default_never_offers_a_hidden_answer() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse(
+            "ask \"Secret:\" hide secret\nask \"Again:\" default $secret again\n",
+        )
+        .unwrap();
+        engine.pump(&mut host);
+        engine.on_ask_result(Some("hunter2".to_string()));
+        engine.pump(&mut host);
+        assert!(
+            host.events.iter().all(|event| !event.contains("hunter2")),
+            "{:?}",
+            host.events
+        );
+    }
+    /// A failed capture must not leave the script claiming it saved something.
+    #[test]
+    fn a_log_that_cannot_be_opened_stops_the_script() {
+        let mut host = FakeHost {
+            log_fails: true,
+            ..FakeHost::default()
+        };
+        let mut engine = ScriptEngine::parse("log \"x.log\"\nprint \"after\"\n").unwrap();
+        engine.pump(&mut host);
+
+        assert!(engine.is_finished());
+        assert!(
+            engine.error().is_some_and(|e| e.contains("Could not open")),
+            "{:?}",
+            engine.error()
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("print:")));
+    }
+
+    /// `ENV_*` is a variable-manager built-in, not a script one: expanding it
+    /// here would let a script pull an environment secret past the scrubbed
+    /// environment of `run`.
+    #[test]
+    fn scripts_do_not_expand_environment_builtins() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse("print \"${ENV_HOME}\"\n").unwrap();
+        engine.pump(&mut host);
+        assert_eq!(host.events, vec!["print:${ENV_HOME}"]);
     }
 }

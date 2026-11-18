@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.25.3** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.25.4** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -555,7 +555,7 @@ A set of **dynamic built-ins** is also available without defining anything, usef
 | `${TIMESTAMP}` | Seconds since the Unix epoch |
 | `${ENV_NAME}` | Value of the `NAME` environment variable (empty if unset) |
 
-The environment form uses an underscore — `${ENV_HOME}`, not `${ENV:HOME}` — because a `${...}` reference cannot contain a colon. A variable *you* define with one of these names shadows the built-in, so defining `TIMESTAMP` yourself keeps your value. These resolve wherever `${...}` substitution runs (Expect responses, custom commands, and variable values), not in the [session-log Log Path](#session-logging) template, which has its own `${date}` / `${time}` set.
+The environment form uses an underscore — `${ENV_HOME}`, not `${ENV:HOME}` — because a `${...}` reference cannot contain a colon. A variable *you* define with one of these names shadows the built-in, so defining `TIMESTAMP` yourself keeps your value. These resolve wherever `${...}` substitution runs (Expect responses, custom commands, and variable values) and in `.rsc` scripts (`print`, `ask`, `set`, `run`, `log` paths), except `${ENV_*}` in a script: it is left literal so a script cannot pull a secret out of the environment that `run` deliberately scrubs. They do not resolve in the [session-log Log Path](#session-logging) template, which has its own `${date}` / `${time}` set.
 
 **Ask at connect time (`@ask:`).** Give a variable a value that starts with `@ask:` and RustConn asks you for it in a dialog every time a connection that references it opens, then substitutes what you type. This lets one connection serve several targets without duplicating it — the classic case is a host that changes:
 
@@ -2927,9 +2927,9 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 | `capture <regex> <var> [<sec>]` | Like `expect`, but store capture group 1 in a variable |
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
-| `log [<path>]` | Start/stop writing session output to a file |
+| `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` and `${CWD}`; the file is created owner-only on Unix |
 | `print <text>` | Print an ANSI-coloured message on the terminal |
-| `ask "<prompt>" [hide] <var>` | Ask the user for input; `hide` masks it |
+| `ask "<prompt>" [hide] [default "<value>"] <var>` | Ask the user for input; `hide` masks it, `default` pre-fills it |
 | `msg <text> [ok]` | Show a message window (optionally with an OK button) |
 | `start <name-or-uuid> [manual] [-> uuid,tmp]` | Start a session; optionally record its ids |
 | `select <name-or-uuid> [-> uuid,tmp]` | Select an open session |
@@ -2944,7 +2944,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 
 **Variables**
 
-`${name}` and `$name` references are substituted from script variables (`set`, `capture`, `readline`, `ask`). Inside `send` use `${name}` only — a bare `$name` there is literal text, because the key-sequence syntax reserves `$` for `${...}`. A label is defined with `:name`; `#` and `;` start comments. An iteration cap kills runaway `goto` loops.
+`${name}` and `$name` references are substituted from script variables (`set`, `capture`, `readline`, `ask`). The date/time built-ins (`${DATE_Y}`, `${DATE_M}`, `${DATE_D}`, `${TIME_H}`, `${TIME_M}`, `${TIME_S}`, `${TIMESTAMP}`) resolve in script text too, so a log file can be named by the clock. `${CWD}` resolves to RustConn's working directory, so a log path can be absolute without a literal OS path in the script. `${ENV_*}` deliberately does **not** resolve in a script: `run` executes with secrets scrubbed from its environment, and expanding them here would hand them straight back. Inside `send` use `${name}` only — a bare `$name` there is literal text, because the key-sequence syntax reserves `$` for `${...}`. A label is defined with `:name`; `#` and `;` start comments. An iteration cap kills runaway `goto` loops.
 
 **Local commands (`run`) and safety**
 
@@ -2952,7 +2952,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 - A variable substituted into a `run` command must not contain a shell metacharacter (`; | & $ ( ) < > !` and backtick), a newline or a control character. A script that tries stops with *Refusing to run command* instead. This is deliberate: `capture` and `readline` store text the remote host printed, and without the check a host could run commands on your machine. Validate a value with `if_goto` before using it, as the first-run example below does.
 - The command gets no standard input, runs with session tokens and cloud credentials (`BW_SESSION`, `OP_SESSION`, `AWS_*`, `GITHUB_TOKEN`, `GH_TOKEN`) removed from its environment, and is killed when its timeout expires. A `run` without `<sec>` is limited to 60 seconds.
 - **Flatpak:** the command runs inside the RustConn sandbox and sees only the tools the sandbox has. Prefix it with `flatpak-spawn --host` to run it on the host.
-- `ask … hide` masks what is typed, and `run` refuses to put such an answer on a command line, which other local users could read in the process list; the script stops instead. Pass a password to the remote side with `send "${answer}{ENTER}"`. `print $answer` still prints it, so do not.
+- `ask … hide` masks what is typed; `run` refuses to put such an answer on a command line, which other local users could read in the process list, and `log` refuses to use one in a file path. The script stops instead. Pass a password to the remote side with `send "${answer}{ENTER}"`. `print $answer` still prints it, so do not.
 
 **Branching on user input (a first-run wizard)**
 
@@ -2999,6 +2999,168 @@ Why it is written that way:
 - `capture` matches the quoted value (`hostname='...'`) rather than `hostname=`, because the echoed command line contains the latter and would satisfy the capture before the device answers;
 - the hostname is validated before it is substituted into a command, so a name containing a space or `;` never reaches the device.
 
+**Example — save a Cisco configuration to a local file (portable)**
+
+`example-cisco-save-config` is the `.rsc` form of SecureCRT's
+"Cisco Save Running/Startup Config to Local File" example. It reads
+`show running-config` and writes a transcript to a file named after the device
+and the clock, but only after an explicit **yes**. Nothing is written to the
+device and nothing is saved locally on an empty answer. The same script runs on
+Linux, macOS and Windows: it sends only device-side commands and has no local
+shell or absolute path in it.
+
+```
+getprompt prompt
+if_goto $prompt /\(config/ config_mode
+send "{ENTER}"
+capture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\s*$/ device 10
+send "{ENTER}"
+capture /([#>])\s*$/ mode 10
+if_goto $mode /^#$/ privileged
+msg "This script needs privileged EXEC mode (the prompt ends in the hash sign). Run enable, then start it again." ok
+goto done
+
+:config_mode
+msg "This script must run in EXEC mode. Leave configuration mode with end, then start it again." ok
+goto done
+
+:privileged
+set file ${CWD}/cisco-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log
+ask "Save the running configuration to '${file}'? Type yes, no, another path, or nothing to cancel:" answer
+if_goto $answer /(?i)^\s*yes\s*$/ save
+if_goto $answer /^\s*$/ cancel
+if_goto $answer /(?i)^\s*(n|no)\s*$/ cancel
+set file $answer
+
+:save
+send "terminal length 0{ENTER}"
+expect "/[#>]\s*$/" 15
+log $file
+print "Capturing the running configuration..."
+send "show running-config{ENTER}"
+expect "/[#>]\s*$/" 120
+log
+print "Running configuration saved to $file"
+goto done
+
+:cancel
+print "Nothing was saved."
+
+:done
+print "Cisco save-config script finished."
+```
+
+Why it is written that way:
+
+- the two leading `send "{ENTER}"` steps make a fresh prompt arrive even when the session already shows the old one; the first capture takes the host name for the file name, the second checks the `#` / `>` mode character;
+- `getprompt` catches configuration mode early, because a `(config)#` prompt has no plain `hostname#` for the capture and would otherwise end in a timeout;
+- the file is named with `DATE_*` / `TIME_*` built-ins, which are local to the computer and contain no colon, so the name is legal on all three platforms;
+- `log` writes what the session prints, so the file is a transcript with the echoed command and prompts, not a byte-for-byte copy of the configuration. A failed `log` open stops the script instead of printing a false "saved" line;
+- `terminal length 0` is the one Cisco-specific paging command. If your devices need a different prompt or pager, edit those two lines — they are the whole device profile.
+
+`example-cisco-inventory` is the read-only sibling: it writes `show version`
+and `show interfaces status` to `cisco-inventory-<device>-<timestamp>.log`
+with the same prompt, mode and confirmation checks. Bundled scripts are added
+on first run and refreshed automatically when a new version ships; an edit to
+an `example-*` script is copied to `<id>.rsc.bak` (then `.bak.1`, `.bak.2`; an
+existing backup is never overwritten) before it is replaced, so
+save your adaptation under a new id to keep it in the library.
+
+Twenty-eight more bundled profiles keep the same confirmation, timestamped-log
+and read-only behaviour with each vendor's prompt and commands. Between them
+they cover the brands most often seen in CIS and Chinese networks:
+
+| Example | Mode accepted | Paging | Configuration read |
+|---------|---------------|--------|--------------------|
+| `example-huawei-save-config` | user view `<host>`; system view `[host]` is refused | `screen-length 0 temporary` | `display current-configuration` |
+| `example-h3c-save-config` | user view `<host>`; system view `[host]` is refused | `screen-length disable` | `display current-configuration` |
+| `example-openwrt-save-uci` | root shell `root@host:~#`; a non-root shell is refused | none — BusyBox prints in one go | `uci export` |
+| `example-hsgq-save-config` | enable mode `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show current-config` |
+| `example-dlink-xstack-save-config` | administrator prompt `<host>#`; `(config)#` is refused | `disable clipaging` | `show configuration running` (not verified on hardware) |
+| `example-dlink-dgs1210-save-config` | administrator prompt `<model>:<account>#` | `pager` directive | `show config` (not verified on hardware) |
+| `example-tplink-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` (not verified on hardware) |
+| `example-ruijie-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `terminal length 0` | `show running-config` |
+| `example-zte-save-config` | administrator `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` (not verified on hardware) |
+| `example-mikrotik-save-config` | any RouterOS prompt `[admin@host] >` | none — RouterOS does not paginate | `/export verbose`; RouterOS 7 adds `show-sensitive` after reading the major version |
+| `example-eltex-save-config` | privileged `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config detailed` (includes keys, so the log holds secrets) |
+| `example-bdcom-save-config` | administrator `<host>#`; the `_config#` prompt is refused | `terminal length 0` | `show running-config` |
+| `example-ubiquiti-save-config` | operational `user@host:~$`; configuration mode `#` is refused | `\| no-more` on the read command | `show configuration commands` |
+| `example-juniper-save-config` | operational mode `user@host>`; configuration mode `user@host#` is refused | `\| no-more` on the read command | `show configuration` |
+| `example-huawei-olt-save-config` | enable mode `MA5680T#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive — SmartAX cannot disable paging | `display current-configuration` (an extra ENTER accepts the filter prompt) |
+| `example-raisecom-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-qtech-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-zyxel-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-cdata-save-config` | enable mode `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-vsol-save-config` | enable mode `<host>#`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-maipu-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-hikvision-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-dahua-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `pager` directive | `show running-config` |
+| `example-netgear-save-config` | `(model)#` administrator prompt | `pager` directive | `show running-config` |
+| `example-aruba-save-config` | privileged EXEC `<host>#`; user mode `>` runs `enable`; `(config)#` is refused | `no page` | `show running-config` |
+| `example-arista-save-config` | privileged EXEC `<host>#` | `terminal length 0` | `show running-config` |
+| `example-extreme-save-config` | administrator prompt `<host> #` (a space before `#`, an optional leading `*` is stripped) | `disable clipaging` | `show configuration` |
+| `example-allied-save-config` | privileged EXEC `awplus#` | `terminal length 0` | `show running-config` |
+
+`example-huawei-olt-provision-ont` is the write counterpart for SmartAX GPON
+OLTs. It follows the vendor guides and is not verified on hardware. It asks for the service VLAN, uplink frame/slot and port, PON slot and
+port, ONT ID and serial number, service and line profile IDs, existing DBA and
+traffic table IDs, Ethernet port count and description, pre-filling every
+answer with an example value (only the serial number has no default). Every
+answer is validated before anything is sent, the whole plan is printed for
+review, and the commands run only after an explicit **yes**. The transcript
+goes to `huawei-olt-provision-<device>-<timestamp>.log`, and the script
+deliberately does not save the OLT configuration — save it once the ONT works.
+The profile prompts differ between releases (`config-gpon-srvprofile-N` on the
+R011 line and `config-srvprofile-gpon-N` on others), and both are accepted.
+
+For another CLI, copy the closest example and change the prompt regex, the
+paging command and the read command. Those three lines are the whole device
+profile; the safety flow around them does not change. The HSGQ, DGS-1210,
+TP-Link, ZTE, Eltex, Raisecom, QTECH, MikroTik, Ubiquiti, Zyxel, C-Data, VSOL,
+Maipu, Hikvision, Dahua and Netgear scripts do not send a vendor paging
+command. Instead they begin `:save` with
+`pager "(--More--|---- More .*----|Press any key)"`, which answers a pager
+prompt with a space while the `expect` waits, so a device that cannot disable
+paging still produces a complete transcript. If a model uses different pager
+text, add it to that expression; otherwise the `expect` times out rather than
+saving a truncated file.
+
+The pager text is removed from what the script reads, not from the log: the
+transcript file is a raw copy of the terminal output, so it can still contain
+the pager text (`--More--` and the like) between pages.
+
+Only two of these CLIs offer a documented way to include secrets:
+`/export verbose show-sensitive` on RouterOS 7 (RouterOS 6 includes them by
+default) and `show running-config detailed` on the Eltex MES (binary data such
+as SSH and SSL keys). The rest print hashes
+or ciphertext by design — `enable secret` on Cisco, `cipher` on Huawei and H3C,
+`encrypted-password` on EdgeOS, `## SECRET-DATA` on Junos — and have no reveal
+switch. Those transcripts are restore-useful but not credential-complete; for
+MikroTik and Eltex, treat the log as a credential file.
+
+When a profile lands in user mode (a prompt ending in `>`), it sends `enable`
+and continues in privileged mode instead of refusing. If the device asks for an
+enable password, the script asks for it with a masked dialog; the answer is sent
+to the device and never enters the transcript. A rejected password stops the
+script before anything is read. Profiles for CLIs without an enable level —
+D-Link, H3C, Huawei VRP, Juniper, MikroTik, Ubiquiti and Extreme — never send
+it. Configuration mode is still refused in every profile.
+
+The DGS-1210 prompt carries the model and the account (`DGS-1210-24:admin#`), so
+that profile names the file after the model before the colon, not the account.
+MikroTik reads the RouterOS major version and sends the absolute
+`/export verbose` form: RouterOS 7 adds `show-sensitive`, RouterOS 6 includes
+secrets by default. A session left inside `/interface` still exports the whole
+configuration and default values are included. The log holds passwords and keys:
+treat it exactly like the device's configuration backup and keep it out of
+shared folders and version control.
+
+Hikvision and Dahua profiles target their managed switches, the models that
+expose this CLI; unmanaged models do not have it. The default transcript paths
+are `${CWD}/<vendor>-<device>-<timestamp>.log`, so the confirmation question
+shows the absolute location, and the file is created owner-only (`0600`) on
+Unix. Answering `n` or `no` cancels like an empty answer.
+
 **Example — run a command and capture its output:**
 
 ```
@@ -3038,13 +3200,25 @@ The capture group picks the text after `up`, so a session showing
 For an ordinary shell whose prompt ends in `$`, use `example-shell-uptime`,
 which is the same script with `expect "\$"`.
 
+**Example — save the OpenWrt UCI configuration**
+
+`example-openwrt-save-uci` dumps the whole configuration with `uci export`,
+which prints every package as `config` blocks and writes nothing to the router.
+It takes the device name from the prompt (`root@OpenWrtMx4300:~#` becomes
+`OpenWrtMx4300`), asks for confirmation, and writes
+`openwrt-<host>-<YYYYMMDD-HHMMSS>.log`. A non-root shell (`user@host:~$`) is
+refused, because `uci` and the configuration files it reads are root-only.
+There is no pager to disable: the BusyBox shell prints the dump in one go.
+Validated against OpenWrt 25.12.5 (aarch64) on the router named
+`OpenWrtMx4300`: 956 lines across 39 packages, then the prompt returned.
+
 **Full language reference**
 
 The same reference is available in the application: **Tools → Scripts… → ⓘ** opens it. It covers the terminal primitives (`send`, `wait`, `expect`, `capture`, `readline`, `getprompt`, `log`, `print`), user interaction (`ask`, `msg`), session management (`start`, `select`, `stop`, `split`, `unsplit`, `totab`, `towindow`), local commands (`run`), control flow (`set`, `goto`, `if_goto`), variable substitution, and the error rules.
 
 **Deleting scripts**
 
-- In the Scripts manager, every row has a trash button and the **Delete** button deletes the selected script.
+- In the Scripts manager, the red **Delete** button in the editor deletes the selected script (list rows have no trash button).
 - In Edit Connection → Automation → Auto-run Scripts (and in the group editor), each row has two buttons: the **trash** deletes the script from the library entirely, the **unlink** only detaches it from that connection or group.
 - A connection or group that names a script this computer's library does not have (imported, team-synced, or deleted here) shows it as *id (not in this library)* and keeps it on save; it is not replaced by another script.
 - Deleting always asks first, because it removes the file for every connection and group that runs it. The bundled `example-*` scripts are written back the next time the Scripts manager opens.
@@ -3102,7 +3276,7 @@ rustconn-cli smart-folder edit "Production" --icon "none"  # Reset to default �
 - Smart Folders appear in a dedicated sidebar section with a 🔍 icon
 - Connections in Smart Folders are read-only (no drag-drop)
 - Double-click a connection to connect (same as regular connections)
-- Right-click a Smart Folder → **Edit** or **Delete**
+- Right-click a Smart Folder → **Edit** or **Delete**. **Delete** asks for confirmation and cannot be undone
 - Empty filter criteria → empty result (not "match all")
 
 ### Dynamic Folders
@@ -3434,7 +3608,7 @@ You can also select several connections in the sidebar and use **Create Cluster*
 - **Close All Ungrouped** closes everything *except* your open clusters
 - The tab switcher (**Ctrl+%**) shows the cluster name beside each member
 
-**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all, after a confirmation when two or more sessions are still open; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. **Broadcast in a cluster window:** once the window holds two or more terminal tabs, a **Broadcast** toggle appears at the right of its header bar ([#436](https://github.com/totoshko88/RustConn/issues/436)). Turn it on with the toggle or **Ctrl+Shift+A** and what you type in any tab of the window goes to all of its terminal tabs; a banner names how many tabs receive it, and its **Stop** button, the toggle or Ctrl+Shift+A turns it off. Each cluster window has its own broadcast, separate from the main window's [Group Broadcast](#group-broadcast), so two clusters in two windows can take different commands. More than five tabs ask for confirmation first, and embedded RDP, VNC and SPICE tabs are left out. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
+**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all, after a confirmation when two or more sessions are still open; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. **Broadcast in a cluster window:** once the window holds two or more terminal tabs, a **Broadcast** toggle appears at the right of its header bar ([#436](https://github.com/totoshko88/RustConn/issues/436)). Turn it on with the toggle or **Ctrl+Shift+A** and what you type in any tab of the window goes to all of its terminal tabs; a banner names how many tabs receive it, and its **Stop** button, the toggle or Ctrl+Shift+A turns it off. Each cluster window has its own broadcast, separate from the main window's [Group Broadcast](#group-broadcast), so two clusters in two windows can take different commands. More than five tabs ask for confirmation first, and embedded RDP, VNC and SPICE tabs are left out. **Tile Tabs in a cluster window:** with two or more tabs, a **Tile Tabs** toggle appears in the header bar next to **Broadcast** ([#436](https://github.com/totoshko88/RustConn/issues/436)). It hides the tab bar and shows every tab at once in a balanced grid, with a narrow title over each tile that carries the tab's name and a mark when the session has ended. The tile you click or type in is the active one: **Move Tab to Main Window**, Ctrl+Shift+M, closing a tab and **Broadcast** act on it, or on all tiles for the broadcast, exactly as they do on the selected tab. Drag the dividers to resize tiles. When a tab joins, leaves or closes, the grid is built again with equal tiles, and when only one tab is left the window goes back to tabs. The toggle now reads **Show Tabs**; click it to return to the tab bar with every tab as it was. The mode is not remembered, so a window opens with tabs each time. This is a view, not a split: a cluster window still has no split view. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
 
 **Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters… (**Disconnect all cluster sessions**).
 
@@ -3675,6 +3849,7 @@ are handy for tokens, banners and per-connection log lines:
 | `${DATE_M}` / `${DATE_D}` | Local month / day, zero-padded |
 | `${TIME_H}` / `${TIME_M}` / `${TIME_S}` | Local hour (24h) / minute / second, zero-padded |
 | `${TIMESTAMP}` | Seconds since the Unix epoch |
+| `${CWD}` | RustConn's working directory — makes a script log path absolute without a literal OS path |
 | `${ENV_NAME}` | Value of the `NAME` environment variable (empty if unset) — note the underscore, `${ENV_HOME}`, since a `${...}` reference cannot contain a colon |
 
 A variable you define yourself with one of these names shadows the built-in. These

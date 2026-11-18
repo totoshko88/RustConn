@@ -62,7 +62,6 @@ impl ClusterDialog {
         let dialog = adw::Dialog::builder()
             .title(i18n("New Cluster"))
             .content_width(600)
-            .content_height(580)
             .build();
 
         // Header bar with a text action button: "Create" for a new cluster,
@@ -76,6 +75,7 @@ impl ClusterDialog {
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .vscrollbar_policy(gtk4::PolicyType::Automatic)
+            .propagate_natural_height(true)
             .vexpand(true)
             .build();
 

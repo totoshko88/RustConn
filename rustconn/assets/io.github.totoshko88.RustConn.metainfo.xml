@@ -116,6 +116,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.25.4" date="2026-11-18">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.4</url>
+      <description>
+        <p>Version 0.25.4 - Tile Tabs, a redesigned Scripts dialog and many script examples:</p>
+        <ul>
+          <li>Tile Tabs shows every tab of a cluster window in a grid.</li>
+          <li>The Scripts dialog has a two-pane layout, and the library has save-config examples for many network vendors.</li>
+          <li>Scripts get a pager instruction, ask with a default value and private log files.</li>
+          <li>Editing a connection keeps protocol fields the editor cannot show.</li>
+          <li>Deleting a smart folder asks first, and the New/Edit Cluster dialog fits its content.</li>
+          <li>Updated dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.25.3" date="2026-11-17">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.3</url>
       <description>

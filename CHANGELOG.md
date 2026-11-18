@@ -5,6 +5,37 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.4] - 2026-11-18
+
+### Added
+
+- **Tile Tabs in a cluster window** — with two or more tabs, a **Tile Tabs** toggle next to **Broadcast** shows every tab at once in a balanced grid (the layout planner of **Split with Other Tabs**), each tile titled with the tab name and a disconnected mark. The active tile is the selected tab, so **Move Tab to Main Window**, close and the window's broadcast work as before; **Show Tabs** brings the tab bar back with every tab intact. The mode is not remembered between openings (#436). (`rustconn/src/session_group_window.rs`, `docs/USER_GUIDE.md`)
+- **Vendor save-config and inventory scripts** — read-only examples for Cisco, Huawei VRP/OLT, H3C, Juniper, MikroTik, OpenWrt, D-Link, TP-Link, ZTE, Ruijie, Eltex, BDCOM, Ubiquiti, Raisecom, QTECH, Zyxel, C-Data, VSOL, Maipu, Hikvision, Dahua, Netgear, Aruba, Arista, Extreme and Allied Telesis. Each refuses the wrong CLI mode, escalates from user mode when the device has an enable level, answers pager prompts, and writes a timestamped transcript only after an explicit yes (`n`, `no` or an empty answer cancels). The device is never written to; the MikroTik and Eltex exports include secrets (the question says so) and the log is created with mode `0600` on Unix. (`rustconn/src/dialogs/script_examples.rs`, `rustconn/src/dialogs/script.rs`, `rustconn-core/src/automation/script.rs`, `docs/USER_GUIDE.md`)
+- **`pager <regex>` instruction** — answers a pager prompt with a space while an `expect`, `capture` or `readline` waits, so a CLI without a paging command still produces a complete transcript. The matched text is removed and the waiting step runs again. (`rustconn-core/src/automation/script.rs`, `rustconn/src/dialogs/script_reference.rs`, `docs/USER_GUIDE.md`)
+- **Huawei OLT ONT provisioning and `ask ... default`** — `example-huawei-olt-provision-ont` creates the VLAN, uplink, service/line profiles, ONT and service port on SmartAX OLTs. Answers are validated and pre-filled through the new `ask "…" default "<value>"` form, the plan is printed before an explicit yes, and the transcript is logged without saving the OLT configuration. Checked against the MA5600T V800R011C00 guide and the MA5800 V100R017 grammar. (`rustconn-core/src/automation/script.rs`, `rustconn/src/script_runner.rs`, `rustconn/src/dialogs/script_examples.rs`, `rustconn/src/dialogs/script_reference.rs`, `docs/USER_GUIDE.md`)
+- **`${CWD}` and private log paths** — a log path can start with `${CWD}` so the question shows the absolute file location without a literal OS path in the script; `ask … hide` answers are refused in log paths, as `run` already refuses them. Logs are created as `0600` on Unix. (`rustconn-core/src/automation/script.rs`, `rustconn/src/script_runner.rs`, `docs/USER_GUIDE.md`)
+
+### Fixed
+
+- **New/Edit Cluster dialog fits its content** — the dialog had a fixed 580 px height, so the form was cut off and the connection list was squeezed. It now takes the height of its content, never more than the window, and scrolls on small screens.
+- **Editing a connection keeps its hidden protocol fields** — saving the connection dialog dropped settings it has no widget for: MOSH custom arguments, the username of a Cloudflare Access, Teleport or Tailscale SSH connection, RDP paste-via-clipboard turned off, and a Kubernetes shell outside the dialog's four choices. A default value from the dialog now leaves the stored one in place. (`rustconn-core/src/connection/manager.rs`)
+- **Deleting a smart folder asks first** — the red menu item removed the filter at once, with no Undo. It now opens a **Delete …?** dialog (Cancel is the default). (`rustconn/src/window/smart_folders.rs`)
+
+### Changed
+
+- **Scripts dialog redesigned** — the dialog is now 900×640 (never larger than the window) with a collapsing two-pane layout: a sidebar with a labelled **New Script** button, search and the list, and an editor in a framed, scrollable box. Before a script is picked the right pane shows an empty state. **Delete** is red and still asks first, **Run** is the suggested action; the per-row trash buttons are gone (use **Delete** in the editor). Files, backups and run/stop behave as before. (`rustconn/src/dialogs/script.rs`, `docs/USER_GUIDE.md`)
+- **Bundled examples are refreshed without losing edits** — a changed bundled example is copied to `<id>.rsc.bak` before the new source replaces it; an existing backup is never overwritten (the next copy is `.bak.1`, `.bak.2`), so an edit survives repeated upgrades. An identical file is left untouched. (`rustconn/src/dialogs/script.rs`)
+- **Script API break for `ScriptHost` implementors** — `ScriptHost::set_log` now returns `bool`, `ScriptHost::ask` takes a `default: Option<&str>` parameter, `ScriptStep` gains the variant `Pager`, and `ScriptStep::Ask` gains the field `default`. RustConn's own `GuiHost` is updated; an external implementation of the trait must be too. (`rustconn-core/src/automation/script.rs`)
+- **`default` and `hide` are keywords in `ask`** — a script can no longer name the answer variable `default` or `hide` in an `ask` line; rename such a variable. (`rustconn-core/src/automation/script.rs`)
+
+### Improved
+
+- **Scripts dialog: the library fills the pane and can be widened and searched** — the list/editor split is a draggable `GtkPaned`, the list uses the full height, long ids ellipsize with a tooltip, and the search field filters through `set_filter_func` and has an accessible label. (`rustconn/src/dialogs/script.rs`)
+- **The password show/hide button tells screen readers its state** — in the connection and group dialogs the button now reports as pressed while the password is visible; before, only its icon changed. (`rustconn/src/window/connection_dialogs.rs`, `rustconn/src/window/edit_group.rs`)
+
+
+### Dependencies
+- **bytes 1.12.1 → 1.12.2**, **zip 9.6.1 → 9.7.0**
 ## [0.25.3] - 2026-11-17
 
 ### Added
