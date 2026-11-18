@@ -14124,7 +14124,7 @@ msgstr "Impossible de ramener la session dans la fenêtre principale."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Diffusion de groupe désactivée — les frappes vont uniquement à l’onglet actif"
 

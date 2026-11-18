@@ -13884,7 +13884,7 @@ msgstr "Không thể chuyển phiên về cửa sổ chính."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Đã tắt phát đồng loạt theo nhóm — thao tác gõ phím chỉ tới thẻ đang được chọn"
 

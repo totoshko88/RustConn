@@ -13568,7 +13568,7 @@ msgstr "无法将会话移回主窗口。"
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr "群组广播已禁用 — 按键仅发送到当前标签页"
 
 #: rustconn/src/window/edit_actions.rs:378

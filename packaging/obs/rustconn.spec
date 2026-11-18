@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.25.4
+Version:        0.25.5
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,13 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Thu Nov 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.5-0
+- Version bump to 0.25.5
+- Added: Debug Logging dialog, sidebar empty states, per-tile Broadcast check in Tile Tabs (#351, #436)
+- Fixed: pager text in script logs, existing log permissions kept, hidden ask default stops the script, Tab Broadcast notice name
+- Changed: per-pane Broadcast checks need three terminals; consistent names for Tab Broadcast, Execute Snippet and Filter Command
+- Dependencies: regex 1.13.2, regex-automata 0.4.19, regex-syntax 0.8.12, smallvec 1.16.6
+
 * Wed Nov 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.4-0
 - Version bump to 0.25.4
 - Added: Tile Tabs in a cluster window (#436); vendor save-config scripts, pager instruction, Huawei OLT provisioning, ask ... default, ${CWD} and private log paths

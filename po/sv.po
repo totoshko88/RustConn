@@ -13955,7 +13955,7 @@ msgstr "Kunde inte flytta sessionen tillbaka till huvudfönstret."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Gruppsändning inaktiverad — tangenttryckningar går bara till den fokuserade "
 "fliken"

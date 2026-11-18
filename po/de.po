@@ -14113,7 +14113,7 @@ msgstr "Die Sitzung konnte nicht zurück in das Hauptfenster verschoben werden."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Gruppen-Broadcast deaktiviert — Tastenanschläge gehen nur an den "
 "fokussierten Tab"

@@ -445,6 +445,8 @@ pub struct ScriptEngine {
     /// Unfinished last line of the log stream, held back so a pager prompt
     /// split across two chunks is still recognised.
     log_tail: String,
+    /// Start of a multi-byte character cut off at the end of a chunk.
+    log_partial: Vec<u8>,
 }
 
 impl ScriptEngine {
@@ -485,6 +487,7 @@ impl ScriptEngine {
             pager_pattern: None,
             pager_armed: false,
             log_tail: String::new(),
+            log_partial: Vec::new(),
         }
     }
 
@@ -830,8 +833,16 @@ impl ScriptEngine {
             out.extend_from_slice(data);
             return out;
         };
+        let mut bytes = std::mem::take(&mut self.log_partial);
+        bytes.extend_from_slice(data);
+        // A character split between two chunks must not become U+FFFD.
+        if let Err(error) = std::str::from_utf8(&bytes)
+            && error.error_len().is_none()
+        {
+            self.log_partial = bytes.split_off(error.valid_up_to());
+        }
         let mut text = std::mem::take(&mut self.log_tail);
-        text.push_str(&String::from_utf8_lossy(data));
+        text.push_str(&String::from_utf8_lossy(&bytes));
         let text = regex.replace_all(&text, "").into_owned();
         let keep = text.rfind('\n').map_or(0, |i| i + 1);
         self.log_tail = text[keep..].to_string();
@@ -840,7 +851,9 @@ impl ScriptEngine {
 
     /// Returns the held-back last line of the log stream.
     pub fn flush_log_output(&mut self) -> Vec<u8> {
-        std::mem::take(&mut self.log_tail).into_bytes()
+        let mut out = std::mem::take(&mut self.log_tail).into_bytes();
+        out.append(&mut self.log_partial);
+        out
     }
 
     /// Removes one pager prompt from the buffer and arms a space. Returns
@@ -2314,6 +2327,17 @@ mod tests {
         let log = String::from_utf8(log).unwrap();
         assert!(!log.contains("More"), "{log:?}");
         assert_eq!(log, "line1\r\nline2\r\nline3\r\nrouter#");
+    }
+
+    /// A multi-byte character cut between two chunks survives in the log.
+    #[test]
+    fn log_output_keeps_a_split_character() {
+        let mut engine = ScriptEngine::parse("pager \"---- More ----\"\nprint \"x\"\n").unwrap();
+        let bytes = "ж\n".as_bytes();
+        let mut log = engine.filter_log_output(&bytes[..1]);
+        log.extend(engine.filter_log_output(&bytes[1..]));
+        log.extend(engine.flush_log_output());
+        assert_eq!(String::from_utf8(log).unwrap(), "ж\n");
     }
 
     /// Without `pager` the log is a byte-for-byte copy.

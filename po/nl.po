@@ -14061,7 +14061,7 @@ msgstr "Kan de sessie niet terugverplaatsen naar het hoofdvenster."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Groepsuitzending uitgeschakeld — toetsaanslagen gaan alleen naar het "
 "gefocuste tabblad"

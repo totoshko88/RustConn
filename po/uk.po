@@ -13944,8 +13944,8 @@ msgstr "Не вдалося перемістити сеанс назад до г
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
-msgstr "Групову трансляцію вимкнено — натискання йдуть лише в активну вкладку"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgstr "Трансляцію на вкладки вимкнено — натискання йдуть лише в активну вкладку"
 
 #: rustconn/src/window/edit_actions.rs:378
 msgid "Item restored"

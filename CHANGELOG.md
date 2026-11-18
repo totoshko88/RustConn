@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.25.5] - 2026-11-19
 
 ### Added
 
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Pager text in script logs** — text matched by the script's `pager <regex>` instruction is no longer written to the `log` file, so a transcript has no `---- More ----` lines between pages. (`rustconn/src/script_runner.rs`, `rustconn-core/src/automation/script.rs`, `docs/USER_GUIDE.md`)
 - **Script log permissions** — opening a script log no longer changes the permissions of a file that already existed; only a file the script creates gets `0600`. (`rustconn/src/script_runner.rs`)
+- **Tab broadcast toast** — the notice shown when a broadcast stops now reads **Tab broadcast disabled**, matching the renamed toggle. (`rustconn/src/window/detach_actions.rs`, `rustconn/src/window/group_broadcast.rs`, `po/`)
 - **`ask … default` with a hidden answer** — a default built from an `ask … hide` answer now stops the script with an error instead of being dropped silently. (`rustconn-core/src/automation/script.rs`)
 
 ### Changed
@@ -24,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Per-pane Broadcast checks need three terminals** — in a split view the **Broadcast** check box on each pane (and the matching pane-menu item) is shown only when three or more panes hold a terminal. With two, unticking one left nothing to mirror to, which is what the header-bar **Broadcast** toggle does; dropping to two puts every pane back in. (`rustconn/src/split_view/bridge.rs`, `docs/USER_GUIDE.md`)
 - **Consistent names for tab broadcast, snippets and the output filter** — the header toggle **Group Broadcast** is now **Tab Broadcast** (Ctrl+Shift+A, **Toggle Tab Broadcast**), and the tab menu items are **Add to Tab Broadcast** and **Remove from Tab Broadcast**, so "Group" no longer means a fourth thing. The sidebar item **Run Snippet…** is now **Execute Snippet…**, as in the terminal menu and the picker, and its confirmation reads **Execute Snippet?**. The output-filter row **Postpend Command** is now **Filter Command**. Translations carry over; Ukrainian reads **Трансляція на вкладки** and **Виконати сніпета?**. (`rustconn/src/window/ui.rs`, `rustconn/src/terminal/tab_menu.rs`, `rustconn/src/dialogs/shortcuts.rs`, `rustconn-core/src/config/keybindings.rs`, `rustconn/src/sidebar_ui.rs`, `rustconn/src/dialogs/connection/automation_tab.rs`, `docs/USER_GUIDE.md`, `po/`)
 
+### Dependencies
+- **regex 1.13.1 → 1.13.2**, **regex-automata 0.4.18 → 0.4.19**, **regex-syntax 0.8.11 → 0.8.12**, **smallvec 1.16.5 → 1.16.6**
 ## [0.25.4] - 2026-11-18
 
 ### Added

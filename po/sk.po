@@ -13976,7 +13976,7 @@ msgstr "Reláciu sa nepodarilo presunúť späť do hlavného okna."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Skupinové vysielanie vypnuté — klávesy idú len na zameranú kartu"
 
 #: rustconn/src/window/edit_actions.rs:378

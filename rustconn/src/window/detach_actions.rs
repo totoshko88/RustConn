@@ -595,7 +595,7 @@ fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<T
                 group
                     .toast_overlay()
                     .add_toast(crate::toast::plain_toast(&i18n(
-                        "Group broadcast disabled — keystrokes go to the focused tab only",
+                        "Tab broadcast disabled — keystrokes go to the focused tab only",
                     )));
             }
         })
@@ -619,7 +619,7 @@ fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<T
                 group
                     .toast_overlay()
                     .add_toast(crate::toast::plain_toast(&i18n(
-                        "Group broadcast disabled — keystrokes go to the focused tab only",
+                        "Tab broadcast disabled — keystrokes go to the focused tab only",
                     )));
             }
         });

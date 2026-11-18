@@ -13930,7 +13930,7 @@ msgstr "Sessiya əsas pəncərəyə qaytarıla bilmədi."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Qrup yayımı söndürülüb — klaviş vuruşları yalnız fokusdakı taba gedir"
 
 #: rustconn/src/window/edit_actions.rs:378

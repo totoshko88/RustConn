@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: rustconn 0.25.4\n"
+"Project-Id-Version: rustconn 0.25.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-11-19 00:35+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -13286,7 +13286,7 @@ msgstr ""
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Group broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 
 #: rustconn/src/window/edit_actions.rs:378

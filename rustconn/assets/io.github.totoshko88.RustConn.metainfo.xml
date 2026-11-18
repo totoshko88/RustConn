@@ -116,6 +116,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.25.5" date="2026-11-19">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.5</url>
+      <description>
+        <p>Version 0.25.5 - Debug Logging, empty states and clearer broadcast names:</p>
+        <ul>
+          <li>The main menu has a Debug Logging item that shows and copies the command for a debug log.</li>
+          <li>An empty connection list and a search with no match show a hint.</li>
+          <li>Tile Tabs in a cluster window has a Broadcast check on each tile.</li>
+          <li>Group Broadcast is now Tab Broadcast, and Run Snippet is Execute Snippet.</li>
+          <li>Script logs no longer contain pager prompts.</li>
+          <li>Updated dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.25.4" date="2026-11-18">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.4</url>
       <description>
