@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Per-tile Broadcast check in a cluster window** — while the window's broadcast is on, each tile in **Tile Tabs** shows a **Broadcast** check, as the main window's split view does. Unticking it keeps that tab out of the broadcast: it neither sends nor receives. The check stays until the tab is ticked again; if fewer than two tabs are left, the broadcast stops. Not remembered between openings (#436). (`rustconn/src/session_group_window.rs`, `rustconn/src/window/detach_actions.rs`)
+
 ## [0.25.4] - 2026-11-18
 
 ### Added

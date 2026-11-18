@@ -550,21 +550,33 @@ fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<T
                 .into_iter()
                 .filter(|sid| notebook.get_terminal(*sid).is_some())
                 .collect();
+            group.retain_excluded(&hosted);
+            // A tile the user unticked stays out until it is ticked again.
+            let excluded = group.excluded_sessions();
             for sid in broadcast.members() {
-                if !hosted.contains(&sid) {
+                if !hosted.contains(&sid) || excluded.contains(&sid) {
                     broadcast.remove(sid);
                 }
             }
-            for &sid in &hosted {
+            for &sid in hosted.iter().filter(|sid| !excluded.contains(sid)) {
                 if broadcast.add(sid) {
                     wire_group_broadcast_for_session(&broadcast, &notebook, sid);
                 }
             }
-            let count = broadcast.member_count();
-            group.show_broadcast(count >= 2, broadcast.is_active(), count);
+            // The toggle is offered while two tabs are here, even when
+            // unticked tiles leave fewer than two to mirror to.
+            group.show_broadcast(
+                hosted.len() >= 2,
+                broadcast.is_active(),
+                broadcast.member_count(),
+            );
         }
     };
-    group.set_on_members_changed(refresh);
+    let refresh = Rc::new(refresh);
+    {
+        let refresh = Rc::clone(&refresh);
+        group.set_on_members_changed(move || refresh());
+    }
 
     let apply = {
         let group = Rc::downgrade(group);
@@ -577,7 +589,7 @@ fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<T
             let active = wanted && count >= 2;
             let was_active = broadcast.is_active();
             broadcast.set_active(active);
-            group.show_broadcast(count >= 2, active, count);
+            group.show_broadcast(group.sessions().len() >= 2, active, count);
             tracing::info!(active, sessions = count, "group window broadcast toggled");
             if was_active && !active {
                 group
@@ -588,6 +600,30 @@ fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<T
             }
         })
     };
+
+    // A tile's **Broadcast** check puts that tab in or out of the set. Taking
+    // out so many that fewer than two are left ends the broadcast, which the
+    // user is told, as with Stop.
+    {
+        let group_weak = Rc::downgrade(group);
+        let broadcast = broadcast.clone();
+        let refresh = Rc::clone(&refresh);
+        group.set_on_tile_broadcast(move |sid, included| {
+            let was_active = broadcast.is_active();
+            tracing::info!(session = %sid, included, "group window tile broadcast membership changed");
+            refresh();
+            if was_active
+                && !broadcast.is_active()
+                && let Some(group) = group_weak.upgrade()
+            {
+                group
+                    .toast_overlay()
+                    .add_toast(crate::toast::plain_toast(&i18n(
+                        "Group broadcast disabled — keystrokes go to the focused tab only",
+                    )));
+            }
+        });
+    }
 
     let group_weak = Rc::downgrade(group);
     let request = Rc::new(move |wanted: bool| {

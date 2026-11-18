@@ -12,7 +12,7 @@
 //! is only a second place to show such sessions; it owns no session state.
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use adw::prelude::*;
@@ -36,6 +36,9 @@ type PlainCallback = Rc<RefCell<Option<Box<dyn Fn()>>>>;
 
 /// Callback with the state the user asked for (the broadcast button clicked).
 type ToggleCallback = Rc<RefCell<Option<Box<dyn Fn(bool)>>>>;
+
+/// Callback with a session and whether its tile takes part in the broadcast.
+type TileBroadcastCallback = Rc<RefCell<Option<Box<dyn Fn(Uuid, bool)>>>>;
 
 /// One hosted session.
 struct Member {
@@ -116,6 +119,13 @@ struct TileView {
     toggle_label: gtk4::Label,
     members: Rc<RefCell<HashMap<Uuid, Member>>>,
     tiled: Cell<bool>,
+    /// Sessions the user took out of the broadcast with their tile's check.
+    excluded: Rc<RefCell<HashSet<Uuid>>>,
+    /// The **Broadcast** check of each tile now shown.
+    checks: RefCell<HashMap<Uuid, gtk4::CheckButton>>,
+    /// Whether the checks are shown (the broadcast is on, or a tile is out).
+    checks_visible: Cell<bool>,
+    on_tile_broadcast: TileBroadcastCallback,
 }
 
 impl TileView {
@@ -214,6 +224,7 @@ impl TileView {
     }
 
     fn clear_tiles(&self) {
+        self.checks.borrow_mut().clear();
         while let Some(child) = self.tiles.first_child() {
             self.tiles.remove(&child);
         }
@@ -221,20 +232,21 @@ impl TileView {
 
     /// Builds the grid again from the tabs that are left, in tab order.
     fn rebuild(&self) {
-        let mut ordered: Vec<(i32, adw::TabPage, gtk4::Box)> = self
+        let mut ordered: Vec<(i32, Uuid, adw::TabPage, gtk4::Box)> = self
             .members
             .borrow()
-            .values()
-            .map(|member| {
+            .iter()
+            .map(|(sid, member)| {
                 (
                     self.tab_view.page_position(&member.page),
+                    *sid,
                     member.page.clone(),
                     member.content.clone(),
                 )
             })
             .collect();
-        ordered.sort_by_key(|(position, _, _)| *position);
-        for (_, _, content) in &ordered {
+        ordered.sort_by_key(|(position, _, _, _)| *position);
+        for (_, _, _, content) in &ordered {
             Self::lift(content);
         }
         self.clear_tiles();
@@ -249,7 +261,7 @@ impl TileView {
         );
         let cells: Vec<gtk4::Box> = ordered
             .iter()
-            .map(|(_, page, content)| self.build_tile(page, content))
+            .map(|(_, sid, page, content)| self.build_tile(*sid, page, content))
             .collect();
         let root = Self::build_widget(&tile_tree(&plan), &cells);
         self.tiles.append(&root);
@@ -259,7 +271,7 @@ impl TileView {
     }
 
     /// One tile: a narrow title (tab name, disconnected mark) over the session.
-    fn build_tile(&self, page: &adw::TabPage, content: &gtk4::Box) -> gtk4::Box {
+    fn build_tile(&self, sid: Uuid, page: &adw::TabPage, content: &gtk4::Box) -> gtk4::Box {
         let cell = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         cell.add_css_class("split-panel");
         cell.set_hexpand(true);
@@ -290,6 +302,23 @@ impl TileView {
             .build();
         title.append(&label);
         title.append(&indicator);
+
+        // Takes this tile out of the cluster window's broadcast, and back in.
+        let check = gtk4::CheckButton::with_label(&i18n("Broadcast"));
+        check.set_active(!self.excluded.borrow().contains(&sid));
+        check.set_visible(self.checks_visible.get());
+        check.set_focus_on_click(false);
+        check.set_tooltip_text(Some(&i18n(
+            "Untick to keep this pane out of the keystroke broadcast",
+        )));
+        let callback = Rc::clone(&self.on_tile_broadcast);
+        check.connect_toggled(move |check| {
+            if let Some(ref callback) = *callback.borrow() {
+                callback(sid, check.is_active());
+            }
+        });
+        title.append(&check);
+        self.checks.borrow_mut().insert(sid, check);
         cell.append(&title);
 
         content.set_vexpand(true);
@@ -315,6 +344,14 @@ impl TileView {
         });
         cell.add_controller(focus);
         cell
+    }
+
+    /// Shows or hides the **Broadcast** check of every tile.
+    fn set_checks_visible(&self, visible: bool) {
+        self.checks_visible.set(visible);
+        for check in self.checks.borrow().values() {
+            check.set_visible(visible);
+        }
     }
 
     fn build_widget(node: &TileNode, cells: &[gtk4::Box]) -> gtk4::Widget {
@@ -380,6 +417,9 @@ pub struct SessionGroupWindow {
     on_attach: SessionCallback,
     on_members_changed: PlainCallback,
     on_broadcast_toggled: ToggleCallback,
+    /// Sessions kept out of the broadcast; shared with the tile view.
+    excluded: Rc<RefCell<HashSet<Uuid>>>,
+    on_tile_broadcast: TileBroadcastCallback,
 }
 
 impl SessionGroupWindow {
@@ -424,6 +464,8 @@ impl SessionGroupWindow {
         stack.add_named(&tiles, Some("tiles"));
         stack.set_visible_child_name("tabs");
         let members = Rc::new(RefCell::new(HashMap::new()));
+        let excluded: Rc<RefCell<HashSet<Uuid>>> = Rc::new(RefCell::new(HashSet::new()));
+        let on_tile_broadcast: TileBroadcastCallback = Rc::new(RefCell::new(None));
         let tiling = Rc::new(TileView {
             tab_view: tab_view.clone(),
             tab_bar: tab_bar.clone(),
@@ -433,6 +475,10 @@ impl SessionGroupWindow {
             toggle_label: tile_label,
             members: Rc::clone(&members),
             tiled: Cell::new(false),
+            excluded: Rc::clone(&excluded),
+            checks: RefCell::new(HashMap::new()),
+            checks_visible: Cell::new(false),
+            on_tile_broadcast: Rc::clone(&on_tile_broadcast),
         });
 
         let header = adw::HeaderBar::new();
@@ -471,6 +517,8 @@ impl SessionGroupWindow {
             on_attach: Rc::new(RefCell::new(None)),
             on_members_changed: Rc::new(RefCell::new(None)),
             on_broadcast_toggled: Rc::new(RefCell::new(None)),
+            excluded,
+            on_tile_broadcast,
         });
         group.connect_close_page();
         group.connect_close_request();
@@ -779,6 +827,39 @@ impl SessionGroupWindow {
             self.broadcast_toggle.remove_css_class("broadcasting");
         }
         self.broadcast_banner.set_revealed(active);
+        // The tile checks stay while a tile is out, so it can be put back.
+        self.tiling
+            .set_checks_visible(active || !self.excluded.borrow().is_empty());
+    }
+
+    /// Sessions the user took out of this window's broadcast.
+    #[must_use]
+    pub fn excluded_sessions(&self) -> HashSet<Uuid> {
+        self.excluded.borrow().clone()
+    }
+
+    /// Forgets exclusions of sessions that are no longer hosted here.
+    pub fn retain_excluded(&self, hosted: &HashSet<Uuid>) {
+        self.excluded
+            .borrow_mut()
+            .retain(|sid| hosted.contains(sid));
+    }
+
+    /// Sets the callback run when a tile's **Broadcast** check is clicked. The
+    /// session is recorded as in or out before the callback runs.
+    pub fn set_on_tile_broadcast<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, bool) + 'static,
+    {
+        let excluded = Rc::clone(&self.excluded);
+        *self.on_tile_broadcast.borrow_mut() = Some(Box::new(move |sid, included| {
+            if included {
+                excluded.borrow_mut().remove(&sid);
+            } else {
+                excluded.borrow_mut().insert(sid);
+            }
+            callback(sid, included);
+        }));
     }
 
     /// Drops a session's tab without ending the session.
@@ -1013,6 +1094,10 @@ mod tests {
             toggle_label: gtk4::Label::new(None),
             members: Rc::clone(&members),
             tiled: Cell::new(false),
+            excluded: Rc::new(RefCell::new(HashSet::new())),
+            checks: RefCell::new(HashMap::new()),
+            checks_visible: Cell::new(false),
+            on_tile_broadcast: Rc::new(RefCell::new(None)),
         };
         let add = |name: &str| {
             let content = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
