@@ -166,7 +166,7 @@ pub fn create_header_bar() -> (
     let gbc_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
     let gbc_icon = gtk4::Image::from_icon_name("network-transmit-receive-symbolic");
     gbc_icon.set_pixel_size(16);
-    let gbc_label = Label::new(Some(&i18n("Group Broadcast")));
+    let gbc_label = Label::new(Some(&i18n("Tab Broadcast")));
     gbc_label.add_css_class("caption");
     gbc_box.append(&gbc_icon);
     gbc_box.append(&gbc_label);
@@ -175,7 +175,7 @@ pub fn create_header_bar() -> (
         "Mirror keystrokes to all tabs in the broadcast group",
     )));
     group_broadcast_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Toggle Group Broadcast",
+        "Toggle Tab Broadcast",
     ))]);
     group_broadcast_toggle.set_action_name(Some("win.toggle-group-broadcast"));
     group_broadcast_toggle.add_css_class("pill");
@@ -344,6 +344,7 @@ pub fn create_app_menu() -> gio::Menu {
     );
     app_section.append(Some(&i18n("Keyboard Shortcuts…")), Some("app.shortcuts"));
     app_section.append(Some(&i18n("Help")), Some("app.help"));
+    app_section.append(Some(&i18n("Debug Logging…")), Some("app.debug-log"));
     app_section.append(Some(&i18n("About RustConn")), Some("app.about"));
     app_section.append(Some(&i18n("Quit")), Some("app.quit"));
     menu.append_section(None, &app_section);

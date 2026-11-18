@@ -452,7 +452,7 @@ impl MainWindow {
             toggle.remove_css_class("broadcasting");
             banner.set_revealed(false);
             toast.show_toast(&i18n(
-                "Group broadcast disabled — keystrokes go to the focused tab only",
+                "Tab broadcast disabled — keystrokes go to the focused tab only",
             ));
         }
         // Stopping from a tab outside the set leaves nothing to show.

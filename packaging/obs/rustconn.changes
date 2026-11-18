@@ -1,4 +1,20 @@
 -------------------------------------------------------------------
+Thu Nov 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.5
+- Version bump to 0.25.5
+- Added: Debug Logging dialog in the main menu (#351)
+- Added: empty-state hints in the connection sidebar
+- Added: per-tile Broadcast check in Tile Tabs of a cluster window (#436)
+- Fixed: pager text no longer appears in script logs; an existing log
+  keeps its permissions; ask ... default with a hidden answer stops
+  the script
+- Fixed: the broadcast-stopped notice uses the Tab Broadcast name
+- Changed: per-pane Broadcast checks need three terminals
+- Changed: consistent names for Tab Broadcast, Execute Snippet and
+  Filter Command
+- Dependencies: regex 1.13.2, regex-automata 0.4.19, regex-syntax
+  0.8.12, smallvec 1.16.6
+
+-------------------------------------------------------------------
 Wed Nov 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.4
 - Version bump to 0.25.4
 - Added: Tile Tabs in a cluster window shows every tab in a grid (#436)

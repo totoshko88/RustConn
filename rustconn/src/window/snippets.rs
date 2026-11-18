@@ -105,7 +105,7 @@ fn send_snippet_command(
 
     alert::show_confirm(
         parent,
-        &i18n("Run Snippet?"),
+        &i18n("Execute Snippet?"),
         &i18n_f(
             "This runs “{}” in the active session:\n\n{}",
             &[&snippet.name, &truncate_command(command)],

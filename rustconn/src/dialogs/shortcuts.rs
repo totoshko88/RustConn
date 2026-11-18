@@ -229,7 +229,7 @@ fn i18n_markers() -> Vec<String> {
         i18n("Toggle Compact Interface"),
         i18n("Toggle Keyboard Passthrough"),
         i18n("Toggle Split Broadcast"),
-        i18n("Toggle Group Broadcast"),
+        i18n("Toggle Tab Broadcast"),
     ]
 }
 

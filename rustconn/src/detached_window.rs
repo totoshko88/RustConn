@@ -493,6 +493,7 @@ fn build_menu_button() -> MenuButton {
     let app_section = gio::Menu::new();
     app_section.append(Some(&i18n("Keyboard Shortcuts…")), Some("app.shortcuts"));
     app_section.append(Some(&i18n("Help")), Some("app.help"));
+    app_section.append(Some(&i18n("Debug Logging…")), Some("app.debug-log"));
     app_section.append(Some(&i18n("About RustConn")), Some("app.about"));
     let menu = gio::Menu::new();
     menu.append_section(None, &settings_section);

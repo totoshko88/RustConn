@@ -442,6 +442,11 @@ pub struct ScriptEngine {
     /// A pager prompt was answered; `pump` must send a space before the
     /// suspended step runs again.
     pager_armed: bool,
+    /// Unfinished last line of the log stream, held back so a pager prompt
+    /// split across two chunks is still recognised.
+    log_tail: String,
+    /// Start of a multi-byte character cut off at the end of a chunk.
+    log_partial: Vec<u8>,
 }
 
 impl ScriptEngine {
@@ -481,6 +486,8 @@ impl ScriptEngine {
             expect_pattern: None,
             pager_pattern: None,
             pager_armed: false,
+            log_tail: String::new(),
+            log_partial: Vec::new(),
         }
     }
 
@@ -638,10 +645,13 @@ impl ScriptEngine {
             } => {
                 let prompt = self.substitute(&prompt);
                 // A default built from a hidden answer would show it in clear.
-                let default = default
-                    .as_ref()
-                    .filter(|d| !self.mentions_hidden(d))
-                    .map(|d| self.substitute(d));
+                if default.as_ref().is_some_and(|d| self.mentions_hidden(d)) {
+                    self.finish(Some(
+                        "Refusing to offer a hidden answer as an ask default".to_string(),
+                    ));
+                    return;
+                }
+                let default = default.as_ref().map(|d| self.substitute(d));
                 self.ask_var = Some(variable);
                 self.ask_hidden = !echo;
                 self.pending = PendingKind::Ask;
@@ -807,6 +817,43 @@ impl ScriptEngine {
             return true;
         }
         false
+    }
+
+    /// Returns the bytes of a session-output chunk that belong in the script
+    /// log: text matched by the `pager` expression is dropped. Without a
+    /// `pager` the chunk passes through unchanged. The unfinished last line
+    /// is held back until the next chunk or [`Self::flush_log_output`].
+    pub fn filter_log_output(&mut self, data: &[u8]) -> Vec<u8> {
+        let regex = self
+            .pager_pattern
+            .clone()
+            .and_then(|pattern| self.compiled(&pattern));
+        let Some(regex) = regex else {
+            let mut out = self.flush_log_output();
+            out.extend_from_slice(data);
+            return out;
+        };
+        let mut bytes = std::mem::take(&mut self.log_partial);
+        bytes.extend_from_slice(data);
+        // A character split between two chunks must not become U+FFFD.
+        if let Err(error) = std::str::from_utf8(&bytes)
+            && error.error_len().is_none()
+        {
+            self.log_partial = bytes.split_off(error.valid_up_to());
+        }
+        let mut text = std::mem::take(&mut self.log_tail);
+        text.push_str(&String::from_utf8_lossy(&bytes));
+        let text = regex.replace_all(&text, "").into_owned();
+        let keep = text.rfind('\n').map_or(0, |i| i + 1);
+        self.log_tail = text[keep..].to_string();
+        text.as_bytes()[..keep].to_vec()
+    }
+
+    /// Returns the held-back last line of the log stream.
+    pub fn flush_log_output(&mut self) -> Vec<u8> {
+        let mut out = std::mem::take(&mut self.log_tail).into_bytes();
+        out.append(&mut self.log_partial);
+        out
     }
 
     /// Removes one pager prompt from the buffer and arms a space. Returns
@@ -2257,7 +2304,52 @@ mod tests {
             "{:?}",
             host.events
         );
+        assert!(engine.is_finished());
+        assert!(
+            engine
+                .error()
+                .is_some_and(|error| error.contains("hidden answer")),
+            "{:?}",
+            engine.error()
+        );
     }
+    /// The script log must not carry the text the `pager` expression removes.
+    #[test]
+    fn log_output_drops_pager_prompts() {
+        let mut engine = ScriptEngine::parse("pager \"---- More ----\"\nprint \"x\"\n").unwrap();
+        let mut host = FakeHost::default();
+        engine.pump(&mut host);
+        let mut log = Vec::new();
+        for chunk in ["line1\r\nline2\r\n---- Mo", "re ----", "line3\r\nrouter#"] {
+            log.extend(engine.filter_log_output(chunk.as_bytes()));
+        }
+        log.extend(engine.flush_log_output());
+        let log = String::from_utf8(log).unwrap();
+        assert!(!log.contains("More"), "{log:?}");
+        assert_eq!(log, "line1\r\nline2\r\nline3\r\nrouter#");
+    }
+
+    /// A multi-byte character cut between two chunks survives in the log.
+    #[test]
+    fn log_output_keeps_a_split_character() {
+        let mut engine = ScriptEngine::parse("pager \"---- More ----\"\nprint \"x\"\n").unwrap();
+        let bytes = "ж\n".as_bytes();
+        let mut log = engine.filter_log_output(&bytes[..1]);
+        log.extend(engine.filter_log_output(&bytes[1..]));
+        log.extend(engine.flush_log_output());
+        assert_eq!(String::from_utf8(log).unwrap(), "ж\n");
+    }
+
+    /// Without `pager` the log is a byte-for-byte copy.
+    #[test]
+    fn log_output_is_untouched_without_pager() {
+        let mut engine = ScriptEngine::parse("print \"x\"\n").unwrap();
+        assert_eq!(
+            engine.filter_log_output(b"a---- More ----b"),
+            b"a---- More ----b"
+        );
+    }
+
     /// A failed capture must not leave the script claiming it saved something.
     #[test]
     fn a_log_that_cannot_be_opened_stops_the_script() {

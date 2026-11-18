@@ -1285,9 +1285,9 @@ impl TerminalNotebook {
             // cross-tab broadcast group. The label reflects current membership.
             let broadcast_section = gio::Menu::new();
             let broadcast_label = if state.in_broadcast {
-                i18n("Remove from Broadcast")
+                i18n("Remove from Tab Broadcast")
             } else {
-                i18n("Add to Broadcast")
+                i18n("Add to Tab Broadcast")
             };
             broadcast_section.append(Some(&broadcast_label), Some("tab.toggle-broadcast"));
             menu.append_section(None, &broadcast_section);

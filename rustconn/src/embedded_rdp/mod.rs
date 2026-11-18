@@ -1362,7 +1362,7 @@ impl EmbeddedRdpWidget {
                     let cancel_name = confirm_name.clone();
                     crate::alert::show_confirm(
                         &confirm_parent,
-                        &i18n("Run Snippet?"),
+                        &i18n("Execute Snippet?"),
                         // Truncated with the same helper the terminal gate uses,
                         // and for the same reason: an AlertDialog grows with its
                         // body until it stops being readable. This path showed the
