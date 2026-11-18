@@ -108,8 +108,8 @@ thread_local! {
 /// Opens a script transcript with owner-only permissions on Unix.
 ///
 /// A transcript can contain secrets (Eltex `detailed`, MikroTik
-/// `show-sensitive`), so a fresh file is created as `0600` and an existing
-/// file is tightened to it.
+/// `show-sensitive`), so a fresh file is created as `0600`. An existing file
+/// keeps its permissions: it was not created by the script.
 fn open_script_log(path: &Path) -> std::io::Result<File> {
     let mut options = File::options();
     options.create(true).append(true);
@@ -118,15 +118,7 @@ fn open_script_log(path: &Path) -> std::io::Result<File> {
         use std::os::unix::fs::OpenOptionsExt;
         options.mode(0o600);
     }
-    let file = options.open(path)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut permissions = file.metadata()?.permissions();
-        permissions.set_mode(0o600);
-        file.set_permissions(permissions)?;
-    }
-    Ok(file)
+    options.open(path)
 }
 
 /// The `ScriptHost` implementation for the GUI.
@@ -158,7 +150,12 @@ impl ScriptHost for GuiHost {
     }
 
     fn set_log(&mut self, path: Option<&str>) -> bool {
+        // Flush the held-back last line into the log being closed.
+        let tail = self.engine.borrow_mut().flush_log_output();
         let mut writer = self.log_writer.borrow_mut();
+        if let Some(file) = writer.as_mut() {
+            let _ = file.write_all(&tail);
+        }
         *writer = match path {
             Some(path) => {
                 let file = open_script_log(Path::new(path));
@@ -498,12 +495,15 @@ impl ScriptRunner {
     fn register_observer(&self) {
         let engine = Rc::clone(&self.engine);
         let log_writer = Rc::clone(&self.log_writer);
+        let log_engine = Rc::clone(&self.engine);
         let this = self.this.clone();
 
         self.notebook
             .add_output_observer(self.session_id, move |chunk| {
                 if let Some(writer) = log_writer.borrow_mut().as_mut() {
-                    let _ = writer.write_all(chunk);
+                    // Pager prompts are removed, as they are from the buffer.
+                    let filtered = log_engine.borrow_mut().filter_log_output(chunk);
+                    let _ = writer.write_all(&filtered);
                 }
                 let run = {
                     let mut engine = engine.borrow_mut();
@@ -608,6 +608,13 @@ impl ScriptRunner {
         }
         self.cleaned = true;
         let elapsed = self.started.elapsed();
+        // The held-back last line of the transcript goes out with the rest.
+        if let Ok(mut engine) = self.engine.try_borrow_mut() {
+            let tail = engine.flush_log_output();
+            if let Some(file) = self.log_writer.borrow_mut().as_mut() {
+                let _ = file.write_all(&tail);
+            }
+        }
         if let Some(timer) = self.timer.take() {
             timer.remove();
         }
@@ -1029,6 +1036,6 @@ mod tests {
             .permissions()
             .mode()
             & 0o777;
-        assert_eq!(mode, 0o600, "an existing transcript is tightened");
+        assert_eq!(mode, 0o644, "an existing file keeps its permissions");
     }
 }

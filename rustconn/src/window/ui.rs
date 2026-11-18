@@ -344,6 +344,7 @@ pub fn create_app_menu() -> gio::Menu {
     );
     app_section.append(Some(&i18n("Keyboard Shortcuts…")), Some("app.shortcuts"));
     app_section.append(Some(&i18n("Help")), Some("app.help"));
+    app_section.append(Some(&i18n("Debug Logging…")), Some("app.debug-log"));
     app_section.append(Some(&i18n("About RustConn")), Some("app.about"));
     app_section.append(Some(&i18n("Quit")), Some("app.quit"));
     menu.append_section(None, &app_section);

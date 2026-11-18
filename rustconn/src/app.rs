@@ -1966,6 +1966,23 @@ fn setup_app_actions(
     });
     app.add_action(&shortcuts_action);
 
+    // Debug Logging action: shows the command that starts RustConn with a
+    // debug log and copies it. Logging is configured once at startup from
+    // `RUST_LOG`, so this cannot switch it on in the running process.
+    let debug_log_action = gio::SimpleAction::new("debug-log", None);
+    let app_for_debug_log = app.downgrade();
+    let window_weak = window.gtk_window().downgrade();
+    debug_log_action.connect_activate(move |_, _| {
+        let parent = app_for_debug_log
+            .upgrade()
+            .and_then(|app| focused_application_window(&app))
+            .or_else(|| window_weak.upgrade().map(Cast::upcast));
+        if let Some(window) = parent {
+            show_debug_log_dialog(&window);
+        }
+    });
+    app.add_action(&debug_log_action);
+
     // Help action (F1): opens the user guide, the same page as the AppStream
     // `help` URL. Parented to the focused window so the portal's chooser, if
     // one appears, is in front of the window the user pressed F1 in.
@@ -2170,6 +2187,43 @@ fn open_user_guide(parent: Option<&gtk4::Window>) {
             &[&error.to_string()],
         ));
     });
+}
+
+/// Command that starts RustConn with an RDP-oriented debug log.
+///
+/// `info` for everything plus `debug` for the RDP client only keeps the log
+/// small. The `sspi` and `ironrdp` directives are forced to `warn` in
+/// `main.rs` whatever this string says, so the account password cannot reach
+/// the log through it.
+fn debug_log_command(flatpak: bool) -> String {
+    const FILTER: &str = "info,rustconn_core::rdp_client=debug";
+    if flatpak {
+        format!("flatpak run --env=RUST_LOG={FILTER} {APP_ID} 2>&1 | tee rustconn.log")
+    } else {
+        format!("RUST_LOG={FILTER} rustconn 2>&1 | tee rustconn.log")
+    }
+}
+
+/// Explains how to collect a debug log and offers to copy the command.
+fn show_debug_log_dialog(parent: &gtk4::Window) {
+    let command = debug_log_command(rustconn_core::flatpak::is_flatpak());
+    let body = crate::i18n::i18n_f(
+        "Quit RustConn, then run this in a terminal and reproduce the problem:\n\n{}\n\nThe log is written to rustconn.log in the current directory. Passwords are never logged, but the log contains host names, user names and file paths. Read it before you share it.",
+        &[&command],
+    );
+    let dialog = adw::AlertDialog::new(Some(&gettext("Debug Logging")), Some(&body));
+    dialog.add_response("close", &gettext("Close"));
+    dialog.add_response("copy", &gettext("Copy Command"));
+    dialog.set_response_appearance("copy", adw::ResponseAppearance::Suggested);
+    dialog.set_default_response(Some("close"));
+    dialog.set_close_response("close");
+    let display = gtk4::prelude::WidgetExt::display(parent);
+    dialog.connect_response(None, move |_, response| {
+        if response == "copy" {
+            display.clipboard().set_text(&command);
+        }
+    });
+    dialog.present(Some(parent));
 }
 
 /// Shows the about dialog

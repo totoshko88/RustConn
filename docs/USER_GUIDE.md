@@ -172,6 +172,8 @@ way GNOME apps surface search. Reveal it by clicking the toggle, pressing
 **Ctrl+F**, or simply starting to type while the connection list has focus; it
 collapses again when you clear it.
 
+An empty connection tree shows **No Connections Yet**; a search that matches nothing shows **No results**.
+
 Press **Enter** in the search field to open the first matching connection (or the
 one you had selected, if it still matches) and save the query to the search
 history; with no match, or an empty field, Enter opens nothing (0.25.1+).
@@ -3125,9 +3127,8 @@ paging still produces a complete transcript. If a model uses different pager
 text, add it to that expression; otherwise the `expect` times out rather than
 saving a truncated file.
 
-The pager text is removed from what the script reads, not from the log: the
-transcript file is a raw copy of the terminal output, so it can still contain
-the pager text (`--More--` and the like) between pages.
+The pager text is removed both from what the script reads and from the
+transcript file, so the log holds the configuration without `--More--` lines.
 
 Only two of these CLIs offer a documented way to include secrets:
 `/export verbose show-sensitive` on RouterOS 7 (RouterOS 6 includes them by
@@ -5107,6 +5108,25 @@ RUST_LOG=rustconn_core::secret=debug rustconn
 ```
 
 **Before attaching a log to a bug report, skim it.** RustConn does not log passwords, and the one dependency that did — `sspi`, which printed the encoded CredSSP request containing the RDP password in clear — is filtered out and cannot be re-enabled through `RUST_LOG`. A debug log still describes your setup in detail, though: hostnames and ports, usernames, key file paths, vault entry names, and share paths. Prefer the narrowest filter that shows the problem, which is what the module-specific forms above are for.
+
+**Menu shortcut.** **Main menu → Debug Logging…** shows the command below for your install (native or Flatpak) and copies it to the clipboard. Logging is configured once at startup, so quit RustConn first and start it from a terminal with that command.
+
+#### RDP troubleshooting log
+
+```bash
+# Native / deb / rpm / AppImage
+RUST_LOG=info,rustconn_core::rdp_client=debug rustconn 2>&1 | tee rustconn.log
+
+# Flatpak
+flatpak run --env=RUST_LOG=info,rustconn_core::rdp_client=debug \
+  io.github.totoshko88.RustConn 2>&1 | tee rustconn.log
+```
+
+Reproduce the failed connection, close RustConn, and attach `rustconn.log`. The log is written to the current directory of the terminal.
+
+- **What the log discloses.** Host names and ports, user names and domains, key and certificate paths, and the negotiated security protocol and codecs. Passwords are not logged; `sspi` and `ironrdp` stay at `warn` even if `RUST_LOG` asks for more. Read the file and replace anything private before sharing it.
+- **FreeRDP 3 requirement.** Only FreeRDP 3 clients (`xfreerdp3`, `sdl-freerdp3`, or an `xfreerdp` that is FreeRDP 3) are used for external-client mode. With only FreeRDP 2 installed RustConn reports the version it found; check with `xfreerdp3 /version`. In the Flatpak the X11 client is looked up on the host.
+- **Kerberos and Protected Users.** Accounts in the *Protected Users* group cannot use NTLM, so the connection needs Kerberos. The client must reach a KDC for the realm (DNS SRV `_kerberos._tcp.<REALM>` or a `[realms]` entry in `krb5.conf`), connect by host name rather than IP address, and have a clock within five minutes of the domain's. A log that ends in an authentication failure right after the CredSSP step, with no KDC lookup, usually means NTLM was attempted. Run `kinit user@REALM` first to confirm the KDC is reachable.
 
 ### Serial Device Access
 

@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Debug Logging… menu item** — the main menu (and the detached-window menu) shows the exact command that starts RustConn with a debug log, in the native or Flatpak form, and copies it to the clipboard. The log filter stays `info,rustconn_core::rdp_client=debug`; the `sspi` and `ironrdp` directives remain forced to `warn`, so no password reaches the log. The user guide gains an RDP troubleshooting section (what the log discloses, FreeRDP 3, Kerberos/KDC for Protected Users accounts) (#351). (`rustconn/src/app.rs`, `rustconn/src/window/ui.rs`, `rustconn/src/detached_window.rs`, `docs/USER_GUIDE.md`)
+- **Sidebar empty states** — an empty connection tree now shows a **No Connections Yet** hint, and a search with no match shows **No results**, instead of a blank list. The hint is also visible when the Welcome tab is off or closed. (`rustconn/src/sidebar/mod.rs`, `po/*.po`)
 - **Per-tile Broadcast check in a cluster window** — while the window's broadcast is on, each tile in **Tile Tabs** shows a **Broadcast** check, as the main window's split view does. Unticking it keeps that tab out of the broadcast: it neither sends nor receives. The check stays until the tab is ticked again; if fewer than two tabs are left, the broadcast stops. Not remembered between openings (#436). (`rustconn/src/session_group_window.rs`, `rustconn/src/window/detach_actions.rs`)
+
+### Fixed
+
+- **Pager text in script logs** — text matched by the script's `pager <regex>` instruction is no longer written to the `log` file, so a transcript has no `---- More ----` lines between pages. (`rustconn/src/script_runner.rs`, `rustconn-core/src/automation/script.rs`, `docs/USER_GUIDE.md`)
+- **Script log permissions** — opening a script log no longer changes the permissions of a file that already existed; only a file the script creates gets `0600`. (`rustconn/src/script_runner.rs`)
+- **`ask … default` with a hidden answer** — a default built from an `ask … hide` answer now stops the script with an error instead of being dropped silently. (`rustconn-core/src/automation/script.rs`)
 
 ## [0.25.4] - 2026-11-18
 
