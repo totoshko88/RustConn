@@ -1113,7 +1113,7 @@ msgstr ""
 "spracovanie"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:538
-msgid "Postpend Command"
+msgid "Filter Command"
 msgstr "Príkaz na spracovanie výstupu"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:539
@@ -9996,7 +9996,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Prepnúť vysielanie v rozdelenom zobrazení"
 
 #: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
-msgid "Toggle Group Broadcast"
+msgid "Toggle Tab Broadcast"
 msgstr "Prepnúť skupinové vysielanie"
 
 #: rustconn/src/dialogs/shortcuts.rs:362
@@ -11978,7 +11978,7 @@ msgid "Script sent"
 msgstr "Skript odoslaný"
 
 #: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
-msgid "Run Snippet?"
+msgid "Execute Snippet?"
 msgstr "Spustiť úryvok?"
 
 #: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
@@ -13344,11 +13344,11 @@ msgid "Remove from Group"
 msgstr "Odstrániť zo skupiny"
 
 #: rustconn/src/terminal/tab_menu.rs:1288
-msgid "Remove from Broadcast"
+msgid "Remove from Tab Broadcast"
 msgstr "Odobrať z vysielania"
 
 #: rustconn/src/terminal/tab_menu.rs:1290
-msgid "Add to Broadcast"
+msgid "Add to Tab Broadcast"
 msgstr "Pridať do vysielania"
 
 #: rustconn/src/terminal/tab_menu.rs:1312
@@ -15847,7 +15847,7 @@ msgstr ""
 "Duplikovať stlačenia kláves do všetkých rozdelených panelov (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:169
-msgid "Group Broadcast"
+msgid "Tab Broadcast"
 msgstr "Skupinové vysielanie"
 
 #: rustconn/src/window/ui.rs:175

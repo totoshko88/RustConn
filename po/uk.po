@@ -1117,7 +1117,7 @@ msgstr ""
 "Спрямуй виведення термінала через зовнішню команду для підсвітки або обробки"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:538
-msgid "Postpend Command"
+msgid "Filter Command"
 msgstr "Команда обробки виведення"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:539
@@ -9983,8 +9983,8 @@ msgid "Toggle Split Broadcast"
 msgstr "Перемкни трансляцію розділеного вигляду"
 
 #: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
-msgid "Toggle Group Broadcast"
-msgstr "Перемкни групову трансляцію"
+msgid "Toggle Tab Broadcast"
+msgstr "Перемкни трансляцію на вкладки"
 
 #: rustconn/src/dialogs/shortcuts.rs:362
 msgid "Search shortcuts…"
@@ -11956,8 +11956,8 @@ msgid "Script sent"
 msgstr "Скрипт надіслано"
 
 #: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
-msgid "Run Snippet?"
-msgstr "Запустити сніпета?"
+msgid "Execute Snippet?"
+msgstr "Виконати сніпета?"
 
 #: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
 msgid ""
@@ -13320,12 +13320,12 @@ msgid "Remove from Group"
 msgstr "Вилучи з групи"
 
 #: rustconn/src/terminal/tab_menu.rs:1288
-msgid "Remove from Broadcast"
-msgstr "Вилучи з трансляції"
+msgid "Remove from Tab Broadcast"
+msgstr "Вилучи з трансляції на вкладки"
 
 #: rustconn/src/terminal/tab_menu.rs:1290
-msgid "Add to Broadcast"
-msgstr "Додай до трансляції"
+msgid "Add to Tab Broadcast"
+msgstr "Додай до трансляції на вкладки"
 
 #: rustconn/src/terminal/tab_menu.rs:1312
 msgid "Monitor"
@@ -15806,8 +15806,8 @@ msgstr ""
 "Дублюй натискання клавіш до всіх панелей розділеного вигляду (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:169
-msgid "Group Broadcast"
-msgstr "Групова трансляція"
+msgid "Tab Broadcast"
+msgstr "Трансляція на вкладки"
 
 #: rustconn/src/window/ui.rs:175
 msgid "Mirror keystrokes to all tabs in the broadcast group"

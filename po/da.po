@@ -1110,7 +1110,7 @@ msgstr ""
 "behandling"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:538
-msgid "Postpend Command"
+msgid "Filter Command"
 msgstr "Efterbehandlingskommando"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:539
@@ -9978,7 +9978,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Skift udsendelse i delt visning"
 
 #: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
-msgid "Toggle Group Broadcast"
+msgid "Toggle Tab Broadcast"
 msgstr "Slå gruppeudsendelse til/fra"
 
 #: rustconn/src/dialogs/shortcuts.rs:362
@@ -11957,7 +11957,7 @@ msgid "Script sent"
 msgstr "Script sendt"
 
 #: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
-msgid "Run Snippet?"
+msgid "Execute Snippet?"
 msgstr "Kør udklip?"
 
 #: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
@@ -13321,11 +13321,11 @@ msgid "Remove from Group"
 msgstr "Fjern fra gruppe"
 
 #: rustconn/src/terminal/tab_menu.rs:1288
-msgid "Remove from Broadcast"
+msgid "Remove from Tab Broadcast"
 msgstr "Fjern fra udsendelse"
 
 #: rustconn/src/terminal/tab_menu.rs:1290
-msgid "Add to Broadcast"
+msgid "Add to Tab Broadcast"
 msgstr "Føj til udsendelse"
 
 #: rustconn/src/terminal/tab_menu.rs:1312
@@ -15802,7 +15802,7 @@ msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Spejl tastetryk til alle opdelte paneler (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:169
-msgid "Group Broadcast"
+msgid "Tab Broadcast"
 msgstr "Gruppeudsendelse"
 
 #: rustconn/src/window/ui.rs:175

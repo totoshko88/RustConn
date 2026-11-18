@@ -1113,7 +1113,7 @@ msgid ""
 msgstr "Vurğulama və ya emal üçün terminal çıxışını xarici əmrdən keçir"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:538
-msgid "Postpend Command"
+msgid "Filter Command"
 msgstr "Əlavə əmr"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:539
@@ -9972,7 +9972,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Bölünmüş yayımı dəyiş"
 
 #: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
-msgid "Toggle Group Broadcast"
+msgid "Toggle Tab Broadcast"
 msgstr "Qrup yayımını dəyiş"
 
 #: rustconn/src/dialogs/shortcuts.rs:362
@@ -11950,7 +11950,7 @@ msgid "Script sent"
 msgstr "Skript göndərildi"
 
 #: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
-msgid "Run Snippet?"
+msgid "Execute Snippet?"
 msgstr "Fraqment işə salınsın?"
 
 #: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
@@ -13313,11 +13313,11 @@ msgid "Remove from Group"
 msgstr "Qrupdan çıxar"
 
 #: rustconn/src/terminal/tab_menu.rs:1288
-msgid "Remove from Broadcast"
+msgid "Remove from Tab Broadcast"
 msgstr "Yayımdan çıxar"
 
 #: rustconn/src/terminal/tab_menu.rs:1290
-msgid "Add to Broadcast"
+msgid "Add to Tab Broadcast"
 msgstr "Yayıma əlavə et"
 
 #: rustconn/src/terminal/tab_menu.rs:1312
@@ -15782,7 +15782,7 @@ msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Klaviş vuruşlarını bütün bölünmüş panellərə ötür (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:169
-msgid "Group Broadcast"
+msgid "Tab Broadcast"
 msgstr "Qrup yayımı"
 
 #: rustconn/src/window/ui.rs:175

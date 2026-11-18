@@ -575,7 +575,7 @@ pub fn show_context_menu_for_item(
             items.push(copy);
         }
         items.push(ContextMenuItem::action(
-            &i18n("Run Snippet…"),
+            &i18n("Execute Snippet…"),
             "run-snippet-for-connection",
         ));
         // Opens the log viewer where this connection writes its session logs.

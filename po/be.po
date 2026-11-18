@@ -1110,7 +1110,7 @@ msgstr ""
 "Перадавай вывад тэрмінала праз знешнюю каманду для падсвятлення або апрацоўкі"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:538
-msgid "Postpend Command"
+msgid "Filter Command"
 msgstr "Каманда апрацоўкі вываду"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:539
@@ -9997,7 +9997,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Пераключыць рассыланне ў падзеленым выглядзе"
 
 #: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
-msgid "Toggle Group Broadcast"
+msgid "Toggle Tab Broadcast"
 msgstr "Пераключыць групавую трансляцыю"
 
 #: rustconn/src/dialogs/shortcuts.rs:362
@@ -11980,7 +11980,7 @@ msgid "Script sent"
 msgstr "Скрыпт адпраўлены"
 
 #: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
-msgid "Run Snippet?"
+msgid "Execute Snippet?"
 msgstr "Запусціць фрагмент?"
 
 #: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
@@ -13345,11 +13345,11 @@ msgid "Remove from Group"
 msgstr "Выдаліць з групы"
 
 #: rustconn/src/terminal/tab_menu.rs:1288
-msgid "Remove from Broadcast"
+msgid "Remove from Tab Broadcast"
 msgstr "Выдаліць з трансляцыі"
 
 #: rustconn/src/terminal/tab_menu.rs:1290
-msgid "Add to Broadcast"
+msgid "Add to Tab Broadcast"
 msgstr "Дадаць у трансляцыю"
 
 #: rustconn/src/terminal/tab_menu.rs:1312
@@ -15835,7 +15835,7 @@ msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
 msgstr "Дубляваць націсканні клавіш ва ўсе панэлі падзелу (Ctrl+Shift+B)"
 
 #: rustconn/src/window/ui.rs:169
-msgid "Group Broadcast"
+msgid "Tab Broadcast"
 msgstr "Групавая трансляцыя"
 
 #: rustconn/src/window/ui.rs:175

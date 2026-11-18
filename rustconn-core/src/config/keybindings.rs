@@ -424,7 +424,7 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
         KeybindingDef::new(
             "win.toggle-group-broadcast",
             "<Control><Shift>a",
-            "Toggle Group Broadcast",
+            "Toggle Tab Broadcast",
             View,
         ),
         // Application (additional)

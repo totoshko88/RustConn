@@ -52,7 +52,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Workspace Profiles](#workspace-profiles)
    - [Port Knocking](#port-knocking)
    - [Broadcast Input](#broadcast-input)
-   - [Group Broadcast](#group-broadcast)
+   - [Tab Broadcast](#tab-broadcast)
    - [Command Palette](#command-palette)
    - [Run Local Script](#run-local-script)
    - [Global Variables](#global-variables)
@@ -615,7 +615,7 @@ Run commands automatically before connecting or after disconnecting.
 - Post-disconnect: `nmcli con down VPN-Work` (disconnect VPN after session)
 - Post-disconnect: `notify-send "Session ended"` (desktop notification)
 
-### Output Filter (Postpend Command)
+### Output Filter (Filter Command)
 
 Pipe terminal output through an external command before displaying it. This is useful for syntax highlighting, bandwidth metering, or log colorization.
 
@@ -768,7 +768,7 @@ Temporary connection without saving:
 | Duplicate via Wizard | Right-click → Duplicate via Wizard… |
 | Disconnect | Right-click a connected row → Disconnect |
 | Set Up Key Authentication | Right-click an SSH row → Set Up Key Authentication… |
-| Run Snippet | Right-click → Run Snippet... (sends snippet to active session) |
+| Execute Snippet | Right-click → Execute Snippet... (sends snippet to active session) |
 | Start/Stop Recording | Right-click connected session → Start/Stop Recording |
 
 **Opening the context menu:** Besides right-click, the context menu for the selected row can be opened with the **Menu** key or **Shift+F10** (standard GNOME keyboard access, anchored to the selected row), or via a **touch long-press** on touchscreens. The menu supports Up/Down (with wrap-around) plus Home/End navigation and is announced to screen readers.
@@ -2442,7 +2442,7 @@ A session can be moved out of the main window into a window of its own — usefu
 
 **Not offered for:** sessions handed to an external viewer (SPICE, or RDP/VNC in External Window mode), which already run in their own operating-system window. On a **split tab** the tab menu's **Move to New Window** is hidden (a session in a split cannot be detached while the split stands); remove the split first, or use the sidebar's **Move to New Window**, which pops the pane out and detaches it in one step.
 
-A detached window behaves like the main window in the ways listed here, and lacks the rest: it has no tab context menu (so no Pin, Set Group, Monitor, Save Output or Duplicate Tab), no Tab Overview or Tab Switcher, no Group Broadcast or split view, and the snippet entries of the terminal menu are not available in it. Copy, paste, terminal search, close, and fullscreen (F11) act on the session in that window and never on a session in the main window, the keyboard passthrough toggle works from there as well, and toasts raised by that session appear in it. Its header bar has a menu (F10, suspended in passthrough mode like the main window's) with Settings, Keyboard Shortcuts, Help and About; **Ctrl+,** opens Settings in the main window and raises it, and Keyboard Shortcuts (Ctrl+?) and About open in the detached window itself. Compact-interface and layout-independent accelerator handling apply the same way as in the main window.
+A detached window behaves like the main window in the ways listed here, and lacks the rest: it has no tab context menu (so no Pin, Set Group, Monitor, Save Output or Duplicate Tab), no Tab Overview or Tab Switcher, no Tab Broadcast or split view, and the snippet entries of the terminal menu are not available in it. Copy, paste, terminal search, close, and fullscreen (F11) act on the session in that window and never on a session in the main window, the keyboard passthrough toggle works from there as well, and toasts raised by that session appear in it. Its header bar has a menu (F10, suspended in passthrough mode like the main window's) with Settings, Keyboard Shortcuts, Help and About; **Ctrl+,** opens Settings in the main window and raises it, and Keyboard Shortcuts (Ctrl+?) and About open in the detached window itself. Compact-interface and layout-independent accelerator handling apply the same way as in the main window.
 
 **Lifecycle:**
 - **Closing a detached window ends its session** — the same teardown as closing its tab: the child process is stopped, SSH tunnels are dropped, and the sidebar status and history entry are updated. Ctrl+W inside a detached window closes only that session.
@@ -3529,7 +3529,7 @@ pg_dump -h ${host} -U ${user} -d ${database} > /tmp/${database}_backup.sql
 **Execute Snippet:** running a snippet is always started from the thing you want it to run *on*, never from the app menu. The menu belongs to the main window, so an entry there would fire against whatever session happened to be current — not necessarily the one you are looking at, and not a detached session window at all. Pick whichever of these matches what you have in front of you:
 
 1. **Right-click inside the terminal** — up to five snippets appear inline for one-click use; beyond that the list becomes **Execute Snippet…**, which opens the picker
-2. **Right-click a connection in the sidebar** → **Run Snippet...** — connects first if needed, then opens the picker
+2. **Right-click a connection in the sidebar** → **Execute Snippet...** — connects first if needed, then opens the picker
 3. **Menu → Tools → Snippets...** → the ▶ button on a snippet's row
 4. **Command Palette** (**Ctrl+P**) with the `!` prefix — type `!` to list snippets and run the one you pick. Because the palette belongs to the main window, it cannot be sure which terminal has your focus (a detached window or a split pane may), so a palette-launched snippet **always asks for confirmation first**, naming the snippet and that it goes to the focused terminal.
 
@@ -3608,7 +3608,7 @@ You can also select several connections in the sidebar and use **Create Cluster*
 - **Close All Ungrouped** closes everything *except* your open clusters
 - The tab switcher (**Ctrl+%**) shows the cluster name beside each member
 
-**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all, after a confirmation when two or more sessions are still open; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. **Broadcast in a cluster window:** once the window holds two or more terminal tabs, a **Broadcast** toggle appears at the right of its header bar ([#436](https://github.com/totoshko88/RustConn/issues/436)). Turn it on with the toggle or **Ctrl+Shift+A** and what you type in any tab of the window goes to all of its terminal tabs; a banner names how many tabs receive it, and its **Stop** button, the toggle or Ctrl+Shift+A turns it off. Each cluster window has its own broadcast, separate from the main window's [Group Broadcast](#group-broadcast), so two clusters in two windows can take different commands. More than five tabs ask for confirmation first, and embedded RDP, VNC and SPICE tabs are left out. **Tile Tabs in a cluster window:** with two or more tabs, a **Tile Tabs** toggle appears in the header bar next to **Broadcast** ([#436](https://github.com/totoshko88/RustConn/issues/436)). It hides the tab bar and shows every tab at once in a balanced grid, with a narrow title over each tile that carries the tab's name and a mark when the session has ended. The tile you click or type in is the active one: **Move Tab to Main Window**, Ctrl+Shift+M, closing a tab and **Broadcast** act on it, or on all tiles for the broadcast, exactly as they do on the selected tab. While the broadcast is on, each tile shows a **Broadcast** check: untick it to keep that tab out (it neither sends nor receives); the check stays until you tick it again, and the broadcast stops if fewer than two tabs are left. Drag the dividers to resize tiles. When a tab joins, leaves or closes, the grid is built again with equal tiles, and when only one tab is left the window goes back to tabs. The toggle now reads **Show Tabs**; click it to return to the tab bar with every tab as it was. The mode is not remembered, so a window opens with tabs each time. This is a view, not a split: a cluster window still has no split view. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
+**Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all, after a confirmation when two or more sessions are still open; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. **Broadcast in a cluster window:** once the window holds two or more terminal tabs, a **Broadcast** toggle appears at the right of its header bar ([#436](https://github.com/totoshko88/RustConn/issues/436)). Turn it on with the toggle or **Ctrl+Shift+A** and what you type in any tab of the window goes to all of its terminal tabs; a banner names how many tabs receive it, and its **Stop** button, the toggle or Ctrl+Shift+A turns it off. Each cluster window has its own broadcast, separate from the main window's [Tab Broadcast](#tab-broadcast), so two clusters in two windows can take different commands. More than five tabs ask for confirmation first, and embedded RDP, VNC and SPICE tabs are left out. **Tile Tabs in a cluster window:** with two or more tabs, a **Tile Tabs** toggle appears in the header bar next to **Broadcast** ([#436](https://github.com/totoshko88/RustConn/issues/436)). It hides the tab bar and shows every tab at once in a balanced grid, with a narrow title over each tile that carries the tab's name and a mark when the session has ended. The tile you click or type in is the active one: **Move Tab to Main Window**, Ctrl+Shift+M, closing a tab and **Broadcast** act on it, or on all tiles for the broadcast, exactly as they do on the selected tab. While the broadcast is on, each tile shows a **Broadcast** check: untick it to keep that tab out (it neither sends nor receives); the check stays until you tick it again, and the broadcast stops if fewer than two tabs are left. Drag the dividers to resize tiles. When a tab joins, leaves or closes, the grid is built again with equal tiles, and when only one tab is left the window goes back to tabs. The toggle now reads **Show Tabs**; click it to return to the tab bar with every tab as it was. The mode is not remembered, so a window opens with tabs each time. This is a view, not a split: a cluster window still has no split view. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
 
 **Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters… (**Disconnect all cluster sessions**).
 
@@ -3618,7 +3618,7 @@ Notes on the automatic group:
 - You can override it per tab: **Remove from Group**, or **Set Group…** to move one member elsewhere. The tab stays part of the cluster for the Disconnect button either way.
 - Groups are visual and session-scoped; they are not written to disk.
 
-**Broadcast:** a cluster that opens in its own window has a **Broadcast** toggle in that window's header bar (Ctrl+Shift+A), described above. In the main window, typing into several hosts at once is a split-view feature (see [Broadcast Input](#broadcast-input)) or a [Group Broadcast](#group-broadcast) of tabs you add by hand.
+**Broadcast:** a cluster that opens in its own window has a **Broadcast** toggle in that window's header bar (Ctrl+Shift+A), described above. In the main window, typing into several hosts at once is a split-view feature (see [Broadcast Input](#broadcast-input)) or a [Tab Broadcast](#tab-broadcast) of tabs you add by hand.
 
 **Use cases:**
 - Rolling out configuration changes across multiple servers
@@ -3720,21 +3720,21 @@ The toggle only becomes available when the active tab's split holds at least two
 
 Opening a [cluster](#clusters) is the quick way to get the members on screen; from there, split them and toggle broadcast. `Cluster` still carries a `broadcast_enabled` flag on disk for CLI compatibility; it does not affect the GUI.
 
-If the sessions live on separate tabs rather than in one split, use **Group Broadcast** below instead.
+If the sessions live on separate tabs rather than in one split, use **Tab Broadcast** below instead.
 
-### Group Broadcast
+### Tab Broadcast
 
 Broadcast keystrokes to several sessions that each live on **their own tab**, rather than to the panels of one split. This is the equivalent of MobaXterm's MultiExec or iTerm2's "broadcast to a set of sessions".
 
 Membership is explicit: you choose which tabs are in the broadcast set, one at a time. Nothing is broadcast to a tab you did not add.
 
 **Usage:**
-1. Right-click a terminal tab → **Add to Broadcast**. Repeat for each tab you want in the set. A member tab shows a `⇄ ` marker in its title.
-2. Once at least two tabs are members, the **Group Broadcast** toggle appears in the header bar while a member tab is active. Turn it on with the toggle or **Ctrl+Shift+A**.
+1. Right-click a terminal tab → **Add to Tab Broadcast**. Repeat for each tab you want in the set. A member tab shows a `⇄ ` marker in its title.
+2. Once at least two tabs are members, the **Tab Broadcast** toggle appears in the header bar while a member tab is active. Turn it on with the toggle or **Ctrl+Shift+A**.
 3. Type into any member tab — the keystrokes are mirrored to the other members. A tab that is **not** a member types only into itself, even while the broadcast is on.
 4. Turn it off with the toggle, **Ctrl+Shift+A**, or the **Stop** button on the banner. While the broadcast is on, all three work from any tab, also one that is not in the set.
 
-To remove a tab from the set, right-click it → **Remove from Broadcast**. Dropping below two members turns the broadcast off automatically.
+To remove a tab from the set, right-click it → **Remove from Tab Broadcast**. Dropping below two members turns the broadcast off automatically.
 
 **Safety.** A group broadcast reaches tabs you cannot see all at once, so a mistyped command runs on every member. Two guardrails make the active state impossible to miss and hard to trigger by accident:
 
@@ -3743,7 +3743,7 @@ To remove a tab from the set, right-click it → **Remove from Broadcast**. Drop
 
 **Limits.** Only terminal sessions (SSH, Telnet, Serial, Kubernetes, MOSH, Zero Trust) participate; an embedded RDP, VNC or SPICE tab cannot be a broadcast target and is skipped even if added. Membership is session-only and is not saved across restarts. Closing a tab removes it from the set.
 
-Group Broadcast and the split [Broadcast Input](#broadcast-input) are independent: one mirrors across tabs, the other across the panels of a single split. Either can be on without affecting the other.
+Tab Broadcast and the split [Broadcast Input](#broadcast-input) are independent: one mirrors across tabs, the other across the panels of a single split. Either can be on without affecting the other.
 
 ### Command Palette
 
@@ -5314,7 +5314,7 @@ markers appear; nothing else changes.
 | F1 | Help (opens this guide in the browser) |
 | Ctrl+Shift+Backspace | Toggle Keyboard Passthrough |
 | Ctrl+Shift+B | Toggle Split Broadcast |
-| Ctrl+Shift+A | Toggle Group Broadcast (also the cluster window's Broadcast) |
+| Ctrl+Shift+A | Toggle Tab Broadcast (also the cluster window's Broadcast) |
 | Ctrl+Q | Quit |
 
 > **Note:** Quitting with **Ctrl+Q** (or closing the window) while session tabs are open shows a "Close RustConn?" confirmation dialog with the number of open sessions (tabs plus [detached windows](#detached-session-windows)), instead of silently disconnecting everything. This is skipped when minimize-to-tray is enabled (the app keeps running in the tray).

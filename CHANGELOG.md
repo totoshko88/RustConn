@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Per-tile Broadcast check in a cluster window** — while the window's broadcast is on, each tile in **Tile Tabs** shows a **Broadcast** check, as the main window's split view does. Unticking it keeps that tab out of the broadcast: it neither sends nor receives. The check stays until the tab is ticked again; if fewer than two tabs are left, the broadcast stops. Not remembered between openings (#436). (`rustconn/src/session_group_window.rs`, `rustconn/src/window/detach_actions.rs`)
 
+### Changed
+
+- **Consistent names for tab broadcast, snippets and the output filter** — the header toggle **Group Broadcast** is now **Tab Broadcast** (Ctrl+Shift+A, **Toggle Tab Broadcast**), and the tab menu items are **Add to Tab Broadcast** and **Remove from Tab Broadcast**, so "Group" no longer means a fourth thing. The sidebar item **Run Snippet…** is now **Execute Snippet…**, as in the terminal menu and the picker, and its confirmation reads **Execute Snippet?**. The output-filter row **Postpend Command** is now **Filter Command**. Translations carry over; Ukrainian reads **Трансляція на вкладки** and **Виконати сніпета?**. (`rustconn/src/window/ui.rs`, `rustconn/src/terminal/tab_menu.rs`, `rustconn/src/dialogs/shortcuts.rs`, `rustconn-core/src/config/keybindings.rs`, `rustconn/src/sidebar_ui.rs`, `rustconn/src/dialogs/connection/automation_tab.rs`, `docs/USER_GUIDE.md`, `po/`)
+
 ## [0.25.4] - 2026-11-18
 
 ### Added
