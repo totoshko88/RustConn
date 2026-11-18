@@ -125,6 +125,9 @@ struct TileView {
     checks: RefCell<HashMap<Uuid, gtk4::CheckButton>>,
     /// Whether the checks are shown (the broadcast is on, or a tile is out).
     checks_visible: Cell<bool>,
+    /// Set while the checks are brought in line with `excluded`, so their
+    /// toggled handlers do not report it as a click.
+    syncing_checks: Rc<Cell<bool>>,
     on_tile_broadcast: TileBroadcastCallback,
 }
 
@@ -312,7 +315,11 @@ impl TileView {
             "Untick to keep this pane out of the keystroke broadcast",
         )));
         let callback = Rc::clone(&self.on_tile_broadcast);
+        let syncing = Rc::clone(&self.syncing_checks);
         check.connect_toggled(move |check| {
+            if syncing.get() {
+                return;
+            }
             if let Some(ref callback) = *callback.borrow() {
                 callback(sid, check.is_active());
             }
@@ -346,12 +353,17 @@ impl TileView {
         cell
     }
 
-    /// Shows or hides the **Broadcast** check of every tile.
+    /// Shows or hides the **Broadcast** check of every tile, ticked for every
+    /// tab that is not kept out.
     fn set_checks_visible(&self, visible: bool) {
         self.checks_visible.set(visible);
-        for check in self.checks.borrow().values() {
+        let excluded = self.excluded.borrow().clone();
+        self.syncing_checks.set(true);
+        for (sid, check) in self.checks.borrow().iter() {
+            check.set_active(!excluded.contains(sid));
             check.set_visible(visible);
         }
+        self.syncing_checks.set(false);
     }
 
     fn build_widget(node: &TileNode, cells: &[gtk4::Box]) -> gtk4::Widget {
@@ -419,6 +431,9 @@ pub struct SessionGroupWindow {
     on_broadcast_toggled: ToggleCallback,
     /// Sessions kept out of the broadcast; shared with the tile view.
     excluded: Rc<RefCell<HashSet<Uuid>>>,
+    /// Whether enough terminal tabs are here for per-tile **Broadcast** checks
+    /// (see [`crate::split_view::MIN_PANES_FOR_BROADCAST_CHECKS`]).
+    checks_offered: Cell<bool>,
     on_tile_broadcast: TileBroadcastCallback,
 }
 
@@ -478,6 +493,7 @@ impl SessionGroupWindow {
             excluded: Rc::clone(&excluded),
             checks: RefCell::new(HashMap::new()),
             checks_visible: Cell::new(false),
+            syncing_checks: Rc::new(Cell::new(false)),
             on_tile_broadcast: Rc::clone(&on_tile_broadcast),
         });
 
@@ -518,6 +534,7 @@ impl SessionGroupWindow {
             on_members_changed: Rc::new(RefCell::new(None)),
             on_broadcast_toggled: Rc::new(RefCell::new(None)),
             excluded,
+            checks_offered: Cell::new(false),
             on_tile_broadcast,
         });
         group.connect_close_page();
@@ -827,9 +844,12 @@ impl SessionGroupWindow {
             self.broadcast_toggle.remove_css_class("broadcasting");
         }
         self.broadcast_banner.set_revealed(active);
-        // The tile checks stay while a tile is out, so it can be put back.
-        self.tiling
-            .set_checks_visible(active || !self.excluded.borrow().is_empty());
+        // The tile checks stay while a tile is out, so it can be put back. With
+        // fewer than three terminal tabs they are not offered at all: the
+        // header-bar button already covers two.
+        self.tiling.set_checks_visible(
+            self.checks_offered.get() && (active || !self.excluded.borrow().is_empty()),
+        );
     }
 
     /// Sessions the user took out of this window's broadcast.
@@ -839,10 +859,17 @@ impl SessionGroupWindow {
     }
 
     /// Forgets exclusions of sessions that are no longer hosted here.
+    ///
+    /// `hosted` are the terminal tabs here. Below
+    /// [`crate::split_view::MIN_PANES_FOR_BROADCAST_CHECKS`] of them no tile
+    /// gets a check, so every exclusion is dropped: no tab stays out with no
+    /// check to put it back.
     pub fn retain_excluded(&self, hosted: &HashSet<Uuid>) {
+        let offered = hosted.len() >= crate::split_view::MIN_PANES_FOR_BROADCAST_CHECKS;
+        self.checks_offered.set(offered);
         self.excluded
             .borrow_mut()
-            .retain(|sid| hosted.contains(sid));
+            .retain(|sid| offered && hosted.contains(sid));
     }
 
     /// Sets the callback run when a tile's **Broadcast** check is clicked. The
@@ -1097,6 +1124,7 @@ mod tests {
             excluded: Rc::new(RefCell::new(HashSet::new())),
             checks: RefCell::new(HashMap::new()),
             checks_visible: Cell::new(false),
+            syncing_checks: Rc::new(Cell::new(false)),
             on_tile_broadcast: Rc::new(RefCell::new(None)),
         };
         let add = |name: &str| {
