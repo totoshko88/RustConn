@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Scripts dialog redesigned** — the dialog is now 900×640 (never larger than the window) with a collapsing two-pane layout: a sidebar with a labelled **New Script** button, search and the list, and an editor in a framed, scrollable box. Before a script is picked the right pane shows an empty state. **Delete** is red and still asks first, **Run** is the suggested action; the per-row trash buttons are gone (use **Delete** in the editor). Files, backups and run/stop behave as before. (`rustconn/src/dialogs/script.rs`, `docs/USER_GUIDE.md`)
 - **Bundled examples are refreshed without losing edits** — a changed bundled example is copied to `<id>.rsc.bak` before the new source replaces it; an existing backup is never overwritten (the next copy is `.bak.1`, `.bak.2`), so an edit survives repeated upgrades. An identical file is left untouched. (`rustconn/src/dialogs/script.rs`)
 - **Script API break for `ScriptHost` implementors** — `ScriptHost::set_log` now returns `bool`, `ScriptHost::ask` takes a `default: Option<&str>` parameter, `ScriptStep` gains the variant `Pager`, and `ScriptStep::Ask` gains the field `default`. RustConn's own `GuiHost` is updated; an external implementation of the trait must be too. (`rustconn-core/src/automation/script.rs`)
 - **`default` and `hide` are keywords in `ask`** — a script can no longer name the answer variable `default` or `hide` in an `ask` line; rename such a variable. (`rustconn-core/src/automation/script.rs`)

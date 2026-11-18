@@ -96,36 +96,73 @@ impl ScriptDialog {
 
         let dialog = adw::Dialog::builder()
             .title(i18n("Scripts"))
-            .content_width(820)
-            .content_height(600)
+            .content_width(900)
+            .content_height(640)
             .build();
 
+        // The dialog is clamped to its parent by libadwaita, so 900x640 never
+        // overflows a small window; the panes below scroll instead.
         let header = adw::HeaderBar::new();
-        let new_btn = Button::from_icon_name("document-new-symbolic");
-        new_btn.set_tooltip_text(Some(&i18n("New Script")));
-        new_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("New Script"))]);
-        header.pack_start(&new_btn);
 
         let help_btn = Button::from_icon_name("help-about-symbolic");
+        help_btn.add_css_class("flat");
         help_btn.set_tooltip_text(Some(&i18n("Script language reference")));
         help_btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
             "Script language reference",
         ))]);
         header.pack_end(&help_btn);
 
-        let content = GtkBox::new(Orientation::Vertical, 0);
-        content.append(&header);
+        // Two panes that collapse on a narrow window: the list is the sidebar,
+        // the editor (or the empty state) is the content.
+        let split = adw::OverlaySplitView::builder()
+            .min_sidebar_width(220.0)
+            .max_sidebar_width(300.0)
+            .sidebar_width_fraction(0.32)
+            .vexpand(true)
+            .build();
 
-        let body = GtkBox::new(Orientation::Horizontal, 12);
-        body.set_margin_top(12);
-        body.set_margin_bottom(12);
-        body.set_margin_start(12);
-        body.set_margin_end(12);
+        // Shown only once the split has collapsed; otherwise the list is
+        // already on screen and the button would do nothing.
+        let sidebar_toggle = gtk4::ToggleButton::builder()
+            .icon_name("sidebar-show-symbolic")
+            .tooltip_text(i18n("Scripts"))
+            .build();
+        sidebar_toggle.add_css_class("flat");
+        sidebar_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Scripts"))]);
+        split
+            .bind_property("show-sidebar", &sidebar_toggle, "active")
+            .bidirectional()
+            .sync_create()
+            .build();
+        split
+            .bind_property("collapsed", &sidebar_toggle, "visible")
+            .sync_create()
+            .build();
+        header.pack_start(&sidebar_toggle);
+
+        let toolbar = adw::ToolbarView::new();
+        toolbar.add_top_bar(&header);
+        toolbar.set_content(Some(&split));
+        dialog.set_child(Some(&toolbar));
+
+        // Sidebar: an explicit New Script button, the search field and the list.
+        let new_btn = Button::builder()
+            .child(
+                &adw::ButtonContent::builder()
+                    .icon_name("document-new-symbolic")
+                    .label(i18n("New Script"))
+                    .build(),
+            )
+            .build();
+        new_btn.set_tooltip_text(Some(&i18n("New Script")));
+        new_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("New Script"))]);
 
         let script_list = ListBox::builder()
             .selection_mode(gtk4::SelectionMode::Single)
             .css_classes(["boxed-list"])
+            .valign(gtk4::Align::Start)
             .build();
+        script_list.update_property(&[gtk4::accessible::Property::Label(&i18n("Scripts"))]);
         let placeholder = adw::StatusPage::builder()
             .icon_name("utilities-terminal-symbolic")
             .title(i18n("No Scripts"))
@@ -135,7 +172,6 @@ impl ScriptDialog {
         let list_scroll = ScrolledWindow::builder()
             .child(&script_list)
             .hscrollbar_policy(gtk4::PolicyType::Never)
-            .width_request(200)
             .vexpand(true)
             .build();
 
@@ -152,9 +188,7 @@ impl ScriptDialog {
             script_list.set_filter_func(move |row: &ListBoxRow| {
                 let name = row
                     .child()
-                    .and_then(|child| child.downcast::<GtkBox>().ok())
-                    .and_then(|box_| box_.first_child())
-                    .and_then(|first| first.downcast::<Label>().ok())
+                    .and_then(|child| child.downcast::<Label>().ok())
                     .map(|label| label.text().to_lowercase())
                     .unwrap_or_default();
                 name.contains(filter_query.borrow().as_str())
@@ -166,18 +200,21 @@ impl ScriptDialog {
                 list.invalidate_filter();
             });
         }
-        let list_group = GtkBox::new(Orientation::Vertical, 6);
-        list_group.set_vexpand(true);
+        let list_group = GtkBox::new(Orientation::Vertical, 12);
+        list_group.set_margin_top(12);
+        list_group.set_margin_bottom(12);
+        list_group.set_margin_start(12);
+        list_group.set_margin_end(12);
+        list_group.append(&new_btn);
         list_group.append(&search);
         list_group.append(&list_scroll);
+        split.set_sidebar(Some(&list_group));
 
-        let editor_group = GtkBox::new(Orientation::Vertical, 8);
-        editor_group.set_hexpand(true);
-
+        // Content: an empty state until a script is picked or created, then
+        // the id field, the framed editor, the status line and the actions.
         let id_entry = Entry::new();
         id_entry.set_placeholder_text(Some(&i18n("Script id (file name)")));
-        let id_row = adw::EntryRow::builder().title(i18n("Script ID")).build();
-        id_row.set_child(Some(&id_entry));
+        id_entry.update_property(&[gtk4::accessible::Property::Label(&i18n("Script ID"))]);
 
         let editor = TextView::builder()
             .hexpand(true)
@@ -188,21 +225,21 @@ impl ScriptDialog {
             .top_margin(8)
             .bottom_margin(8)
             .build();
-        editor_group.append(&id_row);
+        editor.update_property(&[gtk4::accessible::Property::Label(&i18n("Script"))]);
         let editor_scroll = ScrolledWindow::builder()
             .child(&editor)
+            .has_frame(true)
             .hexpand(true)
             .vexpand(true)
+            .min_content_height(160)
             .build();
-        editor_group.append(&editor_scroll);
 
         let status_label = Label::new(Some(&i18n("Select or create a script.")));
         status_label.set_halign(gtk4::Align::Start);
+        status_label.set_hexpand(true);
+        status_label.set_wrap(true);
+        status_label.set_xalign(0.0);
         status_label.add_css_class("dim-label");
-        editor_group.append(&status_label);
-
-        let button_box = GtkBox::new(Orientation::Horizontal, 8);
-        button_box.set_halign(gtk4::Align::End);
 
         let run_btn = Button::builder()
             .label(i18n("Run"))
@@ -219,33 +256,57 @@ impl ScriptDialog {
             .build();
         let delete_btn = Button::builder()
             .label(i18n("Delete"))
+            .css_classes(["destructive-action"])
             .sensitive(false)
             .build();
-        button_box.append(&run_btn);
+
+        // Delete sits apart on the left; the rest follow the usual order,
+        // with the suggested action last.
+        let button_box = GtkBox::new(Orientation::Horizontal, 6);
+        button_box.append(&delete_btn);
+        let spacer = GtkBox::new(Orientation::Horizontal, 0);
+        spacer.set_hexpand(true);
+        button_box.append(&spacer);
         button_box.append(&stop_btn);
         button_box.append(&save_btn);
-        button_box.append(&delete_btn);
+        button_box.append(&run_btn);
+
+        let editor_group = GtkBox::new(Orientation::Vertical, 12);
+        editor_group.set_margin_top(12);
+        editor_group.set_margin_bottom(12);
+        editor_group.set_margin_start(18);
+        editor_group.set_margin_end(18);
+        editor_group.append(&id_entry);
+        editor_group.append(&editor_scroll);
+        editor_group.append(&status_label);
         editor_group.append(&button_box);
 
-        // A draggable split: long script ids no longer have to fit a fixed
-        // 220 px column, and the divider can give the editor more room.
-        let paned = gtk4::Paned::builder()
-            .orientation(Orientation::Horizontal)
-            .wide_handle(true)
-            .position(280)
-            .start_child(&list_group)
-            .end_child(&editor_group)
-            .resize_start_child(false)
-            .resize_end_child(true)
-            .shrink_start_child(false)
-            .hexpand(true)
-            .vexpand(true)
+        let empty_page = adw::StatusPage::builder()
+            .icon_name("utilities-terminal-symbolic")
+            .title(i18n("Select or create a script."))
             .build();
-        body.append(&paned);
+        let pages = gtk4::Stack::new();
+        pages.add_named(&empty_page, Some("empty"));
+        pages.add_named(&editor_group, Some("editor"));
+        pages.set_visible_child_name("empty");
+        split.set_content(Some(&pages));
 
-        let clamp = adw::Clamp::builder().maximum_size(820).child(&body).build();
-        content.append(&clamp);
-        dialog.set_child(Some(&content));
+        // On a collapsed (narrow) window, picking or creating a script moves
+        // on to the editor.
+        {
+            let split_row = split.clone();
+            script_list.connect_row_activated(move |_, _| {
+                if split_row.is_collapsed() {
+                    split_row.set_show_sidebar(false);
+                }
+            });
+            let split_new = split.clone();
+            new_btn.connect_clicked(move |_| {
+                if split_new.is_collapsed() {
+                    split_new.set_show_sidebar(false);
+                }
+            });
+        }
 
         let parent_widget: Option<gtk4::Widget> = parent.map(|p| p.clone().upcast());
 
@@ -273,6 +334,7 @@ impl ScriptDialog {
             &run_btn,
             &stop_btn,
             &new_btn,
+            &pages,
             manager,
             state,
             notebook,
@@ -298,36 +360,16 @@ impl ScriptDialog {
             let row = ListBoxRow::new();
             let label = Label::new(Some(&id));
             label.set_halign(gtk4::Align::Start);
-            label.set_hexpand(true);
+            label.set_xalign(0.0);
+            label.set_margin_top(10);
+            label.set_margin_bottom(10);
+            label.set_margin_start(12);
+            label.set_margin_end(12);
             label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
             label.set_tooltip_text(Some(&id));
-
-            let delete_btn = Button::from_icon_name("user-trash-symbolic");
-            delete_btn.add_css_class("flat");
-            delete_btn.set_valign(gtk4::Align::Center);
-            delete_btn.set_tooltip_text(Some(&i18n("Delete script")));
-            delete_btn
-                .update_property(&[gtk4::accessible::Property::Label(&i18n("Delete script"))]);
-
-            let box_ = GtkBox::new(Orientation::Horizontal, 8);
-            box_.append(&label);
-            box_.append(&delete_btn);
-            row.set_child(Some(&box_));
+            row.set_child(Some(&label));
             list.append(&row);
-            ids_store.push(id.clone());
-
-            let id_delete = id.clone();
-            let list_c = list.clone();
-            let manager_c = manager.clone();
-            let ids_c = ids.clone();
-            delete_btn.connect_clicked(move |btn| {
-                let list_c = list_c.clone();
-                let manager_c = manager_c.clone();
-                let ids_c = ids_c.clone();
-                confirm_delete_script(btn, &id_delete, move || {
-                    Self::refresh_list(&list_c, &manager_c, &ids_c);
-                });
-            });
+            ids_store.push(id);
         }
     }
 
@@ -344,6 +386,7 @@ impl ScriptDialog {
         run_btn: &Button,
         stop_btn: &Button,
         new_btn: &Button,
+        pages: &gtk4::Stack,
         manager: Rc<ScriptManager>,
         state: SharedAppState,
         notebook: SharedNotebook,
@@ -357,6 +400,7 @@ impl ScriptDialog {
         let save_list = save_btn.clone();
         let delete_list = delete_btn.clone();
         let run_list = run_btn.clone();
+        let pages_list = pages.clone();
 
         script_list.connect_row_selected(move |_, row| {
             let Some(row) = row else {
@@ -384,10 +428,12 @@ impl ScriptDialog {
                     save_list.set_sensitive(true);
                     delete_list.set_sensitive(true);
                     run_list.set_sensitive(true);
+                    pages_list.set_visible_child_name("editor");
                     status_list
                         .set_label(&i18n("Editing script. Save writes it back to the library."));
                 }
                 Err(e) => {
+                    pages_list.set_visible_child_name("editor");
                     status_list.set_label(&format!("{}: {e}", i18n("Could not load script")));
                 }
             }
@@ -400,7 +446,12 @@ impl ScriptDialog {
         let save_new = save_btn.clone();
         let delete_new = delete_btn.clone();
         let run_new = run_btn.clone();
+        let pages_new = pages.clone();
+        let list_new = script_list.clone();
         new_btn.connect_clicked(move |_| {
+            list_new.unselect_all();
+            pages_new.set_visible_child_name("editor");
+            id_entry_new.grab_focus();
             id_entry_new.set_text("");
             editor_new.buffer().set_text("");
             status_new.set_label(&i18n("New script. Enter an id and source, then Save."));
@@ -446,6 +497,7 @@ impl ScriptDialog {
         let status_delete = status_label.clone();
         let save_delete = save_btn.clone();
         let run_delete = run_btn.clone();
+        let pages_delete = pages.clone();
         delete_btn.connect_clicked(move |btn| {
             let id = id_entry_delete.text().trim().to_string();
             if id.is_empty() {
@@ -460,12 +512,14 @@ impl ScriptDialog {
             let status_delete = status_delete.clone();
             let save_delete = save_delete.clone();
             let run_delete = run_delete.clone();
+            let pages_delete = pages_delete.clone();
             confirm_delete_script(btn, &id, move || {
                 id_entry_delete.set_text("");
                 editor_delete.buffer().set_text("");
                 status_delete.set_label(&i18n("Script deleted."));
                 save_delete.set_sensitive(false);
                 run_delete.set_sensitive(false);
+                pages_delete.set_visible_child_name("empty");
                 Self::refresh_list(&script_list_delete, &manager_delete, &ids_delete);
             });
         });

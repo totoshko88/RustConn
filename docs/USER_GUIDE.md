@@ -3218,7 +3218,7 @@ The same reference is available in the application: **Tools → Scripts… → �
 
 **Deleting scripts**
 
-- In the Scripts manager, every row has a trash button and the **Delete** button deletes the selected script.
+- In the Scripts manager, the red **Delete** button in the editor deletes the selected script (list rows have no trash button).
 - In Edit Connection → Automation → Auto-run Scripts (and in the group editor), each row has two buttons: the **trash** deletes the script from the library entirely, the **unlink** only detaches it from that connection or group.
 - A connection or group that names a script this computer's library does not have (imported, team-synced, or deleted here) shows it as *id (not in this library)* and keeps it on save; it is not replaced by another script.
 - Deleting always asks first, because it removes the file for every connection and group that runs it. The bundled `example-*` scripts are written back the next time the Scripts manager opens.
