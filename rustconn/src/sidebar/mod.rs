@@ -668,6 +668,46 @@ impl ConnectionSidebar {
         // Ensure indicator is clipped to overlay bounds
         overlay.set_clip_overlay(indicator_widget, true);
 
+        // Empty state: shown over the list when the tree has no rows, so an
+        // empty sidebar (Welcome tab off or closed) or a search with no match
+        // is not a blank panel. It does not take input, so the empty-space
+        // context menu underneath keeps working.
+        let empty_page = adw::StatusPage::new();
+        empty_page.set_vexpand(true);
+        empty_page.set_can_target(false);
+        empty_page.set_visible(false);
+        empty_page.add_css_class("compact");
+        overlay.add_overlay(&empty_page);
+        overlay.set_measure_overlay(&empty_page, false);
+        {
+            let update_empty = {
+                let tree_model = tree_model.clone();
+                let search_entry = search_entry.clone();
+                let empty_page = empty_page.clone();
+                move || {
+                    use gtk4::prelude::ListModelExt;
+                    if tree_model.n_items() > 0 {
+                        empty_page.set_visible(false);
+                    } else if search_entry.text().is_empty() {
+                        empty_page.set_icon_name(Some("network-server-symbolic"));
+                        empty_page.set_title(&i18n("No Connections Yet"));
+                        empty_page.set_description(Some(&i18n(
+                            "Add a connection or import existing ones.",
+                        )));
+                        empty_page.set_visible(true);
+                    } else {
+                        empty_page.set_icon_name(Some("system-search-symbolic"));
+                        empty_page.set_title(&i18n("No results"));
+                        empty_page.set_description(None);
+                        empty_page.set_visible(true);
+                    }
+                }
+            };
+            let on_change = update_empty.clone();
+            tree_model.connect_items_changed(move |_, _, _, _| on_change());
+            search_entry.connect_search_changed(move |_| update_empty());
+        }
+
         // Set up drop target on the list view for motion tracking
         let list_view_drop_target = DropTarget::new(glib::Type::STRING, gdk::DragAction::MOVE);
 

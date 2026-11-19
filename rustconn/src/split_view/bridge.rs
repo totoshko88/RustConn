@@ -22,6 +22,11 @@ use super::adapter::{PaneMenuState, SplitViewAdapter};
 use crate::i18n::i18n;
 use crate::terminal::TerminalSession;
 
+/// Fewest terminals for which each pane (or tile) gets its own **Broadcast**
+/// check box. With two, taking one out leaves nothing to mirror to, which is
+/// what the header-bar Broadcast button already does.
+pub const MIN_PANES_FOR_BROADCAST_CHECKS: usize = 3;
+
 /// Color palette for split panes
 pub const SPLIT_PANE_COLORS: &[(&str, &str)] = &[
     ("split-color-blue", "tab-split-blue"),
@@ -1594,7 +1599,19 @@ impl SplitViewBridge {
         self.broadcast_excluded
             .borrow_mut()
             .retain(|session_id| placed.contains(session_id));
-        adapter.set_broadcast_controls(active, |panel_id| {
+        // With two terminals, unticking one leaves nothing to mirror to, which
+        // the header-bar Broadcast button already does. The check boxes are
+        // offered from three terminals on; below that every pane is back in,
+        // so no pane stays out with no box to put it back.
+        let terminals = placed
+            .iter()
+            .filter(|session_id| self.get_terminal(**session_id).is_some())
+            .count();
+        let offer_checks = terminals >= MIN_PANES_FOR_BROADCAST_CHECKS;
+        if !offer_checks {
+            self.broadcast_excluded.borrow_mut().clear();
+        }
+        adapter.set_broadcast_controls(active && offer_checks, |panel_id| {
             let session_id = adapter.get_panel_session(panel_id)?.as_uuid();
             self.get_terminal(session_id)?;
             Some(self.is_broadcast_member(session_id))

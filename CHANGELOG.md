@@ -18,6 +18,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Automated sends are never written into a recorded script** — a script recording listens to VTE's `commit`, which also fires for bytes RustConn itself writes. Automatic logins would therefore have recorded `${password}` to disk in clear text. Every send RustConn originates (key sequences, macros, snippets, and both the immediate and delayed expect-rule responses) now runs inside a thread-local `suppress_recording` guard, entered at the moment the bytes are written so that delayed sends are covered too. (`rustconn/src/terminal/script_recorder.rs`, `rustconn/src/automation.rs`)
 - **Save-config scripts no longer close the log on a stale prompt** — `expect` could match a prompt left in the engine buffer by a previous command, so the bundled `example-cisco-save-config` (and the other vendor profiles) stopped `log` before `show running-config` printed anything and saved a two-line transcript. `send` now discards buffered output, starting a fresh window for the command it runs; `expect` still matches output that was on screen when the script started, because only a `send` drops the seed. (`rustconn-core/src/automation/script.rs`, `rustconn/src/dialogs/script.rs`)
 
+## [0.25.5] - 2026-11-19
+
+### Added
+
+- **Debug Logging… menu item** — the main menu (and the detached-window menu) shows the exact command that starts RustConn with a debug log, in the native or Flatpak form, and copies it to the clipboard. The log filter stays `info,rustconn_core::rdp_client=debug`; the `sspi` and `ironrdp` directives remain forced to `warn`, so no password reaches the log. The user guide gains an RDP troubleshooting section (what the log discloses, FreeRDP 3, Kerberos/KDC for Protected Users accounts) (#351). (`rustconn/src/app.rs`, `rustconn/src/window/ui.rs`, `rustconn/src/detached_window.rs`, `docs/USER_GUIDE.md`)
+- **Sidebar empty states** — an empty connection tree now shows a **No Connections Yet** hint, and a search with no match shows **No results**, instead of a blank list. The hint is also visible when the Welcome tab is off or closed. (`rustconn/src/sidebar/mod.rs`, `po/*.po`)
+- **Per-tile Broadcast check in a cluster window** — while the window's broadcast is on, each tile in **Tile Tabs** shows a **Broadcast** check, as the main window's split view does. Unticking it keeps that tab out of the broadcast: it neither sends nor receives. The check stays until the tab is ticked again; if fewer than two tabs are left, the broadcast stops. The checks appear only with three or more terminal tabs; with two, the header-bar **Broadcast** toggle already does the job. Not remembered between openings (#436). (`rustconn/src/session_group_window.rs`, `rustconn/src/window/detach_actions.rs`)
+
+### Fixed
+
+- **Pager text in script logs** — text matched by the script's `pager <regex>` instruction is no longer written to the `log` file, so a transcript has no `---- More ----` lines between pages. (`rustconn/src/script_runner.rs`, `rustconn-core/src/automation/script.rs`, `docs/USER_GUIDE.md`)
+- **Script log permissions** — opening a script log no longer changes the permissions of a file that already existed; only a file the script creates gets `0600`. (`rustconn/src/script_runner.rs`)
+- **Tab broadcast toast** — the notice shown when a broadcast stops now reads **Tab broadcast disabled**, matching the renamed toggle. (`rustconn/src/window/detach_actions.rs`, `rustconn/src/window/group_broadcast.rs`, `po/`)
+- **`ask … default` with a hidden answer** — a default built from an `ask … hide` answer now stops the script with an error instead of being dropped silently. (`rustconn-core/src/automation/script.rs`)
+
+### Changed
+
+- **Per-pane Broadcast checks need three terminals** — in a split view the **Broadcast** check box on each pane (and the matching pane-menu item) is shown only when three or more panes hold a terminal. With two, unticking one left nothing to mirror to, which is what the header-bar **Broadcast** toggle does; dropping to two puts every pane back in. (`rustconn/src/split_view/bridge.rs`, `docs/USER_GUIDE.md`)
+- **Consistent names for tab broadcast, snippets and the output filter** — the header toggle **Group Broadcast** is now **Tab Broadcast** (Ctrl+Shift+A, **Toggle Tab Broadcast**), and the tab menu items are **Add to Tab Broadcast** and **Remove from Tab Broadcast**, so "Group" no longer means a fourth thing. The sidebar item **Run Snippet…** is now **Execute Snippet…**, as in the terminal menu and the picker, and its confirmation reads **Execute Snippet?**. The output-filter row **Postpend Command** is now **Filter Command**. Translations carry over; Ukrainian reads **Трансляція на вкладки** and **Виконати сніпета?**. (`rustconn/src/window/ui.rs`, `rustconn/src/terminal/tab_menu.rs`, `rustconn/src/dialogs/shortcuts.rs`, `rustconn-core/src/config/keybindings.rs`, `rustconn/src/sidebar_ui.rs`, `rustconn/src/dialogs/connection/automation_tab.rs`, `docs/USER_GUIDE.md`, `po/`)
+
+### Dependencies
+- **regex 1.13.1 → 1.13.2**, **regex-automata 0.4.18 → 0.4.19**, **regex-syntax 0.8.11 → 0.8.12**, **smallvec 1.16.5 → 1.16.6**
 ## [0.25.4] - 2026-11-18
 
 ### Added
