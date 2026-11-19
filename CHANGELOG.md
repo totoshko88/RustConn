@@ -5,6 +5,13 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.6] - Unreleased
+
+### Fixed
+
+- **Embedded RDP overflowed the window at Display Scale above 100%** — after a resize or the first layout pass the desktop was drawn at its full pixel size and spilled past the right and bottom edges. A new frame buffer surface lost its device scale because the draw function remembered the old value; the buffer now keeps the scale itself (#439). (`rustconn/src/cairo_buffer.rs`, `rustconn/src/embedded_rdp/drawing.rs`)
+- **Kerberos NLA failed with "invalid MIC token sequence number"** — the retry through external FreeRDP was pinned to `/sec:tls`, which a server that requires NLA refuses. This error now hands off once to external FreeRDP with `/sec:nla` (#351). (`rustconn-core/src/rdp_client/failure.rs`, `rustconn/src/embedded_rdp/connection.rs`)
+
 ## [0.25.5] - 2026-11-19
 
 ### Added

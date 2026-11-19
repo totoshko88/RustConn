@@ -433,6 +433,12 @@ const TLS_ONLY_FALLBACK_BLOCKED_STATUSES: &[&str] = &[
 pub fn warrants_tls_only_fallback(msg: &str) -> bool {
     let lower = classified_text(msg);
 
+    // A Kerberos MIC mismatch is not the HYBRID_EX regression: the server
+    // requires NLA, so a TLS-only retry is refused (issue #351).
+    if is_mic_sequence_mismatch(&lower) {
+        return false;
+    }
+
     // An account-state refusal is unambiguous and TLS cannot change it.
     if TLS_ONLY_FALLBACK_BLOCKED_STATUSES
         .iter()
@@ -451,6 +457,21 @@ pub fn warrants_tls_only_fallback(msg: &str) -> bool {
         || lower.contains("0xc0000064"); // STATUS_NO_SUCH_USER
 
     is_invalid_token || is_logon_reject
+}
+
+/// Returns `true` for the CredSSP `invalid MIC token sequence number` failure.
+///
+/// The embedded client's Kerberos NLA finished the TLS step and then failed
+/// the CredSSP integrity check, while external FreeRDP with `/sec:nla` works
+/// against the same server (issue #351). The right retry keeps NLA on, so the
+/// session goes to external FreeRDP pinned to `/sec:nla`, not `/sec:tls`.
+#[must_use]
+pub fn warrants_nla_external_fallback(msg: &str) -> bool {
+    is_mic_sequence_mismatch(&classified_text(msg))
+}
+
+fn is_mic_sequence_mismatch(lower: &str) -> bool {
+    lower.contains("credssp") && lower.contains("invalid mic token sequence number")
 }
 
 /// Returns `true` when a *post-TLS connect stall* is worth one external-FreeRDP
@@ -1418,5 +1439,17 @@ mod tests {
         ] {
             assert_eq!(classify_auth_failure(msg), None, "message: {msg}");
         }
+    }
+
+    #[test]
+    fn mic_sequence_mismatch_goes_to_nla_not_tls() {
+        let msg = "Connection failed: [CredSSP] CredSSP [kind: Credssp(Error { error_type: \
+                   InvalidToken, description: \"invalid MIC token sequence number: expected \
+                   492697943 but got 0\", nstatus: None })]";
+        assert!(warrants_nla_external_fallback(msg));
+        assert!(!warrants_tls_only_fallback(msg));
+        assert!(!warrants_nla_external_fallback(
+            "CredSSP InvalidToken 0xc000006d"
+        ));
     }
 }

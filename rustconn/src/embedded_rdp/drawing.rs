@@ -57,12 +57,6 @@ impl super::EmbeddedRdpWidget {
         let rdp_width = self.rdp_width.clone();
         let rdp_height = self.rdp_height.clone();
 
-        // Cache the last effective scale to avoid calling set_device_scale on
-        // every draw frame when the scale has not changed. Cairo internally
-        // invalidates pattern caches when device_scale is set, even to the
-        // same value, so this avoids a measurable per-frame overhead.
-        let cached_scale = std::cell::Cell::new(0.0_f64);
-
         self.drawing_area
             .set_draw_func(move |area, cr, width, height| {
                 let current_state = *state.borrow();
@@ -93,13 +87,9 @@ impl super::EmbeddedRdpWidget {
                             .as_ref()
                             .map_or(1.0, |c| c.scale_override.resolved_scale(display_scale));
 
-                        // Only call set_device_scale when it actually changed — Cairo
-                        // internally invalidates pattern caches on every call regardless
-                        // of whether the value changed.
-                        if (effective_scale - cached_scale.get()).abs() > f64::EPSILON {
-                            surface.set_device_scale(effective_scale, effective_scale);
-                            cached_scale.set(effective_scale);
-                        }
+                        // The buffer keeps the scale across surface re-creation
+                        // (resize) and skips the call when it is unchanged.
+                        buffer.set_device_scale(effective_scale);
 
                         // Scale to fit the drawing area while maintaining aspect ratio.
                         let css_buf_w = f64::from(buf_width) / effective_scale;
