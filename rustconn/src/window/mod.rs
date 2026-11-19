@@ -39,6 +39,7 @@ mod smart_folders;
 mod snippet_actions;
 // `pub(crate)` for `truncate_command`, which the embedded RDP script gate needs:
 // its confirmation shows the same command text and has to cap it the same way.
+mod network_tools;
 mod script_actions;
 pub(crate) mod snippets;
 mod sorting;
@@ -1935,6 +1936,7 @@ impl MainWindow {
             &terminal_notebook,
             &self.session_split_bridges,
         );
+        network_tools::setup_network_tools(window, &state, &terminal_notebook);
         self.setup_cluster_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_template_actions(window, &state, &sidebar);
         self.setup_workspace_actions(window, &state, &terminal_notebook, &sidebar);

@@ -233,7 +233,8 @@ fn setup_keyboard_shortcuts(terminal: &Terminal) {
 ///
 /// The `snippet_section` is a shared live `gio::Menu` model — all terminals
 /// reference the same instance so snippet changes propagate automatically.
-/// `script_section` is shared the same way, for the script recording toggle.
+/// `script_section` is shared the same way: the recorder toggle and the three
+/// read-only network tools all follow the same terminal menu.
 ///
 /// When `right_click_pastes` is set (opt-in, off by default; issue #349) the
 /// native menu is not installed at all: a secondary-button `GestureClick`

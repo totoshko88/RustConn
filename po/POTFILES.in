@@ -24,6 +24,7 @@ rustconn/src/window/sidebar_resize.rs
 rustconn/src/window/smart_folders.rs
 rustconn/src/window/snippets.rs
 rustconn/src/window/snippet_actions.rs
+rustconn/src/window/network_tools.rs
 rustconn/src/window/script_actions.rs
 rustconn/src/window/clusters.rs
 rustconn/src/window/connection_actions.rs

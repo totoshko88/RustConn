@@ -18,6 +18,14 @@ use super::*;
     reason = "independent per-tab facts, each gating one menu section or item"
 )]
 pub struct TabMenuState {
+    /// The session the tab is named after, when it has one. The session tools
+    /// address it explicitly instead of the active tab.
+    pub session: Option<Uuid>,
+    /// A script recording is in progress somewhere in the window; only one
+    /// runs at a time, so the menu offers Stop instead of Record.
+    pub is_script_recording: bool,
+    /// The session is an SSH/SFTP terminal, so a remote file can be edited.
+    pub can_edit_remote: bool,
     /// The tab hosts a session. The Welcome tab does not, and the group,
     /// broadcast and monitor items would do nothing there.
     pub has_session: bool,
@@ -167,6 +175,7 @@ impl TerminalNotebook {
         let disconnected_for_menu = self.disconnected_sessions.clone();
         let directional_close_for_menu = self.show_directional_close.clone();
         let split_tab_titles_for_menu = self.split_tab_titles.clone();
+        let recording_for_menu = self.script_recording.clone();
         let menu_for_setup = menu;
 
         // Create the action group and the stateful monitor action up front, so
@@ -251,6 +260,11 @@ impl TerminalNotebook {
                                 .is_some_and(|has_connection| has_connection(*cid))
                         });
                     TabMenuState {
+                        session: session_id,
+                        is_script_recording: recording_for_menu.borrow().is_some(),
+                        can_edit_remote: session_id
+                            .and_then(|sid| info_ref.get(&sid))
+                            .is_some_and(|i| matches!(i.protocol.as_str(), "ssh" | "sftp")),
                         has_session: session_id.is_some(),
                         connection,
                         monitor_mode: mode,
@@ -1394,6 +1408,45 @@ impl TerminalNotebook {
             menu.append_section(None, &save_section);
         }
 
+        // Session tools — recorder, read-only sharing and the remote editor.
+        // Every item carries the right-clicked tab's session id, because the
+        // window actions the palette uses would otherwise act on the active
+        // tab, which may be a different host by the time the menu is used.
+        if state.is_terminal
+            && let Some(session) = state.session
+        {
+            let tools = gio::Menu::new();
+            if state.is_script_recording {
+                tools.append(
+                    Some(&i18n("Stop Script Recording")),
+                    Some("win.stop-record-script"),
+                );
+            } else {
+                let record = gio::MenuItem::new(Some(&i18n("Record Script…")), None);
+                record.set_action_and_target_value(
+                    Some("win.record-script-for"),
+                    Some(&session.to_string().to_variant()),
+                );
+                tools.append_item(&record);
+            }
+            let share = gio::MenuItem::new(Some(&i18n("Share Session (read-only)")), None);
+            share.set_action_and_target_value(
+                Some("win.share-session-for"),
+                Some(&session.to_string().to_variant()),
+            );
+            tools.append_item(&share);
+            if state.can_edit_remote {
+                let edit = gio::MenuItem::new(Some(&i18n("Edit Remote File…")), None);
+                edit.set_action_and_target_value(
+                    Some("win.edit-remote-file-for"),
+                    Some(&session.to_string().to_variant()),
+                );
+                tools.append_item(&edit);
+            }
+            tools.append(Some(&i18n("Start TFTP Server")), Some("win.start-tftp"));
+            menu.append_section(None, &tools);
+        }
+
         // Close section — minimal by default, expanded when groups exist
         let close_section = gio::Menu::new();
         close_section.append(Some(&close_tab_label(state.hosts_split)), Some("tab.close"));
@@ -1539,6 +1592,35 @@ mod tests {
     #[test]
     fn only_an_allowed_verdict_shows_the_detach_item() {
         assert!(offers_detach(DetachVerdict::Allowed));
+    }
+
+    #[test]
+    fn session_tools_are_offered_only_for_a_terminal_and_edit_only_for_ssh() {
+        let session = uuid::Uuid::new_v4();
+        let terminal = actions_for(super::TabMenuState {
+            is_terminal: true,
+            session: Some(session),
+            ..Default::default()
+        });
+        for action in [
+            "win.record-script-for",
+            "win.share-session-for",
+            "win.start-tftp",
+        ] {
+            assert!(terminal.iter().any(|a| a == action), "{action}");
+        }
+        assert!(!terminal.iter().any(|a| a == "win.edit-remote-file-for"));
+
+        let ssh = actions_for(super::TabMenuState {
+            is_terminal: true,
+            session: Some(session),
+            can_edit_remote: true,
+            ..Default::default()
+        });
+        assert!(ssh.iter().any(|a| a == "win.edit-remote-file-for"));
+
+        let welcome = actions_for(super::TabMenuState::default());
+        assert!(!welcome.iter().any(|a| a == "win.share-session-for"));
     }
 
     #[test]

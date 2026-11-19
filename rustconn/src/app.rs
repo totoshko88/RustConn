@@ -2286,6 +2286,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
             "vnc-rs project https://github.com/niclas3640/vnc-rs",
             "KeePassXC project https://keepassxc.org",
             "VTE terminal library https://wiki.gnome.org/Apps/Terminal/VTE",
+            "xterm.js https://xtermjs.org",
         ],
     );
     about.add_acknowledgement_section(
@@ -2303,6 +2304,12 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
     about.add_legal_section(
         "IronRDP",
         Some("© Devolutions Inc."),
+        gtk4::License::MitX11,
+        None,
+    );
+    about.add_legal_section(
+        "xterm.js",
+        Some("© The xterm.js authors"),
         gtk4::License::MitX11,
         None,
     );

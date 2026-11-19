@@ -50,6 +50,70 @@ pub(crate) fn setup_script_actions(
         }
     });
     window.add_action(&stop_action);
+
+    // A tab knows which session it was opened on; the active tab may differ by
+    // the time the item is activated, and recording the wrong host would type
+    // one machine's commands into another.
+    let record_for = gio::SimpleAction::new("record-script-for", Some(glib::VariantTy::STRING));
+    let window_weak = window.downgrade();
+    let notebook = terminal_notebook.clone();
+    let bridges = session_bridges.clone();
+    record_for.connect_activate(move |_, target| {
+        let Some(id) = target.and_then(glib::Variant::get::<String>) else {
+            return;
+        };
+        let Ok(id) = Uuid::parse_str(&id) else { return };
+        let Some(win) = window_weak.upgrade() else {
+            return;
+        };
+        if notebook.is_script_recording() {
+            show_already_recording(&win);
+            return;
+        }
+        begin_script_recording(&win, &notebook, &bridges, Some(id));
+    });
+    window.add_action(&record_for);
+
+    let record_connection =
+        gio::SimpleAction::new("record-connection-script", Some(glib::VariantTy::STRING));
+    let window_weak = window.downgrade();
+    let notebook = terminal_notebook.clone();
+    let bridges = session_bridges.clone();
+    record_connection.connect_activate(move |_, target| {
+        let Some(id) = target
+            .and_then(glib::Variant::get::<String>)
+            .and_then(|id| Uuid::parse_str(&id).ok())
+        else {
+            return;
+        };
+        let Some(win) = window_weak.upgrade() else {
+            return;
+        };
+        if notebook.is_script_recording() {
+            show_already_recording(&win);
+            return;
+        }
+        let Some(session) = notebook.session_for_connection(id) else {
+            crate::toast::show_toast_on_window(
+                &win,
+                &i18n("That connection has no open session"),
+                crate::toast::ToastType::Warning,
+            );
+            return;
+        };
+        begin_script_recording(&win, &notebook, &bridges, Some(session));
+    });
+    window.add_action(&record_connection);
+}
+
+/// Only one recorder runs at a time, and it belongs to the terminal menu that
+/// started it; a second target must not silently replace it.
+fn show_already_recording(window: &adw::ApplicationWindow) {
+    crate::toast::show_toast_on_window(
+        window,
+        &i18n("A script recording is already running — stop it first"),
+        crate::toast::ToastType::Warning,
+    );
 }
 
 /// Starts recording, or stops the recording already in progress.
@@ -64,17 +128,20 @@ fn toggle_script_recording(
     if notebook.is_script_recording() {
         finish_script_recording(window, notebook);
     } else {
-        begin_script_recording(window, notebook, bridges);
+        begin_script_recording(window, notebook, bridges, None);
     }
 }
 
-/// Begins recording on the focused session.
+/// Begins recording on the target session, or on the focused one when no
+/// target was given by a tab or connection menu.
 fn begin_script_recording(
     window: &adw::ApplicationWindow,
     notebook: &SharedNotebook,
     bridges: &SessionSplitBridges,
+    session_id: Option<Uuid>,
 ) {
-    let Some(session_id) = focused_session_for_scripting(notebook, bridges) else {
+    let Some(session_id) = session_id.or_else(|| focused_session_for_scripting(notebook, bridges))
+    else {
         crate::toast::show_toast_on_window(
             window,
             &i18n("Select a terminal before recording a script"),

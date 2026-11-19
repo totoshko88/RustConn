@@ -164,6 +164,11 @@ pub(crate) fn finalize_for_session(
 }
 
 /// Shared body of [`TerminalNotebook::rebuild_script_menu_section`].
+///
+/// The last three entries are the read-only network tools. They live here
+/// rather than in the application menu because they act on the terminal under
+/// the pointer; choosing the terminal and the tool in one gesture makes the
+/// target unambiguous.
 fn rebuild_menu_section(section: &Rc<gio::Menu>, recording: bool) {
     section.remove_all();
     if recording {
@@ -177,6 +182,18 @@ fn rebuild_menu_section(section: &Rc<gio::Menu>, recording: bool) {
             Some("win.record-script"),
         );
     }
+    section.append(
+        Some(&crate::i18n::i18n("Share Session (read-only)")),
+        Some("win.share-session"),
+    );
+    section.append(
+        Some(&crate::i18n::i18n("Start TFTP Server")),
+        Some("win.start-tftp"),
+    );
+    section.append(
+        Some(&crate::i18n::i18n("Edit Remote File…")),
+        Some("win.edit-remote-file"),
+    );
 }
 
 /// Shared body of [`TerminalNotebook::stop_script_recording`].
@@ -192,7 +209,13 @@ fn stop_recording(
     let dir = rustconn_core::script::scripts_dir().ok_or(ScriptSaveError::NoScriptsDir)?;
     std::fs::create_dir_all(&dir).map_err(ScriptSaveError::CreateDir)?;
 
-    let path = dir.join(format!("{}.rsc", sanitize_script_name(&active.name)));
+    // The connection name alone would collide on the second recording of the
+    // same session (and "rt" says nothing). The local timestamp makes each
+    // recording distinct and sorts chronologically; the suffix guards the
+    // one-in-a-second case.
+    let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
+    let base = format!("{}-{stamp}", sanitize_script_name(&active.name));
+    let path = available_script_path(&dir, &base);
     let contents = render_script(&active.name, &steps, &[RECORDING_NOTICE.to_string()]);
     // The recorder writes what the engine reads; a parse failure here would
     // hand the user a file the Scripts dialog cannot open, so refuse to save.
@@ -329,9 +352,32 @@ fn sanitize_script_name(name: &str) -> String {
     }
 }
 
+/// Picks `base.rsc`, then `base-1.rsc`, so a recording never overwrites an
+/// earlier file whose name is already taken.
+fn available_script_path(dir: &std::path::Path, base: &str) -> PathBuf {
+    let mut path = dir.join(format!("{base}.rsc"));
+    let mut suffix = 1u32;
+    while path.exists() {
+        path = dir.join(format!("{base}-{suffix}.rsc"));
+        suffix += 1;
+    }
+    path
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn recording_names_do_not_overwrite() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("rt-20261119-120000.rsc"), b"x").unwrap();
+        let path = available_script_path(dir.path(), "rt-20261119-120000");
+        assert_eq!(
+            path.file_name().unwrap().to_string_lossy(),
+            "rt-20261119-120000-1.rsc"
+        );
+    }
 
     #[test]
     fn sanitizes_path_separators() {

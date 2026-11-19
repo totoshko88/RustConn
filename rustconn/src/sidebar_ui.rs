@@ -593,6 +593,26 @@ pub fn show_context_menu_for_item(
         }
         if is_ssh {
             items.push(ContextMenuItem::action(&i18n("Open SFTP"), "open-sftp"));
+            items.push(ContextMenuItem::action_with_target(
+                &i18n("Edit Remote File…"),
+                "edit-connection-file",
+                &conn_id.to_variant(),
+            ));
+        }
+        // The recorder and the relay need a live VTE session. With several
+        // sessions the row cannot say which one to use, so they stay in the
+        // tabs, where each item targets its own session.
+        if is_connected && !has_multi_session && !has_external_session {
+            items.push(ContextMenuItem::action_with_target(
+                &i18n("Share Session (read-only)"),
+                "share-connection-session",
+                &conn_id.to_variant(),
+            ));
+            items.push(ContextMenuItem::action_with_target(
+                &i18n("Record Script…"),
+                "record-connection-script",
+                &conn_id.to_variant(),
+            ));
         }
         if offers_key_setup {
             items.push(ContextMenuItem::action(

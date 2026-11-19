@@ -1339,6 +1339,34 @@ mod tests {
         );
     }
 
+    /// A prompt that arrives while the save question is open belongs to the
+    /// previous command; it must not satisfy the `expect` after the answer.
+    #[test]
+    fn cisco_save_config_ignores_a_late_prompt() {
+        let (mut engine, mut host) = cisco_save_at_question();
+        // The second setup ENTER's prompt arrives late, after the engine has
+        // already moved to the question.
+        engine.on_output(b"\r\nR1# ");
+        engine.on_ask_result(Some("yes".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Expect);
+        assert!(
+            !engine.is_finished(),
+            "a stale prompt must not skip the read"
+        );
+
+        // `terminal length 0` answers with a prompt only.
+        feed(&mut engine, &mut host, "\r\nR1# ");
+        assert_eq!(engine.pending(), PendingKind::Expect);
+        assert!(
+            !engine.is_finished(),
+            "the log must wait for show running-config"
+        );
+
+        feed(&mut engine, &mut host, "\r\nhostname R1\r\nR1# ");
+        assert!(engine.is_finished());
+    }
+
     /// A user-EXEC prompt (`>`) sends `enable` and continues in privileged
     /// mode instead of refusing.
     #[test]
