@@ -1592,6 +1592,13 @@ There is no fallback to NTLM once Kerberos is on. A KDC that cannot be found or 
 ends the sign-in with a message naming the problem — a Protected Users account would be
 refused over NTLM anyway.
 
+If the embedded client fails the CredSSP step with `invalid MIC token sequence number`,
+RustConn hands the session once to external FreeRDP 3 with the security layer pinned to
+NLA (`/sec:nla`), and shows the usual "Using external RDP client" notice. The KDC is then
+taken from the system krb5 configuration, so `kinit user@REALM` must work in the same
+shell. The plain-TLS retry (`/sec:tls`) is not used for this error, because a server that
+requires NLA refuses it with `HYBRID_REQUIRED_BY_SERVER`.
+
 #### Dynamic Resolution on Resize
 
 When you resize the RustConn window, the embedded RDP session automatically adjusts its resolution to match the new window size. This works in two ways depending on server capabilities:
@@ -5126,7 +5133,7 @@ Reproduce the failed connection, close RustConn, and attach `rustconn.log`. The 
 
 - **What the log discloses.** Host names and ports, user names and domains, key and certificate paths, and the negotiated security protocol and codecs. Passwords are not logged; `sspi` and `ironrdp` stay at `warn` even if `RUST_LOG` asks for more. Read the file and replace anything private before sharing it.
 - **FreeRDP 3 requirement.** Only FreeRDP 3 clients (`xfreerdp3`, `sdl-freerdp3`, or an `xfreerdp` that is FreeRDP 3) are used for external-client mode. With only FreeRDP 2 installed RustConn reports the version it found; check with `xfreerdp3 /version`. In the Flatpak the X11 client is looked up on the host.
-- **Kerberos and Protected Users.** Accounts in the *Protected Users* group cannot use NTLM, so the connection needs Kerberos. The client must reach a KDC for the realm (DNS SRV `_kerberos._tcp.<REALM>` or a `[realms]` entry in `krb5.conf`), connect by host name rather than IP address, and have a clock within five minutes of the domain's. A log that ends in an authentication failure right after the CredSSP step, with no KDC lookup, usually means NTLM was attempted. Run `kinit user@REALM` first to confirm the KDC is reachable.
+- **Kerberos and Protected Users.** Accounts in the *Protected Users* group cannot use NTLM, so the connection needs Kerberos. The client must reach a KDC for the realm (DNS SRV `_kerberos._tcp.<REALM>` or a `[realms]` entry in `krb5.conf`), connect by host name rather than IP address, and have a clock within five minutes of the domain's. A log that ends in an authentication failure right after the CredSSP step, with no KDC lookup, usually means NTLM was attempted. Run `kinit user@REALM` first to confirm the KDC is reachable. A log line `invalid MIC token sequence number` is a different case: the embedded client got a Kerberos ticket but the CredSSP integrity check failed. RustConn retries once in external FreeRDP with `/sec:nla`; if that also fails, run `xfreerdp3 /v:<host> /u:<user@REALM> /sec:nla` yourself and attach its output.
 
 ### Serial Device Access
 
