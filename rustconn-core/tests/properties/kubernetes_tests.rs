@@ -310,17 +310,6 @@ fn test_k8s_protocol_metadata() {
 }
 
 #[test]
-fn test_k8s_capabilities_are_terminal() {
-    let protocol = KubernetesProtocol::new();
-    let caps = protocol.capabilities();
-    assert!(caps.terminal_based);
-    assert!(caps.embedded);
-    assert!(caps.split_view);
-    assert!(!caps.file_transfer);
-    assert!(!caps.audio);
-}
-
-#[test]
 fn test_new_kubernetes_connection_has_correct_protocol() {
     let conn = Connection::new_kubernetes("Test K8s".to_string());
     assert_eq!(

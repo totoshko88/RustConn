@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - **Unused cluster session tracking** — `ClusterSession`, `ClusterMemberState`, `ClusterSessionStatus`, `ClusterSessionSummary` and the matching `ClusterManager` methods were written to, never read, and tested only against themselves; connecting a cluster no longer starts one. Clusters, their members and broadcast behave as before. (`rustconn-core/src/cluster/mod.rs`, `rustconn/src/state/sessions.rs`, `rustconn/src/window/clusters.rs`)
+- **Unused `ProtocolCapabilities` flags** — the per-protocol capability set and `Protocol::capabilities()` were documented as driving the UI but nothing in the GUI or CLI read them (split-view eligibility is decided from the widget). Removed with their 13 implementations. (`rustconn-core/src/protocol/`, `docs/ARCHITECTURE.md`)
 
 ### Improved
 - **Starting and stopping a share no longer freezes the window** — the relay is started and stopped off the main loop. (`rustconn/src/window/network_tools/share.rs`)

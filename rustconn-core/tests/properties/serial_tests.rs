@@ -264,16 +264,6 @@ fn test_serial_protocol_default_port_is_zero() {
 }
 
 #[test]
-fn test_serial_protocol_capabilities_include_terminal() {
-    let protocol = SerialProtocol::new();
-    let caps = protocol.capabilities();
-    assert!(
-        caps.terminal_based,
-        "Serial should have terminal_based capability"
-    );
-}
-
-#[test]
 fn test_new_serial_connection_has_correct_protocol() {
     let conn = Connection::new_serial("Test Serial".to_string(), "/dev/ttyUSB0".to_string());
     assert_eq!(conn.protocol, rustconn_core::models::ProtocolType::Serial);

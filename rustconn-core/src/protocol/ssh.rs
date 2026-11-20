@@ -1,6 +1,6 @@
 //! SSH protocol handler
 
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
+use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig};
 
@@ -78,15 +78,6 @@ impl Protocol for SshProtocol {
         }
 
         Ok(())
-    }
-
-    fn capabilities(&self) -> ProtocolCapabilities {
-        ProtocolCapabilities {
-            port_forwarding: true,
-            wayland_forwarding: true,
-            x11_forwarding: true,
-            ..ProtocolCapabilities::terminal()
-        }
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {

@@ -1,6 +1,6 @@
 //! Telnet protocol handler
 
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
+use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig};
 
@@ -50,10 +50,6 @@ impl Protocol for TelnetProtocol {
         }
 
         Ok(())
-    }
-
-    fn capabilities(&self) -> ProtocolCapabilities {
-        ProtocolCapabilities::terminal()
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {

@@ -3,7 +3,7 @@
 //! Delegates command building to provider-specific CLIs (aws, gcloud, az, oci,
 //! cloudflared, tsh, tailscale, boundary, hoop) via `ZeroTrustConfig::build_command()`.
 
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
+use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig};
 
@@ -50,10 +50,6 @@ impl Protocol for ZeroTrustProtocol {
         };
 
         zt_config.validate()
-    }
-
-    fn capabilities(&self) -> ProtocolCapabilities {
-        ProtocolCapabilities::terminal()
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {

@@ -1061,63 +1061,37 @@ pub trait Protocol: Send + Sync {
     fn display_name(&self) -> &'static str;
     fn default_port(&self) -> u16;
     fn validate_connection(&self, connection: &Connection) -> ProtocolResult<()>;
-    fn capabilities(&self) -> ProtocolCapabilities { ProtocolCapabilities::terminal() }
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> { None }
-}
-
-/// Describes what a protocol supports at runtime
-pub struct ProtocolCapabilities {
-    pub embedded: bool,
-    pub external_fallback: bool,
-    pub file_transfer: bool,
-    pub audio: bool,
-    pub clipboard: bool,
-    pub split_view: bool,
-    pub terminal_based: bool,
-    pub multi_monitor: bool,
-    pub usb_redirection: bool,
-    pub port_forwarding: bool,
-    pub wayland_forwarding: bool,
-    pub x11_forwarding: bool,
-    pub session_recording: bool,
-    pub remote_monitoring: bool,
-    pub command_snippets: bool,
-    pub wake_on_lan: bool,
 }
 ```
 
 **Implementations:**
-- `SshProtocol`: SSH via VTE terminal (capabilities: embedded, terminal, split_view, port forwarding)
-- `RdpProtocol`: RDP via IronRDP/FreeRDP (capabilities: embedded, external_fallback, file_transfer, audio, clipboard)
-- `VncProtocol`: VNC via vnc-rs/TigerVNC (capabilities: embedded, external_fallback, clipboard)
-- `SpiceProtocol`: SPICE via remote-viewer (capabilities: external_fallback, clipboard)
-- `TelnetProtocol`: Telnet via external `telnet` client (capabilities: terminal, split_view)
-- `SerialProtocol`: Serial via external `picocom` client (capabilities: terminal, split_view)
-- `KubernetesProtocol`: Kubernetes via external `kubectl exec` (capabilities: terminal, split_view)
-- `SftpProtocol`: SFTP file transfer via file manager/mc (capabilities: file_transfer, external_fallback, split_view when mc mode is active)
-- `MoshProtocol`: MOSH mobile shell via external `mosh` client (capabilities: terminal, split_view)
-- `WebProtocol`: Web URLs in the embedded WebKitGTK browser (`web-embedded`) or the system browser via `UriLauncher`/`xdg-open` (capabilities: external_fallback)
-- `WinRmProtocol`: PowerShell on Windows via external `evil-winrm` in a VTE terminal (capabilities: terminal, split_view)
-- `ZeroTrustProtocol`: Zero Trust brokers via provider CLIs (aws, gcloud, az, oci, cloudflared, tsh, tailscale, boundary, hoop) in a VTE terminal (capabilities: terminal, split_view)
+- `SshProtocol`: SSH via VTE terminal
+- `RdpProtocol`: RDP via IronRDP/FreeRDP
+- `VncProtocol`: VNC via vnc-rs/TigerVNC
+- `SpiceProtocol`: SPICE via remote-viewer
+- `TelnetProtocol`: Telnet via external `telnet` client
+- `SerialProtocol`: Serial via external `picocom` client
+- `KubernetesProtocol`: Kubernetes via external `kubectl exec`
+- `SftpProtocol`: SFTP file transfer via file manager/mc
+- `MoshProtocol`: MOSH mobile shell via external `mosh` client
+- `WebProtocol`: Web URLs in the embedded WebKitGTK browser (`web-embedded`) or the system browser via `UriLauncher`/`xdg-open`
+- `WinRmProtocol`: PowerShell on Windows via external `evil-winrm` in a VTE terminal
+- `ZeroTrustProtocol`: Zero Trust brokers via provider CLIs (aws, gcloud, az, oci, cloudflared, tsh, tailscale, boundary, hoop) in a VTE terminal
 
-> **Split-view eligibility is not the `split_view` capability flag.** Since 0.18.1, whether a session
-> can be placed in a split panel is decided at the *widget* level by
+> **Split-view eligibility** is decided at the *widget* level by
 > `TerminalNotebook::split_eligibility()` (`rustconn/src/terminal/mod.rs`), keyed on the stored
-> widget kind rather than the protocol's `ProtocolCapabilities.split_view` flag:
-> - **Any in-process embedded widget is `Embeddable`** — a VTE terminal *or* an embedded viewer
->   (`EmbeddedRdp`, `Vnc`, `EmbeddedWeb`). Split view is no longer VTE-only; it works for every
->   embedded tab, including RDP/VNC remote desktops. SPICE has no embedded widget since 0.18.0.
+> widget kind, not on the protocol:
+> - **Any in-process embedded widget is `Embeddable`**: a VTE terminal *or* an embedded viewer
+>   (`EmbeddedRdp`, `Vnc`, `EmbeddedWeb`). SPICE has no embedded widget since 0.18.0.
 > - An `ExternalProcess` session (xfreerdp/vncviewer/remote-viewer for SPICE) is `ExternalViewer` and
->   is declined — it has no in-process widget to reparent into a panel.
+>   is declined, because it has no in-process widget to reparent into a panel.
 > - A session with no live widget is `None`.
->
-> The `ProtocolCapabilities.split_view` flag therefore remains `true` only for the terminal-based
-> protocols above and is no longer the gate for embedded remote desktops.
 
 ### Adding a New Protocol
 
 1. Create `rustconn-core/src/protocol/myprotocol.rs`
-2. Implement `Protocol` trait (including `capabilities()` and optionally `build_command()`)
+2. Implement `Protocol` trait (optionally `build_command()`)
 3. Add protocol config to `ProtocolConfig` enum
 4. Register in `ProtocolRegistry`
 5. Add UI fields in `rustconn/src/dialogs/connection/{protocol}.rs` (e.g., `rdp.rs`, `vnc.rs`)

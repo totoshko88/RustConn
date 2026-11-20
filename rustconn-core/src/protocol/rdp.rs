@@ -1,6 +1,6 @@
 //! RDP protocol handler
 
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
+use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, RdpConfig};
 
@@ -73,13 +73,6 @@ impl Protocol for RdpProtocol {
         }
 
         Ok(())
-    }
-
-    fn capabilities(&self) -> ProtocolCapabilities {
-        ProtocolCapabilities {
-            multi_monitor: true,
-            ..ProtocolCapabilities::graphical(true, true, true)
-        }
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {

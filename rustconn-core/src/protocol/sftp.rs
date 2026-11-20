@@ -3,7 +3,7 @@
 //! SFTP connections reuse SSH configuration but open a file manager
 //! instead of a terminal session. Validation mirrors SSH.
 
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
+use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig};
 
@@ -82,13 +82,6 @@ impl Protocol for SftpProtocol {
         Ok(())
     }
 
-    fn capabilities(&self) -> ProtocolCapabilities {
-        ProtocolCapabilities {
-            file_transfer: true,
-            ..ProtocolCapabilities::external_only(false)
-        }
-    }
-
     fn build_command(&self, _connection: &Connection) -> Option<Vec<String>> {
         // SFTP connections open a file manager via URI, not a CLI command
         None
@@ -137,16 +130,6 @@ mod tests {
         let mut conn = create_sftp_connection(SshConfig::default());
         conn.port = 0;
         assert!(protocol.validate_connection(&conn).is_err());
-    }
-
-    #[test]
-    fn test_capabilities_file_transfer() {
-        let protocol = SftpProtocol::new();
-        let caps = protocol.capabilities();
-        assert!(caps.file_transfer);
-        assert!(!caps.embedded);
-        assert!(!caps.terminal_based);
-        assert!(caps.external_fallback);
     }
 
     #[test]
