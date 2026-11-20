@@ -312,6 +312,25 @@ pub fn show_undo_toast_on_window(
     }
 }
 
+/// An Undo toast for several deleted items at once: `win.undo-delete-many`
+/// restores every item named in `action_target` (see
+/// `sidebar::trash::restore_many_target`).
+pub fn show_undo_many_toast_on_window(
+    window: &impl IsA<gui::Window>,
+    message: &str,
+    action_target: &str,
+) {
+    if let Some(child) = window.child()
+        && let Some(overlay) = find_toast_overlay(&child)
+    {
+        let toast = plain_toast(message);
+        toast.set_button_label(Some(&crate::i18n::i18n("Undo")));
+        toast.set_action_name(Some("win.undo-delete-many"));
+        toast.set_action_target_value(Some(&glib::Variant::from(action_target)));
+        overlay.add_toast(toast);
+    }
+}
+
 /// Helper to show a missing CLI tool toast
 ///
 /// In a sandbox (snap or Flatpak), adds an "Install" button that opens the

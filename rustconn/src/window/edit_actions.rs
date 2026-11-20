@@ -3,6 +3,7 @@
 //! Extracted from `window/mod.rs` to reduce module complexity.
 
 use super::*;
+use crate::i18n::i18n_f;
 
 /// The id of the connection selected in the sidebar, or `None` for a group or
 /// no selection.
@@ -410,6 +411,61 @@ impl MainWindow {
             }
         });
         window.add_action(&undo_delete_action);
+
+        // Undo for a bulk delete: restores every item the toast names. Items
+        // already restored or purged since are skipped and counted as failed.
+        let undo_many_action =
+            gio::SimpleAction::new("undo-delete-many", Some(glib::VariantTy::STRING));
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let window_weak = window.downgrade();
+        undo_many_action.connect_activate(move |_, param| {
+            let Some(target) = param.and_then(glib::Variant::get::<String>) else {
+                return;
+            };
+            let items = crate::sidebar::trash::parse_many_targets(&target);
+            let Ok(mut state_mut) = state_clone.try_borrow_mut() else {
+                return;
+            };
+            let restored = items
+                .iter()
+                .filter(|(kind, id)| {
+                    match kind {
+                        crate::sidebar::trash::TrashKind::Group => state_mut.restore_group(*id),
+                        crate::sidebar::trash::TrashKind::Connection => {
+                            state_mut.restore_connection(*id)
+                        }
+                    }
+                    .map_err(|e| tracing::warn!(%e, %id, "Failed to restore deleted item"))
+                    .is_ok()
+                })
+                .count();
+            drop(state_mut);
+
+            let state = state_clone.clone();
+            let sidebar = sidebar_clone.clone();
+            glib::idle_add_local_once(move || {
+                Self::reload_sidebar_preserving_state(&state, &sidebar);
+            });
+            if let Some(win) = window_weak.upgrade() {
+                let (message, toast_type) = if restored == items.len() {
+                    (
+                        i18n_f("Restored {} item(s)", &[&restored.to_string()]),
+                        crate::toast::ToastType::Success,
+                    )
+                } else {
+                    (
+                        i18n_f(
+                            "Restored {} of {} item(s)",
+                            &[&restored.to_string(), &items.len().to_string()],
+                        ),
+                        crate::toast::ToastType::Error,
+                    )
+                };
+                crate::toast::show_toast_on_window(&win, &message, toast_type);
+            }
+        });
+        window.add_action(&undo_many_action);
 
         // Empty-trash action — permanently removes every entry in the trash
         // (and its vault credential) after a confirmation. A deleted item stays

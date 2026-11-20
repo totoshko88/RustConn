@@ -17,6 +17,7 @@ use super::MainWindow;
 use crate::alert;
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
+use crate::sidebar::trash::{TrashKind, restore_many_target};
 use crate::state::SharedAppState;
 
 /// Type alias for shared sidebar reference
@@ -1009,6 +1010,20 @@ fn create_bulk_delete_dialog(
     dialog.present(Some(window));
 }
 
+/// The toast after a bulk delete. Undo restores the items that went to Trash.
+fn show_bulk_delete_toast(window: &gtk4::Window, count: usize, trashed: &[(TrashKind, Uuid)]) {
+    let message = i18n_f("Moved {} item(s) to Trash", &[&count.to_string()]);
+    if trashed.is_empty() {
+        crate::toast::show_toast_on_window(window, &message, crate::toast::ToastType::Success);
+    } else {
+        crate::toast::show_undo_many_toast_on_window(
+            window,
+            &message,
+            &restore_many_target(trashed),
+        );
+    }
+}
+
 /// Performs bulk deletion and shows results
 fn perform_bulk_delete(
     state: &SharedAppState,
@@ -1018,6 +1033,7 @@ fn perform_bulk_delete(
 ) {
     let mut success_count = 0;
     let mut failures: Vec<String> = Vec::new();
+    let mut trashed: Vec<(TrashKind, Uuid)> = Vec::new();
 
     if let Ok(mut state_mut) = state.try_borrow_mut() {
         for id in &selected_ids {
@@ -1029,6 +1045,11 @@ fn perform_bulk_delete(
                 .or_else(|| state_mut.get_group(*id).map(|g| g.name.clone()))
                 .unwrap_or_else(|| id.to_string());
             // Try to delete as connection first, then as group
+            let kind = if state_mut.get_connection(*id).is_some() {
+                TrashKind::Connection
+            } else {
+                TrashKind::Group
+            };
             let delete_result = state_mut
                 .delete_connection(*id)
                 .or_else(|_| state_mut.delete_group(*id));
@@ -1036,6 +1057,7 @@ fn perform_bulk_delete(
             match delete_result {
                 Ok(()) => {
                     success_count += 1;
+                    trashed.push((kind, *id));
                     // The items wait in the trash, with their vault credentials,
                     // until Empty Trash; the Trash row restores them.
                 }
@@ -1051,18 +1073,12 @@ fn perform_bulk_delete(
     glib::idle_add_local_once(move || {
         MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
 
-        // Show results
-        if failures.is_empty() {
-            // Non-blocking success feedback (GNOME HIG: use a toast, not a dialog).
-            crate::toast::show_toast_on_window(
-                &window,
-                &i18n_f(
-                    "Successfully deleted {} item(s).",
-                    &[&success_count.to_string()],
-                ),
-                crate::toast::ToastType::Success,
-            );
-        } else {
+        // Non-blocking feedback with Undo (GNOME HIG: a toast, not a dialog),
+        // also when some items failed: the ones that went are still undoable.
+        if success_count > 0 {
+            show_bulk_delete_toast(&window, success_count, &trashed);
+        }
+        if !failures.is_empty() {
             alert::show_error(
                 &window,
                 &i18n("Deletion Partially Complete"),

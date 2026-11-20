@@ -781,7 +781,7 @@ Temporary connection without saving:
 Deleted items are moved to Trash and can be restored:
 - A single connection or group is deleted after a confirmation dialog; then an "Undo" notification appears
 - Click "Undo" to restore the deleted item
-- Deleting several selected items at once also moves them to Trash; there is no "Undo" notification for that, so use the Trash row
+- Deleting several selected items at once also moves them to Trash; the notification "Moved N item(s) to Trash" has an "Undo" that restores all of them. If it has gone, restore from the Trash row
 - Items stay in Trash, with their saved vault credentials, until you choose **Empty Trash**
 - Trash is persisted across sessions for recovery
 
