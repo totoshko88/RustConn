@@ -148,18 +148,33 @@ pub enum SpaAllowIp {
 ///
 /// Keys are wrapped in `SecretString` at runtime.
 ///
-/// ponytail: the `*_key_ref` fields hold the key text itself and are written
-/// to `connections.json` as typed; no secret backend stores them yet. Move them
-/// to the vault, with a migration that keeps old files loading, when the
-/// backends can hold more than user/password/domain.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Where the keys live: a key is either in the secret store (`*_key_in_vault`
+/// is `true` and the matching `*_key_ref` is `None`, see
+/// [`super::spa_vault`]) or, only for files written before 0.26.0 and for a
+/// key the connection dialog has just handed over, as text in
+/// `*_key_ref` until the move to the vault is confirmed. `Debug` never prints a
+/// key.
+///
+/// shortcut: the plaintext fields are `String`, not `SecretString`, because they
+/// are (de)serialized for the pending/legacy state; upgrade when that state is
+/// gone (0.27+).
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SpaConfig {
-    /// Rijndael (AES-256-CBC) key — passphrase or base64
+    /// Rijndael (AES-256-CBC) key — passphrase or base64. Plaintext, pending
+    /// the move to the vault; `None` once the key is in the vault.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rijndael_key_ref: Option<String>,
-    /// HMAC key — passphrase or base64 (recommended)
+    /// HMAC key — passphrase or base64 (recommended). Plaintext, pending the
+    /// move to the vault; `None` once the key is in the vault.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hmac_key_ref: Option<String>,
+    /// The Rijndael key is in the secret store under
+    /// [`super::spa_vault::spa_secret_key`].
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub rijndael_key_in_vault: bool,
+    /// The HMAC key is in the secret store.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub hmac_key_in_vault: bool,
     /// Access specification (e.g. "tcp/22" or "tcp/22,tcp/443")
     #[serde(default = "default_spa_access")]
     pub access: String,
@@ -169,6 +184,21 @@ pub struct SpaConfig {
     /// How to determine the allow-IP in the packet
     #[serde(default)]
     pub allow_ip: SpaAllowIp,
+}
+
+impl std::fmt::Debug for SpaConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mask = |k: &Option<String>| k.as_ref().map(|_| "<redacted>");
+        f.debug_struct("SpaConfig")
+            .field("rijndael_key_ref", &mask(&self.rijndael_key_ref))
+            .field("hmac_key_ref", &mask(&self.hmac_key_ref))
+            .field("rijndael_key_in_vault", &self.rijndael_key_in_vault)
+            .field("hmac_key_in_vault", &self.hmac_key_in_vault)
+            .field("access", &self.access)
+            .field("dest_port", &self.dest_port)
+            .field("allow_ip", &self.allow_ip)
+            .finish()
+    }
 }
 
 fn default_spa_access() -> String {
@@ -186,6 +216,8 @@ impl SpaConfig {
         Self {
             rijndael_key_ref: None,
             hmac_key_ref: None,
+            rijndael_key_in_vault: false,
+            hmac_key_in_vault: false,
             access: default_spa_access(),
             dest_port: default_spa_port(),
             allow_ip: SpaAllowIp::default(),
@@ -403,6 +435,8 @@ mod tests {
         let cfg = SpaConfig {
             rijndael_key_ref: Some("spa-key-myhost".to_string()),
             hmac_key_ref: Some("spa-hmac-myhost".to_string()),
+            rijndael_key_in_vault: false,
+            hmac_key_in_vault: false,
             access: "tcp/22,tcp/443".to_string(),
             dest_port: 62201,
             allow_ip: SpaAllowIp::ResolvePublic,

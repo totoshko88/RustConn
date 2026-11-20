@@ -157,6 +157,7 @@ pub fn show_new_connection_dialog_internal(
 
                 match state_mut.create_connection(conn) {
                     Ok(conn_id) => {
+                        crate::vault_ops::schedule_spa_key_move(&state);
                         // Save password to vault if password source is Vault
                         // and password was provided
                         if password_source == PasswordSource::Vault
@@ -312,6 +313,7 @@ fn show_new_connection_dialog_internal_prefilled(
 
                 match state_mut.create_connection(conn) {
                     Ok(conn_id) => {
+                        crate::vault_ops::schedule_spa_key_move(&state);
                         // Save password to vault if password source is Vault
                         if password_source == rustconn_core::models::PasswordSource::Vault
                             && let Some(pwd) = password

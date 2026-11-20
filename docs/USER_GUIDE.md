@@ -430,7 +430,7 @@ quicssh is **not bundled**. You install it yourself and put it on your PATH; the
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
 **Advanced Tabs:**
-- **Advanced** — Terminal theme override, remote monitoring override, session recording, activity monitor, retry, port knocking and fwknop SPA, highlight rules, Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
+- **Advanced** — Terminal theme override, remote monitoring override, session recording, activity monitor, retry, port knocking and fwknop SPA (the SPA keys are stored in the secret store, not in the connection file; an empty key row marked "in vault" keeps the stored key), highlight rules, Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
 - **Automation** — Automatic login (expected text of the device's username/password prompts), expect rules for auto-responding to terminal patterns, pattern tester with built-in templates (Sudo, SSH Host Key, Login, etc.), pre-connect task, post-disconnect task (with conditions: first/last connection only)
 - **Data** — Local variables (connection-scoped, override global variables), custom properties (Text/URL/Protected metadata)
 - **Logging** — Session logging (enable/disable, log path template with variables, timestamp format, max file size, retention days, granular content options: log activity, log input, log output, add timestamps)

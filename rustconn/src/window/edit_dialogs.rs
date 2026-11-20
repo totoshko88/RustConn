@@ -202,6 +202,7 @@ pub fn edit_connection_by_id(
 
                 match state_mut.update_connection(id, updated_conn) {
                     Ok(()) => {
+                        crate::vault_ops::schedule_spa_key_move(&state_clone);
                         // Save password to vault if needed
                         if password_source == PasswordSource::Vault
                             && let Some(pwd) = password

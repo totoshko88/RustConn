@@ -1871,6 +1871,7 @@ impl MainWindow {
 
         // Load initial data
         main_window.load_connections();
+        crate::vault_ops::schedule_spa_key_move(&main_window.state);
 
         // Initialize KeePass button status
         main_window.update_keepass_button_status();
@@ -3438,6 +3439,7 @@ impl MainWindow {
                 conn_clone.domain = Some(cached.domain.clone());
             }
         }
+        let spa_secret_settings = state_ref.settings().secrets.clone();
         drop(state_ref);
 
         // Issue #241: a `.local` host that only the Flatpak *host* can resolve is
@@ -3582,14 +3584,31 @@ impl MainWindow {
         }
 
         // Send fwknop SPA packet if configured (after knock, before port check)
+        // The keys come from the secret store (F-08); a key still in the file
+        // (pre-0.26.0 or not yet moved) is used as is.
+        // shortcut: the vault read runs on the GTK thread like the SPA send
+        // below; bounded by the vault op timeout. Upgrade with the connect path.
+        let spa_keys = match conn_clone.spa_config.as_ref() {
+            Some(cfg) => match rustconn_core::connection::spa_vault::resolve_spa_keys(
+                conn_clone.id,
+                cfg,
+                &crate::vault_ops::VaultSpaKeyStore(&spa_secret_settings),
+            ) {
+                Ok(keys) => keys,
+                Err(e) => {
+                    tracing::error!(connection = %conn_clone.name, error = %e, "SPA keys unavailable");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                        "SPA failed: {}",
+                        &[&e.to_string()],
+                    ));
+                    return types::ConnectionStartResult::Failed;
+                }
+            },
+            None => None,
+        };
         if let Some(ref spa_cfg) = conn_clone.spa_config
-            && let (Some(rij_key_val), Some(hmac_key_val)) =
-                (&spa_cfg.rijndael_key_ref, &spa_cfg.hmac_key_ref)
-            && !rij_key_val.is_empty()
-            && !hmac_key_val.is_empty()
+            && let Some((rij_secret, hmac_secret)) = spa_keys
         {
-            let rij_secret = secrecy::SecretString::new(rij_key_val.clone().into());
-            let hmac_secret = secrecy::SecretString::new(hmac_key_val.clone().into());
             let username = conn_clone.username.as_deref().unwrap_or("root");
 
             tracing::info!(
