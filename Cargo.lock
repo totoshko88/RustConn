@@ -211,9 +211,9 @@ checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
 name = "ashpd"
-version = "0.14.0"
+version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ba377f1fb1e3972907220f1f8e7c0a45164580905c981d872c1fb90d921cbcc"
+checksum = "72e703b2bc5ba8e903b7845ae92657c281391116ccb8eef89cf6a0ee68d96d76"
 dependencies = [
  "bitflags 2.13.2",
  "futures-util",
@@ -3170,9 +3170,9 @@ dependencies = [
 
 [[package]]
 name = "libbz2-rs-sys"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32f454fd6831a29c0e827ed075bca2a15be201bd57f4168f0fd1041124eab17e"
+checksum = "a5314d1d545fce0307c770d791adf20d997e0b63b64e1ffeed8a920e290eabe4"
 
 [[package]]
 name = "libc"
@@ -3816,9 +3816,9 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "oo7"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9484776a7b58eadca65c2e247499d2fd926a914f65633d68c5d17c157db8479"
+checksum = "820361404414a1a61f8a58c4a52d55e755720f572aea7d7a799187848fecd12c"
 dependencies = [
  "aes 0.9.4",
  "ashpd",
@@ -4203,9 +4203,9 @@ checksum = "5be167a7af36ee22fe3115051bc51f6e6c7054c9348e28deb4f49bd6f705a315"
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
+checksum = "c938015719552d665fd0553b90d96cd7ff58e83e4c061ca99e6bb78865a72752"
 
 [[package]]
 name = "pin-utils"
@@ -4850,7 +4850,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.25.5"
+version = "0.25.6"
 dependencies = [
  "async-channel",
  "chrono",
@@ -4890,7 +4890,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.25.5"
+version = "0.25.6"
 dependencies = [
  "chrono",
  "clap",
@@ -4913,7 +4913,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.25.5"
+version = "0.25.6"
 dependencies = [
  "aes 0.9.4",
  "ar",
@@ -4990,7 +4990,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.25.5"
+version = "0.25.6"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -4999,18 +4999,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.25.5"
+version = "0.25.6"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.25.5"
+version = "0.25.6"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-lock-sys"
-version = "0.25.5"
+version = "0.25.6"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5019,7 +5019,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.25.5"
+version = "0.25.6"
 dependencies = [
  "libc",
  "nix",
@@ -7181,9 +7181,9 @@ dependencies = [
 
 [[package]]
 name = "zcheapstr"
-version = "1.2.0"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "939f186d9ecebe044315a5cb6d6f78568bbc21152adc954d5a0c2f58bdbc9920"
+checksum = "2347b6f50c4f669a282af57bf950debeacb9ce86de21b5b12932178dda691315"
 dependencies = [
  "serde",
 ]
@@ -7311,9 +7311,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.7.0"
+version = "9.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08687262e7c0f1284b259686f322805a8adaa8ef4d7210e76448950b3f083bf7"
+checksum = "721c8158b9503b2660291ad3056a20f722deaeed21bb908a9a363d7e17b34f0e"
 dependencies = [
  "aes 0.9.4",
  "bzip2",

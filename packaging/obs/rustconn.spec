@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.25.5
+Version:        0.25.6
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,13 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Nov 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.6-0
+- Version bump to 0.25.6
+- Added: Open SFTP in the tab menu of an SSH or SFTP tab (#240)
+- Changed: Wake-on-LAN is offered only for a connection with a Wake-on-LAN configuration, in the sidebar and in smart folders
+- Fixed: embedded RDP overflowed the window at Display Scale above 100% (#439); Kerberos NLA MIC mismatch hands off once to external FreeRDP with /sec:nla (#351); rustconn-cli test skips Zero Trust and serial connections; rustconn-cli delete removes the stored vault credential
+- Improved: rustconn-cli show lists the AWS SSM profile and region and the RDP ignore_certificate flag; AWS SSM shows no placeholder port
+- Dependencies: ashpd 0.14.1, libbz2-rs-sys 0.2.7, oo7 0.7.2, pin-project-lite 0.2.18, zcheapstr 1.3.0, zip 9.8.0
 * Thu Nov 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.5-0
 - Version bump to 0.25.5
 - Added: Debug Logging dialog, sidebar empty states, per-tile Broadcast check in Tile Tabs (#351, #436)
