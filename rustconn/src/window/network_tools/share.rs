@@ -12,7 +12,9 @@ use gtk4::prelude::*;
 use libadwaita as adw;
 use rustconn_core::network_scan::local_ipv4_guess;
 use rustconn_core::session::share::ShareServer;
-use rustconn_core::session::share_quic::{QuicShareClient, QuicShareServer, ShareLink};
+use rustconn_core::session::share_quic::{
+    QuicShareClient, QuicShareOptions, QuicShareServer, ShareLink, StunConsent,
+};
 use secrecy::SecretString;
 use uuid::Uuid;
 use vte4::prelude::TerminalExt;
@@ -28,7 +30,7 @@ thread_local! {
     /// read-only convenience services, not multi-tenant daemons.
     static ACTIVE_SHARE: RefCell<Option<ActiveShare>> = const { RefCell::new(None) };
     static SHARE_SERIAL: Cell<u64> = const { Cell::new(0) };
-    static ACTIVE_QUIC: RefCell<Option<QuicShareServer>> = const { RefCell::new(None) };
+    static ACTIVE_QUIC: RefCell<Option<ActiveQuic>> = const { RefCell::new(None) };
 }
 
 /// The running relay and the tab it shares.
@@ -36,6 +38,15 @@ struct ActiveShare {
     server: ShareServer,
     session_id: Uuid,
     /// Tells the tab watcher whether it still belongs to this share.
+    serial: u64,
+    notebook: SharedNotebook,
+}
+
+/// The running WebTransport share and the tab it shares.
+struct ActiveQuic {
+    server: QuicShareServer,
+    session_id: Uuid,
+    /// Same counter as [`ActiveShare::serial`]; the tab watcher compares it.
     serial: u64,
     notebook: SharedNotebook,
 }
@@ -76,7 +87,7 @@ pub(super) fn start_sharing(
     let dialog = adw::AlertDialog::builder()
         .heading(i18n("Share this session"))
         .body(i18n(
-            "The viewer gets the live terminal output read-only. Local and LAN links are unencrypted; the internet link opens in a browser over WebTransport (QUIC) and pins this share's certificate. The tab shows ◉ and its menu has Stop Sharing.",
+            "The viewer gets the live terminal output read-only. Local and LAN links are unencrypted. The internet link opens in a browser over WebTransport (QUIC); RustConn asks before it contacts any server to find your public address. The tab shows ◉ and its menu has Stop Sharing.",
         ))
         .extra_child(&access_box)
         .default_response("cancel")
@@ -98,7 +109,7 @@ pub(super) fn start_sharing(
         match hosts.get(index).copied().unwrap_or(Access::Loopback) {
             Access::Loopback => start_sharing_on(&win, &nb, Some(session_id), None),
             Access::Interface(ip) => start_sharing_on(&win, &nb, Some(session_id), Some(ip)),
-            Access::Internet => start_quic_sharing(&win, &nb, session_id),
+            Access::Internet => ask_stun_consent(&win, &nb, session_id),
         }
     });
     dialog.present(Some(window));
@@ -116,9 +127,7 @@ fn start_sharing_on(
     let Some(session_id) = session_id.or_else(|| notebook.get_active_session_id()) else {
         return;
     };
-    if let Some(old) = ACTIVE_QUIC.with(|cell| cell.borrow_mut().take()) {
-        old.stop();
-    }
+    stop_quic_share();
     stop_http_share();
     let bind = match host {
         Some(ip) => SocketAddr::new(ip, 0),
@@ -164,15 +173,30 @@ pub(super) fn stop_http_share() -> bool {
     true
 }
 
+/// Stops the WebTransport share without blocking the caller and clears the
+/// tab indicator.
+///
+/// Returns whether a share was running.
+fn stop_quic_share() -> bool {
+    let Some(active) = ACTIVE_QUIC.with(|cell| cell.borrow_mut().take()) else {
+        return false;
+    };
+    active.notebook.set_shared_marker(active.session_id, false);
+    match quic_runtime() {
+        // The endpoint is closed from inside the runtime that owns it.
+        Ok(runtime) => {
+            runtime.spawn(async move { active.server.stop() });
+        }
+        Err(error) => tracing::warn!(%error, "share: no runtime to stop the share"),
+    }
+    true
+}
+
 /// Stops whatever this window shares (relay or WebTransport). For the
 /// `win.stop-sharing` action in the tab menu.
 pub(super) fn stop_all_sharing() -> bool {
-    let quic = ACTIVE_QUIC.with(|cell| cell.borrow_mut().take());
-    let had_quic = quic.is_some();
-    if let Some(server) = quic {
-        server.stop();
-    }
-    stop_http_share() || had_quic
+    let quic = stop_quic_share();
+    stop_http_share() || quic
 }
 
 /// Marks the tab, starts the output feed and shows the link.
@@ -198,10 +222,7 @@ fn present_http_share(
     let url = format!("{}&cols={cols}&rows={rows}", server.local_url_for(host));
     stop_http_share();
     notebook.set_shared_marker(session_id, true);
-    let serial = SHARE_SERIAL.with(|n| {
-        n.set(n.get() + 1);
-        n.get()
-    });
+    let serial = next_serial();
     ACTIVE_SHARE.with(|cell| {
         *cell.borrow_mut() = Some(ActiveShare {
             server,
@@ -250,30 +271,82 @@ fn present_http_share(
     dialog.present(Some(window));
 }
 
-/// Stops the relay when the shared tab goes away: a share with no terminal
+/// Stops the share when the shared tab goes away: a share with no terminal
 /// behind it would stay open and look active.
 fn watch_shared_tab(serial: u64, session_id: Uuid, notebook: SharedNotebook) {
     glib::timeout_add_seconds_local(2, move || {
-        let current = ACTIVE_SHARE.with(|cell| cell.borrow().as_ref().map(|a| a.serial));
-        if current != Some(serial) {
+        if current_serial() != Some(serial) {
             return glib::ControlFlow::Break;
         }
         if notebook.terminal_grid(session_id).is_some() {
             return glib::ControlFlow::Continue;
         }
-        stop_http_share();
+        stop_all_sharing();
         glib::ControlFlow::Break
     });
 }
 
-/// Starts the WebTransport share, discovers the public UDP endpoint with STUN,
-/// and shows the link a viewer opens in a browser.
+/// Serial of the share that is running now, relay or WebTransport.
+fn current_serial() -> Option<u64> {
+    ACTIVE_SHARE
+        .with(|cell| cell.borrow().as_ref().map(|a| a.serial))
+        .or_else(|| ACTIVE_QUIC.with(|cell| cell.borrow().as_ref().map(|a| a.serial)))
+}
+
+fn next_serial() -> u64 {
+    SHARE_SERIAL.with(|n| {
+        n.set(n.get() + 1);
+        n.get()
+    })
+}
+
+/// What a button of the STUN consent dialog means. `None` is a cancel.
+fn stun_consent_for(response: &str) -> Option<StunConsent> {
+    match response {
+        "lookup" => Some(StunConsent::Granted),
+        "local" => Some(StunConsent::Declined),
+        _ => None,
+    }
+}
+
+/// Asks before any third-party server is contacted. Nothing leaves this
+/// computer until a button is pressed; Cancel and Escape start nothing.
+fn ask_stun_consent(window: &adw::ApplicationWindow, notebook: &SharedNotebook, session_id: Uuid) {
+    let dialog = adw::AlertDialog::builder()
+        .heading(i18n("Look Up Your Public Address?"))
+        .body(i18n(
+            "To build a link that works over the internet, RustConn can ask public STUN servers run by Google (stun.l.google.com) and Cloudflare (stun.cloudflare.com) for this computer's public address and port. Those companies see this computer's IP address. No terminal data is sent to them. Without the lookup, the link works only on your local network.",
+        ))
+        .default_response("local")
+        .close_response("cancel")
+        .build();
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("local", &i18n("Local Network Only"));
+    dialog.add_response("lookup", &i18n("Look Up Public Address"));
+    dialog.set_response_appearance("lookup", adw::ResponseAppearance::Suggested);
+    let win = window.downgrade();
+    let nb = notebook.clone();
+    dialog.connect_response(None, move |_, response| {
+        let Some(consent) = stun_consent_for(response) else {
+            return;
+        };
+        if let Some(win) = win.upgrade() {
+            start_quic_sharing(&win, &nb, session_id, consent);
+        }
+    });
+    dialog.present(Some(window));
+}
+
+/// Starts the WebTransport share and shows the link a viewer opens in a
+/// browser. With `stun` granted it first asks the STUN servers for the public
+/// UDP endpoint.
 ///
 /// STUN needs a few seconds on a hostile network, so it runs off the main loop.
 fn start_quic_sharing(
     window: &adw::ApplicationWindow,
     notebook: &SharedNotebook,
     session_id: Uuid,
+    stun: StunConsent,
 ) {
     let token = SecretString::from(Uuid::new_v4().to_string());
     let win = window.downgrade();
@@ -285,6 +358,10 @@ fn start_quic_sharing(
                     .block_on(QuicShareServer::start(
                         SocketAddr::from(([0, 0, 0, 0], 0)),
                         token,
+                        QuicShareOptions {
+                            stun,
+                            ..QuicShareOptions::default()
+                        },
                     ))
                     .map_err(|error| error.to_string())
             })
@@ -306,9 +383,12 @@ fn present_quic_share(
     session_id: Uuid,
     server: QuicShareServer,
 ) {
+    // With no viewer there is nobody to copy the bytes for.
     let publisher = server.publisher();
     notebook.add_output_observer(session_id, move |bytes| {
-        let _ = publisher.send(bytes.to_vec());
+        if publisher.receiver_count() > 0 {
+            let _ = publisher.send(bytes.to_vec());
+        }
     });
 
     let (cols, rows) = notebook.terminal_grid(session_id).unwrap_or((80, 24));
@@ -350,21 +430,28 @@ fn present_quic_share(
     };
     let body = if stun_available {
         i18n(
-            "Open the link in a current browser, or join it from another RustConn with “Join Shared Session…”. The browser warns once about the self-signed certificate; RustConn pins it automatically.",
+            "Anyone who has this link can watch read-only until you stop sharing. Send it only over a channel you trust. Another RustConn checks the certificate by itself. A browser shows a certificate warning: before you continue, compare the certificate's SHA-256 fingerprint with the fp= part of the link. The tab is marked ◉ while it is shared.",
         )
     } else {
         i18n(
-            "STUN did not answer, so this link only reaches viewers on the local network. Open it in a current browser, or join it from another RustConn with “Join Shared Session…”.",
+            "This link only reaches viewers on the local network. Anyone who has it can watch read-only until you stop sharing. Another RustConn checks the certificate by itself. A browser shows a certificate warning: before you continue, compare the certificate's SHA-256 fingerprint with the fp= part of the link. The tab is marked ◉ while it is shared.",
         )
     };
     let built = build_quic_share_dialog(&body, &address_label, &links, &labels, &hint);
 
     stop_http_share();
+    stop_quic_share();
+    notebook.set_shared_marker(session_id, true);
+    let serial = next_serial();
     ACTIVE_QUIC.with(|cell| {
-        if let Some(old) = cell.borrow_mut().replace(server) {
-            old.stop();
-        }
+        *cell.borrow_mut() = Some(ActiveQuic {
+            server,
+            session_id,
+            serial,
+            notebook: notebook.clone(),
+        });
     });
+    watch_shared_tab(serial, session_id, notebook.clone());
 
     let win = window.downgrade();
     let link_for_copy = built.link.clone();
@@ -383,9 +470,7 @@ fn present_quic_share(
                 }
             }
             "stop" => {
-                if let Some(server) = ACTIVE_QUIC.with(|cell| cell.borrow_mut().take()) {
-                    server.stop();
-                }
+                stop_quic_share();
             }
             _ => {}
         });
@@ -628,6 +713,16 @@ fn url_host(ip: IpAddr) -> String {
 mod tests {
     use super::*;
     use vte4::prelude::TerminalExt;
+
+    #[test]
+    fn only_the_lookup_button_grants_stun_consent() {
+        assert_eq!(stun_consent_for("lookup"), Some(StunConsent::Granted));
+        assert_eq!(stun_consent_for("local"), Some(StunConsent::Declined));
+        // Cancel, Escape and anything unknown start nothing.
+        assert_eq!(stun_consent_for("cancel"), None);
+        assert_eq!(stun_consent_for(""), None);
+        assert_eq!(stun_consent_for("close"), None);
+    }
 
     #[test]
     #[ignore = "initialises GTK: needs a display and its own process; run with xvfb-run -a scripts/run-ignored-gui-tests.sh"]
