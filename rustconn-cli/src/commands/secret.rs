@@ -1216,6 +1216,64 @@ fn cmd_secret_set(
     Ok(())
 }
 
+/// Removes the vault credential of a connection that `delete` is about to drop.
+///
+/// Called before the connection leaves the configuration, while its vault key
+/// can still be resolved. Does nothing unless the password source is the vault.
+/// A key shared with a remaining connection (the keyring backends key by name
+/// only) is left alone, since removing it would take the other connection's
+/// credential with it.
+///
+/// # Errors
+/// Returns [`CliError::Secret`] when the backend refuses the removal; the caller
+/// reports it and still deletes the connection.
+#[cfg(feature = "secret-management")]
+pub(super) fn remove_credentials_of_deleted(
+    config_path: Option<&Path>,
+    connection_id: &str,
+) -> Result<(), CliError> {
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::models::PasswordSource;
+
+    let config_manager = create_config_manager(config_path)?;
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
+    let connection = find_connection(&connections, connection_id)?;
+    if connection.password_source != PasswordSource::Vault {
+        return Ok(());
+    }
+    let settings = config_manager
+        .load_settings()
+        .map_err(|e| CliError::Config(format!("Failed to load settings: {e}")))?;
+    let backend_type = settings.secrets.preferred_backend;
+    let keys = vault_keys(connection, &groups, backend_type);
+    let sharing = connections_sharing_key(
+        &keys.primary,
+        connection,
+        &connections,
+        &groups,
+        backend_type,
+    );
+    if !sharing.is_empty()
+        && !matches!(
+            backend_type,
+            SecretBackendType::KdbxFile | SecretBackendType::KeePassXc
+        )
+    {
+        eprintln!(
+            "Note: the vault key '{}' is shared with another connection, so the stored \
+             credential was kept.",
+            keys.primary
+        );
+        return Ok(());
+    }
+    cmd_secret_delete(config_path, connection_id, None)
+}
+
 #[cfg(feature = "secret-management")]
 #[expect(
     clippy::too_many_lines,

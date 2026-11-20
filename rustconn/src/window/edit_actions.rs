@@ -831,23 +831,12 @@ impl MainWindow {
         });
 
         // Open SFTP action — opens file manager or mc in local shell
-        let sftp_action = gio::SimpleAction::new("open-sftp", None);
+        // `win.open-sftp-by-id` serves the tab menu (issue #240).
         let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
         let toast_clone = self.toast_overlay.clone();
         let notebook_clone = self.terminal_notebook.clone();
         let split_view_clone = self.split_view.clone();
-        sftp_action.connect_activate(move |_, _| {
-            let Some(item) = sidebar_clone.get_selected_item() else {
-                return;
-            };
-            if item.is_group() {
-                return;
-            }
-            let id_str = item.id();
-            let Ok(conn_id) = Uuid::parse_str(&id_str) else {
-                return;
-            };
+        register_selected_and_by_id(window, sidebar, "open-sftp", move |conn_id| {
             let targets = {
                 let state_ref = state_clone.borrow();
                 let Some(conn) = state_ref.get_connection(conn_id) else {
@@ -863,7 +852,6 @@ impl MainWindow {
                 Self::open_sftp_for_connection(&state, &notebook, &split_view, &toast, conn_id);
             });
         });
-        window.add_action(&sftp_action);
 
         // Open Browser via Tunnel — raises a SOCKS proxy to the selected SSH
         // connection and opens a fresh browser through it (Ásbrú's incognito

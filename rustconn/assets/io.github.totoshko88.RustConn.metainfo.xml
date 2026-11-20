@@ -116,6 +116,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.25.6" date="2026-11-20">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.6</url>
+      <description>
+        <p>Version 0.25.6 - Open SFTP from a tab, RDP scaling and Kerberos fixes, CLI improvements:</p>
+        <ul>
+          <li>The right-click menu of an SSH or SFTP tab has Open SFTP.</li>
+          <li>Wake-on-LAN is offered only for a connection that has a Wake-on-LAN configuration.</li>
+          <li>Embedded RDP no longer overflows the window at Display Scale above 100%.</li>
+          <li>A Kerberos NLA "invalid MIC token sequence number" failure retries once through external FreeRDP with NLA.</li>
+          <li>The command-line tool skips Zero Trust and serial connections in test, shows more settings in show, and removes a stored password on delete.</li>
+          <li>Updated dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.25.5" date="2026-11-19">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.5</url>
       <description>

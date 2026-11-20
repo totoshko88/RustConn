@@ -152,6 +152,7 @@ pub fn show_context_menu_for_connection_item(
     // set on the row when it was built; the protocol string cannot tell a
     // Zero Trust connection whose provider and config disagree.
     let can_tunnel_browser = item.browser_tunnel();
+    let has_wol = item.wol_configured();
     let is_connected = item.status() == "connected";
     let conn_id = item.id();
     // A connection is in a split when it carries a split-pane colour (>= 0);
@@ -203,20 +204,23 @@ pub fn show_context_menu_for_connection_item(
         x,
         y,
         &conn_id,
-        is_group,
-        is_ssh,
-        protocol == "ssh" || protocol == "winrm",
-        offers_key_setup,
-        can_tunnel_browser,
-        is_connected,
-        is_recording,
-        has_external_session,
-        is_pinned,
+        sidebar_ui::ItemMenuState {
+            is_group,
+            is_ssh,
+            can_run_script: protocol == "ssh" || protocol == "winrm",
+            offers_key_setup,
+            can_tunnel_browser,
+            has_wol,
+            is_connected,
+            is_recording,
+            has_external_session,
+            is_pinned,
+            is_root_group: item.is_root_group(),
+            has_dynamic_folder: item.has_dynamic_folder(),
+            in_split,
+            has_multi_session,
+        },
         &item.sync_mode(),
-        item.is_root_group(),
-        item.has_dynamic_folder(),
-        in_split,
-        has_multi_session,
         activation,
     );
 }

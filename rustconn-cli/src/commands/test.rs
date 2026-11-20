@@ -146,7 +146,15 @@ fn print_csv_row(result: &rustconn_core::testing::TestResult) {
 fn print_test_result_table(result: &rustconn_core::testing::TestResult) {
     use crate::color;
 
-    if result.success {
+    if result.is_skipped() {
+        print!("{}{}-{} ", color::yellow(), color::bold(), color::reset());
+        print!("{}", result.connection_name);
+        if let Some(protocol) = result.details.get("protocol") {
+            print!(" [{protocol}]");
+        }
+        let reason = result.details.get("skipped").map_or("", String::as_str);
+        println!(" {}skipped: {reason}{}", color::yellow(), color::reset());
+    } else if result.success {
         print!("{}{}✓{} ", color::green(), color::bold(), color::reset());
         print!("{}", result.connection_name);
 

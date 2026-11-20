@@ -228,6 +228,15 @@ fn build_expandable_folder_row(folder: &SmartFolder, connections: &[&Connection]
     conn_list.set_margin_start(24);
     conn_list.set_activate_on_single_click(false);
 
+    // Ids that have a Wake-on-LAN configuration; the row menu offers the item
+    // only for these, as the sidebar does.
+    let wol_ids: Rc<std::collections::HashSet<String>> = Rc::new(
+        connections
+            .iter()
+            .filter(|c| c.has_wol_config())
+            .map(|c| c.id.to_string())
+            .collect(),
+    );
     for conn in connections {
         let conn_row = build_connection_row(conn);
         conn_list.append(&conn_row);
@@ -310,7 +319,8 @@ fn build_expandable_folder_row(folder: &SmartFolder, connections: &[&Connection]
             list_box.select_row(Some(&row));
             // Anchored on the list box with the click coordinates, so the shared
             // builder can resolve a stable anchor the way the sidebar does.
-            show_connection_context_menu_in_smart_folder(list_box, x, y, &conn_id);
+            let has_wol = wol_ids.contains(conn_id.as_str());
+            show_connection_context_menu_in_smart_folder(list_box, x, y, &conn_id, has_wol);
         }
     });
     conn_list.add_controller(conn_ctx_gesture);
@@ -419,13 +429,14 @@ fn show_smart_folder_context_menu(
 /// Shows a context menu for a connection row inside a smart folder.
 ///
 /// Provides the most common actions: Connect, Edit, the Copy submenu,
-/// Wake On LAN, Check if Online, and Delete. Each item activates a window
+/// Wake-on-LAN (only with a configuration), Check if Online, and Delete. Each item activates a window
 /// action carrying the connection id, so the sidebar selection is not involved.
 fn show_connection_context_menu_in_smart_folder(
     widget: &impl IsA<gtk4::Widget>,
     x: f64,
     y: f64,
     conn_id: &str,
+    has_wol: bool,
 ) {
     let Some(root) = widget.root() else { return };
     let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() else {
@@ -447,9 +458,15 @@ fn show_connection_context_menu_in_smart_folder(
         items.push(ContextMenuItem::Separator);
         items.push(copy);
     }
+    items.push(ContextMenuItem::Separator);
+    if has_wol {
+        items.push(ContextMenuItem::action_with_target(
+            &i18n("Wake-on-LAN"),
+            "wake-on-lan-by-id",
+            &id,
+        ));
+    }
     items.extend([
-        ContextMenuItem::Separator,
-        ContextMenuItem::action_with_target(&i18n("Wake-on-LAN"), "wake-on-lan-by-id", &id),
         ContextMenuItem::action_with_target(
             &i18n("Check if Online"),
             "check-host-online-by-id",
