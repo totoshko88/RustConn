@@ -566,6 +566,18 @@ pub struct TerminalNotebook {
     show_directional_close: Rc<std::cell::Cell<bool>>,
 }
 
+/// A VTE terminal with no PTY and no input, for read-only views.
+///
+/// Erase bindings still have to be mapped: VTE resolves Backspace even when
+/// input is disabled, and with no PTY attached that aborts the process.
+pub(crate) fn read_only_terminal() -> Terminal {
+    let terminal = Terminal::new();
+    terminal.set_input_enabled(false);
+    config::apply_erase_bindings(&terminal);
+    terminal.set_scrollback_lines(2000);
+    terminal
+}
+
 impl TerminalNotebook {
     /// Creates a new terminal notebook using adw::TabView
     ///

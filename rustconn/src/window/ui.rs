@@ -301,6 +301,10 @@ pub fn create_app_menu() -> gio::Menu {
 
     // Sessions submenu — monitoring and history
     let sessions_submenu = gio::Menu::new();
+    sessions_submenu.append(
+        Some(&i18n("Join Shared Session…")),
+        Some("win.join-shared-session"),
+    );
     sessions_submenu.append(Some(&i18n("Active Sessions…")), Some("win.show-sessions"));
     sessions_submenu.append(Some(&i18n("Connection History…")), Some("win.show-history"));
     sessions_submenu.append(Some(&i18n("Statistics…")), Some("win.show-statistics"));

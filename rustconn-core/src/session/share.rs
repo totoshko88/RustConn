@@ -54,8 +54,8 @@ src.onmessage = function (e) {
 /// Vendored xterm.js (MIT) — a real terminal emulator, so colours, cursor
 /// addressing and full-screen programs like `atop` render instead of leaking
 /// escape sequences into a `<pre>`.
-const XTERM_JS: &str = include_str!("share_assets/xterm.min.js");
-const XTERM_CSS: &str = include_str!("share_assets/xterm.css");
+pub(crate) const XTERM_JS: &str = include_str!("share_assets/xterm.min.js");
+pub(crate) const XTERM_CSS: &str = include_str!("share_assets/xterm.css");
 
 /// A read-only live session sharing server.
 ///
@@ -300,7 +300,7 @@ async fn serve_events(
 }
 
 // Constant-time compare: fold byte XOR across every slot, never short-circuiting.
-fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+pub(crate) fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     let n = a.len().max(b.len());
     let diff = (0..n).fold(a.len() ^ b.len(), |acc, i| {
         acc | (a.get(i).copied().unwrap_or(0) ^ b.get(i).copied().unwrap_or(0)) as usize
@@ -315,7 +315,7 @@ fn query_value(query: &str, key: &str) -> Option<String> {
     })
 }
 
-fn percent_decode(input: &str) -> String {
+pub(crate) fn percent_decode(input: &str) -> String {
     let bytes = input.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
     let mut i = 0;

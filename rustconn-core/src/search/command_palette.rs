@@ -204,6 +204,12 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
         .with_icon("network-workgroup-symbolic")
         .with_priority(20),
         PaletteItem::new(
+            "Join Shared Session…",
+            CommandPaletteAction::GtkAction("win.join-shared-session".into()),
+        )
+        .with_icon("network-transmit-receive-symbolic")
+        .with_priority(18),
+        PaletteItem::new(
             "Keyboard Shortcuts",
             CommandPaletteAction::GtkAction("app.shortcuts".into()),
         )
