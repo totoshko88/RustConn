@@ -272,12 +272,15 @@ impl fmt::Display for KeyElement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Text(text) => {
-                // Escape special characters in text
+                // Escape special characters in text. `write_str` rather than
+                // `write!`: inside a format string `{{` is the escape for a
+                // literal `{`, so `write!(f, "{{")` would emit ONE brace and
+                // silently break the parse round trip.
                 for ch in text.chars() {
                     match ch {
-                        '{' => write!(f, "{{")?,
-                        '}' => write!(f, "}}")?,
-                        '$' => write!(f, "$$")?,
+                        '{' => f.write_str("{{")?,
+                        '}' => f.write_str("}}")?,
+                        '$' => f.write_str("$$")?,
                         _ => write!(f, "{ch}")?,
                     }
                 }

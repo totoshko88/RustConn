@@ -82,6 +82,7 @@ pub mod performance;
 pub mod proc;
 pub mod progress;
 pub mod protocol;
+pub mod remote_editor;
 pub mod remote_script;
 pub mod runtime_dir;
 pub mod script;
@@ -106,6 +107,7 @@ pub mod terminal_themes;
 pub mod testing;
 pub mod tmux_control;
 pub mod tracing;
+pub mod transfer;
 pub mod tunnel_manager;
 pub mod tunnel_preview;
 pub mod variables;
@@ -135,8 +137,9 @@ pub use automation::{
     AutomationTemplate, CompiledRule, ConnectionTask, ExpectEngine, ExpectError, ExpectResult,
     ExpectRule, FolderConnectionTracker, KeyElement, KeySequence, KeySequenceError,
     KeySequenceResult, PendingKind, ScriptEngine, ScriptHost, ScriptParseError, ScriptProgram,
-    ScriptStep, SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
-    builtin_templates, elevated_credentials_rules, templates_for_protocol,
+    ScriptStep, SpecialKey, StepRecorder, TaskCondition, TaskError, TaskExecutor, TaskResult,
+    TaskTiming, builtin_templates, elevated_credentials_rules, render_script,
+    templates_for_protocol,
 };
 pub use busy::{BusyGuard, BusyStack};
 pub use cli_download::{

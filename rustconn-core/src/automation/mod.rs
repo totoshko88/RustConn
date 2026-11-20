@@ -18,7 +18,7 @@ pub use expect::{
 pub use key_sequence::{KeyElement, KeySequence, KeySequenceError, KeySequenceResult, SpecialKey};
 pub use script::{
     DEFAULT_TIMEOUT_MS, PendingKind, RUN_TIMEOUT_CEILING_MS, ScriptEngine, ScriptHost,
-    ScriptParseError, ScriptProgram, ScriptStep, parse_program,
+    ScriptParseError, ScriptProgram, ScriptStep, StepRecorder, parse_program, render_script,
 };
 pub use tasks::{
     ConnectionTask, FolderConnectionTracker, SCRUBBED_ENV_VARS, TaskCondition, TaskError,

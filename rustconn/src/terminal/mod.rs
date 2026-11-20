@@ -38,6 +38,7 @@ pub mod pty_relay;
 pub mod pty_spawn;
 mod recording;
 pub mod safe_paste;
+pub(crate) mod script_recorder;
 mod selection_hold;
 mod session_lifecycle;
 mod split_close;
@@ -461,6 +462,14 @@ pub struct TerminalNotebook {
     remote_recordings: RefCell<HashMap<Uuid, RemoteRecordingInfo>>,
     /// Compiled highlight rules per session: session_id → CompiledHighlightRules
     session_highlight_rules: Rc<RefCell<HashMap<Uuid, CompiledHighlightRules>>>,
+    /// Script recording in progress, if any. At most one notebook-wide: the
+    /// `commit` subscription is registered once per start, and two concurrent
+    /// recordings would have to share the user's keystrokes between two files.
+    script_recording: Rc<RefCell<Option<script_recorder::ActiveScriptRecording>>>,
+    /// Shared script section for terminal context menus. One live model shared
+    /// by every terminal, rebuilt when recording starts or stops so the single
+    /// item's label can flip between Record and Stop.
+    script_menu_section: Rc<gio::Menu>,
     /// Highlight overlay widgets per session: session_id → HighlightOverlay
     highlight_overlays: Rc<RefCell<HashMap<Uuid, HighlightOverlay>>>,
     /// GTK Overlay widgets per session for layering highlight DrawingArea
@@ -555,6 +564,18 @@ pub struct TerminalNotebook {
     /// Settings changes it. Read at menu-build time, so a change takes effect on
     /// the next right-click without rebuilding the notebook.
     show_directional_close: Rc<std::cell::Cell<bool>>,
+}
+
+/// A VTE terminal with no PTY and no input, for read-only views.
+///
+/// Erase bindings still have to be mapped: VTE resolves Backspace even when
+/// input is disabled, and with no PTY attached that aborts the process.
+pub(crate) fn read_only_terminal() -> Terminal {
+    let terminal = Terminal::new();
+    terminal.set_input_enabled(false);
+    config::apply_erase_bindings(&terminal);
+    terminal.set_scrollback_lines(2000);
+    terminal
 }
 
 impl TerminalNotebook {
@@ -670,6 +691,8 @@ impl TerminalNotebook {
             on_cluster_window_tab: Rc::new(RefCell::new(None)),
             recording_paths: RefCell::new(HashMap::new()),
             session_highlight_rules: Rc::new(RefCell::new(HashMap::new())),
+            script_recording: Rc::new(RefCell::new(None)),
+            script_menu_section: Rc::new(gio::Menu::new()),
             highlight_overlays: Rc::new(RefCell::new(HashMap::new())),
             terminal_overlays: Rc::new(RefCell::new(HashMap::new())),
             active_recordings: Rc::new(RefCell::new(HashSet::new())),
@@ -698,6 +721,9 @@ impl TerminalNotebook {
         term_notebook.setup_tab_view_signals();
         term_notebook.setup_tab_context_menu();
         term_notebook.setup_tab_overview_cleanup();
+        // The section starts empty; without this first fill, the Record Script
+        // item that would change the state is itself never shown.
+        term_notebook.rebuild_script_menu_section();
         term_notebook
     }
 
@@ -741,6 +767,8 @@ impl TerminalNotebook {
         let output_filters_on_close = Rc::clone(&self.output_filters);
         let commit_forwarded_on_close = Rc::clone(&self.commit_forwarded);
         let pty_size_timers_on_close = Rc::clone(&self.pty_size_timers);
+        let script_recording_on_close = Rc::clone(&self.script_recording);
+        let script_menu_section_on_close = Rc::clone(&self.script_menu_section);
         let split_close_on_close = self.split_close_hooks();
 
         // Handle create-window signal - we must connect this to prevent the default
@@ -915,6 +943,21 @@ impl TerminalNotebook {
                 failed_markers_on_close.borrow_mut().remove(&session_id);
                 session_cwd_on_close.borrow_mut().remove(&session_id);
                 split_tab_titles_on_close.borrow_mut().remove(&session_id);
+
+                // A recording running against this session cannot outlive it:
+                // write the steps out rather than dropping them on the floor.
+                if let Some(recorded) = script_recorder::finalize_for_session(
+                    &script_recording_on_close,
+                    &script_menu_section_on_close,
+                    session_id,
+                ) {
+                    tracing::info!(
+                        %session_id,
+                        steps = recorded.step_count,
+                        path = %recorded.path.display(),
+                        "Saved script recording when its session closed"
+                    );
+                }
 
                 // Stop the session's PTY: dropping the relay ends its reader and
                 // writer threads and closes the descriptor. The child is killed
@@ -2374,6 +2417,17 @@ impl TerminalNotebook {
         self.terminals.borrow().get(&session_id).cloned()
     }
 
+    /// Grid of a session's VTE terminal as `(columns, rows)`.
+    ///
+    /// The share page needs it so xterm.js renders escape sequences at the
+    /// size the PTY produced them for.
+    #[must_use]
+    pub fn terminal_grid(&self, session_id: Uuid) -> Option<(u16, u16)> {
+        let terminal = self.get_terminal(session_id)?;
+        let (rows, cols) = grid_size(&terminal);
+        Some((cols, rows))
+    }
+
     /// Returns the live session → terminal map.
     ///
     /// Handed to a split-view bridge so it can tell a terminal session from an
@@ -2415,12 +2469,21 @@ impl TerminalNotebook {
                     KeyElement::Text(text) => {
                         let text = text.clone();
                         if delay == 0 {
-                            terminal_clone.feed_child(text.as_bytes());
+                            script_recorder::suppress_recording(|| {
+                                terminal_clone.feed_child(text.as_bytes());
+                            });
                         } else {
                             glib::timeout_add_local_once(
                                 std::time::Duration::from_millis(delay),
                                 move || {
-                                    terminal_clone.feed_child(text.as_bytes());
+                                    // Suppressed inside the closure, not around
+                                    // the loop: a delayed send fires long after
+                                    // this function has returned, so the
+                                    // thread-local guard has to be entered at the
+                                    // moment the bytes are written.
+                                    script_recorder::suppress_recording(|| {
+                                        terminal_clone.feed_child(text.as_bytes());
+                                    });
                                 },
                             );
                         }
@@ -2428,12 +2491,16 @@ impl TerminalNotebook {
                     KeyElement::SpecialKey(key) => {
                         let bytes = key.to_vte_bytes();
                         if delay == 0 {
-                            terminal_clone.feed_child(bytes);
+                            script_recorder::suppress_recording(|| {
+                                terminal_clone.feed_child(bytes);
+                            });
                         } else {
                             glib::timeout_add_local_once(
                                 std::time::Duration::from_millis(delay),
                                 move || {
-                                    terminal_clone.feed_child(bytes);
+                                    script_recorder::suppress_recording(|| {
+                                        terminal_clone.feed_child(bytes);
+                                    });
                                 },
                             );
                         }
@@ -2558,6 +2625,26 @@ impl TerminalNotebook {
     #[must_use]
     pub fn get_session_info(&self, session_id: Uuid) -> Option<TerminalSession> {
         self.session_info.borrow().get(&session_id).cloned()
+    }
+
+    /// Finds the live session for a saved connection.
+    ///
+    /// Prefers the active tab, then the first session of that connection. The
+    /// sidebar offers session tools only when a connection has exactly one
+    /// session, so "first" is unambiguous there.
+    #[must_use]
+    pub fn session_for_connection(&self, connection_id: Uuid) -> Option<Uuid> {
+        let info = self.session_info.borrow();
+        if let Some(active) = self.get_active_session_id()
+            && info
+                .get(&active)
+                .is_some_and(|s| s.connection_id == connection_id)
+        {
+            return Some(active);
+        }
+        info.iter()
+            .find(|(_, s)| s.connection_id == connection_id)
+            .map(|(id, _)| *id)
     }
 
     /// Stores an SSH tunnel for a session. The tunnel is killed when the tab closes.
@@ -2789,16 +2876,22 @@ impl TerminalNotebook {
     }
 
     /// Sends text to the active terminal
+    ///
+    /// The send is marked automated so script recording does not capture it —
+    /// this path is how macros and snippets reach the terminal, and a snippet
+    /// carrying a resolved secret must not end up in a recorded file.
     pub fn send_text(&self, text: &str) {
         if let Some(terminal) = self.get_active_terminal() {
-            terminal.feed_child(text.as_bytes());
+            script_recorder::suppress_recording(|| terminal.feed_child(text.as_bytes()));
         }
     }
 
     /// Sends text to a specific terminal session
+    ///
+    /// Suppresses script recording for the same reason as [`Self::send_text`].
     pub fn send_text_to_session(&self, session_id: Uuid, text: &str) {
         if let Some(terminal) = self.get_terminal(session_id) {
-            terminal.feed_child(text.as_bytes());
+            script_recorder::suppress_recording(|| terminal.feed_child(text.as_bytes()));
         }
     }
 

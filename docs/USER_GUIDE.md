@@ -55,6 +55,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Tab Broadcast](#tab-broadcast)
    - [Command Palette](#command-palette)
    - [Run Local Script](#run-local-script)
+   - [Read-only Network Tools](#read-only-network-tools)
    - [Global Variables](#global-variables)
    - [Password Generator](#password-generator)
    - [Wake-on-LAN](#wake-on-lan)
@@ -2920,6 +2921,13 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 - Open **Tools → Scripts…** to create, edit, validate, delete and run scripts. The editor validates on save — a script with a syntax error never reaches disk.
 - A script runs against the **active session**. Start one from the Scripts dialog, or attach it to a connection/group to run automatically after the session starts.
 
+**Recording a script**
+
+Right-click inside a terminal tab → **Record Script…**, type the commands you want in the script, then right-click → **Stop Script Recording**. The toast reports the step count and the file path: `<config_dir>/rustconn/scripts/<connection>-<YYYYMMDD-HHMMSS>.rsc` on Linux (a `-1`, `-2` suffix is added rather than overwriting an existing file). The file is an ordinary `.rsc` script and opens in **Tools → Scripts…**.
+
+- Enter is recorded as its own `send {ENTER}` step, and text that merely looks like key syntax (`awk '{print $1}'`) stays literal — the recorder does not reinterpret what you typed.
+- Automated sends (auto-login, expect rules, snippets, macros) are not recorded. Anything **you** type is, including a password or a secret answer, so do not record while typing one.
+
 **Auto-run scripts**
 
 - Connection editor → **Automation** → **Auto-run Scripts**: script ids run after this connection's session starts.
@@ -2930,9 +2938,9 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 
 | Command | Meaning |
 |---------|---------|
-| `send <sequence>` | Send text (same syntax as key sequences: `{ENTER}`, `{TAB}`, `{WAIT:500}` …) |
+| `send <sequence>` | Send text (same syntax as key sequences: `{ENTER}`, `{TAB}`, `{WAIT:500}` …); output buffered before the send is discarded |
 | `wait <ms>` | Pause for milliseconds |
-| `expect <regex> [<sec>]` | Wait until the output matches a regex (or times out) |
+| `expect <regex> [<sec>]` | Wait until new output matches a regex (or times out) |
 | `capture <regex> <var> [<sec>]` | Like `expect`, but store capture group 1 in a variable |
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
@@ -3708,6 +3716,18 @@ Runs a script from this computer on several hosts: a `.ps1` file in PowerShell o
 - **Connection failed** means SSH could not connect or log in, or the connection dropped. A script that exits with status 255 is reported as a failed script, like any other status.
 - **Stop**, the time limit and a lost connection all stop the script on the host: it gets SIGTERM, then SIGKILL two seconds later, along with the processes it started. A command running as another user, such as under `sudo`, can outlive it, and so can anything that moved to its own session with `setsid`.
 - Output is kept up to 4 MiB per host, and scripts can be up to 1 MiB.
+
+### Read-only Network Tools
+
+Three tools for reading from a live session without giving anyone a way to write back. They are in the terminal's right-click menu, the tab's right-click menu (addressed to that tab's session), the connection's context menu, and the command palette (**Ctrl+Shift+P**). In the connection menu, **Edit Remote File…** is available for any SSH connection (no live session needed), while **Share Session** and **Record Script…** appear when exactly one session of that connection is running. None is in the application menu, because each acts on a terminal and the app menu cannot promise which one.
+
+**Share Session (read-only).** Select a terminal tab, open the terminal or tab menu, and choose **Share Session (read-only)**. Before starting, the **Access** list offers **This computer only** (the default), one of the machine's IPv4 or IPv6 addresses, or **Internet — WebTransport in a browser**. A LAN link uses that interface's address and the relay binds only to it. The dialog warns that a local or LAN link is plain HTTP and the random token is its only protection. **Copy link** puts it on the clipboard; **Stop sharing** ends the relay. The page is a real terminal (the vendored xterm.js), so colours, cursor addressing and full-screen programs such as `atop` render correctly instead of showing escape sequences. There is no input path and no upload; the token is compared in constant time, never logged and never written into the page. Asking for the link without the token, or with a wrong one, returns 403. One relay runs at a time; starting another replaces the first.
+
+*Internet mode.* **Internet — WebTransport in a browser** asks a public STUN server for the address and port the internet sees, then serves a small HTTPS page over TCP-TLS and carries the terminal over WebTransport (HTTP/3 on QUIC/UDP). The dialog lists the discovered endpoints and builds an `https://…` link for the selected one; the token and the certificate pin live in the URL fragment. Open the link in a current browser (Chrome or Edge 100+, Firefox 125+, Safari 26.4+): the page warns once about the share's self-signed certificate — accept it — and the WebTransport connection is then pinned to that certificate by SHA-256, so the token never reaches an unauthenticated peer. Another RustConn can open the same link instead: command palette → **Join Shared Session…**, paste it, and a read-only terminal window opens. That native viewer talks WebTransport directly and needs only the UDP port, not the page or its TCP port. Only output produced while connected is shown; there is no scrollback beyond the viewer window, input or upload. Closing the tab or window ends the view. Internet mode uses IPv4 and the public IPv4 STUN servers. Reachability depends on the router: an endpoint-independent (full-cone) UDP mapping or a forwarded UDP port works, and the browser page's TCP port must be reachable too. A restricted or symmetric NAT, CGNAT, and a local firewall that drops inbound traffic need a relay or firewall rules, which this mode does not configure. If the viewer times out, forward the TCP and UDP ports shown in the dialog on the router and allow them locally.
+
+**TFTP Server.** Command palette → **Start TFTP Server** → choose a folder, then the **Port** (6969, unprivileged, or 69, the standard) and the **Access** interface (loopback or one local IPv4/IPv6 address). The dialog reports the resulting address and offers **Copy address** and **Stop server**. Port 69 is privileged on Linux, macOS and FreeBSD: a normal user gets an explanatory error instead of a server, so run RustConn with the needed rights, grant `CAP_NET_BIND_SERVICE` on Linux, or keep 6969. It answers TFTP RRQ only, in octet mode, with `blksize`/`tsize` OACK and retransmission. Names resolve inside the chosen folder: a leading `/` means the folder itself (RouterOS requests `/file`), while `..`, NUL bytes and symlinks escaping the folder are refused. The chosen interface is the one a device must reach; with **This computer only** the server binds loopback. One server runs at a time. From a local terminal: `curl -sS tftp://127.0.0.1:<port>/<file> -o copy` (curl must be built with TFTP).
+
+**Edit Remote File.** Select an SSH terminal tab → command palette → **Edit Remote File** → enter an absolute remote path → **Edit**. RustConn downloads the file into a temporary copy over `sftp` and opens it in the system text editor. Save it there, then press **Upload** in the RustConn dialog; **Cancel** discards the copy. Hosts without an SFTP subsystem (OpenWrt/Dropbear) fall back to legacy `scp -O`, and shell metacharacters are refused on that path. It works with key-based authentication only — a password is never put on a command line or in a batch file. Cisco IOS and other devices with neither `sftp` nor `scp` are not supported by this tool.
 
 ### Broadcast Input
 

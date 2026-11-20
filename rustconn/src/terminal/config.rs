@@ -233,6 +233,8 @@ fn setup_keyboard_shortcuts(terminal: &Terminal) {
 ///
 /// The `snippet_section` is a shared live `gio::Menu` model — all terminals
 /// reference the same instance so snippet changes propagate automatically.
+/// `script_section` is shared the same way: the recorder toggle and the three
+/// read-only network tools all follow the same terminal menu.
 ///
 /// When `right_click_pastes` is set (opt-in, off by default; issue #349) the
 /// native menu is not installed at all: a secondary-button `GestureClick`
@@ -249,6 +251,7 @@ fn setup_keyboard_shortcuts(terminal: &Terminal) {
 pub(crate) fn setup_context_menu(
     terminal: &Terminal,
     snippet_section: &Rc<gtk4::gio::Menu>,
+    script_section: &Rc<gtk4::gio::Menu>,
     right_click_pastes: bool,
     reconnect: Rc<dyn Fn()>,
 ) -> Option<VteReconnectItem> {
@@ -310,6 +313,12 @@ pub(crate) fn setup_context_menu(
 
     // Snippet section — shared live model, updated externally
     menu.append_section(None, snippet_section.as_ref());
+
+    // Script section — a shared live model too, so the Record/Stop label
+    // follows recording state across every terminal at once. This is the only
+    // place a script action is reachable from: see `window/script_actions.rs`
+    // for why these stay out of the app menu.
+    menu.append_section(None, script_section.as_ref());
 
     // Register the action group on the container so VTE's popover can
     // resolve "terminal.*" actions by walking up the widget tree.

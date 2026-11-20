@@ -128,6 +128,10 @@ pub fn parse_palette_input(input: &str) -> (PaletteMode, &str) {
 
 /// Returns the built-in application commands for the `>` mode
 #[must_use]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one flat list of palette entries; splitting it only relocates the ordering"
+)]
 pub fn builtin_commands() -> Vec<PaletteItem> {
     vec![
         PaletteItem::new("New Connection", CommandPaletteAction::NewConnection)
@@ -200,6 +204,12 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
         .with_icon("network-workgroup-symbolic")
         .with_priority(20),
         PaletteItem::new(
+            "Join Shared Session…",
+            CommandPaletteAction::GtkAction("win.join-shared-session".into()),
+        )
+        .with_icon("network-transmit-receive-symbolic")
+        .with_priority(18),
+        PaletteItem::new(
             "Keyboard Shortcuts",
             CommandPaletteAction::GtkAction("app.shortcuts".into()),
         )
@@ -220,6 +230,24 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
         .with_icon("tab-new-symbolic")
         .with_description("Ctrl+%")
         .with_priority(22),
+        PaletteItem::new(
+            "Share Session (read-only)",
+            CommandPaletteAction::GtkAction("win.share-session".into()),
+        )
+        .with_icon("emblem-shared-symbolic")
+        .with_priority(18),
+        PaletteItem::new(
+            "Start TFTP Server",
+            CommandPaletteAction::GtkAction("win.start-tftp".into()),
+        )
+        .with_icon("network-workgroup-symbolic")
+        .with_priority(17),
+        PaletteItem::new(
+            "Edit Remote File",
+            CommandPaletteAction::GtkAction("win.edit-remote-file".into()),
+        )
+        .with_icon("document-edit-symbolic")
+        .with_priority(16),
     ]
 }
 

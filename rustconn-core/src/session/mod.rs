@@ -13,6 +13,10 @@ mod restore;
     reason = "internal `mod foo` inside `foo.rs` keeps the file private and re-exports curated items"
 )]
 mod session;
+/// Read-only live session sharing over a local HTTP/SSE relay.
+pub mod share;
+/// QUIC (UDP) transport for the same relay, with a STUN-discovered endpoint.
+pub mod share_quic;
 
 pub use logger::{
     LogConfig, LogContext, LogError, LogResult, SanitizeConfig, SessionLogger,
