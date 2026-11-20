@@ -397,18 +397,6 @@ impl ExpectEngine {
             .sort_by_key(|a| std::cmp::Reverse(a.rule.priority));
     }
 
-    /// Validates all patterns in the engine
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if any pattern is invalid.
-    pub fn validate_patterns(&self) -> ExpectResult<()> {
-        for compiled in &self.rules {
-            compiled.rule.validate_pattern()?;
-        }
-        Ok(())
-    }
-
     /// Matches output against all enabled rules, returning the highest priority match
     ///
     /// Rules are checked in priority order (highest first). The first matching

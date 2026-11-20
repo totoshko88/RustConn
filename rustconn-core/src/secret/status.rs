@@ -3360,41 +3360,6 @@ impl KeePassStatus {
             }
         }
     }
-
-    /// Validates a key file path
-    ///
-    /// # Arguments
-    /// * `path` - Path to validate
-    ///
-    /// # Returns
-    /// * `Ok(())` if the path is valid
-    ///
-    /// Note: `KeePassXC` creates key files without extension by default,
-    /// so we don't require a specific extension.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SecretError::KeePassXC`] when the file does not exist, is not a
-    /// regular file, or is not readable.
-    pub fn validate_key_file_path(path: &Path) -> SecretResult<()> {
-        // Check if file exists
-        if !path.exists() {
-            return Err(SecretError::KeePassXC(format!(
-                "Key file does not exist: {}",
-                path.display()
-            )));
-        }
-
-        // Check if it's a file (not a directory)
-        if !path.is_file() {
-            return Err(SecretError::KeePassXC(format!(
-                "Path is not a file: {}",
-                path.display()
-            )));
-        }
-
-        Ok(())
-    }
 }
 
 /// Parses a version string from `KeePassXC` CLI output

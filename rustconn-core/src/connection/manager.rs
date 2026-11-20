@@ -393,9 +393,23 @@ impl ConnectionManager {
     /// Returns an error if validation fails or persistence fails.
     pub fn create_connection_from(&mut self, connection: Connection) -> ConfigResult<Uuid> {
         ConfigManager::validate_connection(&connection)?;
+        self.insert_connection(connection)
+    }
 
-        // Intern strings for memory efficiency
+    /// Adds an imported connection without validating it.
+    ///
+    /// Import reports validation problems as warnings
+    /// ([`ImportResult::with_validation_warnings`](crate::import::ImportResult::with_validation_warnings))
+    /// and never drops an entry, so the connection is stored as it came.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if persistence fails.
+    pub fn import_connection(&mut self, connection: Connection) -> ConfigResult<Uuid> {
+        self.insert_connection(connection)
+    }
 
+    fn insert_connection(&mut self, connection: Connection) -> ConfigResult<Uuid> {
         let id = connection.id;
         let mut connection = connection;
         // Append to end of target group to preserve existing order
@@ -2528,6 +2542,18 @@ mod tests {
             .collect();
         names.sort();
         names
+    }
+
+    #[test]
+    fn import_connection_keeps_an_invalid_entry_that_create_connection_from_rejects() {
+        let (mut manager, _temp) = create_test_manager();
+        let bad = Connection::new_ssh(String::new(), String::new(), 0);
+
+        assert!(manager.create_connection_from(bad.clone()).is_err());
+        let id = manager.import_connection(bad).unwrap();
+
+        let stored = manager.get_connection(id).unwrap();
+        assert_eq!((stored.port, stored.host.as_str()), (0, ""));
     }
 
     fn ssh(name: &str) -> Connection {

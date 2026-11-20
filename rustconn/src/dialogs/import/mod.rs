@@ -253,7 +253,7 @@ impl ImportDialog {
         source_name: &str,
     ) -> ImportResult {
         match result {
-            Ok(r) => r,
+            Ok(r) => r.with_validation_warnings(),
             Err(e) => {
                 tracing::error!(?e, "Import failed for {}", source_name);
                 let mut failed = ImportResult::default();
@@ -435,6 +435,30 @@ impl ImportDialog {
             ImportWarning::FtpImportedAsSftp { connection_name } => i18n_f(
                 "Connection '{}' was an FTP session, imported as SFTP — RustConn has no FTP client. Check the port (SFTP uses 22), the credentials and whether the server speaks SFTP before connecting.",
                 &[connection_name],
+            ),
+            ImportWarning::ConnectionNameEmpty { position } => i18n_f(
+                "Connection {} has no name. It was imported as it is; give it a name.",
+                &[&position.to_string()],
+            ),
+            ImportWarning::ConnectionHostEmpty { connection_name } => i18n_f(
+                "Connection '{}' has no host. It was imported as it is; set a host before connecting.",
+                &[connection_name],
+            ),
+            ImportWarning::ConnectionPortZero { connection_name } => i18n_f(
+                "Connection '{}' has port 0. It was imported as it is; set a port before connecting.",
+                &[connection_name],
+            ),
+            ImportWarning::JumpHostMissing { connection_name } => i18n_f(
+                "Connection '{}' uses a jump host that is not part of this import. It was imported as it is; check its jump host before connecting.",
+                &[connection_name],
+            ),
+            ImportWarning::GroupNameEmpty { position } => i18n_f(
+                "Group {} has no name. It was imported as it is; give it a name.",
+                &[&position.to_string()],
+            ),
+            ImportWarning::SnippetIncomplete { position } => i18n_f(
+                "Snippet {} has no name or no command. It was imported as it is; complete it before running.",
+                &[&position.to_string()],
             ),
         }
     }
@@ -1319,6 +1343,18 @@ mod tests {
             ImportWarning::TemplatesNotImported { count: 1 },
             ImportWarning::ClustersNotImported { count: 2 },
             ImportWarning::VariablesNotImported { count: 3 },
+            ImportWarning::ConnectionNameEmpty { position: 2 },
+            ImportWarning::ConnectionHostEmpty {
+                connection_name: "a".to_string(),
+            },
+            ImportWarning::ConnectionPortZero {
+                connection_name: "a".to_string(),
+            },
+            ImportWarning::JumpHostMissing {
+                connection_name: "a".to_string(),
+            },
+            ImportWarning::GroupNameEmpty { position: 1 },
+            ImportWarning::SnippetIncomplete { position: 1 },
         ];
 
         for warning in &warnings {

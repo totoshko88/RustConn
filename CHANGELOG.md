@@ -44,10 +44,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`send` discards output buffered before it** — a custom script that relied on an `expect` matching text that arrived before the preceding `send` now waits for output produced after the command. Scripts where each `expect` ends at the prompt are unaffected, as are the bundled `example-*` scripts that have engine tests (OpenWrt, Cisco, first-run). (`rustconn-core/src/automation/script.rs`)
 
 ### Removed
+- **Two unused validators** — `ExpectEngine::validate_patterns` and `KeePassStatus::validate_key_file_path` had no caller. Per-pattern and per-path checks stay where they are used. (`rustconn-core/src/automation/expect.rs`, `rustconn-core/src/secret/status.rs`)
 - **Unused cluster session tracking** — `ClusterSession`, `ClusterMemberState`, `ClusterSessionStatus`, `ClusterSessionSummary` and the matching `ClusterManager` methods were written to, never read, and tested only against themselves; connecting a cluster no longer starts one. Clusters, their members and broadcast behave as before. (`rustconn-core/src/cluster/mod.rs`, `rustconn/src/state/sessions.rs`, `rustconn/src/window/clusters.rs`)
 - **Unused `ProtocolCapabilities` flags** — the per-protocol capability set and `Protocol::capabilities()` were documented as driving the UI but nothing in the GUI or CLI read them (split-view eligibility is decided from the widget). Removed with their 13 implementations. (`rustconn-core/src/protocol/`, `docs/ARCHITECTURE.md`)
 
 ### Improved
+- **Import lists a warning for entries that fail validation** — an imported connection with no name, no host, port 0 or a jump host that is not in the import, a group with no name, or a snippet with no name or command is still imported unchanged and gets a line in the result's **Warnings** list (and in `rustconn-cli import`). Before, the GUI skipped such a connection and only logged it. Loading `connections.toml` logs the same problems without changing the data. Warnings carry no host, user or password. (`rustconn-core/src/import/validation.rs`, `rustconn-core/src/connection/manager.rs`, `rustconn/src/dialogs/import/mod.rs`, `rustconn-cli/src/commands/export_import.rs`)
 - **Starting and stopping a share no longer freezes the window** — the relay is started and stopped off the main loop. (`rustconn/src/window/network_tools/share.rs`)
 
 ## [0.25.6] - 2026-11-20

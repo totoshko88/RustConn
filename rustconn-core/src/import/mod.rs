@@ -57,6 +57,7 @@ mod royalts;
 mod securecrt;
 mod ssh_config;
 mod traits;
+mod validation;
 mod vv;
 
 pub use ansible::AnsibleInventoryImporter;
