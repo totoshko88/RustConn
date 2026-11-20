@@ -89,9 +89,11 @@ pub fn normalize_socket_path(raw: &str) -> Option<String> {
     normalize_socket_path_with(raw, std::env::var("HOME").ok().as_deref())
 }
 
-/// Picks the agent socket by precedence: per-connection, then the global
-/// setting, then the agent RustConn found or started (`detected`), then the
-/// inherited `SSH_AUTH_SOCK` (`env`). Empty and blank values count as unset.
+/// Picks the agent socket by precedence.
+///
+/// Order: per-connection, global setting, the agent RustConn found or started
+/// (`detected`), the inherited `SSH_AUTH_SOCK` (`env`). Empty and blank values
+/// count as unset.
 ///
 /// `detected` is the inherited `SSH_AUTH_SOCK` whenever that agent was alive at
 /// startup, so it only differs from `env` when `env` was stale and RustConn
@@ -110,9 +112,11 @@ pub fn pick_agent_socket(
         .find_map(normalize_socket_path)
 }
 
-/// The socket the user chose for a launch: the connection's own, else the one
-/// from Settings. `None` when neither is set, i.e. the launch uses whatever
-/// agent is found. This is the value worth validating and reporting.
+/// The socket the user chose for a launch, if any.
+///
+/// The connection's own, else the one from Settings. `None` when neither is
+/// set, i.e. the launch uses whatever agent is found. This is the value worth
+/// validating and reporting.
 #[must_use]
 pub fn custom_agent_socket(per_connection: Option<&str>) -> Option<String> {
     pick_agent_socket(per_connection, global_agent_socket().as_deref(), None, None)
