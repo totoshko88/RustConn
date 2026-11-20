@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Wake-on-LAN only where it can work** — the sidebar connection menu shows **Wake-on-LAN** only for a connection that has a Wake-on-LAN configuration (MAC address). Before, every connection offered it and a click without one ended in a "No Wake-on-LAN configured" toast. The smart folder menu still shows it for every connection. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/window/sorting.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/sidebar_ui.rs`)
+- **Wake-on-LAN only where it can work** — the sidebar connection menu shows **Wake-on-LAN** only for a connection that has a Wake-on-LAN configuration (MAC address). Before, every connection offered it and a click without one ended in a "No Wake-on-LAN configured" toast. The connection menu inside a smart folder follows the same rule. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/smart_folder_ui.rs`, `rustconn/src/window/sorting.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/sidebar_ui.rs`)
 
 ### Fixed
 

@@ -353,34 +353,58 @@ pub fn offers_key_setup(protocol: &str) -> bool {
     protocol == "ssh"
 }
 
-/// Shows the context menu for a connection item with group awareness
+/// What the sidebar context menu needs to know about the row it opens on.
+///
+/// Named fields, so a call site cannot swap two of the flags.
 #[expect(
-    clippy::fn_params_excessive_bools,
-    clippy::too_many_arguments,
-    reason = "function parameters mirror Clap-derived flags 1:1; bundling would only restate them"
+    clippy::struct_excessive_bools,
+    reason = "each flag gates one menu item; a bit set would only hide the names"
 )]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ItemMenuState {
+    pub is_group: bool,
+    pub is_ssh: bool,
+    pub can_run_script: bool,
+    pub offers_key_setup: bool,
+    pub can_tunnel_browser: bool,
+    /// The connection has a Wake-on-LAN configuration.
+    pub has_wol: bool,
+    pub is_connected: bool,
+    pub is_recording: bool,
+    pub has_external_session: bool,
+    pub is_pinned: bool,
+    pub is_root_group: bool,
+    pub has_dynamic_folder: bool,
+    pub in_split: bool,
+    pub has_multi_session: bool,
+}
+
+/// Shows the context menu for a connection item with group awareness
 pub fn show_context_menu_for_item(
     widget: &impl IsA<gtk4::Widget>,
     x: f64,
     y: f64,
     conn_id: &str,
-    is_group: bool,
-    is_ssh: bool,
-    can_run_script: bool,
-    offers_key_setup: bool,
-    can_tunnel_browser: bool,
-    has_wol: bool,
-    is_connected: bool,
-    is_recording: bool,
-    has_external_session: bool,
-    is_pinned: bool,
+    state: ItemMenuState,
     sync_mode: &str,
-    is_root_group: bool,
-    has_dynamic_folder: bool,
-    in_split: bool,
-    has_multi_session: bool,
     activation: MenuActivation,
 ) {
+    let ItemMenuState {
+        is_group,
+        is_ssh,
+        can_run_script,
+        offers_key_setup,
+        can_tunnel_browser,
+        has_wol,
+        is_connected,
+        is_recording,
+        has_external_session,
+        is_pinned,
+        is_root_group,
+        has_dynamic_folder,
+        in_split,
+        has_multi_session,
+    } = state;
     let Some(root) = widget.root() else { return };
     let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() else {
         return;

@@ -2808,6 +2808,11 @@ Open Settings → Connection → Media Codecs to re-download it.",
             if let Some(ref mut config) = *ctx.fallback_config.borrow_mut() {
                 config.security_layer = rustconn_core::models::RdpSecurityLayer::Nla;
                 config.disable_nla = false;
+            } else {
+                tracing::warn!(
+                    protocol = "rdp",
+                    "[IronRDP] no fallback config, external FreeRDP starts without the NLA pin"
+                );
             }
             Self::prepare_freerdp_fallback(ctx);
             Self::launch_freerdp_fallback(ctx, msg);

@@ -274,13 +274,13 @@ impl TerminalNotebook {
                         // session_widgets and the Welcome tab has no session.
                         is_terminal: session_id
                             .is_some_and(|sid| terminals_for_menu.borrow().contains_key(&sid)),
-                        // Asks about the session the tab is named after, the
-                        // same one the action renames (issue #421).
                         offers_sftp: session_id.is_some_and(|sid| {
                             info_ref
                                 .get(&sid)
                                 .is_some_and(|i| i.protocol == "ssh" || i.protocol == "sftp")
                         }),
+                        // Asks about the session the tab is named after, the
+                        // same one the action renames (issue #421).
                         is_local_shell: session_id
                             .and_then(|sid| {
                                 super::split_title::rename_tab_target(
