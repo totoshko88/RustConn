@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 22:59+0200\n"
+"POT-Creation-Date: 2026-11-20 23:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,8 +68,8 @@ msgstr ""
 #: rustconn/src/window/key_setup.rs:1022 rustconn/src/window/mc_launch.rs:453
 #: rustconn/src/window/mod.rs:3823 rustconn/src/window/mod.rs:3887
 #: rustconn/src/window/mod.rs:4918 rustconn/src/window/mod.rs:6013
-#: rustconn/src/window/network_tools/remote_edit.rs:78
-#: rustconn/src/window/network_tools/remote_edit.rs:141
+#: rustconn/src/window/network_tools/remote_edit.rs:96
+#: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:76
 #: rustconn/src/window/network_tools/share.rs:422
 #: rustconn/src/window/network_tools/tftp.rs:59
@@ -414,7 +414,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: rustconn/src/dialogs/cluster.rs:185 rustconn/src/dialogs/cluster.rs:237
-#: rustconn/src/dialogs/terminal_search.rs:333
+#: rustconn/src/dialogs/terminal_search.rs:389
 msgid "Invalid regex pattern"
 msgstr ""
 
@@ -2086,6 +2086,7 @@ msgid "Keep Editing"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog/save.rs:901
+#: rustconn/src/window/network_tools/remote_edit.rs:250
 msgid "Discard"
 msgstr ""
 
@@ -7199,6 +7200,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:451
 #: rustconn/src/embedded_rdp/mod.rs:1747
+#: rustconn/src/window/network_tools/remote_edit.rs:137
 msgid "Downloading…"
 msgstr ""
 
@@ -10091,7 +10093,7 @@ msgstr ""
 #: rustconn/src/dialogs/template_manager.rs:110 rustconn/src/sidebar_ui.rs:457
 #: rustconn/src/sidebar_ui.rs:681 rustconn/src/smart_folder_ui.rs:414
 #: rustconn/src/smart_folder_ui.rs:453
-#: rustconn/src/window/network_tools/remote_edit.rs:79
+#: rustconn/src/window/network_tools/remote_edit.rs:97
 #: rustconn/src/window/snippets.rs:407
 msgid "Edit"
 msgstr ""
@@ -10145,58 +10147,58 @@ msgstr ""
 msgid "User: {}"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:42
+#: rustconn/src/dialogs/terminal_search.rs:122
 msgid "Search in Terminal"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:68
+#: rustconn/src/dialogs/terminal_search.rs:148
 msgid "Search text…"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:76
+#: rustconn/src/dialogs/terminal_search.rs:156
 msgid "Case sensitive"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:80
+#: rustconn/src/dialogs/terminal_search.rs:160
 msgid "Regex"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:81
+#: rustconn/src/dialogs/terminal_search.rs:161
 msgid "Use regular expression pattern"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:86
+#: rustconn/src/dialogs/terminal_search.rs:166
 msgid "Highlight All"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:87
+#: rustconn/src/dialogs/terminal_search.rs:167
 msgid "Highlight all matches in terminal"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:99
-#: rustconn/src/dialogs/terminal_search.rs:101
+#: rustconn/src/dialogs/terminal_search.rs:179
+#: rustconn/src/dialogs/terminal_search.rs:181
 msgid "Previous match"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:106
-#: rustconn/src/dialogs/terminal_search.rs:108
+#: rustconn/src/dialogs/terminal_search.rs:186
+#: rustconn/src/dialogs/terminal_search.rs:188
 msgid "Next match"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:112
-#: rustconn/src/dialogs/terminal_search.rs:161
+#: rustconn/src/dialogs/terminal_search.rs:192
+#: rustconn/src/dialogs/terminal_search.rs:249
 msgid "Enter text to search"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:328
+#: rustconn/src/dialogs/terminal_search.rs:382
 msgid "Found matches"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:330
+#: rustconn/src/dialogs/terminal_search.rs:384
 msgid "No matches found"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:336
+#: rustconn/src/dialogs/terminal_search.rs:391
 msgid "Search error"
 msgstr ""
 
@@ -12839,6 +12841,7 @@ msgid "Undo"
 msgstr ""
 
 #: rustconn/src/toast.rs:352
+#: rustconn/src/window/network_tools/remote_edit.rs:253
 msgid "Retry"
 msgstr ""
 
@@ -14244,12 +14247,12 @@ msgid "That connection has no open session"
 msgstr ""
 
 #: rustconn/src/window/network_tools.rs:165
-#: rustconn/src/window/network_tools/remote_edit.rs:53
+#: rustconn/src/window/network_tools/remote_edit.rs:69
 msgid "Remote file editor"
 msgstr ""
 
 #: rustconn/src/window/network_tools.rs:166
-#: rustconn/src/window/network_tools/remote_edit.rs:54
+#: rustconn/src/window/network_tools/remote_edit.rs:70
 msgid "Connection not found"
 msgstr ""
 
@@ -14261,47 +14264,72 @@ msgstr ""
 msgid "Internet — WebTransport in a browser"
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:38
+#: rustconn/src/window/network_tools/remote_edit.rs:54
 msgid "Select an SSH terminal before editing a remote file"
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:70
+#: rustconn/src/window/network_tools/remote_edit.rs:88
 msgid "Edit remote file"
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:72
+#: rustconn/src/window/network_tools/remote_edit.rs:90
 msgid ""
-"The file is downloaded to a temporary copy and uploaded when you press Save."
+"The file is downloaded to a temporary copy and uploaded when you choose "
+"Upload."
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:101
-#: rustconn/src/window/network_tools/remote_edit.rs:107
+#: rustconn/src/window/network_tools/remote_edit.rs:130
+#: rustconn/src/window/network_tools/remote_edit.rs:149
 msgid "Could not open the remote file"
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:133
+#: rustconn/src/window/network_tools/remote_edit.rs:187
 msgid "Remote file opened"
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:135
+#: rustconn/src/window/network_tools/remote_edit.rs:189
 msgid "Editing {}. Press Upload when the file is saved."
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:142
+#: rustconn/src/window/network_tools/remote_edit.rs:196
 msgid "Upload"
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:158
+#: rustconn/src/window/network_tools/remote_edit.rs:213
+msgid "Uploading…"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:225
 msgid "The file was not changed"
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:167
+#: rustconn/src/window/network_tools/remote_edit.rs:228
 msgid "Remote file uploaded"
 msgstr ""
 
-#: rustconn/src/window/network_tools/remote_edit.rs:176
-#: rustconn/src/window/network_tools/remote_edit.rs:183
+#: rustconn/src/window/network_tools/remote_edit.rs:242
 msgid "Could not upload the remote file"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:245
+msgid "Your edited copy is kept at {}."
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:252
+#: rustconn/src/window/network_tools/remote_edit.rs:291
+msgid "Save a Copy…"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:270
+msgid "Edited copy kept at {}"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:315
+msgid "Copy saved to {}"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:318
+msgid "Could not save the copy"
 msgstr ""
 
 #: rustconn/src/window/network_tools/share.rs:54
@@ -15524,32 +15552,4 @@ msgstr ""
 
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
-msgstr ""
-
-#: rustconn/src/window/network_tools/remote_edit.rs
-msgid "The file is downloaded to a temporary copy and uploaded when you choose Upload."
-msgstr ""
-
-#: rustconn/src/window/network_tools/remote_edit.rs
-msgid "Uploading…"
-msgstr ""
-
-#: rustconn/src/window/network_tools/remote_edit.rs
-msgid "Your edited copy is kept at {}."
-msgstr ""
-
-#: rustconn/src/window/network_tools/remote_edit.rs
-msgid "Save a Copy…"
-msgstr ""
-
-#: rustconn/src/window/network_tools/remote_edit.rs
-msgid "Edited copy kept at {}"
-msgstr ""
-
-#: rustconn/src/window/network_tools/remote_edit.rs
-msgid "Copy saved to {}"
-msgstr ""
-
-#: rustconn/src/window/network_tools/remote_edit.rs
-msgid "Could not save the copy"
 msgstr ""
