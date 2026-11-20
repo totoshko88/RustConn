@@ -440,13 +440,21 @@ pub struct SessionGroupWindow {
 impl SessionGroupWindow {
     /// Creates an empty window titled after the group it shows.
     ///
+    /// An empty `title` makes a window of no particular group, such as the one a
+    /// tab dropped outside every window opens; it is called RustConn.
+    ///
     /// The window is not presented yet; add a session and call
     /// [`Self::present`].
     #[must_use]
     pub fn new(app: &adw::Application, title: &str) -> Rc<Self> {
+        let (window_title, title) = if title.is_empty() {
+            ("RustConn".to_owned(), "RustConn")
+        } else {
+            (i18n_f("{} — RustConn", &[title]), title)
+        };
         let window = adw::ApplicationWindow::builder()
             .application(app)
-            .title(i18n_f("{} — RustConn", &[title]))
+            .title(window_title)
             .default_width(DEFAULT_WIDTH)
             .default_height(DEFAULT_HEIGHT)
             .width_request(360)
@@ -461,6 +469,8 @@ impl SessionGroupWindow {
             .view(&tab_view)
             .autohide(false)
             .build();
+        // A window's only tab can still be dragged to another window.
+        crate::terminal::drag_single_tab(&tab_bar, &tab_view, |_| true);
 
         let attach_button = Button::from_icon_name("view-restore-symbolic");
         let attach_label = i18n("Move to Main Window");
@@ -506,8 +516,15 @@ impl SessionGroupWindow {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.add_top_bar(&broadcast_banner);
-        toolbar_view.add_top_bar(&tab_bar);
-        toolbar_view.set_content(Some(&stack));
+        // The tab bar sits in the content, not among the top bars: those are
+        // wrapped in a GtkWindowHandle, which turned dragging a tab out into
+        // moving the window as well. The main window keeps its tab bar out of
+        // a handle the same way.
+        let body = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        stack.set_vexpand(true);
+        body.append(&tab_bar);
+        body.append(&stack);
+        toolbar_view.set_content(Some(&body));
 
         let toast_overlay = adw::ToastOverlay::new();
         toast_overlay.set_child(Some(&toolbar_view));
@@ -750,12 +767,13 @@ impl SessionGroupWindow {
         });
     }
 
-    /// Keeps every hosted tab in this window.
+    /// Keeps every hosted tab's bookkeeping in this window.
     ///
-    /// A tab dragged onto another window's tab bar is handed back, and one
-    /// dropped outside every window opens nothing. Moving a session is what
-    /// **Move Tab to Main Window** is for; a drag would carry its page past the
-    /// bookkeeping of both windows.
+    /// A drag would carry a page past the bookkeeping of both windows, so a tab
+    /// dragged onto another window's tab bar is handed back first; the window
+    /// layer then moves its session there properly (see
+    /// `crate::terminal::set_drop_handler`). A tab dropped outside every window
+    /// gets a new window the same way.
     fn keep_tabs_here(&self) {
         let members = Rc::clone(&self.members);
         crate::terminal::return_transferred_tabs(&self.tab_view, move |page| {
@@ -763,10 +781,8 @@ impl SessionGroupWindow {
                 .try_borrow()
                 .is_ok_and(|members| Self::session_of(&members, page).is_some())
         });
-        self.tab_view.connect_create_window(|_| {
-            tracing::debug!("group window: tab tear-off is not supported, cancelled");
-            None
-        });
+        self.tab_view
+            .connect_create_window(|_| crate::terminal::new_window_view());
     }
 
     /// Puts keyboard focus into the session of the tab that was switched to.
@@ -822,6 +838,63 @@ impl SessionGroupWindow {
         tracing::info!(session = %session_id, "session added to group window");
         self.tiling.refresh();
         Self::notify_members_changed(&self.on_members_changed);
+    }
+
+    /// The view holding this window's tabs.
+    #[must_use]
+    pub const fn tab_view(&self) -> &adw::TabView {
+        &self.tab_view
+    }
+
+    /// The session a page of this window shows.
+    #[must_use]
+    pub fn session_for_page(&self, page: &adw::TabPage) -> Option<Uuid> {
+        Self::session_of(&self.members.borrow(), page)
+    }
+
+    /// The content box of a hosted session, as `add_session` received it.
+    #[must_use]
+    pub fn session_content(&self, session_id: Uuid) -> Option<gtk4::Box> {
+        self.members
+            .borrow()
+            .get(&session_id)
+            .map(|member| member.content.clone())
+    }
+
+    /// Moves a session's tab to `position` (clamped to the view) and selects it.
+    pub fn place_session(&self, session_id: Uuid, position: i32) {
+        let page = self
+            .members
+            .borrow()
+            .get(&session_id)
+            .map(|member| member.page.clone());
+        if let Some(page) = page {
+            let position = crate::terminal::clamp_drop_position(
+                position,
+                self.tab_view.n_pinned_pages(),
+                self.tab_view.n_pages() - 1,
+            );
+            self.tab_view.reorder_page(&page, position);
+            self.tab_view.set_selected_page(&page);
+        }
+    }
+
+    /// Turns this window's Tab Broadcast off, if it is on.
+    ///
+    /// For a tab dragged in: it must not start receiving keystrokes typed for
+    /// the tabs that were already here.
+    pub fn stop_broadcast(&self) {
+        if self.broadcast_toggle.is_active()
+            && let Some(ref callback) = *self.on_broadcast_toggled.borrow()
+        {
+            callback(false);
+        }
+    }
+
+    /// Whether no session is hosted here.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.members.borrow().is_empty()
     }
 
     /// Every hosted session (order unspecified).
