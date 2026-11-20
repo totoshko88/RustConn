@@ -1762,7 +1762,8 @@ impl ImportDialog {
                             snippets: native_export.snippets,
                             smart_folders: native_export.smart_folders,
                             warnings,
-                        }.with_validation_warnings()
+                        }
+                        .with_validation_warnings()
                     }
                     Err(e) => {
                         let mut r = ImportResult::default();

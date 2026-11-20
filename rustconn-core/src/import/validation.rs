@@ -27,7 +27,9 @@ impl ImportResult {
                 ConfigManager::validate_connection(conn)
             {
                 found.push(match field.as_str() {
-                    "name" => ImportWarning::ConnectionNameEmpty { position: index + 1 },
+                    "name" => ImportWarning::ConnectionNameEmpty {
+                        position: index + 1,
+                    },
                     "host" => ImportWarning::ConnectionHostEmpty {
                         connection_name: conn.name.clone(),
                     },
@@ -44,12 +46,16 @@ impl ImportResult {
         }
         for (index, group) in self.groups.iter().enumerate() {
             if ConfigManager::validate_group(group).is_err() {
-                found.push(ImportWarning::GroupNameEmpty { position: index + 1 });
+                found.push(ImportWarning::GroupNameEmpty {
+                    position: index + 1,
+                });
             }
         }
         for (index, snippet) in self.snippets.iter().enumerate() {
             if ConfigManager::validate_snippet(snippet).is_err() {
-                found.push(ImportWarning::SnippetIncomplete { position: index + 1 });
+                found.push(ImportWarning::SnippetIncomplete {
+                    position: index + 1,
+                });
             }
         }
 

@@ -2544,8 +2544,8 @@ mod tests {
         names
     }
 
-    #[test]
-    fn import_connection_keeps_an_invalid_entry_that_create_connection_from_rejects() {
+    #[tokio::test]
+    async fn import_connection_keeps_an_invalid_entry_that_create_connection_from_rejects() {
         let (mut manager, _temp) = create_test_manager();
         let bad = Connection::new_ssh(String::new(), String::new(), 0);
 

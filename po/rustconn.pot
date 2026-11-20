@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 00:59+0200\n"
+"POT-Creation-Date: 2026-11-21 01:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -100,7 +100,7 @@ msgstr ""
 #: rustconn/src/dialogs/smart_folder.rs:84 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2786
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1055
+#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1085
 #: rustconn/src/sidebar/saved_searches.rs:221
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
 #: rustconn/src/window/workspaces.rs:561
@@ -159,13 +159,13 @@ msgstr ""
 #: rustconn/src/dialogs/credential_transfer.rs:652
 #: rustconn/src/dialogs/credential_transfer.rs:719
 #: rustconn/src/dialogs/export.rs:1164 rustconn/src/dialogs/history.rs:340
-#: rustconn/src/dialogs/import/sources.rs:708
+#: rustconn/src/dialogs/import/sources.rs:710
 #: rustconn/src/dialogs/key_setup.rs:1037
 #: rustconn/src/dialogs/portable_passphrase_change.rs:376
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/split_view/adapter.rs:1377
+#: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
 #: rustconn/src/terminal/tab_menu.rs:810 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4959
 #: rustconn/src/window/network_tools/share.rs:256
@@ -309,7 +309,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr ""
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1060
+#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1090
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:786
 #: rustconn/src/window/edit_dialogs.rs:787 rustconn/src/window/mod.rs:6054
@@ -325,7 +325,7 @@ msgstr ""
 msgid "The command macro ‘{}’ needs the following before it can be sent."
 msgstr ""
 
-#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1061
+#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1091
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/dialogs/wol.rs:46
 #: rustconn/src/window/sessions.rs:337
 msgid "Send"
@@ -365,7 +365,7 @@ msgstr ""
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:1056
+#: rustconn/src/dialogs/widgets.rs:1086
 #: rustconn/src/window/connection_dialogs.rs:388
 #: rustconn/src/window/connection_dialogs.rs:389
 #: rustconn/src/window/operations.rs:592
@@ -1718,7 +1718,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:472
 #: rustconn/src/dialogs/connection/general_tab.rs:428
-#: rustconn/src/dialogs/widgets.rs:429
+#: rustconn/src/dialogs/widgets.rs:459
 msgid "(Root)"
 msgstr ""
 
@@ -1735,7 +1735,7 @@ msgstr ""
 #: rustconn/src/dialogs/settings/network_tab.rs:125
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:442
-#: rustconn/src/dialogs/widgets.rs:434 rustconn/src/window/edit_dialogs.rs:810
+#: rustconn/src/dialogs/widgets.rs:464 rustconn/src/window/edit_dialogs.rs:810
 #: rustconn/src/window/edit_group.rs:828
 msgid "(None)"
 msgstr ""
@@ -3092,7 +3092,7 @@ msgstr ""
 #: rustconn/src/dialogs/flatpak_components.rs:372
 #: rustconn/src/dialogs/flatpak_components.rs:512
 #: rustconn/src/dialogs/settings/clients_tab.rs:362
-#: rustconn/src/dialogs/widgets.rs:349
+#: rustconn/src/dialogs/widgets.rs:379
 msgid "Remove"
 msgstr ""
 
@@ -3724,7 +3724,7 @@ msgid "Path to private key file"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/ssh.rs:448
-#: rustconn/src/dialogs/widgets.rs:439
+#: rustconn/src/dialogs/widgets.rs:469
 msgid "(No keys loaded)"
 msgstr ""
 
@@ -4714,7 +4714,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1059
+#: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
 msgid "Copy"
@@ -4847,7 +4847,7 @@ msgid "Export Connections"
 msgstr ""
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/dialogs/widgets.rs:1057
+#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/dialogs/widgets.rs:1087
 msgid "Export"
 msgstr ""
 
@@ -5042,7 +5042,7 @@ msgstr ""
 msgid "Skipped"
 msgstr ""
 
-#: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:476
+#: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:500
 msgid "Warnings ({}):"
 msgstr ""
 
@@ -5080,7 +5080,7 @@ msgid "Royal TS (*.rtsz)"
 msgstr ""
 
 #: rustconn/src/dialogs/export.rs:885
-#: rustconn/src/dialogs/import/sources.rs:928
+#: rustconn/src/dialogs/import/sources.rs:930
 msgid "MobaXterm Sessions (*.mxtsessions)"
 msgstr ""
 
@@ -5089,7 +5089,7 @@ msgid "SecureCRT Sessions (*.ini)"
 msgstr ""
 
 #: rustconn/src/dialogs/export.rs:899
-#: rustconn/src/dialogs/import/sources.rs:1375
+#: rustconn/src/dialogs/import/sources.rs:1377
 msgid "RDP Files (*.rdp)"
 msgstr ""
 
@@ -5117,24 +5117,24 @@ msgstr ""
 msgid "Export complete"
 msgstr ""
 
-#: rustconn/src/dialogs/export.rs:1151 rustconn/src/dialogs/import/mod.rs:597
-#: rustconn/src/dialogs/import/mod.rs:928
+#: rustconn/src/dialogs/export.rs:1151 rustconn/src/dialogs/import/mod.rs:621
+#: rustconn/src/dialogs/import/mod.rs:952
 #: rustconn/src/dialogs/import/sources.rs:353
 #: rustconn/src/dialogs/import/sources.rs:445
 #: rustconn/src/dialogs/import/sources.rs:541
-#: rustconn/src/dialogs/import/sources.rs:646
-#: rustconn/src/dialogs/import/sources.rs:699
-#: rustconn/src/dialogs/import/sources.rs:802
-#: rustconn/src/dialogs/import/sources.rs:893
-#: rustconn/src/dialogs/import/sources.rs:984
-#: rustconn/src/dialogs/import/sources.rs:1073
-#: rustconn/src/dialogs/import/sources.rs:1162
-#: rustconn/src/dialogs/import/sources.rs:1253
-#: rustconn/src/dialogs/import/sources.rs:1341
-#: rustconn/src/dialogs/import/sources.rs:1427
-#: rustconn/src/dialogs/import/sources.rs:1543
-#: rustconn/src/dialogs/import/sources.rs:1697
-#: rustconn/src/dialogs/widgets.rs:1063
+#: rustconn/src/dialogs/import/sources.rs:647
+#: rustconn/src/dialogs/import/sources.rs:701
+#: rustconn/src/dialogs/import/sources.rs:804
+#: rustconn/src/dialogs/import/sources.rs:895
+#: rustconn/src/dialogs/import/sources.rs:986
+#: rustconn/src/dialogs/import/sources.rs:1075
+#: rustconn/src/dialogs/import/sources.rs:1164
+#: rustconn/src/dialogs/import/sources.rs:1255
+#: rustconn/src/dialogs/import/sources.rs:1343
+#: rustconn/src/dialogs/import/sources.rs:1429
+#: rustconn/src/dialogs/import/sources.rs:1545
+#: rustconn/src/dialogs/import/sources.rs:1699
+#: rustconn/src/dialogs/widgets.rs:1093
 msgid "Done"
 msgstr ""
 
@@ -5322,7 +5322,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1058
+#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1088
 #: rustconn/src/split_view/bridge.rs:2171 rustconn/src/window/edit_group.rs:985
 msgid "Import"
 msgstr ""
@@ -5359,16 +5359,16 @@ msgstr ""
 #: rustconn/src/dialogs/import/sources.rs:343
 #: rustconn/src/dialogs/import/sources.rs:435
 #: rustconn/src/dialogs/import/sources.rs:531
-#: rustconn/src/dialogs/import/sources.rs:636
-#: rustconn/src/dialogs/import/sources.rs:792
-#: rustconn/src/dialogs/import/sources.rs:883
-#: rustconn/src/dialogs/import/sources.rs:974
-#: rustconn/src/dialogs/import/sources.rs:1063
-#: rustconn/src/dialogs/import/sources.rs:1152
-#: rustconn/src/dialogs/import/sources.rs:1243
-#: rustconn/src/dialogs/import/sources.rs:1331
-#: rustconn/src/dialogs/import/sources.rs:1417
-#: rustconn/src/dialogs/import/sources.rs:1533
+#: rustconn/src/dialogs/import/sources.rs:637
+#: rustconn/src/dialogs/import/sources.rs:794
+#: rustconn/src/dialogs/import/sources.rs:885
+#: rustconn/src/dialogs/import/sources.rs:976
+#: rustconn/src/dialogs/import/sources.rs:1065
+#: rustconn/src/dialogs/import/sources.rs:1154
+#: rustconn/src/dialogs/import/sources.rs:1245
+#: rustconn/src/dialogs/import/sources.rs:1333
+#: rustconn/src/dialogs/import/sources.rs:1419
+#: rustconn/src/dialogs/import/sources.rs:1535
 msgid ""
 "Successfully imported {} connection(s) and {} group(s).\n"
 "Connections will be added to '{} Import' group."
@@ -5418,56 +5418,88 @@ msgid ""
 "server speaks SFTP before connecting."
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:450
+#: rustconn/src/dialogs/import/mod.rs:440
+msgid "Connection {} has no name. It was imported as it is; give it a name."
+msgstr ""
+
+#: rustconn/src/dialogs/import/mod.rs:444
+msgid ""
+"Connection '{}' has no host. It was imported as it is; set a host before "
+"connecting."
+msgstr ""
+
+#: rustconn/src/dialogs/import/mod.rs:448
+msgid ""
+"Connection '{}' has port 0. It was imported as it is; set a port before "
+"connecting."
+msgstr ""
+
+#: rustconn/src/dialogs/import/mod.rs:452
+msgid ""
+"Connection '{}' uses a jump host that is not part of this import. It was "
+"imported as it is; check its jump host before connecting."
+msgstr ""
+
+#: rustconn/src/dialogs/import/mod.rs:456
+msgid "Group {} has no name. It was imported as it is; give it a name."
+msgstr ""
+
+#: rustconn/src/dialogs/import/mod.rs:460
+msgid ""
+"Snippet {} has no name or no command. It was imported as it is; complete it "
+"before running."
+msgstr ""
+
+#: rustconn/src/dialogs/import/mod.rs:474
 msgid "Imported connections:"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:463
+#: rustconn/src/dialogs/import/mod.rs:487
 msgid "Skipped {} entries:"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:489
+#: rustconn/src/dialogs/import/mod.rs:513
 msgid "Errors ({}):"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:497
+#: rustconn/src/dialogs/import/mod.rs:521
 msgid "No connections found in the selected source."
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:570
-#: rustconn/src/dialogs/import/mod.rs:684
-#: rustconn/src/dialogs/import/mod.rs:1041
-#: rustconn/src/dialogs/import/mod.rs:1059
-#: rustconn/src/dialogs/import/mod.rs:1077
-#: rustconn/src/dialogs/import/mod.rs:1095
-#: rustconn/src/dialogs/import/mod.rs:1113
+#: rustconn/src/dialogs/import/mod.rs:594
+#: rustconn/src/dialogs/import/mod.rs:708
+#: rustconn/src/dialogs/import/mod.rs:1065
+#: rustconn/src/dialogs/import/mod.rs:1083
+#: rustconn/src/dialogs/import/mod.rs:1101
+#: rustconn/src/dialogs/import/mod.rs:1119
+#: rustconn/src/dialogs/import/mod.rs:1137
 #: rustconn/src/dialogs/import/sources.rs:322
 #: rustconn/src/dialogs/import/sources.rs:415
 #: rustconn/src/dialogs/import/sources.rs:511
 #: rustconn/src/dialogs/import/sources.rs:606
-#: rustconn/src/dialogs/import/sources.rs:772
-#: rustconn/src/dialogs/import/sources.rs:861
-#: rustconn/src/dialogs/import/sources.rs:952
-#: rustconn/src/dialogs/import/sources.rs:1043
-#: rustconn/src/dialogs/import/sources.rs:1132
-#: rustconn/src/dialogs/import/sources.rs:1225
-#: rustconn/src/dialogs/import/sources.rs:1311
-#: rustconn/src/dialogs/import/sources.rs:1399
-#: rustconn/src/dialogs/import/sources.rs:1490
+#: rustconn/src/dialogs/import/sources.rs:774
+#: rustconn/src/dialogs/import/sources.rs:863
+#: rustconn/src/dialogs/import/sources.rs:954
+#: rustconn/src/dialogs/import/sources.rs:1045
+#: rustconn/src/dialogs/import/sources.rs:1134
+#: rustconn/src/dialogs/import/sources.rs:1227
+#: rustconn/src/dialogs/import/sources.rs:1313
+#: rustconn/src/dialogs/import/sources.rs:1401
+#: rustconn/src/dialogs/import/sources.rs:1492
 msgid "Importing from {}…"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:587
-#: rustconn/src/dialogs/import/mod.rs:917
-#: rustconn/src/dialogs/import/mod.rs:1135
+#: rustconn/src/dialogs/import/mod.rs:611
+#: rustconn/src/dialogs/import/mod.rs:941
+#: rustconn/src/dialogs/import/mod.rs:1159
 msgid "Import complete"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:1029
+#: rustconn/src/dialogs/import/mod.rs:1053
 msgid "Starting import from {}…"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:1123
+#: rustconn/src/dialogs/import/mod.rs:1147
 msgid "Querying libvirt daemon…"
 msgstr ""
 
@@ -5509,7 +5541,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:82
 #: rustconn/src/dialogs/import/sources.rs:268
-#: rustconn/src/dialogs/import/sources.rs:1524
+#: rustconn/src/dialogs/import/sources.rs:1526
 msgid "CSV"
 msgstr ""
 
@@ -5642,12 +5674,12 @@ msgid "Ansible File"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:256
-#: rustconn/src/dialogs/import/sources.rs:624
+#: rustconn/src/dialogs/import/sources.rs:625
 msgid "RustConn Native"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:257
-#: rustconn/src/dialogs/import/sources.rs:781
+#: rustconn/src/dialogs/import/sources.rs:783
 msgid "Royal TS"
 msgstr ""
 
@@ -5656,32 +5688,32 @@ msgid "Remote Desktop Manager"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:259
-#: rustconn/src/dialogs/import/sources.rs:962
+#: rustconn/src/dialogs/import/sources.rs:964
 msgid "MobaXterm"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:260
-#: rustconn/src/dialogs/import/sources.rs:1052
+#: rustconn/src/dialogs/import/sources.rs:1054
 msgid "PuTTY"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:261
-#: rustconn/src/dialogs/import/sources.rs:1141
+#: rustconn/src/dialogs/import/sources.rs:1143
 msgid "mRemoteNG"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:262
-#: rustconn/src/dialogs/import/sources.rs:1320
+#: rustconn/src/dialogs/import/sources.rs:1322
 msgid "Virt-Viewer"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:263
-#: rustconn/src/dialogs/import/sources.rs:1663
+#: rustconn/src/dialogs/import/sources.rs:1665
 msgid "Multiple Files"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:265
-#: rustconn/src/dialogs/import/sources.rs:1232
+#: rustconn/src/dialogs/import/sources.rs:1234
 msgid "Libvirt XML"
 msgstr ""
 
@@ -5690,7 +5722,7 @@ msgid "Libvirt Daemon"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:267
-#: rustconn/src/dialogs/import/sources.rs:1406
+#: rustconn/src/dialogs/import/sources.rs:1408
 msgid "RDP File"
 msgstr ""
 
@@ -5727,123 +5759,123 @@ msgstr ""
 msgid "Select RustConn Native File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:678
+#: rustconn/src/dialogs/import/sources.rs:680
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:38
 #: rustconn/src/window/edit_group.rs:987 rustconn/src/window/edit_group.rs:1038
 #: rustconn/src/window/edit_group.rs:1627
 msgid "Cloud Sync"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:689
+#: rustconn/src/dialogs/import/sources.rs:691
 msgid ""
 "Imported {} connection(s) from Cloud Sync file '{}'\n"
 "Group '{}' will be created in Import mode."
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:704
+#: rustconn/src/dialogs/import/sources.rs:706
 #: rustconn/src/window/connection_dialogs.rs:1084
 msgid "Import Failed"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:705
+#: rustconn/src/dialogs/import/sources.rs:707
 msgid "Error: {}"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:741
+#: rustconn/src/dialogs/import/sources.rs:743
 msgid "Select Royal TS File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:748
+#: rustconn/src/dialogs/import/sources.rs:750
 msgid "Royal TS files (*.rtsz, *.rtsx)"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:831
+#: rustconn/src/dialogs/import/sources.rs:833
 msgid "Select RDM JSON File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:837
+#: rustconn/src/dialogs/import/sources.rs:839
 msgid "JSON files"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:871
+#: rustconn/src/dialogs/import/sources.rs:873
 msgid "RDM JSON"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:922
+#: rustconn/src/dialogs/import/sources.rs:924
 msgid "Select MobaXterm Session File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1013
+#: rustconn/src/dialogs/import/sources.rs:1015
 msgid "Select PuTTY Registry Export File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1019
+#: rustconn/src/dialogs/import/sources.rs:1021
 msgid "PuTTY Registry Export (*.reg)"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1102
+#: rustconn/src/dialogs/import/sources.rs:1104
 msgid "Select mRemoteNG Connections File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1108
+#: rustconn/src/dialogs/import/sources.rs:1110
 msgid "mRemoteNG Connections (*.xml)"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1191
+#: rustconn/src/dialogs/import/sources.rs:1193
 msgid "Select Libvirt Domain XML File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1197
+#: rustconn/src/dialogs/import/sources.rs:1199
 msgid "XML files (*.xml)"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1200
+#: rustconn/src/dialogs/import/sources.rs:1202
 msgid "All files"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1281
+#: rustconn/src/dialogs/import/sources.rs:1283
 msgid "Select Virt-Viewer File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1287
+#: rustconn/src/dialogs/import/sources.rs:1289
 msgid "Virt-Viewer files (*.vv)"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1369
+#: rustconn/src/dialogs/import/sources.rs:1371
 msgid "Select RDP File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1459
+#: rustconn/src/dialogs/import/sources.rs:1461
 msgid "Select CSV File"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1466
+#: rustconn/src/dialogs/import/sources.rs:1468
 msgid "CSV files (*.csv, *.tsv)"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1575
+#: rustconn/src/dialogs/import/sources.rs:1577
 msgid "Select Files to Import"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1594
+#: rustconn/src/dialogs/import/sources.rs:1596
 msgid "All supported formats"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1633
+#: rustconn/src/dialogs/import/sources.rs:1635
 msgid "Importing from {} files…"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1651
+#: rustconn/src/dialogs/import/sources.rs:1653
 msgid "Importing {}…"
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1672
+#: rustconn/src/dialogs/import/sources.rs:1674
 msgid ""
 "Imported {} connection(s) and {} group(s) from {} files ({} errors).\n"
 "Connections will be added to 'Multiple Files Import' group."
 msgstr ""
 
-#: rustconn/src/dialogs/import/sources.rs:1682
+#: rustconn/src/dialogs/import/sources.rs:1684
 msgid ""
 "Imported {} connection(s) and {} group(s) from {} files.\n"
 "Connections will be added to 'Multiple Files Import' group."
@@ -8473,13 +8505,13 @@ msgid "Token loaded from keyring"
 msgstr ""
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2654
-#: rustconn/src/dialogs/widgets.rs:1000 rustconn/src/dialogs/widgets.rs:1005
-#: rustconn/src/dialogs/widgets.rs:1017
+#: rustconn/src/dialogs/widgets.rs:1030 rustconn/src/dialogs/widgets.rs:1035
+#: rustconn/src/dialogs/widgets.rs:1047
 msgid "Select KeePass Database"
 msgstr ""
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2660
-#: rustconn/src/dialogs/widgets.rs:1013
+#: rustconn/src/dialogs/widgets.rs:1043
 msgid "KeePass Database (*.kdbx)"
 msgstr ""
 
@@ -10141,7 +10173,7 @@ msgid "Edit"
 msgstr ""
 
 #: rustconn/src/dialogs/template_manager.rs:118
-#: rustconn/src/dialogs/widgets.rs:1062
+#: rustconn/src/dialogs/widgets.rs:1092
 msgid "Use Template"
 msgstr ""
 
@@ -10678,88 +10710,88 @@ msgstr ""
 msgid "Fetched from vault at connect time"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:222
+#: rustconn/src/dialogs/widgets.rs:252
 msgid "Fallback Jump Hosts"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:223
+#: rustconn/src/dialogs/widgets.rs:253
 msgid "Tried in order when the Jump Host is unreachable"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:230
+#: rustconn/src/dialogs/widgets.rs:260
 msgid "Fallback Jump Host to Add"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:232
+#: rustconn/src/dialogs/widgets.rs:262
 msgid "Add Fallback Jump Host"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:309 rustconn/src/window/edit_group.rs:887
+#: rustconn/src/dialogs/widgets.rs:339 rustconn/src/window/edit_group.rs:887
 msgid "(unknown connection)"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:331
+#: rustconn/src/dialogs/widgets.rs:361
 msgid "Move Up"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:332
+#: rustconn/src/dialogs/widgets.rs:362
 msgid "Move {} up"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:340
+#: rustconn/src/dialogs/widgets.rs:370
 msgid "Move Down"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:341
+#: rustconn/src/dialogs/widgets.rs:371
 msgid "Move {} down"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:350
+#: rustconn/src/dialogs/widgets.rs:380
 msgid "Remove {}"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:921
+#: rustconn/src/dialogs/widgets.rs:951
 msgid "Underline colour (#RRGGBB)"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:927
+#: rustconn/src/dialogs/widgets.rs:957
 msgid "Background colour (#RRGGBB)"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:934
+#: rustconn/src/dialogs/widgets.rs:964
 msgid ""
 "Hexadecimal colour such as #00AAFF, drawn as an underline under the match. "
 "Leave empty for none. To recolour the text itself, give the connection an "
 "Output Filter such as ChromaTerm."
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:941
+#: rustconn/src/dialogs/widgets.rs:971
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:1074
+#: rustconn/src/dialogs/widgets.rs:1104
 msgid "JavaScript"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:1075
+#: rustconn/src/dialogs/widgets.rs:1105
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:1076
+#: rustconn/src/dialogs/widgets.rs:1106
 msgid "Navigation Toolbar"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:1078
+#: rustconn/src/dialogs/widgets.rs:1108
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:1080
+#: rustconn/src/dialogs/widgets.rs:1110
 msgid "Private / Incognito Mode"
 msgstr ""
 
-#: rustconn/src/dialogs/widgets.rs:1081
+#: rustconn/src/dialogs/widgets.rs:1111
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr ""
 
