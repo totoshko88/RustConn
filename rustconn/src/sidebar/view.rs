@@ -234,7 +234,7 @@ pub fn show_context_menu_for_connection_item(
 pub fn setup_list_item(
     _factory: &SignalListItemFactory,
     list_item: &ListItem,
-    _group_ops_mode: bool,
+    group_ops_mode: bool,
     recording_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     multi_session_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
 ) {
@@ -350,6 +350,24 @@ pub fn setup_list_item(
         "Part of a split view",
     ))]);
     content_box.append(&split_marker);
+
+    // Selection mode shows a tick per row. It only mirrors the row's selected
+    // state (the row click does the selecting), so it takes no focus and no
+    // clicks, and a screen reader reads the selection from the row itself.
+    // shortcut: trailing, not leading: bind() prepends the emoji glyph and
+    // reads children by position; move it once the row has named slots.
+    if group_ops_mode {
+        let check = gtk4::CheckButton::new();
+        check.set_can_focus(false);
+        check.set_can_target(false);
+        check.add_css_class("selection-check");
+        check.update_state(&[gtk4::accessible::State::Hidden(true)]);
+        list_item
+            .bind_property("selected", &check, "active")
+            .sync_create()
+            .build();
+        content_box.append(&check);
+    }
 
     expander.set_child(Some(&content_box));
     list_item.set_child(Some(&expander));

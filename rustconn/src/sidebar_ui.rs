@@ -1278,13 +1278,24 @@ pub fn get_protocol_icon(protocol: &str) -> &'static str {
 
 /// Creates the bulk actions toolbar for group operations mode
 ///
-/// Compact icon-only pill buttons matching the protocol filter bar style.
+/// Compact icon-only pill buttons matching the protocol filter bar style, under
+/// a line that counts the selected rows. Returns the container and that label.
 #[must_use]
-pub fn create_bulk_actions_bar() -> GtkBox {
+pub fn create_bulk_actions_bar() -> (GtkBox, Label) {
+    let counter = Label::new(None);
+    counter.add_css_class("dim-label");
+    counter.add_css_class("caption");
+    counter.set_xalign(0.0);
+    counter.set_margin_start(12);
+    counter.set_margin_top(6);
+    counter.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+    // Announced by screen readers when the count changes.
+    counter.update_property(&[gtk4::accessible::Property::Label(&i18n("Selected items"))]);
+
     let bar = GtkBox::new(Orientation::Horizontal, 0);
     bar.set_margin_start(6);
     bar.set_margin_end(6);
-    bar.set_margin_top(6);
+    bar.set_margin_top(2);
     bar.set_margin_bottom(6);
     bar.set_hexpand(true);
     bar.set_homogeneous(true);
@@ -1348,7 +1359,10 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     ))]);
     bar.append(&delete_button);
 
-    bar
+    let container = GtkBox::new(Orientation::Vertical, 0);
+    container.append(&counter);
+    container.append(&bar);
+    (container, counter)
 }
 
 /// Creates the sidebar bottom toolbar with secondary actions

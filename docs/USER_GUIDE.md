@@ -2758,8 +2758,9 @@ A folder cannot be dropped into itself or into one of its own subfolders — suc
 
 Group Operations Mode enables bulk actions on multiple connections at once. It is
 toggled with the **Select Connections** button in the sidebar's bottom toolbar. The
-mode switches the list to multi-selection and shows the bulk-actions bar; it adds
-no checkboxes.
+mode switches the list to multi-selection and shows the bulk-actions bar. Each row
+shows a tick at its right edge while it is selected, and the line above the bar
+counts the selected items (**Selected: 3**).
 
 **Available actions in the bulk-actions bar:**
 
@@ -2778,7 +2779,7 @@ no checkboxes.
 2. Select rows with **Ctrl+click** (add or remove one) or **Shift+click** (a range), or use **Select All**
 3. Choose an action in the bar. Right-clicking a selected row keeps the selection and opens a menu with the same bulk actions plus **Run Local Script…**
 4. Confirm the action in the dialog
-5. Click **Select Connections** again to leave the mode. **Escape** only clears the selection
+5. Press **Escape** or click **Select Connections** again to leave the mode and drop the selection (use **Clear Selection** to stay in the mode)
 
 **Batch Edit:** the pencil button opens **Fields to change**. Tick the check box in front of a field to change it, fill the field in, and press **Apply**; unticked fields are left alone. **Group** moves the connections (a password stored in the Vault moves with them), **Tags** *replaces* the existing tags, and **Icon** sets an emoji or GTK icon name (empty clears it). A toast offers **Undo** for ten seconds.
 

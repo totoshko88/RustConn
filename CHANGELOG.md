@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 - **Import lists a warning for entries that fail validation** — an imported connection with no name, no host, port 0 or a jump host that is not in the import, a group with no name, or a snippet with no name or command is still imported unchanged and gets a line in the result's **Warnings** list (and in `rustconn-cli import`). Before, the GUI skipped such a connection and only logged it. Loading `connections.toml` logs the same problems without changing the data. Warnings carry no host, user or password. (`rustconn-core/src/import/validation.rs`, `rustconn-core/src/connection/manager.rs`, `rustconn/src/dialogs/import/mod.rs`, `rustconn-cli/src/commands/export_import.rs`)
 - **Starting and stopping a share no longer freezes the window** — the relay is started and stopped off the main loop. (`rustconn/src/window/network_tools/share.rs`)
+- **Selection mode counts and ticks, and Escape leaves it** — the bulk-actions bar shows **Selected: N**, each selected row shows a tick, and **Escape** in the list leaves the mode (it used to clear the selection only, so the mode stayed on with no hint). **Clear Selection** still keeps the mode.
 
 ## [0.25.6] - 2026-11-20
 
