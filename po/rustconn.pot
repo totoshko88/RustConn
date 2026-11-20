@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 09:56+0400\n"
+"POT-Creation-Date: 2026-11-20 22:59+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,11 +68,12 @@ msgstr ""
 #: rustconn/src/window/key_setup.rs:1022 rustconn/src/window/mc_launch.rs:453
 #: rustconn/src/window/mod.rs:3823 rustconn/src/window/mod.rs:3887
 #: rustconn/src/window/mod.rs:4918 rustconn/src/window/mod.rs:6013
-#: rustconn/src/window/network_tools.rs:282
-#: rustconn/src/window/network_tools.rs:628
-#: rustconn/src/window/network_tools.rs:812
-#: rustconn/src/window/network_tools.rs:949
-#: rustconn/src/window/network_tools.rs:1012
+#: rustconn/src/window/network_tools/remote_edit.rs:78
+#: rustconn/src/window/network_tools/remote_edit.rs:141
+#: rustconn/src/window/network_tools/share.rs:76
+#: rustconn/src/window/network_tools/share.rs:422
+#: rustconn/src/window/network_tools/tftp.rs:59
+#: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
 #: rustconn/src/window/operations.rs:972 rustconn/src/window/operations.rs:1158
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
@@ -165,9 +166,10 @@ msgstr ""
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/split_view/adapter.rs:1377
 #: rustconn/src/terminal/tab_menu.rs:805 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4919 rustconn/src/window/network_tools.rs:374
-#: rustconn/src/window/network_tools.rs:601
-#: rustconn/src/window/network_tools.rs:866
+#: rustconn/src/window/mod.rs:4919
+#: rustconn/src/window/network_tools/share.rs:168
+#: rustconn/src/window/network_tools/share.rs:395
+#: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr ""
 
@@ -310,7 +312,7 @@ msgstr ""
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:6014
-#: rustconn/src/window/network_tools.rs:629
+#: rustconn/src/window/network_tools/share.rs:423
 msgid "Connect"
 msgstr ""
 
@@ -734,8 +736,8 @@ msgid "HMAC Key"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:556
-#: rustconn/src/window/network_tools.rs:231
-#: rustconn/src/window/network_tools.rs:235
+#: rustconn/src/window/network_tools.rs:208
+#: rustconn/src/window/network_tools.rs:212
 msgid "Access"
 msgstr ""
 
@@ -2149,8 +2151,8 @@ msgstr ""
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:113
 #: rustconn/src/dialogs/export.rs:396 rustconn/src/dialogs/template.rs:558
 #: rustconn/src/dialogs/wol.rs:93 rustconn/src/window/edit_dialogs.rs:853
-#: rustconn/src/window/network_tools.rs:775
-#: rustconn/src/window/network_tools.rs:778
+#: rustconn/src/window/network_tools/tftp.rs:82
+#: rustconn/src/window/network_tools/tftp.rs:85
 msgid "Port"
 msgstr ""
 
@@ -10088,7 +10090,8 @@ msgstr ""
 
 #: rustconn/src/dialogs/template_manager.rs:110 rustconn/src/sidebar_ui.rs:457
 #: rustconn/src/sidebar_ui.rs:681 rustconn/src/smart_folder_ui.rs:414
-#: rustconn/src/smart_folder_ui.rs:453 rustconn/src/window/network_tools.rs:950
+#: rustconn/src/smart_folder_ui.rs:453
+#: rustconn/src/window/network_tools/remote_edit.rs:79
 #: rustconn/src/window/snippets.rs:407
 msgid "Edit"
 msgstr ""
@@ -14235,257 +14238,280 @@ msgstr ""
 msgid "Network changed — reconnecting affected sessions…"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:118
+#: rustconn/src/window/network_tools.rs:92
 #: rustconn/src/window/script_actions.rs:99
 msgid "That connection has no open session"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:191
-#: rustconn/src/window/network_tools.rs:927
+#: rustconn/src/window/network_tools.rs:165
+#: rustconn/src/window/network_tools/remote_edit.rs:53
 msgid "Remote file editor"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:192
-#: rustconn/src/window/network_tools.rs:928
+#: rustconn/src/window/network_tools.rs:166
+#: rustconn/src/window/network_tools/remote_edit.rs:54
 msgid "Connection not found"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:210
+#: rustconn/src/window/network_tools.rs:187
 msgid "This computer only"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:221
+#: rustconn/src/window/network_tools.rs:198
 msgid "Internet — WebTransport in a browser"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:260
+#: rustconn/src/window/network_tools/remote_edit.rs:38
+msgid "Select an SSH terminal before editing a remote file"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:70
+msgid "Edit remote file"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:72
+msgid ""
+"The file is downloaded to a temporary copy and uploaded when you press Save."
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:101
+#: rustconn/src/window/network_tools/remote_edit.rs:107
+msgid "Could not open the remote file"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:133
+msgid "Remote file opened"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:135
+msgid "Editing {}. Press Upload when the file is saved."
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:142
+msgid "Upload"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:158
+msgid "The file was not changed"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:167
+msgid "Remote file uploaded"
+msgstr ""
+
+#: rustconn/src/window/network_tools/remote_edit.rs:176
+#: rustconn/src/window/network_tools/remote_edit.rs:183
+msgid "Could not upload the remote file"
+msgstr ""
+
+#: rustconn/src/window/network_tools/share.rs:54
 msgid "Select a terminal before sharing a session"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:268
+#: rustconn/src/window/network_tools/share.rs:62
 msgid ""
 "Choose this computer only, the interface whose address the link should use, "
 "or the internet over WebTransport."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:274
+#: rustconn/src/window/network_tools/share.rs:68
 msgid "Share this session"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:276
+#: rustconn/src/window/network_tools/share.rs:70
 msgid ""
 "The viewer gets the live terminal output read-only. Local and LAN links are "
 "unencrypted; the internet link opens in a browser over WebTransport (QUIC) "
 "and pins this share's certificate."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:283
+#: rustconn/src/window/network_tools/share.rs:77
 msgid "Start sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:330
-#: rustconn/src/window/network_tools.rs:336
-#: rustconn/src/window/network_tools.rs:422
+#: rustconn/src/window/network_tools/share.rs:124
+#: rustconn/src/window/network_tools/share.rs:130
+#: rustconn/src/window/network_tools/share.rs:216
 msgid "Could not start session sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:357
+#: rustconn/src/window/network_tools/share.rs:151
 msgid ""
 "Anyone with this read-only link on the network can watch the session: {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:362
+#: rustconn/src/window/network_tools/share.rs:156
 msgid ""
 "Anyone with this read-only link on this computer can watch the session: {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:367
-#: rustconn/src/window/network_tools.rs:593
-#: rustconn/src/window/network_tools.rs:1096
+#: rustconn/src/window/network_tools/share.rs:161
+#: rustconn/src/window/network_tools/share.rs:387
+#: rustconn/src/window/network_tools/share.rs:577
 msgid "Session shared"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:372
-#: rustconn/src/window/network_tools.rs:599
+#: rustconn/src/window/network_tools/share.rs:166
+#: rustconn/src/window/network_tools/share.rs:393
 msgid "Copy link"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:373
-#: rustconn/src/window/network_tools.rs:600
+#: rustconn/src/window/network_tools/share.rs:167
+#: rustconn/src/window/network_tools/share.rs:394
 msgid "Stop sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:382
-#: rustconn/src/window/network_tools.rs:508
+#: rustconn/src/window/network_tools/share.rs:176
+#: rustconn/src/window/network_tools/share.rs:302
 msgid "Link copied to clipboard"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:460
+#: rustconn/src/window/network_tools/share.rs:254
 msgid "Public endpoint (STUN)"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:462
+#: rustconn/src/window/network_tools/share.rs:256
 msgid "Endpoint (local network)"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:468
+#: rustconn/src/window/network_tools/share.rs:262
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:473
+#: rustconn/src/window/network_tools/share.rs:267
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:479
+#: rustconn/src/window/network_tools/share.rs:273
 msgid ""
 "Open the link in a current browser, or join it from another RustConn with "
 "“Join Shared Session…”. The browser warns once about the self-signed "
 "certificate; RustConn pins it automatically."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:483
+#: rustconn/src/window/network_tools/share.rs:277
 msgid ""
 "STUN did not answer, so this link only reaches viewers on the local network. "
 "Open it in a current browser, or join it from another RustConn with “Join "
 "Shared Session…”."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:557
+#: rustconn/src/window/network_tools/share.rs:351
 msgid "Read-only link"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:615
+#: rustconn/src/window/network_tools/share.rs:409
 msgid "Paste an https:// share link"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:617
+#: rustconn/src/window/network_tools/share.rs:411
 msgid "Share link"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:620
+#: rustconn/src/window/network_tools/share.rs:414
 msgid "Join a shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:622
+#: rustconn/src/window/network_tools/share.rs:416
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:642
-#: rustconn/src/window/network_tools.rs:671
+#: rustconn/src/window/network_tools/share.rs:436
+#: rustconn/src/window/network_tools/share.rs:465
 msgid "Could not join the shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:711
+#: rustconn/src/window/network_tools/share.rs:505
 msgid "Read-only shared session from {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:717
-#: rustconn/src/window/network_tools.rs:726
-#: rustconn/src/window/network_tools.rs:1121
+#: rustconn/src/window/network_tools/share.rs:511
+#: rustconn/src/window/network_tools/share.rs:520
+#: rustconn/src/window/network_tools/share.rs:602
 msgid "Shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:718
+#: rustconn/src/window/network_tools/share.rs:512
 msgid "Read-only from {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:784
+#: rustconn/src/window/network_tools/tftp.rs:51
+msgid "Share this folder?"
+msgstr ""
+
+#: rustconn/src/window/network_tools/tftp.rs:53
+msgid ""
+"{} is your home folder or holds your SSH keys. Anyone who can reach the "
+"server could read private files in it. Choose a folder that has only the "
+"files you want to share."
+msgstr ""
+
+#: rustconn/src/window/network_tools/tftp.rs:60
+msgid "Share anyway"
+msgstr ""
+
+#: rustconn/src/window/network_tools/tftp.rs:76
+msgid "6969 — unprivileged"
+msgstr ""
+
+#: rustconn/src/window/network_tools/tftp.rs:77
+msgid "69 — standard TFTP (needs privileges)"
+msgstr ""
+
+#: rustconn/src/window/network_tools/tftp.rs:91
 msgid ""
 "Port 69 is the standard; Linux, macOS and FreeBSD require elevated rights "
 "for it."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:795
+#: rustconn/src/window/network_tools/tftp.rs:102
 msgid "Bind loopback or the interface a device connects to."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:803
+#: rustconn/src/window/network_tools/tftp.rs:110
 msgid "TFTP server"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:805
+#: rustconn/src/window/network_tools/tftp.rs:112
 msgid ""
 "Serve {} read-only. Choose the port and the interface a device will reach."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:813
+#: rustconn/src/window/network_tools/tftp.rs:120
 msgid "Start server"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:841
-#: rustconn/src/window/network_tools.rs:845
+#: rustconn/src/window/network_tools/tftp.rs:148
+#: rustconn/src/window/network_tools/tftp.rs:152
 msgid "Could not start TFTP server"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:856
+#: rustconn/src/window/network_tools/tftp.rs:163
 msgid "TFTP server running"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:858
+#: rustconn/src/window/network_tools/tftp.rs:165
 msgid "Read-only TFTP is listening on {} for the chosen folder."
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:864
+#: rustconn/src/window/network_tools/tftp.rs:171
 msgid "Copy address"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:865
+#: rustconn/src/window/network_tools/tftp.rs:172
 msgid "Stop server"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:893
+#: rustconn/src/window/network_tools/tftp.rs:200
 msgid ""
 "Port 69 needs elevated rights. Start RustConn as root/administrator, grant "
 "CAP_NET_BIND_SERVICE on Linux, or choose port 6969."
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:912
-msgid "Select an SSH terminal before editing a remote file"
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:941
-msgid "Edit remote file"
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:943
-msgid ""
-"The file is downloaded to a temporary copy and uploaded when you press Save."
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:972
-#: rustconn/src/window/network_tools.rs:978
-msgid "Could not open the remote file"
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:1004
-msgid "Remote file opened"
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:1006
-msgid "Editing {}. Press Upload when the file is saved."
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:1013
-msgid "Upload"
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:1029
-msgid "The file was not changed"
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:1038
-msgid "Remote file uploaded"
-msgstr ""
-
-#: rustconn/src/window/network_tools.rs:1047
-#: rustconn/src/window/network_tools.rs:1054
-msgid "Could not upload the remote file"
 msgstr ""
 
 #: rustconn/src/window/operations.rs:79
