@@ -369,6 +369,7 @@ pub fn show_context_menu_for_item(
     can_run_script: bool,
     offers_key_setup: bool,
     can_tunnel_browser: bool,
+    has_wol: bool,
     is_connected: bool,
     is_recording: bool,
     has_external_session: bool,
@@ -606,7 +607,9 @@ pub fn show_context_menu_for_item(
                 "open-browser-via-tunnel",
             ));
         }
-        items.push(ContextMenuItem::action(&i18n("Wake-on-LAN"), "wake-on-lan"));
+        if has_wol {
+            items.push(ContextMenuItem::action(&i18n("Wake-on-LAN"), "wake-on-lan"));
+        }
         items.push(ContextMenuItem::action(
             &i18n("Check if Online"),
             "check-host-online",

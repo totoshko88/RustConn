@@ -2291,6 +2291,11 @@ mod imp {
         /// when the row is built, so the menu and the action share one predicate.
         #[property(get, set)]
         browser_tunnel: RefCell<bool>,
+        /// Whether the connection has a Wake-on-LAN configuration (MAC
+        /// address). Without one the menu has nothing to send, so the
+        /// "Wake-on-LAN" item is left out.
+        #[property(get, set)]
+        wol_configured: RefCell<bool>,
         /// Split-pane color index, or `-1` when the connection is not part of
         /// a split (Phase 2, R6.2). Drives a small filled-square marker in the
         /// sidebar row tinted with the matching split pane color; the square
@@ -2323,6 +2328,7 @@ mod imp {
                 is_recording: RefCell::default(),
                 external_session: RefCell::default(),
                 browser_tunnel: RefCell::default(),
+                wol_configured: RefCell::default(),
                 // -1 = not in a split; keep the stored default consistent with
                 // the `split_color` ParamSpec default so a fresh row never
                 // shows a (blue, index 0) split marker before joining a split.

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.6] - Unreleased
 
+### Added
+
+- **Open SFTP in the tab menu** — the right-click menu of an SSH or SFTP tab has **Open SFTP** next to **Edit Connection…**, so the file manager or mc opens for the tab's connection without going back to the sidebar. It asks for the key passphrase first when needed, as the sidebar item does (#240). (`rustconn/src/terminal/tab_menu.rs`, `rustconn/src/window/edit_actions.rs`)
+
+### Changed
+
+- **Wake-on-LAN only where it can work** — the sidebar connection menu shows **Wake-on-LAN** only for a connection that has a Wake-on-LAN configuration (MAC address). Before, every connection offered it and a click without one ended in a "No Wake-on-LAN configured" toast. The smart folder menu still shows it for every connection. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/window/sorting.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/sidebar_ui.rs`)
+
 ### Fixed
 
 - **Embedded RDP overflowed the window at Display Scale above 100%** — after a resize or the first layout pass the desktop was drawn at its full pixel size and spilled past the right and bottom edges. A new frame buffer surface lost its device scale because the draw function remembered the old value; the buffer now keeps the scale itself (#439). (`rustconn/src/cairo_buffer.rs`, `rustconn/src/embedded_rdp/drawing.rs`)

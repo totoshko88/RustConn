@@ -48,6 +48,9 @@ pub struct TabMenuState {
     /// scrollback can be offered for saving (issue #371). An embedded viewer
     /// (RDP/VNC/Web) and the Welcome tab have no VTE buffer and clear this.
     pub is_terminal: bool,
+    /// The tab's saved connection is SSH or SFTP, so **Open SFTP** is offered,
+    /// as in the sidebar's connection menu (issue #240). Needs `connection`.
+    pub offers_sftp: bool,
     /// The session the tab is named after is a local shell, whose title is the
     /// only thing that tells it apart from another one, and which therefore may
     /// be relabelled. For a split tab that is the focused pane's session, not
@@ -273,6 +276,11 @@ impl TerminalNotebook {
                             .is_some_and(|sid| terminals_for_menu.borrow().contains_key(&sid)),
                         // Asks about the session the tab is named after, the
                         // same one the action renames (issue #421).
+                        offers_sftp: session_id.is_some_and(|sid| {
+                            info_ref
+                                .get(&sid)
+                                .is_some_and(|i| i.protocol == "ssh" || i.protocol == "sftp")
+                        }),
                         is_local_shell: session_id
                             .and_then(|sid| {
                                 super::split_title::rename_tab_target(
@@ -1380,6 +1388,16 @@ impl TerminalNotebook {
                 Some(&connection_id.to_string().to_variant()),
             );
             edit_section.append_item(&edit);
+            // Open SFTP for the tab's connection, as the sidebar menu does.
+            // Same label, so the existing translations apply (issue #240).
+            if state.offers_sftp {
+                let sftp = gio::MenuItem::new(Some(&i18n("Open SFTP")), None);
+                sftp.set_action_and_target_value(
+                    Some("win.open-sftp-by-id"),
+                    Some(&connection_id.to_string().to_variant()),
+                );
+                edit_section.append_item(&sftp);
+            }
             menu.append_section(None, &edit_section);
         }
 
@@ -1507,6 +1525,23 @@ mod tests {
 
         let hidden = actions_for(super::TabMenuState::default());
         assert!(!hidden.iter().any(|a| a == "win.open-new-session-by-id"));
+    }
+
+    #[test]
+    fn open_sftp_is_offered_only_for_an_ssh_tab_with_a_saved_connection() {
+        // Issue #240.
+        let offered = actions_for(super::TabMenuState {
+            connection: Some(uuid::Uuid::new_v4()),
+            offers_sftp: true,
+            ..Default::default()
+        });
+        assert!(offered.iter().any(|a| a == "win.open-sftp-by-id"));
+
+        let hidden = actions_for(super::TabMenuState {
+            connection: Some(uuid::Uuid::new_v4()),
+            ..Default::default()
+        });
+        assert!(!hidden.iter().any(|a| a == "win.open-sftp-by-id"));
     }
 
     #[test]
