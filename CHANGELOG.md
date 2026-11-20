@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.26.0] - 2026-11-20
 
 ### Added
 - **Built-in script recording (Phase 0 of #373)** — the terminal right-click menu gains **Record Script…**, which captures the keystrokes you type in a session and writes them to `~/.config/rustconn/scripts/<connection>-<YYYYMMDD-HHMMSS>.rsc` as readable, diffable text (a `-1`, `-2` suffix prevents overwriting an earlier recording). Stopping is the same menu item, relabelled **Stop Script Recording**, and reports the step count and path in a toast. The file is line-based (`send` / `wait` verbs) and each `send` carries the existing `KeySequence` syntax, so `{ENTER}`, `{WAIT:500}` and `${var}` mean the same thing in a script as they do in a connection's key sequence — one grammar, not two. The recorder lives in `rustconn-core` (`automation::script`) and emits the same `.rsc` source the existing script engine parses, so a recorded file opens in the Scripts dialog unchanged. The action is deliberately **not** in the app menu: it targets "the session you are looking at", which is the same ambiguity that keeps `execute-snippet` out of it, and here the cost of guessing wrong is a file on disk full of one host's commands. (`rustconn-core/src/automation/script.rs`, `rustconn/src/terminal/script_recorder.rs`, `rustconn/src/window/script_actions.rs`)
