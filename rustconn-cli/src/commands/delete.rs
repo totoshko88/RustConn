@@ -7,6 +7,9 @@ use crate::util::{confirm_on_terminal, create_config_manager, find_connection};
 
 /// Delete connection command handler
 ///
+/// A connection whose password lives in the vault loses that credential too
+/// (builds with `secret-management`); a failure there is a warning.
+///
 /// # Errors
 ///
 /// Returns:
@@ -44,6 +47,20 @@ pub(super) fn cmd_delete(
         return Ok(());
     }
 
+    // The vault entry goes first: once the connection is saved away its key can
+    // no longer be resolved, and a credential left behind is an orphaned secret.
+    // A failure is reported, not fatal; the deletion itself was confirmed.
+    #[cfg(feature = "secret-management")]
+    if let Err(e) = super::secret::remove_credentials_of_deleted(config_path, &id.to_string()) {
+        eprintln!("Warning: the stored credentials of '{conn_name}' were not removed: {e}");
+    }
+    #[cfg(not(feature = "secret-management"))]
+    if connection.password_source == rustconn_core::models::PasswordSource::Vault {
+        eprintln!(
+            "Warning: '{conn_name}' keeps its stored credentials in the vault; \
+             this build has no secret-management feature to remove them."
+        );
+    }
     let mut connections = connections;
     connections.retain(|c| c.id != id);
 

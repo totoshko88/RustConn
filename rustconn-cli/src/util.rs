@@ -308,6 +308,21 @@ pub fn parse_protocol_type(s: &str) -> Result<rustconn_core::models::ProtocolTyp
     }
 }
 
+/// The port as a human-readable cell: `-` for a connection that has none.
+///
+/// An AWS SSM connection reaches its instance through the SSM API, so the
+/// stored `22` is a placeholder and printing it misleads. Machine-readable
+/// output (JSON, CSV) keeps the stored number.
+pub fn display_port(connection: &rustconn_core::models::Connection) -> String {
+    use rustconn_core::models::{ProtocolConfig, ZeroTrustProviderConfig};
+    if let ProtocolConfig::ZeroTrust(zt) = &connection.protocol_config
+        && matches!(zt.provider_config, ZeroTrustProviderConfig::AwsSsm(_))
+    {
+        return "-".to_string();
+    }
+    connection.port.to_string()
+}
+
 /// Get the default port for a protocol
 pub fn default_port_for_protocol(proto: rustconn_core::models::ProtocolType) -> u16 {
     use rustconn_core::models::ProtocolType;
@@ -378,5 +393,27 @@ mod protocol_parse_tests {
         );
         assert_eq!(parse_protocol_type("zt").unwrap(), ProtocolType::ZeroTrust);
         assert!(parse_protocol_type("nonsense").is_err());
+    }
+
+    #[test]
+    fn display_port_is_a_dash_only_for_aws_ssm() {
+        use rustconn_core::models::{
+            AwsSsmConfig, Connection, ProtocolConfig, ZeroTrustConfig, ZeroTrustProvider,
+            ZeroTrustProviderConfig,
+        };
+        let ssh = Connection::new_ssh("a".into(), "h".into(), 2222);
+        assert_eq!(super::display_port(&ssh), "2222");
+
+        let mut ssm = Connection::new_ssh("b".into(), "i-0abc".into(), 22);
+        ssm.protocol_config = ProtocolConfig::ZeroTrust(ZeroTrustConfig {
+            provider: ZeroTrustProvider::AwsSsm,
+            provider_config: ZeroTrustProviderConfig::AwsSsm(AwsSsmConfig {
+                target: "i-0abc".into(),
+                profile: "default".into(),
+                region: None,
+            }),
+            custom_args: Vec::new(),
+        });
+        assert_eq!(super::display_port(&ssm), "-");
     }
 }

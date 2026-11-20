@@ -194,6 +194,12 @@ fn print_json(
             if config.disable_nla {
                 map.insert("nla_disabled".to_string(), serde_json::Value::Bool(true));
             }
+            if config.ignore_certificate {
+                map.insert(
+                    "ignore_certificate".to_string(),
+                    serde_json::Value::Bool(true),
+                );
+            }
             map.insert(
                 "dynamic_resolution".to_string(),
                 serde_json::Value::Bool(config.dynamic_resolution),
@@ -280,6 +286,14 @@ fn print_json(
                 "provider".to_string(),
                 serde_json::Value::String(zt_config.provider.display_name().to_string()),
             );
+            if let rustconn_core::models::ZeroTrustProviderConfig::AwsSsm(ref cfg) =
+                zt_config.provider_config
+            {
+                map.insert("aws_profile".to_string(), serde_json::json!(cfg.profile));
+                if let Some(ref region) = cfg.region {
+                    map.insert("aws_region".to_string(), serde_json::json!(region));
+                }
+            }
             if !zt_config.custom_args.is_empty() {
                 map.insert(
                     "custom_args".to_string(),
@@ -444,7 +458,7 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
     println!("  ID:       {}", connection.id);
     println!("  Name:     {}", connection.name);
     println!("  Host:     {}", connection.host);
-    println!("  Port:     {}", connection.port);
+    println!("  Port:     {}", crate::util::display_port(connection));
     println!("  Protocol: {}", connection.protocol);
 
     if let Some(ref desc) = connection.description {
@@ -521,6 +535,9 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
             if config.disable_nla {
                 println!("  NLA:      disabled");
             }
+            if config.ignore_certificate {
+                println!("  Certificate: not verified");
+            }
             if !config.dynamic_resolution {
                 println!("  Dynamic Resolution: disabled");
             }
@@ -594,6 +611,14 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
         }
         ProtocolConfig::ZeroTrust(ref zt_config) => {
             println!("  Provider: {}", zt_config.provider);
+            if let rustconn_core::models::ZeroTrustProviderConfig::AwsSsm(ref cfg) =
+                zt_config.provider_config
+            {
+                println!("  AWS Profile: {}", cfg.profile);
+                if let Some(ref region) = cfg.region {
+                    println!("  AWS Region: {region}");
+                }
+            }
             if let rustconn_core::models::ZeroTrustProviderConfig::HoopDev(ref cfg) =
                 zt_config.provider_config
             {

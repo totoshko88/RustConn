@@ -5,6 +5,28 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.6] - 2026-11-20
+
+### Added
+
+- **Open SFTP in the tab menu** — the right-click menu of an SSH or SFTP tab has **Open SFTP** next to **Edit Connection…**, so the file manager or mc opens for the tab's connection without going back to the sidebar. It asks for the key passphrase first when needed, as the sidebar item does (#240). (`rustconn/src/terminal/tab_menu.rs`, `rustconn/src/window/edit_actions.rs`)
+
+### Changed
+
+- **Wake-on-LAN only where it can work** — the sidebar connection menu shows **Wake-on-LAN** only for a connection that has a Wake-on-LAN configuration (MAC address). Before, every connection offered it and a click without one ended in a "No Wake-on-LAN configured" toast. The connection menu inside a smart folder follows the same rule. (`rustconn/src/sidebar/mod.rs`, `rustconn/src/smart_folder_ui.rs`, `rustconn/src/window/sorting.rs`, `rustconn/src/sidebar/view.rs`, `rustconn/src/sidebar_ui.rs`)
+
+### Fixed
+
+- **`rustconn-cli test` no longer fails Zero Trust and serial connections** — `test` ran a TCP probe on the host, which for AWS SSM is an instance ID, so it ended in `DNS resolution failed: i-0…`. Zero Trust and serial connections are now reported as skipped (a `skipped` detail, no latency, still a pass) and `test all` no longer counts them as failures. (`rustconn-core/src/testing/mod.rs`, `rustconn-cli/src/commands/test.rs`)
+- **`rustconn-cli delete` left the stored password behind** — deleting a connection whose password source is the vault removed it from the configuration but kept its credential in the secret backend. Builds with `secret-management` now remove that credential first (a key shared by another connection is kept, a backend failure is a warning and the connection is still deleted); a build without it warns that the credential stays. (`rustconn-cli/src/commands/delete.rs`, `rustconn-cli/src/commands/secret.rs`)
+- **Embedded RDP overflowed the window at Display Scale above 100%** — after a resize or the first layout pass the desktop was drawn at its full pixel size and spilled past the right and bottom edges. A new frame buffer surface lost its device scale because the draw function remembered the old value; the buffer now keeps the scale itself (#439). (`rustconn/src/cairo_buffer.rs`, `rustconn/src/embedded_rdp/drawing.rs`)
+- **Kerberos NLA failed with "invalid MIC token sequence number"** — the retry through external FreeRDP was pinned to `/sec:tls`, which a server that requires NLA refuses. This error now hands off once to external FreeRDP with `/sec:nla`, which keeps NLA on and takes the KDC from the system krb5 configuration. The `/sec:tls` retry is skipped for it. If the NLA retry fails too, the usual error is shown and the session does not loop (#351). (`rustconn-core/src/rdp_client/failure.rs`, `rustconn/src/embedded_rdp/connection.rs`, `docs/USER_GUIDE.md`)
+### Improved
+- **`rustconn-cli show` lists more settings** — an AWS SSM connection shows its profile and region, and an RDP connection shows when its certificate is not verified, in the table and in JSON. (`rustconn-cli/src/commands/show.rs`)
+- **No placeholder port for AWS SSM** — `add`, `show` and `list` print `-` (and `add` only the instance ID) instead of the stored `22` for an AWS SSM connection. JSON and CSV keep the number. (`rustconn-cli/src/util.rs`, `rustconn-cli/src/commands/add.rs`, `rustconn-cli/src/commands/list.rs`, `rustconn-cli/src/commands/show.rs`)
+### Dependencies
+- **ashpd 0.14.0 → 0.14.1**, **libbz2-rs-sys 0.2.6 → 0.2.7**, **oo7 0.7.1 → 0.7.2**, **pin-project-lite 0.2.17 → 0.2.18**, **zcheapstr 1.2.0 → 1.3.0**, **zip 9.7.0 → 9.8.0**
+
 ## [0.25.5] - 2026-11-19
 
 ### Added

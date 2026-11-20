@@ -136,7 +136,10 @@ pub(super) fn format_table(connections: &[&Connection]) -> String {
             output,
             "{:<name_width$}  {:<host_width$}  \
              {:<port_width$}  {:<protocol_width$}",
-            conn.name, conn.host, conn.port, conn.protocol
+            conn.name,
+            conn.host,
+            crate::util::display_port(conn),
+            conn.protocol
         );
     }
 

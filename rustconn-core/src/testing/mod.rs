@@ -109,6 +109,25 @@ impl TestResult {
         Self::failure(connection_id, connection_name, error.to_string())
     }
 
+    /// Creates a result for a connection that has no TCP endpoint to probe.
+    ///
+    /// The `host` of a Zero Trust connection is a resource identifier (an EC2
+    /// instance ID for AWS SSM) and a serial connection has no network address
+    /// at all, so a TCP probe would only report a bogus DNS failure. The result
+    /// counts as a pass and carries a `skipped` detail with the reason.
+    // ponytail: no per-provider reachability check (e.g. SSM ping status);
+    // add one behind the provider's own CLI when a caller needs it
+    #[must_use]
+    pub fn skipped(connection_id: Uuid, connection_name: String, reason: &str) -> Self {
+        Self::success(connection_id, connection_name, 0).with_detail("skipped", reason)
+    }
+
+    /// Returns true if the connection was not probed (see [`Self::skipped`])
+    #[must_use]
+    pub fn is_skipped(&self) -> bool {
+        self.details.contains_key("skipped")
+    }
+
     /// Adds a detail to the test result
     #[must_use]
     pub fn with_detail(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
@@ -300,6 +319,16 @@ impl ConnectionTester {
     /// A `TestResult` indicating success or failure with details
     pub async fn test_connection(&self, connection: &Connection) -> TestResult {
         let start = std::time::Instant::now();
+
+        let skip_reason = match connection.protocol {
+            ProtocolType::ZeroTrust => Some("host is a resource ID, not a network address"),
+            ProtocolType::Serial => Some("serial device, no network address to probe"),
+            _ => None,
+        };
+        if let Some(reason) = skip_reason {
+            return TestResult::skipped(connection.id, connection.name.clone(), reason)
+                .with_detail("protocol", connection.protocol.to_string());
+        }
 
         // First test port connectivity
         match self.test_port(&connection.host, connection.port).await {
@@ -673,5 +702,20 @@ mod tests {
             TestError::ProtocolError("Invalid banner".to_string()).to_string(),
             "Protocol handshake failed: Invalid banner"
         );
+    }
+
+    #[tokio::test]
+    async fn zero_trust_and_serial_are_skipped_not_probed() {
+        let tester = ConnectionTester::with_timeout(Duration::from_secs(1));
+
+        let serial = Connection::new_serial("console".to_string(), "/dev/ttyUSB0".to_string());
+        let result = tester.test_connection(&serial).await;
+        assert!(result.is_success() && result.is_skipped());
+
+        let mut ssm = Connection::new_ssh("ssm".to_string(), "i-0abc".to_string(), 22);
+        ssm.protocol = ProtocolType::ZeroTrust;
+        let result = tester.test_connection(&ssm).await;
+        assert!(result.is_success() && result.is_skipped());
+        assert!(result.error.is_none());
     }
 }

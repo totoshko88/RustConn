@@ -22,6 +22,10 @@ pub struct CairoBackedBuffer {
     height: u32,
     stride: u32,
     has_data: bool,
+    /// Device scale applied to every surface this buffer creates. `resize()`
+    /// drops the surface, and a new `ImageSurface` starts at 1.0, so the scale
+    /// must live here and not only in the draw function (issue #439).
+    device_scale: std::cell::Cell<f64>,
 }
 
 impl CairoBackedBuffer {
@@ -37,6 +41,7 @@ impl CairoBackedBuffer {
             height,
             stride,
             has_data: false,
+            device_scale: std::cell::Cell::new(1.0),
         };
         buf.ensure_surface();
         buf
@@ -57,10 +62,27 @@ impl CairoBackedBuffer {
             crate::utils::stride_to_i32(self.stride),
         ) {
             Ok(s) => {
+                let scale = self.device_scale.get();
+                if (scale - 1.0).abs() > f64::EPSILON {
+                    s.set_device_scale(scale, scale);
+                }
                 self.surface = Some(s);
             }
             Err(e) => {
                 tracing::warn!("Failed to create Cairo surface: {e}");
+            }
+        }
+    }
+
+    /// Sets the device scale of the current and every future surface.
+    ///
+    /// Cheap when the value is unchanged, so it can be called on each draw
+    /// (Cairo drops its pattern caches on every `set_device_scale` call).
+    pub fn set_device_scale(&self, scale: f64) {
+        if (self.device_scale.get() - scale).abs() > f64::EPSILON {
+            self.device_scale.set(scale);
+            if let Some(ref surface) = self.surface {
+                surface.set_device_scale(scale, scale);
             }
         }
     }
@@ -246,5 +268,19 @@ impl CairoBackedBuffer {
             surface.mark_dirty();
         }
         self.has_data = true;
+    }
+}
+
+#[cfg(test)]
+mod device_scale_tests {
+    use super::CairoBackedBuffer;
+
+    #[test]
+    fn device_scale_survives_resize() {
+        let mut buf = CairoBackedBuffer::new(100, 100);
+        buf.set_device_scale(1.5);
+        buf.resize(200, 120);
+        let s = buf.surface().expect("surface");
+        assert!((s.device_scale().0 - 1.5).abs() < f64::EPSILON);
     }
 }

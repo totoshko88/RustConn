@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.25.5** | Command-line interface for RustConn connection management
+**Version 0.25.6** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -588,6 +588,9 @@ rustconn-cli test all --timeout 5            # Custom timeout (seconds, default:
 rustconn-cli test all --format json          # Structured JSON with pass_rate and latency
 rustconn-cli test "My Server" --format csv   # CSV output
 ```
+
+A Zero Trust or serial connection has no network address to probe, so `test` reports it as skipped: a pass with a `skipped` detail and no latency. `test all` does not count it as a failure.
+
 
 Output shows colored pass/fail indicators with latency measurements. When testing all connections, a summary with pass rate is printed at the end. Exit code is `2` if any test fails.
 

@@ -2792,6 +2792,33 @@ Open Settings → Connection → Media Codecs to re-download it.",
         // Guarded to fire once (shared guard): if the TLS-only path is rejected
         // too, the real error — the #366 auth advice or the "server
         // incompatible" banner — surfaces instead of looping.
+        // A Kerberos CredSSP integrity (MIC) mismatch is the opposite case: the
+        // server requires NLA, so a `/sec:tls` retry is refused with
+        // HYBRID_REQUIRED_BY_SERVER, while external FreeRDP with `/sec:nla`
+        // connects (issue #351). Hand off once, keeping NLA on.
+        if !*ctx.tls_only_fallback_attempted.borrow()
+            && rustconn_core::rdp_client::warrants_nla_external_fallback(msg)
+        {
+            *ctx.tls_only_fallback_attempted.borrow_mut() = true;
+            tracing::info!(
+                protocol = "rdp",
+                error = %msg,
+                "[IronRDP] CredSSP MIC mismatch, handing off to external FreeRDP pinned to NLA (/sec:nla)"
+            );
+            if let Some(ref mut config) = *ctx.fallback_config.borrow_mut() {
+                config.security_layer = rustconn_core::models::RdpSecurityLayer::Nla;
+                config.disable_nla = false;
+            } else {
+                tracing::warn!(
+                    protocol = "rdp",
+                    "[IronRDP] no fallback config, external FreeRDP starts without the NLA pin"
+                );
+            }
+            Self::prepare_freerdp_fallback(ctx);
+            Self::launch_freerdp_fallback(ctx, msg);
+            return;
+        }
+
         let tls_only_reason = if rustconn_core::rdp_client::warrants_tls_only_fallback(msg) {
             Some("CredSSP rejected (possible KRdp/FreeRDP-3.32 HYBRID_EX regression)")
         } else if rustconn_core::rdp_client::warrants_tls_only_stall_fallback(msg) {
