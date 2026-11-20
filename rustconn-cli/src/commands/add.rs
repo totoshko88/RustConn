@@ -736,12 +736,14 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         store_password_from_stdin(config_path, &connection)?;
     }
 
+    let endpoint = match crate::util::display_port(&connection).as_str() {
+        "-" => connection.host.clone(),
+        port => format!("{}:{port}", connection.host),
+    };
     println!(
-        "Added connection '{}' ({} {}:{}) with ID {}{}",
+        "Added connection '{}' ({} {endpoint}) with ID {}{}",
         connection.name,
         connection.protocol,
-        connection.host,
-        connection.port,
         connection.id,
         group_feedback.as_deref().unwrap_or("")
     );

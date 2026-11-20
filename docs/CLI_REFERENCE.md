@@ -589,6 +589,9 @@ rustconn-cli test all --format json          # Structured JSON with pass_rate an
 rustconn-cli test "My Server" --format csv   # CSV output
 ```
 
+A Zero Trust or serial connection has no network address to probe, so `test` reports it as skipped: a pass with a `skipped` detail and no latency. `test all` does not count it as a failure.
+
+
 Output shows colored pass/fail indicators with latency measurements. When testing all connections, a summary with pass rate is printed at the end. Exit code is `2` if any test fails.
 
 JSON output for `test all` includes:
