@@ -220,7 +220,9 @@ fn stop_recording(
     // The recorder writes what the engine reads; a parse failure here would
     // hand the user a file the Scripts dialog cannot open, so refuse to save.
     rustconn_core::automation::parse_program(&contents).map_err(ScriptSaveError::Invalid)?;
-    std::fs::write(&path, contents).map_err(ScriptSaveError::Write)?;
+    // 0600: typed passwords end up in the file, so keep it private to the user.
+    rustconn_core::fs_atomic::atomic_write(&path, contents.as_bytes(), 0o600)
+        .map_err(ScriptSaveError::Write)?;
 
     tracing::info!(?path, steps = steps.len(), "Script recording written");
     Ok(RecordedScript {

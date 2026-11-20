@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use adw::prelude::*;
 use gtk4::gio;
@@ -26,15 +26,55 @@ pub(super) fn choose_tftp_directory(window: &adw::ApplicationWindow) {
         let Ok(file) = result else { return };
         let Some(path) = file.path() else { return };
         let Some(win) = win.upgrade() else { return };
-        choose_tftp_bind(&win, path);
+        if is_sensitive_folder(&path) {
+            confirm_sensitive_folder(&win, path);
+        } else {
+            choose_tftp_bind(&win, path);
+        }
     });
+}
+
+/// True for the home folder itself or a folder that holds or sits inside `.ssh`.
+fn is_sensitive_folder(path: &Path) -> bool {
+    let canonical = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    let is_home = dirs::home_dir()
+        .and_then(|home| home.canonicalize().ok())
+        .is_some_and(|home| home == canonical);
+    is_home
+        || canonical.join(".ssh").exists()
+        || canonical.components().any(|c| c.as_os_str() == ".ssh")
+}
+
+/// Warns that the chosen folder may hold private keys before it is shared.
+fn confirm_sensitive_folder(window: &adw::ApplicationWindow, root: PathBuf) {
+    let dialog = adw::AlertDialog::builder()
+        .heading(i18n("Share this folder?"))
+        .body(&i18n_f(
+            "{} is your home folder or holds your SSH keys. Anyone who can reach the server could read private files in it. Choose a folder that has only the files you want to share.",
+            &[&root.display().to_string()],
+        ))
+        .default_response("cancel")
+        .close_response("cancel")
+        .build();
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("share", &i18n("Share anyway"));
+    dialog.set_response_appearance("share", adw::ResponseAppearance::Destructive);
+    let win = window.downgrade();
+    dialog.connect_response(None, move |_, response| {
+        if response == "share"
+            && let Some(win) = win.upgrade()
+        {
+            choose_tftp_bind(&win, root.clone());
+        }
+    });
+    dialog.present(Some(window));
 }
 
 /// Asks for the port and interface, then starts the read-only server.
 fn choose_tftp_bind(window: &adw::ApplicationWindow, root: PathBuf) {
     let ports = gtk4::StringList::new(&[
-        "6969 — unprivileged",
-        "69 — standard TFTP (needs privileges)",
+        &i18n("6969 — unprivileged"),
+        &i18n("69 — standard TFTP (needs privileges)"),
     ]);
     let port = gtk4::DropDown::new(Some(ports), gtk4::Expression::NONE);
     port.set_selected(0);

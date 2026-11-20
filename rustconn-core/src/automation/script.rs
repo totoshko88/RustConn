@@ -1751,6 +1751,23 @@ pub fn render_script(name: &str, steps: &[ScriptStep], comments: &[String]) -> S
 pub struct StepRecorder {
     buffer: String,
     steps: Vec<ScriptStep>,
+    escape: EscapeState,
+}
+
+/// Where the recorder is inside a terminal escape sequence. Kept across
+/// `record` calls because VTE may split one sequence over several commits.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+enum EscapeState {
+    #[default]
+    Ground,
+    /// After `ESC`: the next character picks the sequence kind.
+    Esc,
+    /// Inside `ESC [ ...` until a final byte `@`..`~`.
+    Csi,
+    /// After `ESC O`: exactly one more character (F1-F4, application arrows).
+    Ss3,
+    /// Inside `ESC ]`, `ESC P`, `ESC X`, `ESC ^` or `ESC _` until BEL or `ESC \`.
+    String,
 }
 
 impl StepRecorder {
@@ -1764,14 +1781,26 @@ impl StepRecorder {
     ///
     /// A newline flushes the buffered text and then records an Enter press:
     /// the newline itself cannot go into `send` text, and without the explicit
-    /// `{ENTER}` a replayed command would never be submitted. Control
-    /// characters other than CR and LF are dropped: VTE reports them as they
-    /// reach the PTY, and writing them into the file would put raw control
-    /// bytes in a text file. Users wanting Ctrl-C should type `{CTRL_C}`.
+    /// `{ENTER}` a replayed command would never be submitted. Tab flushes the
+    /// text and records `{TAB}` as its own step. Backspace (DEL or BS) removes
+    /// the last buffered character; once a line has been flushed it cannot be
+    /// edited any more and Backspace is ignored. Escape sequences (arrows,
+    /// function keys, bracketed-paste markers, terminal replies such as
+    /// `ESC [ 1;1 R`, OSC strings) are dropped whole, so none of their
+    /// printable tail (`[A`) reaches the script. Other control characters are
+    /// dropped: writing them would put raw control bytes in a text file. Users
+    /// wanting Ctrl-C should type `{CTRL_C}`.
+    ///
+    /// Limit: text the shell recalls itself (history with Up, completion) is
+    /// output, not input, so it is not recorded; only the keys typed are.
     pub fn record(&mut self, text: &str) {
         let mut chars = text.chars().peekable();
         while let Some(ch) = chars.next() {
+            if self.skip_escape(ch) {
+                continue;
+            }
             match ch {
+                '\x1b' => self.escape = EscapeState::Esc,
                 '\r' | '\n' => {
                     // A pasted CRLF is one Enter, not two.
                     if ch == '\r' && chars.peek() == Some(&'\n') {
@@ -1780,16 +1809,59 @@ impl StepRecorder {
                     self.flush();
                     self.push_enter();
                 }
+                '\t' => {
+                    self.flush();
+                    self.push_key(SpecialKey::Tab);
+                }
+                '\x7f' | '\x08' => {
+                    self.buffer.pop();
+                }
                 ch if ch.is_control() => {}
                 ch => self.buffer.push(ch),
             }
         }
     }
 
+    /// Advances the escape state machine; true when `ch` was part of a sequence.
+    fn skip_escape(&mut self, ch: char) -> bool {
+        match self.escape {
+            EscapeState::Ground => return false,
+            EscapeState::Esc => {
+                self.escape = match ch {
+                    '[' => EscapeState::Csi,
+                    'O' => EscapeState::Ss3,
+                    ']' | 'P' | 'X' | '^' | '_' => EscapeState::String,
+                    // ESC ESC stays in Esc; ESC <char> (Alt+key) is two characters.
+                    '\x1b' => EscapeState::Esc,
+                    _ => EscapeState::Ground,
+                };
+            }
+            EscapeState::Csi => match ch {
+                '@'..='~' => self.escape = EscapeState::Ground,
+                // A new ESC aborts a malformed sequence and starts the next one.
+                '\x1b' => self.escape = EscapeState::Esc,
+                _ => {}
+            },
+            EscapeState::Ss3 => self.escape = EscapeState::Ground,
+            EscapeState::String => match ch {
+                '\x07' => self.escape = EscapeState::Ground,
+                // ESC \ is the string terminator; the Esc state swallows the `\`.
+                '\x1b' => self.escape = EscapeState::Esc,
+                _ => {}
+            },
+        }
+        true
+    }
+
     /// Appends one Enter press as its own step.
     fn push_enter(&mut self) {
-        let enter = KeySequence::from_elements(vec![KeyElement::SpecialKey(SpecialKey::Enter)]);
-        self.steps.push(ScriptStep::Send(enter));
+        self.push_key(SpecialKey::Enter);
+    }
+
+    /// Appends one special key press as its own step.
+    fn push_key(&mut self, key: SpecialKey) {
+        let seq = KeySequence::from_elements(vec![KeyElement::SpecialKey(key)]);
+        self.steps.push(ScriptStep::Send(seq));
     }
 
     /// Flushes buffered text as a `send` step. No-op when nothing is buffered.
@@ -1886,6 +1958,79 @@ mod recorder_tests {
         let mut rec = StepRecorder::new();
         rec.record("ls\x03-l\r");
         assert_eq!(rec.finish(), typed("ls-l"));
+    }
+
+    fn key(k: SpecialKey) -> ScriptStep {
+        ScriptStep::Send(KeySequence::from_elements(vec![KeyElement::SpecialKey(k)]))
+    }
+
+    fn text(t: &str) -> ScriptStep {
+        ScriptStep::Send(KeySequence::from_elements(vec![KeyElement::Text(t.into())]))
+    }
+
+    #[test]
+    fn recorder_drops_csi_sequences() {
+        // Up, Down, Home, F5, bracketed-paste markers and a cursor-position reply.
+        let mut rec = StepRecorder::new();
+        rec.record("ls\x1b[A\x1b[B\x1b[H\x1b[15~\x1b[200~pasted\x1b[201~\x1b[1;1R\r");
+        assert_eq!(rec.finish(), typed("lspasted"));
+    }
+
+    #[test]
+    fn recorder_drops_ss3_osc_and_alt_keys() {
+        let mut rec = StepRecorder::new();
+        rec.record("a\x1bOAb\x1b]0;title\x07c\x1b]52;c;QQ==\x1b\\d\x1bxe\r");
+        assert_eq!(rec.finish(), typed("abcde"));
+    }
+
+    #[test]
+    fn recorder_handles_sequence_split_across_chunks() {
+        let mut rec = StepRecorder::new();
+        rec.record("ls\x1b");
+        rec.record("[");
+        rec.record("A");
+        rec.record("\x1b[1;");
+        rec.record("1Rx\r");
+        assert_eq!(rec.finish(), typed("lsx"));
+    }
+
+    #[test]
+    fn recorder_backspace_edits_the_buffer() {
+        let mut rec = StepRecorder::new();
+        rec.record("lss\x7f\x08\x7f\x7fx\r");
+        assert_eq!(rec.finish(), typed("x"));
+    }
+
+    #[test]
+    fn backspace_on_empty_buffer_is_ignored() {
+        let mut rec = StepRecorder::new();
+        rec.record("\x7f\x7f");
+        assert!(rec.finish().is_empty());
+    }
+
+    #[test]
+    fn recorder_maps_tab_to_a_tab_step() {
+        let mut rec = StepRecorder::new();
+        rec.record("cd /et\t\r");
+        assert_eq!(
+            rec.finish(),
+            vec![
+                text("cd /et"),
+                key(SpecialKey::Tab),
+                key(SpecialKey::Enter)
+            ]
+        );
+    }
+
+    #[test]
+    fn recorder_up_backspace_text_tab_has_no_escape_residue() {
+        let mut rec = StepRecorder::new();
+        rec.record("ls\x1b[A\x7fx\t");
+        let steps = rec.finish();
+        assert_eq!(steps, vec![text("lx"), key(SpecialKey::Tab)]);
+        let rendered = render_script("t", &steps, &[]);
+        assert!(!rendered.contains("[A"), "{rendered}");
+        assert_eq!(parse_program(&rendered).unwrap().steps(), steps);
     }
 
     #[test]
