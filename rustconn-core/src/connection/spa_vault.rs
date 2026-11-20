@@ -67,6 +67,144 @@ pub trait SpaKeyStore {
     /// # Errors
     /// A human-readable reason, as for [`Self::store`].
     fn load(&self, key: &str) -> Result<Option<SecretString>, String>;
+
+    /// Removes the entry under `key`; an entry that is already gone is `Ok`.
+    ///
+    /// # Errors
+    /// A human-readable reason, as for [`Self::store`].
+    fn delete(&self, key: &str) -> Result<(), String>;
+}
+
+/// Which of the two SPA keys a connection holds in the vault.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct VaultFlags {
+    /// The Rijndael key entry.
+    pub rijndael: bool,
+    /// The HMAC key entry.
+    pub hmac: bool,
+}
+
+impl VaultFlags {
+    /// Whether neither key is in play.
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        !self.rijndael && !self.hmac
+    }
+
+    /// The keys `cfg` says are in the vault.
+    #[must_use]
+    pub fn of(cfg: Option<&SpaConfig>) -> Self {
+        cfg.map_or_else(Self::default, |c| Self {
+            rijndael: c.rijndael_key_in_vault,
+            hmac: c.hmac_key_in_vault,
+        })
+    }
+
+    fn has(self, kind: SpaKeyKind) -> bool {
+        match kind {
+            SpaKeyKind::Rijndael => self.rijndael,
+            SpaKeyKind::Hmac => self.hmac,
+        }
+    }
+}
+
+/// The vault entries an edit leaves behind.
+///
+/// A key that was in the vault and is now neither in the vault nor typed as
+/// plaintext (SPA switched off, or the key gone). A typed replacement is not an
+/// orphan: the move overwrites the same entry.
+#[must_use]
+pub fn orphaned_after_edit(old: &Connection, new: &Connection) -> VaultFlags {
+    let was = VaultFlags::of(old.spa_config.as_ref());
+    let now = VaultFlags::of(new.spa_config.as_ref());
+    let keeps = |kind: SpaKeyKind| {
+        now.has(kind)
+            || new
+                .spa_config
+                .as_ref()
+                .is_some_and(|c| plaintext(c, kind).is_some())
+    };
+    VaultFlags {
+        rijndael: was.rijndael && !keeps(SpaKeyKind::Rijndael),
+        hmac: was.hmac && !keeps(SpaKeyKind::Hmac),
+    }
+}
+
+/// Deletes the entries of `id` named by `flags`. Returns one reason per entry
+/// that could not be removed (never a key).
+pub fn remove_spa_keys(id: Uuid, flags: VaultFlags, store: &dyn SpaKeyStore) -> Vec<String> {
+    SpaKeyKind::ALL
+        .into_iter()
+        .filter(|k| flags.has(*k))
+        .filter_map(|k| store.delete(&spa_secret_key(id, k)).err())
+        .collect()
+}
+
+/// What [`copy_spa_keys`] did.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct SpaCopyReport {
+    /// Entries now present under the new id.
+    pub copied: VaultFlags,
+    /// Entries the source flagged that did not arrive: the caller must clear
+    /// these flags on the copy. The reasons never contain a key.
+    pub missing: VaultFlags,
+    /// Why, one per failed entry.
+    pub failed: Vec<String>,
+}
+
+/// Copies the vault entries `src` flags from `from` to `to`, all or nothing.
+///
+/// Each entry is stored and read back. If one fails, the entries already
+/// written under `to` are removed again and the report says nothing arrived,
+/// so the copy never holds one key of a pair. Plaintext keys are not copied:
+/// they travel with the connection and the move takes them from there.
+pub fn copy_spa_keys(
+    from: Uuid,
+    src: &SpaConfig,
+    to: Uuid,
+    store: &dyn SpaKeyStore,
+) -> SpaCopyReport {
+    let wanted = VaultFlags::of(Some(src));
+    let mut report = SpaCopyReport::default();
+    let mut written: Vec<SpaKeyKind> = Vec::new();
+    for kind in SpaKeyKind::ALL.into_iter().filter(|k| wanted.has(*k)) {
+        let outcome = match store.load(&spa_secret_key(from, kind)) {
+            Ok(Some(v)) if !v.expose_secret().is_empty() => {
+                store_and_confirm(store, &spa_secret_key(to, kind), v.expose_secret())
+            }
+            Ok(_) => Err(format!(
+                "the {} key is not in the secret store",
+                kind.as_str()
+            )),
+            Err(e) => Err(e),
+        };
+        match outcome {
+            Ok(()) => written.push(kind),
+            Err(reason) => {
+                report.failed.push(reason);
+                break;
+            }
+        }
+    }
+    if report.failed.is_empty() {
+        for kind in written {
+            match kind {
+                SpaKeyKind::Rijndael => report.copied.rijndael = true,
+                SpaKeyKind::Hmac => report.copied.hmac = true,
+            }
+        }
+        return report;
+    }
+    // Roll back, best effort; the copy holds none of them.
+    for kind in written {
+        let _ = store.delete(&spa_secret_key(to, kind));
+    }
+    // The failed entry itself may be half written (stored, read-back failed).
+    for kind in SpaKeyKind::ALL.into_iter().filter(|k| wanted.has(*k)) {
+        let _ = store.delete(&spa_secret_key(to, kind));
+    }
+    report.missing = wanted;
+    report
 }
 
 fn plaintext(cfg: &SpaConfig, kind: SpaKeyKind) -> Option<&str> {
@@ -281,6 +419,13 @@ mod tests {
                 .get(key)
                 .map(|v| SecretString::from(v.clone())))
         }
+        fn delete(&self, key: &str) -> Result<(), String> {
+            if self.locked.get() {
+                return Err("secret store is locked".to_owned());
+            }
+            self.map.borrow_mut().remove(key);
+            Ok(())
+        }
     }
 
     fn conn(rij: Option<&str>, hmac: Option<&str>) -> Connection {
@@ -423,6 +568,215 @@ mod tests {
             resolve_spa_keys(half.id, half.spa_config.as_ref().unwrap(), &store)
                 .unwrap()
                 .is_none()
+        );
+    }
+
+    fn vaulted(rij: bool, hmac: bool) -> Connection {
+        let mut c = conn(None, None);
+        let cfg = c.spa_config.as_mut().unwrap();
+        cfg.rijndael_key_in_vault = rij;
+        cfg.hmac_key_in_vault = hmac;
+        c
+    }
+
+    fn seed(store: &MapStore, id: Uuid) {
+        let mut m = store.map.borrow_mut();
+        m.insert(
+            spa_secret_key(id, SpaKeyKind::Rijndael),
+            "rij-secret".into(),
+        );
+        m.insert(spa_secret_key(id, SpaKeyKind::Hmac), "hmac-secret".into());
+    }
+
+    #[test]
+    fn duplicate_copies_both_entries_and_the_copy_resolves() {
+        let store = MapStore::default();
+        let src = vaulted(true, true);
+        seed(&store, src.id);
+        let dup = src.duplicate_as("copy".into());
+        let report = copy_spa_keys(src.id, src.spa_config.as_ref().unwrap(), dup.id, &store);
+        assert_eq!(
+            report.copied,
+            VaultFlags {
+                rijndael: true,
+                hmac: true
+            }
+        );
+        assert!(report.failed.is_empty() && report.missing.is_empty());
+        let (r, h) = resolve_spa_keys(dup.id, dup.spa_config.as_ref().unwrap(), &store)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            (r.expose_secret(), h.expose_secret()),
+            ("rij-secret", "hmac-secret")
+        );
+        // The original keeps its own entries.
+        assert_eq!(store.map.borrow().len(), 4);
+    }
+
+    #[test]
+    fn repeated_duplicate_gives_each_copy_its_own_entries() {
+        let store = MapStore::default();
+        let src = vaulted(true, true);
+        seed(&store, src.id);
+        let a = src.duplicate_as("a".into());
+        let b = src.duplicate_as("b".into());
+        for d in [&a, &b] {
+            let r = copy_spa_keys(src.id, src.spa_config.as_ref().unwrap(), d.id, &store);
+            assert!(r.failed.is_empty());
+        }
+        assert_eq!(store.map.borrow().len(), 6);
+        // Deleting one copy leaves the other and the original intact.
+        assert!(remove_spa_keys(a.id, VaultFlags::of(a.spa_config.as_ref()), &store).is_empty());
+        assert_eq!(store.map.borrow().len(), 4);
+    }
+
+    #[test]
+    fn duplicate_without_spa_or_with_one_key_copies_only_what_is_flagged() {
+        let store = MapStore::default();
+        let mut none = conn(None, None);
+        none.spa_config = None;
+        assert!(VaultFlags::of(none.spa_config.as_ref()).is_empty());
+        let plain = vaulted(false, false);
+        let r = copy_spa_keys(
+            plain.id,
+            plain.spa_config.as_ref().unwrap(),
+            Uuid::new_v4(),
+            &store,
+        );
+        assert_eq!(r, SpaCopyReport::default());
+        assert!(store.map.borrow().is_empty());
+
+        let one = vaulted(true, false);
+        seed(&store, one.id);
+        let to = Uuid::new_v4();
+        let r = copy_spa_keys(one.id, one.spa_config.as_ref().unwrap(), to, &store);
+        assert_eq!(
+            r.copied,
+            VaultFlags {
+                rijndael: true,
+                hmac: false
+            }
+        );
+        let map = store.map.borrow();
+        assert!(map.contains_key(&spa_secret_key(to, SpaKeyKind::Rijndael)));
+        assert!(!map.contains_key(&spa_secret_key(to, SpaKeyKind::Hmac)));
+    }
+
+    #[test]
+    fn locked_store_copies_nothing_and_reports_the_flags_to_clear() {
+        let store = MapStore::default();
+        let src = vaulted(true, true);
+        seed(&store, src.id);
+        store.locked.set(true);
+        let r = copy_spa_keys(
+            src.id,
+            src.spa_config.as_ref().unwrap(),
+            Uuid::new_v4(),
+            &store,
+        );
+        assert_eq!(r.copied, VaultFlags::default());
+        assert_eq!(
+            r.missing,
+            VaultFlags {
+                rijndael: true,
+                hmac: true
+            }
+        );
+        assert_eq!(r.failed, vec!["secret store is locked".to_owned()]);
+    }
+
+    #[test]
+    fn copy_failure_midway_rolls_back_the_first_entry() {
+        let store = MapStore::default();
+        let src = vaulted(true, true);
+        seed(&store, src.id);
+        store.fail_on.borrow_mut().push("/hmac".to_owned());
+        let to = Uuid::new_v4();
+        let r = copy_spa_keys(src.id, src.spa_config.as_ref().unwrap(), to, &store);
+        assert_eq!(r.copied, VaultFlags::default());
+        assert_eq!(
+            r.missing,
+            VaultFlags {
+                rijndael: true,
+                hmac: true
+            }
+        );
+        // Only the source entries remain: no half pair under the new id.
+        let map = store.map.borrow();
+        assert_eq!(map.len(), 2);
+        assert!(map.keys().all(|k| !k.contains(&to.to_string())));
+    }
+
+    #[test]
+    fn source_entry_missing_in_the_vault_is_a_failed_copy() {
+        let store = MapStore::default();
+        let src = vaulted(true, true);
+        let r = copy_spa_keys(
+            src.id,
+            src.spa_config.as_ref().unwrap(),
+            Uuid::new_v4(),
+            &store,
+        );
+        assert_eq!(r.copied, VaultFlags::default());
+        assert_eq!(r.failed.len(), 1);
+        assert_eq!(r.failed[0], "the rijndael key is not in the secret store");
+    }
+
+    #[test]
+    fn edit_that_disables_spa_orphans_both_entries() {
+        let old = vaulted(true, true);
+        let mut new = old.clone();
+        new.spa_config = None;
+        assert_eq!(
+            orphaned_after_edit(&old, &new),
+            VaultFlags {
+                rijndael: true,
+                hmac: true
+            }
+        );
+        let store = MapStore::default();
+        seed(&store, old.id);
+        let errs = remove_spa_keys(old.id, orphaned_after_edit(&old, &new), &store);
+        assert!(errs.is_empty() && store.map.borrow().is_empty());
+    }
+
+    #[test]
+    fn edit_that_keeps_or_replaces_a_key_orphans_nothing() {
+        let old = vaulted(true, true);
+        assert!(orphaned_after_edit(&old, &old).is_empty());
+        // One key retyped: the move overwrites the same entry.
+        let mut retyped = old.clone();
+        let cfg = retyped.spa_config.as_mut().unwrap();
+        cfg.rijndael_key_in_vault = false;
+        cfg.rijndael_key_ref = Some("new".into());
+        assert!(orphaned_after_edit(&old, &retyped).is_empty());
+        // No SPA before: nothing to remove.
+        let mut none = conn(None, None);
+        none.spa_config = None;
+        assert!(orphaned_after_edit(&none, &none).is_empty());
+        assert!(orphaned_after_edit(&none, &old).is_empty());
+    }
+
+    #[test]
+    fn delete_of_a_flagged_connection_removes_only_flagged_entries() {
+        let store = MapStore::default();
+        let c = vaulted(true, false);
+        seed(&store, c.id);
+        let other = vaulted(true, true);
+        seed(&store, other.id);
+        let errs = remove_spa_keys(c.id, VaultFlags::of(c.spa_config.as_ref()), &store);
+        assert!(errs.is_empty());
+        let map = store.map.borrow();
+        assert!(!map.contains_key(&spa_secret_key(c.id, SpaKeyKind::Rijndael)));
+        assert!(map.contains_key(&spa_secret_key(c.id, SpaKeyKind::Hmac)));
+        assert_eq!(map.len(), 3);
+        drop(map);
+        // A locked store reports, never panics, and keeps the entries.
+        store.locked.set(true);
+        assert_eq!(
+            remove_spa_keys(other.id, VaultFlags::of(other.spa_config.as_ref()), &store).len(),
+            2
         );
     }
 

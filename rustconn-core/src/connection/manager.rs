@@ -552,6 +552,34 @@ impl ConnectionManager {
         Ok(live + trashed)
     }
 
+    /// Clears the `*_key_in_vault` flags named by `flags` on a live connection
+    /// whose vault entry did not arrive (a failed duplicate), so the flag never
+    /// claims a key the vault does not hold. Returns whether anything changed.
+    ///
+    /// # Errors
+    /// Returns an error if saving fails.
+    pub fn clear_spa_vault_flags(
+        &mut self,
+        id: Uuid,
+        flags: spa_vault::VaultFlags,
+    ) -> ConfigResult<bool> {
+        let Some(cfg) = self
+            .connections
+            .get_mut(&id)
+            .and_then(|c| c.spa_config.as_mut())
+        else {
+            return Ok(false);
+        };
+        let changed =
+            (flags.rijndael && cfg.rijndael_key_in_vault) || (flags.hmac && cfg.hmac_key_in_vault);
+        cfg.rijndael_key_in_vault &= !flags.rijndael;
+        cfg.hmac_key_in_vault &= !flags.hmac;
+        if changed {
+            self.persist_connections()?;
+        }
+        Ok(changed)
+    }
+
     /// Connections, live and trashed, that still hold a plaintext SPA key.
     #[must_use]
     pub fn connections_with_plaintext_spa_keys(&self) -> Vec<Connection> {
@@ -3644,6 +3672,35 @@ mod tests {
                 .filter_by_tags(&["production".to_string(), "missing".to_string()])
                 .len(),
             0
+        );
+    }
+
+    #[tokio::test]
+    async fn clear_spa_vault_flags_unflags_only_the_named_keys() {
+        use crate::connection::knock::SpaConfig;
+        let mut conn = ssh("spa-dup");
+        let mut cfg = SpaConfig::new();
+        cfg.rijndael_key_in_vault = true;
+        cfg.hmac_key_in_vault = true;
+        conn.spa_config = Some(cfg);
+        let id = conn.id;
+        let (mut manager, config, _dir) = loaded_manager(std::slice::from_ref(&conn));
+        let only_hmac = spa_vault::VaultFlags {
+            rijndael: false,
+            hmac: true,
+        };
+        assert!(manager.clear_spa_vault_flags(id, only_hmac).unwrap());
+        // Repeating changes nothing.
+        assert!(!manager.clear_spa_vault_flags(id, only_hmac).unwrap());
+        manager.flush_persistence().await.unwrap();
+        let reread = config.load_connections().unwrap();
+        let cfg = reread[0].spa_config.as_ref().unwrap();
+        assert!(cfg.rijndael_key_in_vault && !cfg.hmac_key_in_vault);
+        // No SPA config or unknown id: nothing happens.
+        assert!(
+            !manager
+                .clear_spa_vault_flags(Uuid::new_v4(), only_hmac)
+                .unwrap()
         );
     }
 

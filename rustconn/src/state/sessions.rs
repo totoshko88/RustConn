@@ -389,6 +389,12 @@ impl AppState {
         Ok(())
     }
 
+    /// The connection the clipboard was copied from, if any.
+    #[must_use]
+    pub fn clipboard_original_connection(&self) -> Option<Connection> {
+        self.clipboard.original_connection().cloned()
+    }
+
     /// Pastes a connection from the clipboard
     ///
     /// Creates a duplicate connection with a new ID and "(Copy)" suffix.

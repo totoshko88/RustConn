@@ -3704,6 +3704,7 @@ Where a knock *sequence* can be replayed or observed by anyone watching the wire
 - Before connecting, RustConn builds the SPA payload, encrypts it with AES-256-CBC (OpenSSL-compatible `Salted__` / EVP_BytesToKey key derivation), appends an HMAC-SHA256 digest, and sends it as one UDP datagram. A fresh random salt and timestamp make every packet unique.
 - SPA runs only when both keys are set; otherwise it is skipped. It can be combined with a knock sequence, but on its own it is the more secure of the two.
 - The keys never appear in the config file — only vault references are stored.
+- Duplicating or pasting a connection copies both vault entries to the copy. If that fails, a toast says so and the copy has no keys until you enter them. Credential Transfer moves the entries to another backend, and switching SPA off in the editor removes them.
 
 ### Run Local Script
 

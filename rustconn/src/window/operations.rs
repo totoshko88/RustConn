@@ -269,6 +269,11 @@ pub fn duplicate_selected_connection(
         {
             Ok(_) => {
                 drop(state_mut);
+                // The SPA keys live in their own vault entries under the id.
+                crate::vault_ops::schedule_spa_key_copy(
+                    state,
+                    vec![(original.clone(), duplicate_for_vault.clone())],
+                );
                 // Defer sidebar reload to prevent UI freeze
                 let state = state.clone();
                 let sidebar = sidebar.clone();
@@ -425,6 +430,13 @@ pub fn duplicate_selected_group(
     // Carry the vault credentials over, as a single duplicate does: a copy that
     // keeps `password_source = Vault` without an entry of its own would prompt.
     // The group list is read after the copy, so the new paths exist.
+    crate::vault_ops::schedule_spa_key_copy(
+        state,
+        plan.connections
+            .iter()
+            .map(|pair| (pair.original.clone(), pair.copy.clone()))
+            .collect(),
+    );
     let vault_pairs: Vec<_> = plan
         .connections
         .iter()
@@ -745,6 +757,14 @@ fn create_range_duplicates(
         });
     }
 
+    crate::vault_ops::schedule_spa_key_copy(
+        state,
+        created
+            .iter()
+            .map(|copy| (source.clone(), copy.clone()))
+            .collect(),
+    );
+
     // The same credential copy a single duplicate makes, one thread for all.
     if source.password_source == rustconn_core::models::PasswordSource::Vault {
         let source = source.clone();
@@ -904,9 +924,14 @@ pub fn paste_connection(window: &gtk4::Window, state: &SharedAppState, sidebar: 
     }
 
     if let Ok(mut state_mut) = state.try_borrow_mut() {
+        let original = state_mut.clipboard_original_connection();
         match state_mut.paste_connection() {
-            Ok(_) => {
+            Ok(new_id) => {
+                let pasted = state_mut.get_connection(new_id).cloned();
                 drop(state_mut);
+                if let Some((from, to)) = original.zip(pasted) {
+                    crate::vault_ops::schedule_spa_key_copy(state, vec![(from, to)]);
+                }
                 // Defer sidebar reload to prevent UI freeze
                 let state = state.clone();
                 let sidebar = sidebar.clone();
