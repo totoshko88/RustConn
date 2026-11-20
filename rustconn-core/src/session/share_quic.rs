@@ -45,7 +45,7 @@
 //!
 //! # Limits
 //!
-//! [`ShareLimits`] applies as on the HTTP relay: a cap on open sockets and on
+//! [`ShareLimits`](crate::session::share::ShareLimits) applies as on the HTTP relay: a cap on open sockets and on
 //! viewers, a deadline for the TLS handshake plus the request, a deadline for
 //! each write, and a reset for a viewer that fell behind. Sockets over the cap
 //! are refused at accept.
@@ -53,8 +53,8 @@
 //! # NAT
 //!
 //! STUN creates the UDP mapping and a keepalive thread refreshes it. STUN
-//! contacts third-party servers ([`STUN_SERVERS`]), so it runs only with
-//! [`StunConsent::Granted`]; with [`StunConsent::Declined`] no packet leaves
+//! contacts third-party servers ([`STUN_SERVERS`](crate::session::share_quic::STUN_SERVERS)), so it runs only with
+//! [`StunConsent::Granted`](crate::session::share_quic::StunConsent::Granted); with [`StunConsent::Declined`](crate::session::share_quic::StunConsent::Declined) no packet leaves
 //! for any of them. A full-cone
 //! (endpoint-independent filtering) router accepts a viewer that the host has
 //! not contacted; a restricted or symmetric NAT, including most CGNAT, drops
