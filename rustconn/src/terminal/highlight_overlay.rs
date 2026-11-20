@@ -251,6 +251,13 @@ impl HighlightOverlay {
     }
 }
 
+impl HighlightOverlay {
+    /// Repaints the layer now, for a caller that changed the shared rules.
+    pub fn queue_draw(&self) {
+        self.drawing_area.queue_draw();
+    }
+}
+
 impl Drop for HighlightOverlay {
     fn drop(&mut self) {
         detach_from_parent(&self.drawing_area);
