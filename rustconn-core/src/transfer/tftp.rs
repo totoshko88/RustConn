@@ -2,7 +2,9 @@
 //!
 //! Serves files from one root directory to network devices dumping config.
 //! Uses tokio UDP only: no unsafe, no platform-specific APIs, no privileged
-//! port binding (the caller chooses `bind`). One request is served at a time.
+//! port binding (the caller chooses `bind`). Each request is served from its own
+//! ephemeral socket (RFC 1350 transfer ID) in its own task, so a silent or
+//! spoofed peer only occupies one of a few transfer slots.
 
 use std::net::SocketAddr;
 use std::path::{Component, Path, PathBuf};
@@ -10,10 +12,15 @@ use std::time::Duration;
 
 use thiserror::Error;
 use tokio::net::UdpSocket;
+use tokio::task::JoinSet;
 
 /// Default TFTP block size from RFC 1350.
 const DEFAULT_BLKSIZE: usize = 512;
 /// Number of retransmissions before abandoning a transfer.
+/// Largest file the server will serve (kept in memory while sending).
+const MAX_FILE_SIZE: u64 = 32 * 1024 * 1024;
+/// Transfers served at once; further requests get an ERROR packet.
+const MAX_TRANSFERS: usize = 8;
 const MAX_RETRIES: u8 = 3;
 /// Retransmission timeout; RFC 1350 suggests one second.
 const RETRY_TIMEOUT: Duration = Duration::from_secs(1);
@@ -215,7 +222,7 @@ async fn send_until_ack(socket: &UdpSocket, peer: SocketAddr, packet: &[u8], blo
 /// Sends an RFC 1350 ERROR packet (best effort).
 async fn send_error(socket: &UdpSocket, peer: SocketAddr, code: u16, message: &str) {
     let mut packet = Vec::with_capacity(5 + message.len());
-    packet.extend_from_slice(&7u16.to_be_bytes());
+    packet.extend_from_slice(&5u16.to_be_bytes());
     packet.extend_from_slice(&code.to_be_bytes());
     packet.extend_from_slice(message.as_bytes());
     packet.push(0);
@@ -246,6 +253,15 @@ async fn handle(socket: &UdpSocket, root: &Path, packet: &[u8], peer: SocketAddr
             return;
         }
     };
+    let too_large = match tokio::fs::metadata(&path).await {
+        Ok(m) => m.len() > MAX_FILE_SIZE,
+        Err(_) => false,
+    };
+    if too_large {
+        tracing::warn!(filename = %req.filename, "TFTP file over size cap");
+        send_error(socket, peer, 3, "file too large").await;
+        return;
+    }
     let data = match tokio::fs::read(&path).await {
         Ok(d) => d,
         Err(e) => {
@@ -255,7 +271,14 @@ async fn handle(socket: &UdpSocket, root: &Path, packet: &[u8], peer: SocketAddr
         }
     };
     let blksize = req.blksize.unwrap_or(DEFAULT_BLKSIZE as u16) as usize;
-    let blocks = data.len().div_ceil(blksize).max(1);
+    // A file that is an exact multiple of blksize needs one extra empty block:
+    // the client only ends the transfer on a block shorter than blksize.
+    let blocks = data.len() / blksize + 1;
+    if blocks > usize::from(u16::MAX) {
+        // block numbers are 16 bit and do not wrap safely
+        send_error(socket, peer, 3, "file too large for block size").await;
+        return;
+    }
     if req.tsize || req.blksize.is_some() {
         let mut oack = vec![0, 6];
         if let Some(bs) = req.blksize {
@@ -272,9 +295,8 @@ async fn handle(socket: &UdpSocket, root: &Path, packet: &[u8], peer: SocketAddr
             return;
         }
     }
-    // shortcut: block numbers wrap after 65535 (~32 MiB at 512 B); config dumps are tiny
     for block in 1..=blocks {
-        let start = (block - 1) * blksize;
+        let start = ((block - 1) * blksize).min(data.len());
         let end = (start + blksize).min(data.len());
         let mut packet = Vec::with_capacity(4 + end - start);
         packet.extend_from_slice(&3u16.to_be_bytes());
@@ -289,15 +311,33 @@ async fn handle(socket: &UdpSocket, root: &Path, packet: &[u8], peer: SocketAddr
 
 /// Accept loop for a bound TFTP socket.
 async fn serve(socket: UdpSocket, root: PathBuf) {
+    let local_ip = socket.local_addr().map(|a| a.ip()).ok();
+    let root = std::sync::Arc::new(root);
+    // Dropping the set (when the server task is aborted) aborts every transfer.
+    let mut transfers = JoinSet::new();
     let mut buf = [0u8; 4096]; // RRQ plus options fits comfortably
     loop {
-        match socket.recv_from(&mut buf).await {
-            Ok((len, peer)) => handle(&socket, &root, &buf[..len], peer).await,
+        let (len, peer) = match socket.recv_from(&mut buf).await {
+            Ok(received) => received,
             Err(e) => {
                 tracing::error!(error = %e, "TFTP receive failed, stopping");
                 break;
             }
+        };
+        while transfers.try_join_next().is_some() {}
+        if transfers.len() >= MAX_TRANSFERS {
+            send_error(&socket, peer, 0, "server busy").await;
+            continue;
         }
+        let Some(ip) = local_ip else { continue };
+        // New transfer ID: reply from a fresh ephemeral port on the same address.
+        let Ok(transfer_socket) = UdpSocket::bind(SocketAddr::new(ip, 0)).await else {
+            send_error(&socket, peer, 0, "server busy").await;
+            continue;
+        };
+        let packet = buf[..len].to_vec();
+        let root = std::sync::Arc::clone(&root);
+        transfers.spawn(async move { handle(&transfer_socket, &root, &packet, peer).await });
     }
 }
 
@@ -394,9 +434,9 @@ mod tests {
 
         let mut buf = [0u8; 1024];
         let (_n, src) = client.recv_from(&mut buf).await.unwrap();
-        assert_eq!(src, addr);
+        assert_ne!(src, addr, "reply comes from a new transfer port");
         assert_eq!(&buf[..2], &[0, 6]); // OACK
-        client.send_to(&[0, 4, 0, 0], addr).await.unwrap(); // ACK block 0
+        client.send_to(&[0, 4, 0, 0], src).await.unwrap(); // ACK block 0
 
         let mut received = Vec::new();
         let mut expected = 1u16;
@@ -411,7 +451,7 @@ mod tests {
             let chunk = &buf[4..n];
             received.extend_from_slice(chunk);
             let ack = [0, 4, buf[2], buf[3]];
-            client.send_to(&ack, addr).await.unwrap();
+            client.send_to(&ack, src).await.unwrap();
             if chunk.len() < DEFAULT_BLKSIZE {
                 break;
             }
@@ -419,6 +459,106 @@ mod tests {
         }
         assert_eq!(received, payload);
         assert_eq!(expected, 3);
+        server.stop().await;
+    }
+
+    /// Downloads `payload` from a fresh server; returns the received bytes and
+    /// the number of DATA blocks. Fails (timeout) if the server never ends the
+    /// transfer with a short block.
+    async fn download(payload: &[u8], blksize: usize) -> (Vec<u8>, u16) {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("f.bin"), payload).unwrap();
+        let server = TftpServer::start("127.0.0.1:0".parse().unwrap(), dir.path().into())
+            .await
+            .unwrap();
+        let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let mut request = rrq(b"f.bin");
+        request.extend_from_slice(format!("blksize\0{blksize}\0").as_bytes());
+        client.send_to(&request, server.local_addr()).await.unwrap();
+        let mut buf = vec![0u8; blksize + 4];
+        let mut received = Vec::new();
+        let mut blocks = 0u16;
+        let step = async {
+            loop {
+                let (n, src) = client.recv_from(&mut buf).await.unwrap();
+                if buf[..2] == [0, 6] {
+                    client.send_to(&[0, 4, 0, 0], src).await.unwrap();
+                    continue;
+                }
+                assert_eq!(&buf[..2], &[0, 3], "expected DATA");
+                blocks += 1;
+                assert_eq!(u16::from_be_bytes([buf[2], buf[3]]), blocks);
+                received.extend_from_slice(&buf[4..n]);
+                client.send_to(&[0, 4, buf[2], buf[3]], src).await.unwrap();
+                if n - 4 < blksize {
+                    break;
+                }
+            }
+        };
+        tokio::time::timeout(Duration::from_secs(5), step)
+            .await
+            .expect("server never sent a terminating short block");
+        server.stop().await;
+        (received, blocks)
+    }
+
+    #[tokio::test]
+    async fn transfer_ends_for_block_multiple_sizes() {
+        for (len, expected_blocks) in [(0usize, 1u16), (511, 1), (512, 2), (1024, 3), (1200, 3)] {
+            let payload = vec![b'y'; len];
+            let (got, blocks) = download(&payload, 512).await;
+            assert_eq!(got, payload, "len {len}");
+            assert_eq!(blocks, expected_blocks, "len {len}");
+        }
+    }
+
+    #[tokio::test]
+    async fn refuses_file_over_cap() {
+        let dir = tempfile::tempdir().unwrap();
+        let big = std::fs::File::create(dir.path().join("big.bin")).unwrap();
+        big.set_len(MAX_FILE_SIZE + 1).unwrap();
+        let server = TftpServer::start("127.0.0.1:0".parse().unwrap(), dir.path().into())
+            .await
+            .unwrap();
+        let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        client
+            .send_to(&rrq(b"big.bin"), server.local_addr())
+            .await
+            .unwrap();
+        let mut buf = [0u8; 64];
+        let (_, _) = tokio::time::timeout(Duration::from_secs(5), client.recv_from(&mut buf))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(&buf[..2], &[0, 5], "expected ERROR");
+        server.stop().await;
+    }
+
+    #[tokio::test]
+    async fn spoofed_request_does_not_block_other_clients() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("f.bin"), b"hello").unwrap();
+        let server = TftpServer::start("127.0.0.1:0".parse().unwrap(), dir.path().into())
+            .await
+            .unwrap();
+        // A "spoofed" peer sends an RRQ and never ACKs.
+        let ghost = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        ghost
+            .send_to(&rrq(b"f.bin"), server.local_addr())
+            .await
+            .unwrap();
+        let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        client
+            .send_to(&rrq(b"f.bin"), server.local_addr())
+            .await
+            .unwrap();
+        let mut buf = [0u8; 64];
+        let (n, _) = tokio::time::timeout(Duration::from_millis(800), client.recv_from(&mut buf))
+            .await
+            .expect("second client was blocked by the first")
+            .unwrap();
+        assert_eq!(&buf[..4], &[0, 3, 0, 1]);
+        assert_eq!(&buf[4..n], b"hello");
         server.stop().await;
     }
 }
