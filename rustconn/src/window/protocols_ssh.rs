@@ -138,6 +138,28 @@ fn agent_identity_file(ssh_config: &rustconn_core::SshConfig) -> Option<String> 
     }
 }
 
+/// A banner line when the socket the user chose for this launch cannot work
+/// (missing, not a socket, someone else's). Empty when there is nothing to
+/// report. ssh still starts, and fails to find the agent on that path, so the
+/// reason has to be visible in the tab.
+fn agent_socket_warning(connection_socket: Option<&str>) -> String {
+    use rustconn_core::sftp::{custom_agent_socket, validate_socket_path};
+
+    let Some(socket) = custom_agent_socket(connection_socket) else {
+        return String::new();
+    };
+    let Some(problem) =
+        crate::dialogs::settings::socket_validation_message(validate_socket_path(&socket))
+    else {
+        return String::new();
+    };
+    tracing::warn!(%socket, %problem, "the configured SSH agent socket cannot be used");
+    format!(
+        "{}\r\n\r\n",
+        crate::i18n::i18n_f("Warning: SSH agent socket {}: {}", &[&socket, &problem])
+    )
+}
+
 /// Ensures a private-key identity is loaded into the running ssh-agent.
 ///
 /// The multi-hop `-J` path needs this: OpenSSH's `ProxyJump` does not pass the
@@ -771,9 +793,10 @@ fn build_ssh_command_args(
                 if let Some(key_path) = identity_for_agent {
                     ensure_identity_in_agent(
                         std::path::Path::new(&key_path),
-                        ssh_inheritance::resolve_ssh_agent_socket(conn, groups)
-                            .filter(|s| !s.is_empty())
-                            .or_else(rustconn_core::sftp::default_agent_socket),
+                        rustconn_core::sftp::resolve_ssh_agent_socket(
+                            ssh_inheritance::resolve_ssh_agent_socket(conn, groups).as_deref(),
+                            None,
+                        ),
                     );
                 }
                 args.push("-J".to_string());
@@ -1476,7 +1499,10 @@ fn start_ssh_connection_internal(
     // Display CLI output feedback before executing command
     let conn_msg = format_connection_message("SSH", &host);
     let cmd_msg = format_command_message(&ssh_command);
-    let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+    let feedback = format!(
+        "{conn_msg}\r\n{cmd_msg}\r\n\r\n{}",
+        agent_socket_warning(ssh_inheritance::resolve_ssh_agent_socket(conn, &groups).as_deref())
+    );
     notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn SSH. Password-only targets use prompt-aware OpenSSH askpass;
@@ -1570,6 +1596,7 @@ fn start_ssh_connection_internal(
             port,
             username: username.clone(),
             identity_file: identity_file.clone(),
+            agent_socket: ssh_inheritance::resolve_ssh_agent_socket(conn, &groups),
         });
 
         when_established(notebook, session_id, status_client, move || {
@@ -1611,6 +1638,7 @@ fn start_ssh_connection_internal(
             let mon_port = conn.port;
             let mon_username = conn.username.clone();
             let mon_jump_host = jump_host_chain.clone();
+            let mon_agent_socket = ssh_inheritance::resolve_ssh_agent_socket(conn, &groups);
 
             // Exactly the sidebar "connected" verdict — see
             // `ssh_output_established`. A jump chain can push the cursor
@@ -1635,6 +1663,7 @@ fn start_ssh_connection_internal(
                         identity_file_mon.as_deref(),
                         cached_pw,
                         mon_jump_host.as_deref(),
+                        mon_agent_socket.as_deref(),
                     );
                 }
             });
@@ -1905,7 +1934,10 @@ fn reconnect_ssh_after_unlock(
     // Display CLI output feedback
     let conn_msg = format_connection_message("SSH", &host);
     let cmd_msg = format_command_message(&ssh_command);
-    let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+    let feedback = format!(
+        "{conn_msg}\r\n{cmd_msg}\r\n\r\n{}",
+        agent_socket_warning(ssh_inheritance::resolve_ssh_agent_socket(&conn, &groups).as_deref())
+    );
     notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn SSH in the existing terminal
@@ -1994,6 +2026,7 @@ fn reconnect_ssh_after_unlock(
             port,
             username: username.clone(),
             identity_file: identity_file.clone(),
+            agent_socket: ssh_inheritance::resolve_ssh_agent_socket(&conn, &groups),
         }),
     );
 
@@ -2025,6 +2058,7 @@ fn reconnect_ssh_after_unlock(
             let mon_port = conn.port;
             let mon_username = conn.username.clone();
             let mon_jump_host = jump_host_chain;
+            let mon_agent_socket = ssh_inheritance::resolve_ssh_agent_socket(&conn, &groups);
 
             // The sidebar verdict above: don't open the monitor for a session
             // whose terminal has not really established — the probe, with its
@@ -2064,6 +2098,7 @@ fn reconnect_ssh_after_unlock(
                         identity_file_mon.as_deref(),
                         cached_pw,
                         mon_jump_host.as_deref(),
+                        mon_agent_socket.as_deref(),
                     );
                 }
             });

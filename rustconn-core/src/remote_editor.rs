@@ -186,8 +186,10 @@ impl RemoteTarget {
         }
         let inherited_key =
             crate::connection::ssh_inheritance::resolve_ssh_key_path(connection, groups);
+        // Connection, then group chain, then the Settings socket and the rest.
         let agent_socket = crate::sftp::resolve_ssh_agent_socket(
-            cfg.ssh_agent_socket.as_deref(),
+            crate::connection::ssh_inheritance::resolve_ssh_agent_socket(connection, groups)
+                .as_deref(),
             global_agent_socket,
         );
 
@@ -210,12 +212,11 @@ impl RemoteTarget {
     }
 
     fn command(&self, program: &str, args: &[String]) -> Command {
-        let mut std_cmd = std::process::Command::new(program);
-        std_cmd.args(args);
-        if let Some(sock) = self.agent_socket.as_deref() {
-            std_cmd.env("SSH_AUTH_SOCK", sock);
-        }
-        Command::from(std_cmd)
+        let mut cmd = Command::new(program);
+        cmd.args(args);
+        // `agent_socket` is already resolved; it wins over the Settings socket.
+        crate::sftp::apply_agent_env_async(&mut cmd, self.agent_socket.as_deref());
+        cmd
     }
 }
 
@@ -788,6 +789,54 @@ mod tests {
         assert!(target_of(&ssh_conn("example.com", None)).is_ok());
         assert!(target_of(&ssh_conn("::1", None)).is_ok());
         assert!(target_of(&ssh_conn("münchen.example", Some("o'brien"))).is_ok());
+    }
+
+    fn env_of(cmd: &Command, name: &str) -> Option<String> {
+        cmd.as_std()
+            .get_envs()
+            .find(|(k, _)| *k == name)
+            .and_then(|(_, v)| v.map(|v| v.to_string_lossy().into_owned()))
+    }
+
+    /// F-01: the sftp/scp of a remote edit reaches the agent the connection,
+    /// its group or Settings names, in that order.
+    #[test]
+    fn agent_socket_reaches_the_child_env_in_precedence_order() {
+        let mut group = ConnectionGroup::new("g".to_string());
+        group.ssh_agent_socket = Some("/run/rc-group.sock".to_string());
+        let mut conn = ssh_conn("example.com", None);
+        conn.group_id = Some(group.id);
+        let groups = [group];
+        let target = |conn: &Connection, global: Option<&str>| {
+            RemoteTarget::from_connection(conn, &[], &groups, &NetworkSettings::default(), global)
+                .expect("target")
+        };
+
+        let t = target(&conn, Some("/run/rc-settings.sock"));
+        assert_eq!(
+            env_of(&t.command("sftp", &[]), "SSH_AUTH_SOCK").as_deref(),
+            Some("/run/rc-group.sock"),
+            "an inherited group socket beats Settings"
+        );
+
+        if let ProtocolConfig::Ssh(cfg) = &mut conn.protocol_config {
+            cfg.ssh_agent_socket = Some("/run/rc-conn.sock".to_string());
+        }
+        let t = target(&conn, Some("/run/rc-settings.sock"));
+        assert_eq!(
+            env_of(&t.command("scp", &[]), "SSH_AUTH_SOCK").as_deref(),
+            Some("/run/rc-conn.sock")
+        );
+
+        conn.group_id = None;
+        if let ProtocolConfig::Ssh(cfg) = &mut conn.protocol_config {
+            cfg.ssh_agent_socket = None;
+        }
+        let t = target(&conn, Some("/run/rc-settings.sock"));
+        assert_eq!(
+            env_of(&t.command("sftp", &[]), "SSH_AUTH_SOCK").as_deref(),
+            Some("/run/rc-settings.sock")
+        );
     }
 
     #[test]

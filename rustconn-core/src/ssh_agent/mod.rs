@@ -114,11 +114,14 @@ impl SshAgentManager {
 
     /// Creates a new `SshAgentManager` from the environment
     ///
-    /// Reads `SSH_AUTH_SOCK` from the environment if available.
+    /// Uses the agent socket every launch uses
+    /// ([`crate::sftp::default_agent_socket`]): the Settings socket, else the
+    /// agent RustConn started, else `SSH_AUTH_SOCK`.
     #[must_use]
     pub fn from_env() -> Self {
-        let socket_path = std::env::var("SSH_AUTH_SOCK").ok();
-        Self { socket_path }
+        Self {
+            socket_path: crate::sftp::default_agent_socket(),
+        }
     }
 
     /// Returns the current socket path

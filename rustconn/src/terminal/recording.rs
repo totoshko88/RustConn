@@ -437,26 +437,36 @@ fn retrieve_remote_recording(remote: &RemoteRecordingInfo) -> bool {
     );
 
     let fetch = |remote_path: &str, local_path: &std::path::Path| {
-        std::process::Command::new("scp")
-            .args(&scp_args)
+        let mut cmd = std::process::Command::new("scp");
+        cmd.args(&scp_args)
             .arg(format!("{user_host}:{remote_path}"))
-            .arg(local_path.as_os_str())
-            .output()
-            .is_ok_and(|o| o.status.success())
+            .arg(local_path.as_os_str());
+        rustconn_core::sftp::apply_agent_env_with_overrides(
+            &mut cmd,
+            params.agent_socket.as_deref(),
+            None,
+        );
+        cmd.output().is_ok_and(|o| o.status.success())
     };
 
     let data_ok = fetch(&remote.remote_data, &remote.local_data);
     let timing_ok = fetch(&remote.remote_timing, &remote.local_timing);
 
     // Clean up remote temp files (best-effort)
-    let _ = std::process::Command::new("ssh")
+    let mut cleanup = std::process::Command::new("ssh");
+    cleanup
         .args(&ssh_args)
         .arg(&user_host)
         .arg(remote_cleanup_command(
             &remote.remote_data,
             &remote.remote_timing,
-        ))
-        .output();
+        ));
+    rustconn_core::sftp::apply_agent_env_with_overrides(
+        &mut cleanup,
+        params.agent_socket.as_deref(),
+        None,
+    );
+    let _ = cleanup.output();
 
     data_ok && timing_ok
 }

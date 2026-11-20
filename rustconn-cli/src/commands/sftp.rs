@@ -157,10 +157,10 @@ pub(super) fn cmd_sftp(
 
     // The outermost bastion tier: a global ProxyJump or jump host applies to
     // every connection that inherits, including this one.
-    let network = config_manager
-        .load_settings()
-        .map(|settings| settings.network)
-        .unwrap_or_default();
+    let loaded_settings = config_manager.load_settings().unwrap_or_default();
+    let network = loaded_settings.network.clone();
+    // The Settings agent socket applies to every ssh, sftp and ssh-add below.
+    rustconn_core::sftp::set_global_agent_socket(loaded_settings.ssh_agent_socket.as_deref());
 
     // A connection whose protocol *is* SFTP carries the same `SshConfig` and is
     // exactly what this command is for; only rejecting non-SSH-family protocols

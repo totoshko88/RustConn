@@ -897,20 +897,18 @@ fn create_session_group() -> (
         let text = entry.text();
         let path = text.as_str();
         entry.remove_css_class("success");
-        entry.remove_css_class("warning");
         entry.remove_css_class("error");
-        match validate_socket_path(path) {
+        let validation = validate_socket_path(path);
+        match validation {
             SocketPathValidation::Empty => {}
-            SocketPathValidation::Valid => {
-                entry.add_css_class("success");
-            }
-            SocketPathValidation::NotFound => {
-                entry.add_css_class("warning");
-            }
-            SocketPathValidation::NotAbsolute => {
-                entry.add_css_class("error");
-            }
+            SocketPathValidation::Valid => entry.add_css_class("success"),
+            _ => entry.add_css_class("error"),
         }
+        entry.set_tooltip_text(Some(
+            &crate::dialogs::settings::socket_validation_message(validation).unwrap_or_else(|| {
+                i18n("Overrides global setting and auto-detected socket for this connection")
+            }),
+        ));
     });
     session_group.add(&ssh_agent_socket_entry);
 

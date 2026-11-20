@@ -166,6 +166,14 @@ impl TunnelManager {
             Command::new("ssh")
         };
         cmd.arg("-N"); // No remote command — just forward
+        // The agent the connection's terminal session uses, so a tunnel
+        // authenticates with the same keys. A group-inherited socket is
+        // folded into the connection by the caller.
+        crate::sftp::apply_agent_env_with_overrides(
+            &mut cmd,
+            ssh_config.ssh_agent_socket.as_deref(),
+            None,
+        );
 
         // Add port forwarding rules
         for pf in &tunnel.forwards {

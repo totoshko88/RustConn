@@ -15,6 +15,33 @@ use rustconn_core::ssh_agent::SshAgentManager;
 
 use crate::i18n::{i18n, i18n_f};
 
+/// Help text under the custom socket row.
+fn socket_group_description() -> String {
+    i18n(
+        "Used by every SSH, SFTP, tunnel and ssh-add launch. A connection's own socket takes precedence. Leave empty to use SSH_AUTH_SOCK.",
+    )
+}
+
+/// Why an ssh-agent socket path will not work, in words for the user.
+/// `None` for an empty or valid path.
+#[must_use]
+pub fn socket_validation_message(validation: SocketPathValidation) -> Option<String> {
+    match validation {
+        SocketPathValidation::Empty | SocketPathValidation::Valid => None,
+        SocketPathValidation::NotAbsolute => Some(i18n(
+            "The path must be absolute (for example /run/user/1000/ssh-agent.sock) or start with ~/.",
+        )),
+        SocketPathValidation::NotFound if rustconn_core::flatpak::is_flatpak() => Some(i18n(
+            "Nothing exists at this path. In Flatpak the app only sees paths it has access to, such as the runtime directory.",
+        )),
+        SocketPathValidation::NotFound => Some(i18n(
+            "Nothing exists at this path. Check that the agent is running and the path is correct.",
+        )),
+        SocketPathValidation::NotSocket => Some(i18n("This path exists but it is not a socket.")),
+        SocketPathValidation::NotOwned => Some(i18n("This socket belongs to another user.")),
+    }
+}
+
 /// Creates the SSH Agent settings page using AdwPreferencesPage
 pub fn create_ssh_agent_page() -> (
     adw::PreferencesPage,
@@ -85,50 +112,37 @@ pub fn create_ssh_agent_page() -> (
     control_row.add_suffix(&buttons_box);
     status_group.add(&control_row);
 
-    // Custom SSH agent socket path entry
+    // === Custom Socket Group ===
+    // An EntryRow has no subtitle, so the group description carries the help
+    // text and, while the path is invalid, the reason.
+    let socket_group = adw::PreferencesGroup::builder()
+        .title(i18n("Custom Socket"))
+        .description(socket_group_description())
+        .build();
     let custom_socket_entry = adw::EntryRow::builder()
         .title(i18n("Custom SSH Agent Socket Path"))
         .build();
     custom_socket_entry.set_show_apply_button(false);
-    // Subtitle via tooltip since EntryRow doesn't have .set_subtitle()
-    custom_socket_entry.set_tooltip_text(Some(&i18n(
-        "Overrides auto-detected SSH_AUTH_SOCK for all connections",
-    )));
-    // Three lines were removed here: `set_text("")` on a row that is already
-    // empty, then a clone of the same row and `set_text("")` again. Both were
-    // commented as setting a placeholder, which neither does — and the row is
-    // filled from settings by `load_settings` anyway.
+    socket_group.add(&custom_socket_entry);
 
-    // Real-time validation feedback (Task 4.2)
-    custom_socket_entry.connect_changed(|entry| {
-        let text = entry.text();
-        let path = text.as_str();
-        // Remove previous validation classes
+    // Real-time validation: exists, is a socket, owned by the user.
+    let group_for_check = socket_group.clone();
+    custom_socket_entry.connect_changed(move |entry| {
         entry.remove_css_class("success");
-        entry.remove_css_class("warning");
         entry.remove_css_class("error");
-        match validate_socket_path(path) {
+        let validation = validate_socket_path(entry.text().as_str());
+        match validation {
             SocketPathValidation::Empty => {}
-            SocketPathValidation::Valid => {
-                entry.add_css_class("success");
-            }
-            SocketPathValidation::NotFound => {
-                entry.add_css_class("warning");
-            }
-            SocketPathValidation::NotAbsolute => {
-                entry.add_css_class("error");
-            }
+            SocketPathValidation::Valid => entry.add_css_class("success"),
+            _ => entry.add_css_class("error"),
         }
+        let description =
+            socket_validation_message(validation).unwrap_or_else(socket_group_description);
+        group_for_check.set_description(Some(&description));
     });
 
-    // Not shown: `AppSettings.ssh_agent_socket` is saved but no ssh/sftp spawn
-    // path reads it (only per-connection and per-group sockets are resolved),
-    // so a visible row promised an override that never applied. The entry
-    // stays alive so a value already in config.toml round-trips unchanged.
-    // ponytail: wire it through `resolve_ssh_agent_socket` callers and show
-    // the row again in 0.26.
-
     page.add(&status_group);
+    page.add(&socket_group);
 
     // === Loaded Keys Group ===
     let keys_group = adw::PreferencesGroup::builder()

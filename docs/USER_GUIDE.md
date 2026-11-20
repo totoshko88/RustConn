@@ -4217,6 +4217,8 @@ Also in this group: **Auto-hide the sidebar on connect**, and **Open tunnelled b
 
 **SSH Agent group:** Status (running/stopped with socket path), Loaded Keys (with remove option), Available Keys (keys in `~/.ssh/` with add option). A key added here has no lifetime and stays off RustConn's list of keys to remove, so RustConn does not remove it on exit, lock or suspend.
 
+**Custom Socket:** set a path to use that ssh-agent socket for every SSH launch (terminal, SFTP, Midnight Commander, tunnels, monitoring, remote file edit, `ssh-add`, and `rustconn-cli`). The order is: the connection's own agent socket, then its group's, then this setting, then the agent RustConn started, then `SSH_AUTH_SOCK`. Leave it empty to use `SSH_AUTH_SOCK`. A leading `~/` is expanded; a relative path is refused. The row turns red and says why when the path does not exist, is not a socket, or belongs to another user. A launch that still uses such a path prints a warning in the terminal tab. In the Flatpak, only a path the app can see works, for example under `$XDG_RUNTIME_DIR` (see Flatpak Sandbox Overrides).
+
 ### Connection page
 
 **Network group:** *Global Jump Host* (a saved SSH connection) and *Global ProxyJump* (free text, OpenSSH syntax). The outermost of the three bastion tiers — it applies to every connection that inherits, including ungrouped ones, which no group can reach. Set both and they chain: the Jump Host is contacted first and the ProxyJump value is reached through it. A connection set to *Direct* ignores both. See [Network Mode and Where a Jump Host Comes From](#network-mode-and-where-a-jump-host-comes-from).

@@ -583,6 +583,8 @@ async fn wait_for_control_socket(control_path: &str) -> bool {
 /// * `identity_file` - Optional path to SSH private key
 /// * `password` - Optional password (as `SecretString`) for SSH_ASKPASS auth
 /// * `jump_host` - Optional jump host chain for `-J` flag (e.g. `"user@bastion:22"`)
+/// * `agent_socket` - The connection's own ssh-agent socket, if any; the
+///   Settings socket and the rest follow [`crate::sftp::resolve_ssh_agent_socket`]
 #[expect(
     clippy::too_many_lines,
     reason = "factory sets up the file-based askpass helper once, then returns one closure that assembles the full ssh command; both halves read linearly and splitting them would hide the per-invocation command shape"
@@ -594,6 +596,7 @@ pub fn ssh_exec_factory(
     identity_file: Option<String>,
     password: Option<SecretString>,
     jump_host: Option<String>,
+    agent_socket: Option<String>,
 ) -> impl Fn(
     String,
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send>>
@@ -641,11 +644,14 @@ pub fn ssh_exec_factory(
         let identity_file = identity_file.clone();
         let password = password.clone();
         let jump_host = jump_host.clone();
+        let agent_socket = agent_socket.clone();
         let askpass_script = askpass_script.clone();
         let control_path = ssh_control_path(&host, port);
 
         Box::pin(async move {
             let mut cmd = Command::new("ssh");
+            // The fallback master authenticates, so it needs the session's agent.
+            crate::sftp::apply_agent_env_async(&mut cmd, agent_socket.as_deref());
 
             // Wait for the main SSH session's ControlMaster socket to appear.
             let socket_ready = wait_for_control_socket(&control_path).await;

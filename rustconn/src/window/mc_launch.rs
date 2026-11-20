@@ -159,6 +159,10 @@ fn spawn_mc_tab(
         network,
         ..
     } = tab;
+    // The connection's (or group's) own agent; without one `build_child_env`
+    // applies the Settings socket and the rest.
+    let agent_socket =
+        rustconn_core::connection::ssh_inheritance::resolve_ssh_agent_socket(&conn, &groups);
     // mc's `sh://` URI carries only user, host and port; the jump host,
     // identity file, HostKeyAlias, custom options and the password reach the
     // `ssh` it spawns through a generated ssh_config and a PATH wrapper keyed
@@ -231,7 +235,7 @@ fn spawn_mc_tab(
                     &argv,
                     envv.as_deref(),
                     Some(&downloads),
-                    None,
+                    agent_socket.as_deref(),
                     cleanup,
                 );
                 if spawned && let Some(env) = handover {

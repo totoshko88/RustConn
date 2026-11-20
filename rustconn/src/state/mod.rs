@@ -711,6 +711,9 @@ impl AppState {
                 WorkspaceProfileManager::new_empty(config_manager.clone())
             });
 
+        // Every ssh-based launch reads the Settings agent socket from core.
+        rustconn_core::sftp::set_global_agent_socket(settings.ssh_agent_socket.as_deref());
+
         Ok(Self {
             connection_manager,
             session_manager,
@@ -2346,6 +2349,7 @@ impl AppState {
             self.mark_simple_sync_dirty();
         }
 
+        rustconn_core::sftp::set_global_agent_socket(settings.ssh_agent_socket.as_deref());
         self.settings = settings;
         Ok(())
     }

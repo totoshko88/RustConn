@@ -2053,14 +2053,14 @@ impl MainWindow {
     /// the KIO sftp worker sees the ssh-agent socket.
     ///
     /// Tries: `dolphin` → `nautilus` → `xdg-open` (last resort).
-    pub(crate) fn sftp_launch_file_manager(uri: &str) {
+    pub(crate) fn sftp_launch_file_manager(uri: &str, agent_socket: Option<&str>) {
         // On macOS, `open` handles sftp:// URIs natively (delegates to Finder or
         // a registered SFTP client like Cyberduck/Transmit).
         #[cfg(target_os = "macos")]
         {
             let mut cmd = std::process::Command::new("open");
             cmd.arg(uri);
-            rustconn_core::sftp::apply_agent_env(&mut cmd);
+            rustconn_core::sftp::apply_agent_env_with_overrides(&mut cmd, agent_socket, None);
             if cmd.spawn().is_ok() {
                 tracing::info!(%uri, "Launched macOS open for SFTP");
                 return;
@@ -2073,7 +2073,7 @@ impl MainWindow {
         {
             let mut cmd = std::process::Command::new("dolphin");
             cmd.arg("--new-window").arg(uri);
-            rustconn_core::sftp::apply_agent_env(&mut cmd);
+            rustconn_core::sftp::apply_agent_env_with_overrides(&mut cmd, agent_socket, None);
             if cmd.spawn().is_ok() {
                 tracing::info!(%uri, "Launched dolphin for SFTP");
                 return;
@@ -2082,7 +2082,7 @@ impl MainWindow {
             // Try nautilus (GNOME)
             let mut cmd = std::process::Command::new("nautilus");
             cmd.args(["--new-window", uri]);
-            rustconn_core::sftp::apply_agent_env(&mut cmd);
+            rustconn_core::sftp::apply_agent_env_with_overrides(&mut cmd, agent_socket, None);
             if cmd.spawn().is_ok() {
                 tracing::info!(%uri, "Launched nautilus for SFTP");
                 return;
@@ -2091,7 +2091,7 @@ impl MainWindow {
             // Last resort — xdg-open
             let mut cmd = std::process::Command::new("xdg-open");
             cmd.arg(uri);
-            rustconn_core::sftp::apply_agent_env(&mut cmd);
+            rustconn_core::sftp::apply_agent_env_with_overrides(&mut cmd, agent_socket, None);
             if cmd.spawn().is_ok() {
                 tracing::info!(%uri, "Launched xdg-open for SFTP");
                 return;
@@ -2166,6 +2166,10 @@ impl MainWindow {
         // file managers cannot pass identity files directly).
         let key_path = rustconn_core::sftp::get_ssh_key_path(conn, &groups)
             .and_then(|p| rustconn_core::resolve_key_path(&p));
+        // The agent this connection's ssh uses: its own or its group's socket,
+        // else the Settings socket and the rest.
+        let agent_socket =
+            rustconn_core::connection::ssh_inheritance::resolve_ssh_agent_socket(conn, &groups);
 
         if use_mc {
             // Open mc in a local shell tab with SFTP panel
@@ -2188,7 +2192,7 @@ impl MainWindow {
                     ));
                 }
                 tracing::info!(?kp, "Adding SSH key to agent for mc");
-                match rustconn_core::sftp::ensure_identity_loaded(kp) {
+                match rustconn_core::sftp::ensure_identity_loaded(kp, agent_socket.as_deref()) {
                     Ok(()) => {}
                     // The agent may hold the key anyway (the user loaded
                     // it); mc finds out when it logs in.
@@ -2299,6 +2303,7 @@ impl MainWindow {
             // Add SSH key to agent in background, then open URI
             let toast_cb = toast_clone.clone();
             let key_for_add = key_path.clone();
+            let agent_for_add = agent_socket.clone();
 
             // ssh-add in background thread, then launch file
             // manager as a direct subprocess (not via
@@ -2314,7 +2319,10 @@ impl MainWindow {
                             );
                         }
                         tracing::info!(?kp, "Adding SSH key to agent for SFTP");
-                        if let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(kp) {
+                        if let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(
+                            kp,
+                            agent_for_add.as_deref(),
+                        ) {
                             tracing::warn!(
                                 %stderr,
                                 "ssh-add failed — file manager may not authenticate"
@@ -2338,7 +2346,7 @@ impl MainWindow {
                     // so it inherits SSH_AUTH_SOCK. UriLauncher
                     // goes through D-Bus/portal which may not
                     // pass our env to an already-running Dolphin.
-                    Self::sftp_launch_file_manager(&uri);
+                    Self::sftp_launch_file_manager(&uri, agent_socket.as_deref());
                     if !agent_ok {
                         toast_cb.show_warning(&crate::i18n::i18n(
                             "SSH agent not running — file manager may not authenticate.",
@@ -2486,6 +2494,10 @@ impl MainWindow {
         let network = state_ref.settings().network.clone();
         let key_path = rustconn_core::sftp::get_ssh_key_path(conn, &groups)
             .and_then(|p| rustconn_core::resolve_key_path(&p));
+        // The agent this connection's ssh uses: its own or its group's socket,
+        // else the Settings socket and the rest.
+        let agent_socket =
+            rustconn_core::connection::ssh_inheritance::resolve_ssh_agent_socket(conn, &groups);
 
         if use_mc {
             let tab = super::mc_launch::McTab {
@@ -2500,7 +2512,7 @@ impl MainWindow {
             drop(state_ref);
 
             if let Some(ref kp) = key_path {
-                match rustconn_core::sftp::ensure_identity_loaded(kp) {
+                match rustconn_core::sftp::ensure_identity_loaded(kp, agent_socket.as_deref()) {
                     Ok(()) => {}
                     // The agent may hold the key anyway; mc finds out when it
                     // logs in.
@@ -2596,10 +2608,14 @@ impl MainWindow {
             tracing::info!(%base_uri, "SFTP connect: opening file browser");
 
             let key_for_add = key_path.clone();
+            let agent_for_add = agent_socket.clone();
             crate::utils::spawn_blocking_with_callback(
                 move || {
                     if let Some(ref kp) = key_for_add
-                        && let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(kp)
+                        && let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(
+                            kp,
+                            agent_for_add.as_deref(),
+                        )
                     {
                         tracing::warn!(?kp, %stderr, "ssh-add failed");
                     }
@@ -2617,7 +2633,7 @@ impl MainWindow {
                     // Launch file manager as a direct subprocess
                     // so it inherits SSH_AUTH_SOCK. UriLauncher
                     // goes through D-Bus which may not pass env.
-                    Self::sftp_launch_file_manager(&uri);
+                    Self::sftp_launch_file_manager(&uri, agent_socket.as_deref());
                 },
             );
         }

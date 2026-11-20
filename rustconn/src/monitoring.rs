@@ -532,6 +532,7 @@ struct MonitoringParams {
     identity_file: Option<String>,
     password: Option<secrecy::SecretString>,
     jump_host: Option<String>,
+    agent_socket: Option<String>,
 }
 
 use std::collections::HashMap;
@@ -569,6 +570,7 @@ impl MonitoringCoordinator {
     /// * `identity_file` - Optional SSH key path
     /// * `password` - Optional password for sshpass authentication
     /// * `jump_host` - Optional jump host chain for `-J` flag
+    /// * `agent_socket` - The connection's own ssh-agent socket, if any
     #[expect(
         clippy::too_many_arguments,
         reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
@@ -584,6 +586,7 @@ impl MonitoringCoordinator {
         identity_file: Option<&str>,
         password: Option<secrecy::SecretString>,
         jump_host: Option<&str>,
+        agent_socket: Option<&str>,
     ) {
         // Don't start if monitoring is disabled
         if !settings.enabled {
@@ -619,6 +622,7 @@ impl MonitoringCoordinator {
             identity_file.map(String::from),
             password,
             jump_host.map(String::from),
+            agent_socket.map(String::from),
         );
 
         let (handle, mut rx) =
@@ -677,6 +681,7 @@ impl MonitoringCoordinator {
             identity_file,
             password_clone,
             jump_host,
+            agent_socket,
         );
 
         tracing::info!(
@@ -806,6 +811,7 @@ impl MonitoringCoordinator {
             params.identity_file.as_deref(),
             params.password,
             params.jump_host.as_deref(),
+            params.agent_socket.as_deref(),
         );
     }
 
@@ -830,6 +836,7 @@ impl MonitoringCoordinator {
         identity_file: Option<&str>,
         password: Option<secrecy::SecretString>,
         jump_host: Option<&str>,
+        agent_socket: Option<&str>,
     ) {
         self.suspended.borrow_mut().insert(
             session_id,
@@ -841,6 +848,7 @@ impl MonitoringCoordinator {
                 identity_file: identity_file.map(String::from),
                 password,
                 jump_host: jump_host.map(String::from),
+                agent_socket: agent_socket.map(String::from),
             },
         );
     }
@@ -941,6 +949,7 @@ mod tests {
                 None,
                 None,
                 None,
+                None,
             );
         });
 
@@ -988,6 +997,7 @@ mod tests {
                 &settings,
                 "example.invalid",
                 22,
+                None,
                 None,
                 None,
                 None,

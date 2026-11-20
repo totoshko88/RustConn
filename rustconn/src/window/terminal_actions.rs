@@ -414,6 +414,8 @@ impl MainWindow {
                                         port: c.port,
                                         username: c.username.clone(),
                                         identity_file: key_path,
+                                        agent_socket:
+                                            rustconn_core::connection::ssh_inheritance::resolve_ssh_agent_socket(c, &groups),
                                     })
                                 } else {
                                     None

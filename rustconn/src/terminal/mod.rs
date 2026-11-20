@@ -126,6 +126,8 @@ pub struct SshRecordingParams {
     pub username: Option<String>,
     /// Path to SSH identity file
     pub identity_file: Option<String>,
+    /// The connection's own ssh-agent socket (connection or group), if any
+    pub agent_socket: Option<String>,
 }
 
 /// Tracks a remote recording session (script running on a remote host).
@@ -1867,18 +1869,11 @@ fn build_child_env(
         env_vec.push(Zeroizing::new(format!("PATH={extended_path}")));
     }
 
-    // SSH agent: an explicit socket wins over the process-wide agent RustConn
-    // started, which in turn wins over whatever the desktop session exported.
-    if let Some(custom_socket) = ssh_agent_socket {
-        set(&mut env_vec, format!("SSH_AUTH_SOCK={custom_socket}"));
-    } else if let Some(agent_info) = rustconn_core::sftp::get_agent_info() {
-        set(
-            &mut env_vec,
-            format!("SSH_AUTH_SOCK={}", agent_info.socket_path),
-        );
-        if let Some(ref pid) = agent_info.pid {
-            set(&mut env_vec, format!("SSH_AGENT_PID={pid}"));
-        }
+    // SSH agent: the connection's socket wins over the Settings socket, which
+    // wins over the agent RustConn started, then whatever the desktop session
+    // exported (`rustconn_core::sftp::resolve_ssh_agent_socket`).
+    for (key, value) in rustconn_core::sftp::agent_env_vars(ssh_agent_socket) {
+        set(&mut env_vec, format!("{key}={value}"));
     }
 
     // Strip host SSH_ASKPASS — RustConn types passwords into the session
@@ -4407,6 +4402,33 @@ mod child_env_tests {
             .filter(|entry| entry.starts_with("PATH="))
             .collect();
         assert_eq!(paths, ["PATH=/run/rc-mc-wrapper:/usr/bin"]);
+    }
+
+    /// F-01: the VTE child gets the connection's agent socket, and without one
+    /// exactly what core resolves for every other launch.
+    #[test]
+    fn the_child_env_carries_the_resolved_agent_socket() {
+        let sock = |env: &[zeroize::Zeroizing<String>]| -> Vec<String> {
+            env.iter()
+                .filter(|e| e.starts_with("SSH_AUTH_SOCK="))
+                .map(|e| e.as_str().to_owned())
+                .collect()
+        };
+        let own = build_child_env(None, Some("/run/rc-conn.sock"));
+        assert_eq!(sock(&own), ["SSH_AUTH_SOCK=/run/rc-conn.sock"]);
+
+        let resolved = build_child_env(None, None);
+        let expected: Vec<String> = rustconn_core::sftp::agent_env_vars(None)
+            .into_iter()
+            .filter(|(k, _)| *k == "SSH_AUTH_SOCK")
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect();
+        // Without an agent anywhere the variable is simply absent (or the
+        // inherited one), never a second entry.
+        if !expected.is_empty() {
+            assert_eq!(sock(&resolved), expected);
+        }
+        assert!(sock(&resolved).len() <= 1);
     }
 
     #[test]

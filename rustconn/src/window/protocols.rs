@@ -2186,12 +2186,14 @@ pub fn reconnect_generic_vte_in_place(
             port: conn.port,
             username: conn.username.clone(),
             identity_file: None,
+            agent_socket: None,
         }),
         rustconn_core::ProtocolConfig::Mosh(cfg) => Some(crate::terminal::SshRecordingParams {
             host: conn.host.clone(),
             port: cfg.ssh_port.unwrap_or(22),
             username: conn.username.clone(),
             identity_file: None,
+            agent_socket: None,
         }),
         _ => None,
     };
@@ -2661,6 +2663,7 @@ fn start_telnet_connection_internal(
             port,
             username: conn.username.clone(),
             identity_file: None,
+            agent_socket: None,
         });
 
         when_established(notebook, session_id, StatusClient::Other, move || {
@@ -3439,6 +3442,7 @@ fn start_mosh_connection_internal(
             port: ssh_port,
             username: conn.username.clone(),
             identity_file: None,
+            agent_socket: None,
         });
 
         // mosh-client draws on the alternate screen; see
