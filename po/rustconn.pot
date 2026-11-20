@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 23:36+0200\n"
+"POT-Creation-Date: 2026-11-20 23:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -70,8 +70,9 @@ msgstr ""
 #: rustconn/src/window/mod.rs:4918 rustconn/src/window/mod.rs:6013
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
-#: rustconn/src/window/network_tools/share.rs:85
-#: rustconn/src/window/network_tools/share.rs:500
+#: rustconn/src/window/network_tools/share.rs:96
+#: rustconn/src/window/network_tools/share.rs:323
+#: rustconn/src/window/network_tools/share.rs:585
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
@@ -167,8 +168,8 @@ msgstr ""
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/split_view/adapter.rs:1377
 #: rustconn/src/terminal/tab_menu.rs:810 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4919
-#: rustconn/src/window/network_tools/share.rs:235
-#: rustconn/src/window/network_tools/share.rs:473
+#: rustconn/src/window/network_tools/share.rs:256
+#: rustconn/src/window/network_tools/share.rs:558
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr ""
@@ -312,7 +313,7 @@ msgstr ""
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:6014
-#: rustconn/src/window/network_tools/share.rs:501
+#: rustconn/src/window/network_tools/share.rs:586
 msgid "Connect"
 msgstr ""
 
@@ -14340,38 +14341,38 @@ msgstr ""
 msgid "Could not save the copy"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:63
+#: rustconn/src/window/network_tools/share.rs:74
 msgid "Select a terminal before sharing a session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:71
+#: rustconn/src/window/network_tools/share.rs:82
 msgid ""
 "Choose this computer only, the interface whose address the link should use, "
 "or the internet over WebTransport."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:77
+#: rustconn/src/window/network_tools/share.rs:88
 msgid "Share this session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:79
+#: rustconn/src/window/network_tools/share.rs:90
 msgid ""
 "The viewer gets the live terminal output read-only. Local and LAN links are "
-"unencrypted; the internet link opens in a browser over WebTransport (QUIC) "
-"and pins this share's certificate. The tab shows ◉ and its menu has Stop "
-"Sharing."
+"unencrypted. The internet link opens in a browser over WebTransport (QUIC); "
+"RustConn asks before it contacts any server to find your public address. The "
+"tab shows ◉ and its menu has Stop Sharing."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:86
+#: rustconn/src/window/network_tools/share.rs:97
 msgid "Start sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:144
-#: rustconn/src/window/network_tools/share.rs:296
+#: rustconn/src/window/network_tools/share.rs:153
+#: rustconn/src/window/network_tools/share.rs:373
 msgid "Could not start session sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:217
+#: rustconn/src/window/network_tools/share.rs:238
 msgid ""
 "Anyone who has this link can watch the session read-only, any number of "
 "times, until you stop sharing. The link uses plain HTTP, so other computers "
@@ -14379,106 +14380,131 @@ msgid ""
 "shared. {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:222
+#: rustconn/src/window/network_tools/share.rs:243
 msgid ""
 "Anyone on this computer who has this link can watch the session read-only, "
 "any number of times, until you stop sharing. The tab is marked ◉ while it is "
 "shared. {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:227
-#: rustconn/src/window/network_tools/share.rs:465
-#: rustconn/src/window/network_tools/share.rs:655
+#: rustconn/src/window/network_tools/share.rs:248
+#: rustconn/src/window/network_tools/share.rs:550
+#: rustconn/src/window/network_tools/share.rs:750
 msgid "Session shared"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:232
-#: rustconn/src/window/network_tools/share.rs:471
+#: rustconn/src/window/network_tools/share.rs:253
+#: rustconn/src/window/network_tools/share.rs:556
 msgid "Copy link"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:233
-#: rustconn/src/window/network_tools/share.rs:472
+#: rustconn/src/window/network_tools/share.rs:254
+#: rustconn/src/window/network_tools/share.rs:557
 msgid "Stop sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:242
-#: rustconn/src/window/network_tools/share.rs:380
+#: rustconn/src/window/network_tools/share.rs:263
+#: rustconn/src/window/network_tools/share.rs:467
 msgid "Link copied to clipboard"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:334
+#: rustconn/src/window/network_tools/share.rs:316
+msgid "Look Up Your Public Address?"
+msgstr ""
+
+#: rustconn/src/window/network_tools/share.rs:318
+msgid ""
+"To build a link that works over the internet, RustConn can ask public STUN "
+"servers run by Google (stun.l.google.com) and Cloudflare "
+"(stun.cloudflare.com) for this computer's public address and port. Those "
+"companies see this computer's IP address. No terminal data is sent to them. "
+"Without the lookup, the link works only on your local network."
+msgstr ""
+
+#: rustconn/src/window/network_tools/share.rs:324
+msgid "Local Network Only"
+msgstr ""
+
+#: rustconn/src/window/network_tools/share.rs:325
+msgid "Look Up Public Address"
+msgstr ""
+
+#: rustconn/src/window/network_tools/share.rs:414
 msgid "Public endpoint (STUN)"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:336
+#: rustconn/src/window/network_tools/share.rs:416
 msgid "Endpoint (local network)"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:342
+#: rustconn/src/window/network_tools/share.rs:422
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:347
+#: rustconn/src/window/network_tools/share.rs:427
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:353
+#: rustconn/src/window/network_tools/share.rs:433
 msgid ""
-"Open the link in a current browser, or join it from another RustConn with "
-"“Join Shared Session…”. The browser warns once about the self-signed "
-"certificate; RustConn pins it automatically."
+"Anyone who has this link can watch read-only until you stop sharing. Send it "
+"only over a channel you trust. Another RustConn checks the certificate by "
+"itself. A browser shows a certificate warning: before you continue, compare "
+"the certificate's SHA-256 fingerprint with the fp= part of the link. The tab "
+"is marked ◉ while it is shared."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:357
+#: rustconn/src/window/network_tools/share.rs:437
 msgid ""
-"STUN did not answer, so this link only reaches viewers on the local network. "
-"Open it in a current browser, or join it from another RustConn with “Join "
-"Shared Session…”."
+"This link only reaches viewers on the local network. Anyone who has it can "
+"watch read-only until you stop sharing. Another RustConn checks the "
+"certificate by itself. A browser shows a certificate warning: before you "
+"continue, compare the certificate's SHA-256 fingerprint with the fp= part of "
+"the link. The tab is marked ◉ while it is shared."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:429
+#: rustconn/src/window/network_tools/share.rs:514
 msgid "Read-only link"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:487
+#: rustconn/src/window/network_tools/share.rs:572
 msgid "Paste an https:// share link"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:489
+#: rustconn/src/window/network_tools/share.rs:574
 msgid "Share link"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:492
+#: rustconn/src/window/network_tools/share.rs:577
 msgid "Join a shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:494
+#: rustconn/src/window/network_tools/share.rs:579
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:514
-#: rustconn/src/window/network_tools/share.rs:543
+#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:628
 msgid "Could not join the shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:583
+#: rustconn/src/window/network_tools/share.rs:668
 msgid "Read-only shared session from {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:589
-#: rustconn/src/window/network_tools/share.rs:598
-#: rustconn/src/window/network_tools/share.rs:680
+#: rustconn/src/window/network_tools/share.rs:674
+#: rustconn/src/window/network_tools/share.rs:683
+#: rustconn/src/window/network_tools/share.rs:775
 msgid "Shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:590
+#: rustconn/src/window/network_tools/share.rs:675
 msgid "Read-only from {}"
 msgstr ""
 
