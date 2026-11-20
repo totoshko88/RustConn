@@ -258,6 +258,32 @@ impl MainWindow {
         });
         window.add_action(&duplicate_wizard_action);
 
+        // The same, addressed by connection id for the tab menu.
+        let duplicate_wizard_by_id_action =
+            gio::SimpleAction::new("duplicate-via-wizard-by-id", Some(glib::VariantTy::STRING));
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        let toast_clone = self.toast_overlay.clone();
+        duplicate_wizard_by_id_action.connect_activate(move |_, param| {
+            let Some(id) = param
+                .and_then(glib::Variant::get::<String>)
+                .and_then(|s| Uuid::parse_str(&s).ok())
+            else {
+                return;
+            };
+            if let Some(win) = window_weak.upgrade() {
+                Self::duplicate_via_wizard_by_id(
+                    &win,
+                    &state_clone,
+                    &sidebar_clone,
+                    &toast_clone,
+                    id,
+                );
+            }
+        });
+        window.add_action(&duplicate_wizard_by_id_action);
+
         // Toggle pin action
         let toggle_pin_action = gio::SimpleAction::new("toggle-pin", None);
         let state_clone = state.clone();

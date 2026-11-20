@@ -1401,6 +1401,14 @@ impl TerminalNotebook {
                 Some(&connection_id.to_string().to_variant()),
             );
             edit_section.append_item(&duplicate);
+            // Same wording as the sidebar: a new saved connection, prefilled
+            // from this tab's, opened in the wizard.
+            let duplicate_wizard = gio::MenuItem::new(Some(&i18n("Duplicate via Wizard…")), None);
+            duplicate_wizard.set_action_and_target_value(
+                Some("win.duplicate-via-wizard-by-id"),
+                Some(&connection_id.to_string().to_variant()),
+            );
+            edit_section.append_item(&duplicate_wizard);
             let edit = gio::MenuItem::new(Some(&i18n("Edit Connection…")), None);
             edit.set_action_and_target_value(
                 Some("win.edit-connection-by-id"),
@@ -1584,9 +1592,15 @@ mod tests {
         });
         assert!(offered.iter().any(|a| a == "win.open-new-session-by-id"));
         assert!(offered.iter().any(|a| a == "win.edit-connection-by-id"));
+        assert!(
+            offered
+                .iter()
+                .any(|a| a == "win.duplicate-via-wizard-by-id")
+        );
 
         let hidden = actions_for(super::TabMenuState::default());
         assert!(!hidden.iter().any(|a| a == "win.open-new-session-by-id"));
+        assert!(!hidden.iter().any(|a| a == "win.duplicate-via-wizard-by-id"));
     }
 
     #[test]

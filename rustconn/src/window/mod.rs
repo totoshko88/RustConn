@@ -4094,20 +4094,29 @@ impl MainWindow {
         sidebar: &SharedSidebar,
         toast_overlay: &SharedToastOverlay,
     ) {
-        use crate::dialogs::connection_wizard::{
-            ConnectionWizard, PartialConnection, WizardResult,
-        };
-
         let Some(selected) = sidebar.get_selected_item() else {
             return;
         };
         if selected.is_group() {
             return;
         }
-
-        let id_str = selected.id();
-        let Ok(id) = uuid::Uuid::parse_str(&id_str) else {
+        let Ok(id) = uuid::Uuid::parse_str(&selected.id()) else {
             return;
+        };
+        Self::duplicate_via_wizard_by_id(window, state, sidebar, toast_overlay, id);
+    }
+
+    /// Same as [`Self::duplicate_via_wizard`] for a known connection id, so a tab
+    /// can offer it without depending on the sidebar selection.
+    pub(super) fn duplicate_via_wizard_by_id(
+        window: &adw::ApplicationWindow,
+        state: &SharedAppState,
+        sidebar: &SharedSidebar,
+        toast_overlay: &SharedToastOverlay,
+        id: uuid::Uuid,
+    ) {
+        use crate::dialogs::connection_wizard::{
+            ConnectionWizard, PartialConnection, WizardResult,
         };
 
         let conn = {
@@ -4120,7 +4129,18 @@ impl MainWindow {
             c
         };
 
-        let partial = PartialConnection::from_connection(&conn);
+        let mut partial = PartialConnection::from_connection(&conn);
+        // A new name up front, so the wizard shows what will be saved instead of
+        // the source's name (which the store would silently suffix).
+        if let Ok(state_ref) = state.try_borrow() {
+            partial.name =
+                Some(state_ref.generate_unique_connection_name(
+                    &format!("{} (copy)", conn.name),
+                    conn.protocol,
+                ));
+        }
+        // The wizard has no group page: the copy stays beside its source.
+        let source_group = conn.group_id;
         let wizard = ConnectionWizard::new(state.clone());
         wizard.set_partial(&partial);
 
@@ -4129,7 +4149,8 @@ impl MainWindow {
         let window_weak = window.downgrade();
         let toast_for_cb = toast_overlay.clone();
         wizard.connect_complete(move |result| match result {
-            WizardResult::Save(new_conn, password) => {
+            WizardResult::Save(mut new_conn, password) => {
+                new_conn.group_id = source_group;
                 let conn_name = new_conn.name.clone();
                 let conn_host = new_conn.host.clone();
                 let conn_username = new_conn.username.clone();
@@ -4163,7 +4184,8 @@ impl MainWindow {
                 });
                 Ok(())
             }
-            WizardResult::SaveAndConnect(new_conn, password) => {
+            WizardResult::SaveAndConnect(mut new_conn, password) => {
+                new_conn.group_id = source_group;
                 let conn_id_outer = new_conn.id;
                 let conn_name = new_conn.name.clone();
                 let conn_host = new_conn.host.clone();
@@ -4219,7 +4241,6 @@ impl MainWindow {
         });
 
         wizard.present(window);
-        let _ = partial; // Will be used when wizard supports pre-fill from partial
     }
 
     /// Shows the new group dialog with optional parent selection
