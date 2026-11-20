@@ -60,7 +60,10 @@ mod types;
 #[cfg(test)]
 mod vte_contract_tests;
 
-pub(crate) use tab_transfer::return_transferred_tabs;
+pub(crate) use tab_transfer::{
+    accept_tab_drops, clamp_drop_position, drag_single_tab, new_window_view,
+    return_transferred_tabs, set_drop_handler, set_new_window_handler,
+};
 
 pub(crate) use child_env::ChildCleanup;
 use child_env::{build_child_env, filter_program_is_runnable, reap_child, watch_child_exit};
@@ -624,6 +627,11 @@ impl TerminalNotebook {
         // Enable drag-and-drop for reordering tabs within the bar
         // but NOT to external targets (we handle that separately)
         tab_bar.set_extra_drag_preload(false);
+        // libadwaita moves the window instead of dragging a lone tab; give that
+        // tab a drag of its own so it can still go to another window.
+        drag_single_tab(&tab_bar, &tab_view, |page| {
+            !TabPageContainer::is_welcome(&page.child())
+        });
 
         // Create TabOverview for grid view of all tabs (GNOME Web-style)
         let tab_overview = adw::TabOverview::new();
@@ -794,25 +802,20 @@ impl TerminalNotebook {
         let script_menu_section_on_close = Rc::clone(&self.script_menu_section);
         let split_close_on_close = self.split_close_hooks();
 
-        // Handle create-window signal - we must connect this to prevent the default
-        // behavior which causes CRITICAL warnings. Returning None cancels the tearoff.
-        // Note: libadwaita will still show a CRITICAL warning, but this is unavoidable
-        // without implementing multi-window support.
-        self.tab_view.connect_create_window(|_| {
-            // Log instead of letting libadwaita complain
-            tracing::debug!("Tab tearoff attempted but not supported - cancelling");
-            // Return None to cancel the operation
-            // The CRITICAL warning from libadwaita is unavoidable
-            None
-        });
+        // A tab dropped outside every window opens a new window, whose view the
+        // tab then lands on (see `tab_transfer`).
+        self.tab_view.connect_create_window(|_| new_window_view());
 
         // A cluster window has a tab view of its own, and libadwaita lets a tab
-        // be dragged between any two: hand back a session tab dragged out of here.
+        // be dragged between any two: hand back a session tab dragged out of
+        // here, after which the window layer moves its session where it was
+        // dropped. The Welcome placeholder is handed back too, and stays.
         let sessions_home = self.sessions.clone();
         return_transferred_tabs(&self.tab_view, move |page| {
-            sessions_home
-                .try_borrow()
-                .is_ok_and(|sessions| sessions.values().any(|p| p == page))
+            TabPageContainer::is_welcome(&page.child())
+                || sessions_home
+                    .try_borrow()
+                    .is_ok_and(|sessions| sessions.values().any(|p| p == page))
         });
 
         // Handle close-page signal
