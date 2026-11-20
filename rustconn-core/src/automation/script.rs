@@ -2014,11 +2014,7 @@ mod recorder_tests {
         rec.record("cd /et\t\r");
         assert_eq!(
             rec.finish(),
-            vec![
-                text("cd /et"),
-                key(SpecialKey::Tab),
-                key(SpecialKey::Enter)
-            ]
+            vec![text("cd /et"), key(SpecialKey::Tab), key(SpecialKey::Enter)]
         );
     }
 
