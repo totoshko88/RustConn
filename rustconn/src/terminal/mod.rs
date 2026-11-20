@@ -65,7 +65,7 @@ use libadwaita::prelude::*;
 use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends, RdpKeyboardHook};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
-    BROADCAST_TITLE_MARKER, ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster,
+    BROADCAST_TITLE_MARKER, ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SHARED_TITLE_MARKER,
     SessionWidgetStorage, TerminalSession, group_still_in_use, local_shell_label, regroup_title,
     tab_title,
 };
@@ -466,6 +466,8 @@ pub struct TerminalNotebook {
     /// `commit` subscription is registered once per start, and two concurrent
     /// recordings would have to share the user's keystrokes between two files.
     script_recording: Rc<RefCell<Option<script_recorder::ActiveScriptRecording>>>,
+    /// Sessions whose output is being shared read-only; drives the tab menu.
+    shared_sessions: Rc<RefCell<HashSet<Uuid>>>,
     /// Shared script section for terminal context menus. One live model shared
     /// by every terminal, rebuilt when recording starts or stops so the single
     /// item's label can flip between Record and Stop.
@@ -692,6 +694,7 @@ impl TerminalNotebook {
             recording_paths: RefCell::new(HashMap::new()),
             session_highlight_rules: Rc::new(RefCell::new(HashMap::new())),
             script_recording: Rc::new(RefCell::new(None)),
+            shared_sessions: Rc::new(RefCell::new(HashSet::new())),
             script_menu_section: Rc::new(gio::Menu::new()),
             highlight_overlays: Rc::new(RefCell::new(HashMap::new())),
             terminal_overlays: Rc::new(RefCell::new(HashMap::new())),
@@ -2321,6 +2324,29 @@ impl TerminalNotebook {
 
             let tooltip = page.tooltip().unwrap_or_default().to_string();
             page.set_tooltip(&Self::broadcast_tooltip(&tooltip, member));
+        }
+    }
+
+    /// Marks or unmarks a tab as shared read-only with other viewers.
+    ///
+    /// Sharing must never be hidden: the tab title carries a `◉ ` prefix and the
+    /// tab menu offers Stop Sharing for as long as it lasts. Like the broadcast
+    /// marker, it is stripped before being re-applied, so repeated calls never
+    /// double it.
+    pub fn set_shared_marker(&self, session_id: Uuid, shared: bool) {
+        if shared {
+            self.shared_sessions.borrow_mut().insert(session_id);
+        } else {
+            self.shared_sessions.borrow_mut().remove(&session_id);
+        }
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            let title = page.title().to_string();
+            let base = title.strip_prefix(SHARED_TITLE_MARKER).unwrap_or(&title);
+            if shared {
+                page.set_title(&format!("{SHARED_TITLE_MARKER}{base}"));
+            } else {
+                page.set_title(base);
+            }
         }
     }
 

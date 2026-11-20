@@ -135,9 +135,12 @@ pub fn tab_title(name: &str, group: Option<&str>) -> String {
 /// The marker the cross-tab broadcast puts in front of a member's title.
 pub const BROADCAST_TITLE_MARKER: &str = "⇄ ";
 
+/// The marker a shared tab carries, so sharing is never hidden from the user.
+pub const SHARED_TITLE_MARKER: &str = "◉ ";
+
 /// Moves a tab title from group `old` to group `new`, keeping the markers.
 ///
-/// A title reads `<markers>[group] name`, where the markers (`⇄ `, `●REC `) are
+/// A title reads `<markers>[group] name`, where the markers (`⇄ `, `●REC `, `◉ `) are
 /// put there by other features in front of everything else. The old label is
 /// found by the group name the session is known to carry, so a user label that
 /// merely looks like `[x] y` is never eaten, and the new label goes behind the
@@ -202,7 +205,7 @@ mod tests {
 
     #[test]
     fn regrouping_keeps_markers_in_front_and_never_stacks_labels() {
-        let m = ["⇄ ", "●REC "];
+        let m = ["⇄ ", "●REC ", "◉ "];
         assert_eq!(
             regroup_title("⇄ web1", None, Some("prod"), &m),
             "⇄ [prod] web1"

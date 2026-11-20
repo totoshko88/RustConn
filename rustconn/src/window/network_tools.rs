@@ -23,7 +23,7 @@ use rustconn_core::network_scan::local_interfaces;
 use uuid::Uuid;
 
 use self::remote_edit::{begin_remote_edit, begin_remote_edit_connection};
-use self::share::{join_shared_session, start_sharing};
+use self::share::{join_shared_session, start_sharing, stop_all_sharing};
 use self::tftp::choose_tftp_directory;
 use super::types::SharedNotebook;
 use crate::i18n::i18n;
@@ -73,6 +73,17 @@ pub(crate) fn setup_network_tools(
         }
     });
     window.add_action(&share_for);
+
+    let stop_share = gio::SimpleAction::new("stop-sharing", None);
+    let win = window.downgrade();
+    stop_share.connect_activate(move |_, _| {
+        if stop_all_sharing()
+            && let Some(win) = win.upgrade()
+        {
+            show_toast_on_window(&win, &i18n("Sharing stopped"), ToastType::Success);
+        }
+    });
+    window.add_action(&stop_share);
 
     let share_connection =
         gio::SimpleAction::new("share-connection-session", Some(glib::VariantTy::STRING));

@@ -1,7 +1,7 @@
 //! Session sharing: the read-only HTTP/SSE relay, the WebTransport (QUIC)
 //! share and the viewer window that joins one.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::rc::Rc;
 use std::sync::OnceLock;
@@ -18,7 +18,6 @@ use uuid::Uuid;
 use vte4::prelude::TerminalExt;
 
 use super::{Access, access_widgets, show_error};
-use crate::async_utils::with_runtime;
 use crate::i18n::{i18n, i18n_f};
 use crate::toast::{ToastType, show_toast_on_window};
 use crate::utils::spawn_blocking_with_callback;
@@ -27,8 +26,18 @@ use crate::window::types::SharedNotebook;
 thread_local! {
     /// At most one relay and one TFTP server per process: both are local,
     /// read-only convenience services, not multi-tenant daemons.
-    static ACTIVE_SHARE: RefCell<Option<ShareServer>> = const { RefCell::new(None) };
+    static ACTIVE_SHARE: RefCell<Option<ActiveShare>> = const { RefCell::new(None) };
+    static SHARE_SERIAL: Cell<u64> = const { Cell::new(0) };
     static ACTIVE_QUIC: RefCell<Option<QuicShareServer>> = const { RefCell::new(None) };
+}
+
+/// The running relay and the tab it shares.
+struct ActiveShare {
+    server: ShareServer,
+    session_id: Uuid,
+    /// Tells the tab watcher whether it still belongs to this share.
+    serial: u64,
+    notebook: SharedNotebook,
 }
 
 /// A QUIC share outlives the worker thread that starts it, so it cannot use
@@ -67,7 +76,7 @@ pub(super) fn start_sharing(
     let dialog = adw::AlertDialog::builder()
         .heading(i18n("Share this session"))
         .body(i18n(
-            "The viewer gets the live terminal output read-only. Local and LAN links are unencrypted; the internet link opens in a browser over WebTransport (QUIC) and pins this share's certificate.",
+            "The viewer gets the live terminal output read-only. Local and LAN links are unencrypted; the internet link opens in a browser over WebTransport (QUIC) and pins this share's certificate. The tab shows ◉ and its menu has Stop Sharing.",
         ))
         .extra_child(&access_box)
         .default_response("cancel")
@@ -96,6 +105,8 @@ pub(super) fn start_sharing(
 }
 
 /// Binds the relay to loopback or to the chosen interface and shows its link.
+///
+/// The bind runs off the main loop, so the window stays responsive.
 fn start_sharing_on(
     window: &adw::ApplicationWindow,
     notebook: &SharedNotebook,
@@ -108,52 +119,107 @@ fn start_sharing_on(
     if let Some(old) = ACTIVE_QUIC.with(|cell| cell.borrow_mut().take()) {
         old.stop();
     }
-    let network = host.is_some();
+    stop_http_share();
     let bind = match host {
         Some(ip) => SocketAddr::new(ip, 0),
         None => SocketAddr::from(([127, 0, 0, 1], 0)),
     };
-    let host = host.unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
-
     let token = SecretString::from(uuid::Uuid::new_v4().to_string());
-    let server = match with_runtime(|rt| rt.block_on(ShareServer::start(bind, token))) {
-        Ok(Ok(server)) => server,
-        Ok(Err(e)) => {
-            show_error(
-                window,
-                &i18n("Could not start session sharing"),
-                &e.to_string(),
-            );
-            return;
-        }
-        Err(e) => {
-            show_error(window, &i18n("Could not start session sharing"), &e);
-            return;
-        }
-    };
+    let win = window.downgrade();
+    let nb = notebook.clone();
+    spawn_blocking_with_callback(
+        move || {
+            // shortcut: reuses the process-wide runtime of the QUIC share, since
+            // the accept loop must outlive this worker thread.
+            quic_runtime().and_then(|runtime| {
+                runtime
+                    .block_on(ShareServer::start(bind, token))
+                    .map_err(|error| error.to_string())
+            })
+        },
+        move |result| {
+            let Some(win) = win.upgrade() else { return };
+            match result {
+                Ok(server) => present_http_share(&win, &nb, session_id, server, host),
+                Err(error) => show_error(&win, &i18n("Could not start session sharing"), &error),
+            }
+        },
+    );
+}
 
-    // Raw PTY output goes into the relay's broadcast channel. Overflow drops
-    // frames for slow viewers instead of blocking the terminal.
+/// Stops the relay without blocking the caller and clears the tab indicator.
+///
+/// Returns whether a relay was running.
+pub(super) fn stop_http_share() -> bool {
+    let Some(active) = ACTIVE_SHARE.with(|cell| cell.borrow_mut().take()) else {
+        return false;
+    };
+    active.notebook.set_shared_marker(active.session_id, false);
+    match quic_runtime() {
+        Ok(runtime) => {
+            runtime.spawn(active.server.stop());
+        }
+        Err(error) => tracing::warn!(%error, "share: no runtime to stop the relay"),
+    }
+    true
+}
+
+/// Stops whatever this window shares (relay or WebTransport). For the
+/// `win.stop-sharing` action in the tab menu.
+pub(super) fn stop_all_sharing() -> bool {
+    let quic = ACTIVE_QUIC.with(|cell| cell.borrow_mut().take());
+    let had_quic = quic.is_some();
+    if let Some(server) = quic {
+        server.stop();
+    }
+    stop_http_share() || had_quic
+}
+
+/// Marks the tab, starts the output feed and shows the link.
+fn present_http_share(
+    window: &adw::ApplicationWindow,
+    notebook: &SharedNotebook,
+    session_id: Uuid,
+    server: ShareServer,
+    host: Option<IpAddr>,
+) {
+    let network = host.is_some();
+    let host = host.unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
+    // Raw PTY output goes into the relay's broadcast channel. Overflow makes a
+    // slow viewer resync instead of blocking the terminal. With no viewer there
+    // is nobody to copy the bytes for.
     let publisher = server.publisher();
     notebook.add_output_observer(session_id, move |bytes| {
-        let _ = publisher.send(bytes.to_vec());
+        if publisher.receiver_count() > 0 {
+            let _ = publisher.send(bytes.to_vec());
+        }
     });
     let (cols, rows) = notebook.terminal_grid(session_id).unwrap_or((80, 24));
     let url = format!("{}&cols={cols}&rows={rows}", server.local_url_for(host));
-    ACTIVE_SHARE.with(|cell| {
-        if let Some(old) = cell.borrow_mut().replace(server) {
-            let _ = with_runtime(|rt| rt.block_on(old.stop()));
-        }
+    stop_http_share();
+    notebook.set_shared_marker(session_id, true);
+    let serial = SHARE_SERIAL.with(|n| {
+        n.set(n.get() + 1);
+        n.get()
     });
+    ACTIVE_SHARE.with(|cell| {
+        *cell.borrow_mut() = Some(ActiveShare {
+            server,
+            session_id,
+            serial,
+            notebook: notebook.clone(),
+        });
+    });
+    watch_shared_tab(serial, session_id, notebook.clone());
 
     let body = if network {
         i18n_f(
-            "Anyone with this read-only link on the network can watch the session: {}",
+            "Anyone who has this link can watch the session read-only, any number of times, until you stop sharing. The link uses plain HTTP, so other computers on your network can read what is shown. The tab is marked ◉ while it is shared. {}",
             &[&url],
         )
     } else {
         i18n_f(
-            "Anyone with this read-only link on this computer can watch the session: {}",
+            "Anyone on this computer who has this link can watch the session read-only, any number of times, until you stop sharing. The tab is marked ◉ while it is shared. {}",
             &[&url],
         )
     };
@@ -165,25 +231,39 @@ fn start_sharing_on(
         .build();
     dialog.add_response("copy", &i18n("Copy link"));
     dialog.add_response("stop", &i18n("Stop sharing"));
+    dialog.set_response_appearance("stop", adw::ResponseAppearance::Destructive);
     dialog.add_response("close", &i18n("Close"));
     let win = window.downgrade();
-    let url_for_copy = url.clone();
     dialog.connect_response(None, move |_, response| match response {
         "copy" => {
             if let Some(win) = win.upgrade() {
                 let display = gtk4::prelude::WidgetExt::display(&win);
-                display.clipboard().set_text(&url_for_copy);
+                display.clipboard().set_text(&url);
                 show_toast_on_window(&win, &i18n("Link copied to clipboard"), ToastType::Success);
             }
         }
         "stop" => {
-            if let Some(server) = ACTIVE_SHARE.with(|cell| cell.borrow_mut().take()) {
-                let _ = with_runtime(|rt| rt.block_on(server.stop()));
-            }
+            stop_http_share();
         }
         _ => {}
     });
     dialog.present(Some(window));
+}
+
+/// Stops the relay when the shared tab goes away: a share with no terminal
+/// behind it would stay open and look active.
+fn watch_shared_tab(serial: u64, session_id: Uuid, notebook: SharedNotebook) {
+    glib::timeout_add_seconds_local(2, move || {
+        let current = ACTIVE_SHARE.with(|cell| cell.borrow().as_ref().map(|a| a.serial));
+        if current != Some(serial) {
+            return glib::ControlFlow::Break;
+        }
+        if notebook.terminal_grid(session_id).is_some() {
+            return glib::ControlFlow::Continue;
+        }
+        stop_http_share();
+        glib::ControlFlow::Break
+    });
 }
 
 /// Starts the WebTransport share, discovers the public UDP endpoint with STUN,
@@ -279,9 +359,7 @@ fn present_quic_share(
     };
     let built = build_quic_share_dialog(&body, &address_label, &links, &labels, &hint);
 
-    if let Some(old) = ACTIVE_SHARE.with(|cell| cell.borrow_mut().take()) {
-        let _ = with_runtime(|rt| rt.block_on(old.stop()));
-    }
+    stop_http_share();
     ACTIVE_QUIC.with(|cell| {
         if let Some(old) = cell.borrow_mut().replace(server) {
             old.stop();

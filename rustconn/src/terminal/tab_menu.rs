@@ -24,6 +24,8 @@ pub struct TabMenuState {
     /// A script recording is in progress somewhere in the window; only one
     /// runs at a time, so the menu offers Stop instead of Record.
     pub is_script_recording: bool,
+    /// The session is being shared right now; the menu offers Stop instead of Share.
+    pub is_shared: bool,
     /// The session is an SSH/SFTP terminal, so a remote file can be edited.
     pub can_edit_remote: bool,
     /// The tab hosts a session. The Welcome tab does not, and the group,
@@ -179,6 +181,7 @@ impl TerminalNotebook {
         let directional_close_for_menu = self.show_directional_close.clone();
         let split_tab_titles_for_menu = self.split_tab_titles.clone();
         let recording_for_menu = self.script_recording.clone();
+        let shared_for_menu = self.shared_sessions.clone();
         let menu_for_setup = menu;
 
         // Create the action group and the stateful monitor action up front, so
@@ -265,6 +268,8 @@ impl TerminalNotebook {
                     TabMenuState {
                         session: session_id,
                         is_script_recording: recording_for_menu.borrow().is_some(),
+                        is_shared: session_id
+                            .is_some_and(|sid| shared_for_menu.borrow().contains(&sid)),
                         can_edit_remote: session_id
                             .and_then(|sid| info_ref.get(&sid))
                             .is_some_and(|i| matches!(i.protocol.as_str(), "ssh" | "sftp")),
@@ -457,7 +462,7 @@ impl TerminalNotebook {
                         page.title().as_str(),
                         old_group.as_deref(),
                         Some(&group_name),
-                        &[BROADCAST_TITLE_MARKER, &rec],
+                        &[BROADCAST_TITLE_MARKER, SHARED_TITLE_MARKER, &rec],
                     );
                     page.set_title(&title);
 
@@ -659,7 +664,7 @@ impl TerminalNotebook {
                     page.title().as_str(),
                     old_group.as_deref(),
                     None,
-                    &[BROADCAST_TITLE_MARKER, &rec],
+                    &[BROADCAST_TITLE_MARKER, SHARED_TITLE_MARKER, &rec],
                 );
                 page.set_title(&title);
             }
@@ -1447,12 +1452,16 @@ impl TerminalNotebook {
                 );
                 tools.append_item(&record);
             }
-            let share = gio::MenuItem::new(Some(&i18n("Share Session (read-only)")), None);
-            share.set_action_and_target_value(
-                Some("win.share-session-for"),
-                Some(&session.to_string().to_variant()),
-            );
-            tools.append_item(&share);
+            if state.is_shared {
+                tools.append(Some(&i18n("Stop Sharing")), Some("win.stop-sharing"));
+            } else {
+                let share = gio::MenuItem::new(Some(&i18n("Share Session (read-only)")), None);
+                share.set_action_and_target_value(
+                    Some("win.share-session-for"),
+                    Some(&session.to_string().to_variant()),
+                );
+                tools.append_item(&share);
+            }
             if state.can_edit_remote {
                 let edit = gio::MenuItem::new(Some(&i18n("Edit Remote File…")), None);
                 edit.set_action_and_target_value(
@@ -1656,6 +1665,18 @@ mod tests {
 
         let welcome = actions_for(super::TabMenuState::default());
         assert!(!welcome.iter().any(|a| a == "win.share-session-for"));
+    }
+
+    #[test]
+    fn a_shared_tab_offers_stop_instead_of_share() {
+        let shared = actions_for(super::TabMenuState {
+            is_terminal: true,
+            session: Some(uuid::Uuid::new_v4()),
+            is_shared: true,
+            ..Default::default()
+        });
+        assert!(shared.iter().any(|a| a == "win.stop-sharing"));
+        assert!(!shared.iter().any(|a| a == "win.share-session-for"));
     }
 
     #[test]
