@@ -4,7 +4,7 @@
 //! `connections.toml` as typed. They now live in the configured secret backend,
 //! one entry per key, addressed by the connection's UUID so that renaming or
 //! moving the connection never orphans them. The file keeps only the
-//! `*_key_in_vault` flags of [`SpaConfig`](super::knock::SpaConfig).
+//! `*_key_in_vault` flags of [`SpaConfig`].
 //!
 //! This module is the GUI-free half: key naming, the [`SpaKeyStore`] seam the
 //! GUI implements over its vault dispatcher, the one-way move
