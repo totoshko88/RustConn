@@ -2777,7 +2777,7 @@ counts the selected items (**Selected: 3**).
 
 1. Click **Select Connections** in the sidebar's bottom toolbar to enter Group Operations Mode
 2. Select rows with **Ctrl+click** (add or remove one) or **Shift+click** (a range), or use **Select All**
-3. Choose an action in the bar. Right-clicking a selected row keeps the selection and opens a menu with the same bulk actions plus **Run Local Script…**
+3. Choose an action in the bar. Right-clicking a selected row keeps the selection and opens a menu with the same bulk actions plus **Run Local Script…**. The **Menu** key and **Shift+F10** open the same menu, **Delete** deletes the whole selection (after the confirmation), and **F2**, **Ctrl+E** and **Ctrl+D** do nothing while several rows are selected
 4. Confirm the action in the dialog
 5. Press **Escape** or click **Select Connections** again to leave the mode and drop the selection (use **Clear Selection** to stay in the mode)
 

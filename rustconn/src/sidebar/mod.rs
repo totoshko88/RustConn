@@ -457,6 +457,13 @@ impl ConnectionSidebar {
             // Use is_multi() to check if we're in multi-selection mode
             let is_multi_mode = selection_model_clone.borrow().is_multi();
             let ctrl = modifier.contains(gdk::ModifierType::CONTROL_MASK);
+            // Several rows selected: one-row commands do nothing rather than
+            // act on an arbitrary row of the selection; Delete takes them all.
+            let several = is_multi_mode
+                && list_view_weak
+                    .upgrade()
+                    .and_then(|lv| lv.model())
+                    .is_some_and(|m| view::has_multi_selection(&m));
 
             // Handle keyboard navigation
             // Shortcuts like Delete, Ctrl+E, Ctrl+D are scoped to the sidebar
@@ -472,10 +479,20 @@ impl ConnectionSidebar {
                     glib::Propagation::Proceed
                 }
                 gdk::Key::Delete => {
-                    // Delete selected connection/group
+                    // Delete selected connection/group, or the whole selection
                     if let Some(lv) = list_view_weak.upgrade() {
-                        let _ = lv.activate_action("win.delete-connection", None);
+                        let action = if several {
+                            "win.delete-selected"
+                        } else {
+                            "win.delete-connection"
+                        };
+                        let _ = lv.activate_action(action, None);
                     }
+                    glib::Propagation::Stop
+                }
+                gdk::Key::F2 | gdk::Key::e | gdk::Key::E | gdk::Key::d | gdk::Key::D
+                    if several && (ctrl || key == gdk::Key::F2) =>
+                {
                     glib::Propagation::Stop
                 }
                 gdk::Key::F2 => {
@@ -1761,6 +1778,15 @@ impl ConnectionSidebar {
         };
         let selection = model.selection();
         if selection.is_empty() {
+            return;
+        }
+        if view::has_multi_selection(&model) {
+            sidebar_ui::show_multi_select_context_menu(
+                list_view,
+                16.0,
+                16.0,
+                sidebar_ui::MenuActivation::Keyboard,
+            );
             return;
         }
         let pos = selection.nth(0);

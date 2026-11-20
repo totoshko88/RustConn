@@ -99,6 +99,14 @@ pub fn select_single_position(model: &gtk4::SelectionModel, position: u32) {
     }
 }
 
+/// Whether two or more rows are selected. Single-row commands (Rename, Edit,
+/// Duplicate) would act on one arbitrary row of such a selection, so keys and
+/// menus must take the whole-selection path instead.
+#[must_use]
+pub fn has_multi_selection(model: &gtk4::SelectionModel) -> bool {
+    model.is::<MultiSelection>() && model.selection().size() > 1
+}
+
 /// Prepares the selection for a right-click on `position`.
 ///
 /// Returns `true` when the row is part of a multi-selection of two or more rows:
@@ -106,7 +114,7 @@ pub fn select_single_position(model: &gtk4::SelectionModel, position: u32) {
 /// the row alone is selected, as [`select_single_position`] does, and `false` is
 /// returned.
 pub fn select_for_context_menu(model: &gtk4::SelectionModel, position: u32) -> bool {
-    if model.is::<MultiSelection>() && model.is_selected(position) && model.selection().size() > 1 {
+    if model.is_selected(position) && has_multi_selection(model) {
         return true;
     }
     select_single_position(model, position);
@@ -1041,5 +1049,43 @@ pub fn unbind_list_item(
         for handler_id in handler_ids {
             item.disconnect(handler_id);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{has_multi_selection, select_for_context_menu};
+    use gtk4::prelude::*;
+
+    /// Right-click and keyboard menus on a selection of several rows act on all
+    /// of them; on anything else they act on the clicked row alone.
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact <this test path>`"]
+    fn menus_take_the_whole_selection_only_when_there_is_one() {
+        if gtk4::init().is_err() {
+            return;
+        }
+        let store = gtk4::gio::ListStore::new::<gtk4::StringObject>();
+        for name in ["a", "b", "c"] {
+            store.append(&gtk4::StringObject::new(name));
+        }
+        let multi = gtk4::MultiSelection::new(Some(store.clone()));
+        let model: gtk4::SelectionModel = multi.clone().upcast();
+
+        assert!(!has_multi_selection(&model), "empty selection");
+        multi.select_item(0, true);
+        assert!(!has_multi_selection(&model), "one row");
+        multi.select_item(2, false);
+        assert!(has_multi_selection(&model), "two rows");
+
+        assert!(select_for_context_menu(&model, 2), "inside the selection");
+        assert_eq!(model.selection().size(), 2, "selection kept");
+
+        assert!(!select_for_context_menu(&model, 1), "outside the selection");
+        assert_eq!(model.selection().size(), 1, "collapsed to the clicked row");
+        assert!(model.is_selected(1));
+
+        let single: gtk4::SelectionModel = gtk4::SingleSelection::new(Some(store)).upcast();
+        assert!(!has_multi_selection(&single), "single mode");
     }
 }
