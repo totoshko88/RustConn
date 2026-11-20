@@ -18,15 +18,44 @@
 //! # Trust model
 //!
 //! The server uses a fresh ECDSA P-256 self-signed certificate per share,
-//! valid for at most two weeks as WebTransport requires. Its SHA-256 travels
-//! inside the link fragment, and the browser pins exactly that certificate
-//! through `serverCertificateHashes`, so the token is never sent to an
-//! unauthenticated peer. The page is static; the token never appears in a
-//! request the server could log.
+//! valid for at most two weeks as WebTransport requires. Its SHA-256 (the
+//! pin) and the access token travel in the link fragment.
+//!
+//! Two clients, two levels of protection:
+//!
+//! * **RustConn viewer** ("Join Shared Session"): reads the pin from the link
+//!   and checks the WebTransport certificate against it. No page is loaded.
+//!   The token is sent only to a peer that proved it holds that certificate.
+//!   The link itself is the trust root, so it must reach the viewer over a
+//!   channel you trust.
+//! * **Browser viewer**: trust on first use. The browser first loads the page
+//!   over TCP-TLS with the same self-signed certificate, so the user clicks
+//!   through a certificate warning. Until that page runs there is nothing to
+//!   pin against. A man in the middle on that first load can serve its own
+//!   page. The script of that page reads `location.hash`, so it learns the
+//!   token and the pin, can join the real share as a viewer, and can show the
+//!   user a forged terminal. The fragment is never sent *to the server*, which
+//!   protects it from server logs and `Referer`, not from the page's own
+//!   script. A viewer can compare the certificate fingerprint the browser
+//!   shows for the page with the `fp=` value of the link to rule this out.
+//!
+//! Sharing only the link with the people who should watch, over a channel you
+//! trust, is therefore part of the model. The share is read-only: a viewer
+//! cannot type into the session.
+//!
+//! # Limits
+//!
+//! [`ShareLimits`] applies as on the HTTP relay: a cap on open sockets and on
+//! viewers, a deadline for the TLS handshake plus the request, a deadline for
+//! each write, and a reset for a viewer that fell behind. Sockets over the cap
+//! are refused at accept.
 //!
 //! # NAT
 //!
-//! STUN creates the UDP mapping and a keepalive thread refreshes it. A full-cone
+//! STUN creates the UDP mapping and a keepalive thread refreshes it. STUN
+//! contacts third-party servers ([`STUN_SERVERS`]), so it runs only with
+//! [`StunConsent::Granted`]; with [`StunConsent::Declined`] no packet leaves
+//! for any of them. A full-cone
 //! (endpoint-independent filtering) router accepts a viewer that the host has
 //! not contacted; a restricted or symmetric NAT, including most CGNAT, drops
 //! it, and no loopback trick can change that — a relay is then the only path.
@@ -35,25 +64,31 @@ use std::fmt;
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
 use std::time::Duration;
 
 use secrecy::{ExposeSecret, SecretString};
 use thiserror::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, UdpSocket};
-use tokio::sync::broadcast;
-use tokio::task::JoinHandle;
+use tokio::sync::{Semaphore, broadcast};
+use tokio::task::{JoinHandle, JoinSet};
 use tokio_rustls::TlsAcceptor;
 use tokio_rustls::rustls;
 use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
+use tokio_rustls::rustls::server::{ClientHello, ResolvesServerCert};
+use tokio_rustls::rustls::sign::CertifiedKey;
 use tracing::{debug, info};
 use wtransport::endpoint::endpoint_side;
 use wtransport::{Identity, ServerConfig};
 
-use super::share::{XTERM_CSS, XTERM_JS, constant_time_eq, percent_decode};
+use super::share::{
+    ShareLimits, ViewerSlot, XTERM_CSS, XTERM_JS, constant_time_eq, percent_decode,
+};
 
-/// STUN binding requests, tried in order until one answers.
-const STUN_SERVERS: &[&str] = &[
+/// STUN binding requests, tried in order until one answers. Google and
+/// Cloudflare run them; the consent dialog names both.
+pub const STUN_SERVERS: &[&str] = &[
     "stun.l.google.com:19302",
     "stun1.l.google.com:19302",
     "stun.cloudflare.com:3478",
@@ -61,8 +96,37 @@ const STUN_SERVERS: &[&str] = &[
 const STUN_MAGIC: u32 = 0x2112_A442;
 const STUN_TIMEOUT: Duration = Duration::from_secs(2);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
-/// Slow viewers drop frames instead of blocking the terminal.
-const CHANNEL_CAPACITY: usize = 64;
+/// Sent to a viewer that fell behind: resets the terminal (RIS) so a chunk
+/// skipped in the middle of an escape sequence cannot leave the screen garbled.
+const LAG_RESET: &[u8] = b"\x1bc[some output was skipped; the screen was reset]\r\n";
+
+/// Whether the user agreed to contact the public STUN servers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum StunConsent {
+    /// No STUN packet is sent. The link only reaches the local network.
+    #[default]
+    Declined,
+    /// [`STUN_SERVERS`] may be asked for this computer's public UDP endpoint.
+    Granted,
+}
+
+/// The STUN servers that may be contacted under `consent`.
+#[must_use]
+pub fn stun_servers(consent: StunConsent) -> &'static [&'static str] {
+    match consent {
+        StunConsent::Declined => &[],
+        StunConsent::Granted => STUN_SERVERS,
+    }
+}
+
+/// How to start a [`QuicShareServer`].
+#[derive(Debug, Clone, Copy, Default)]
+pub struct QuicShareOptions {
+    /// Caps and deadlines, as on the HTTP relay.
+    pub limits: ShareLimits,
+    /// Whether STUN may be contacted. Declined unless set.
+    pub stun: StunConsent,
+}
 /// A request line and its headers; anything larger is an attack, not a viewer.
 const MAX_REQUEST: usize = 16 * 1024;
 
@@ -291,8 +355,9 @@ impl fmt::Debug for QuicShareServer {
 }
 
 impl QuicShareServer {
-    /// Binds the UDP socket, asks STUN for the public endpoint, then serves the
-    /// page over TCP-TLS and the terminal over WebTransport.
+    /// Binds the UDP socket, asks STUN for the public endpoint when
+    /// `options.stun` is [`StunConsent::Granted`], then serves the page over
+    /// TCP-TLS and the terminal over WebTransport.
     ///
     /// # Errors
     ///
@@ -300,13 +365,25 @@ impl QuicShareServer {
     /// certificate cannot be generated, or the TLS endpoints cannot be
     /// created. STUN failure is not an error: the server still starts and
     /// [`Self::public_addrs`] stays empty.
-    pub async fn start(bind: SocketAddr, token: SecretString) -> Result<Self, ShareQuicError> {
+    pub async fn start(
+        bind: SocketAddr,
+        token: SecretString,
+        options: QuicShareOptions,
+    ) -> Result<Self, ShareQuicError> {
         let socket = std::net::UdpSocket::bind(bind)?;
         socket.set_nonblocking(true)?;
         let tokio_socket = UdpSocket::from_std(socket)?;
-        let (public_addrs, keepalive_target) = discover_external(&tokio_socket).await;
+        let (public_addrs, keepalive_target) =
+            discover_external(&tokio_socket, stun_servers(options.stun)).await;
         let socket = tokio_socket.into_std()?;
-        start_on_socket(socket, token, public_addrs, keepalive_target).await
+        start_on_socket(
+            socket,
+            token,
+            public_addrs,
+            keepalive_target,
+            options.limits,
+        )
+        .await
     }
 
     /// UDP endpoint the WebTransport server listens on.
@@ -356,7 +433,8 @@ impl QuicShareServer {
         )
     }
 
-    /// Closes the listeners and stops the keepalive thread.
+    /// Closes the listeners and stops the keepalive thread. Open page
+    /// connections end with the page loop; viewers end with the endpoint.
     pub fn stop(self) {
         self.endpoint
             .close(wtransport::VarInt::from_u32(0), b"stop");
@@ -429,6 +507,7 @@ async fn start_on_socket(
     token: SecretString,
     public_addrs: Vec<SocketAddr>,
     keepalive_target: Option<SocketAddr>,
+    limits: ShareLimits,
 ) -> Result<QuicShareServer, ShareQuicError> {
     socket.set_nonblocking(true)?;
     let bind_ip = socket.local_addr()?.ip();
@@ -459,15 +538,17 @@ async fn start_on_socket(
     };
     let page_addr = page_listener.local_addr()?;
 
-    let (publisher, _) = broadcast::channel(CHANNEL_CAPACITY);
+    let (publisher, _) = broadcast::channel(limits.channel_capacity.max(1));
     let accept = tokio::spawn(accept_loop(
         Arc::clone(&endpoint),
         token.clone(),
         publisher.clone(),
+        limits,
     ));
     let page = tokio::spawn(page_loop(
         page_listener,
         TlsAcceptor::from(Arc::new(page_tls)),
+        limits,
     ));
     let keepalive = keepalive_socket
         .zip(keepalive_target)
@@ -511,6 +592,16 @@ fn push_name(names: &mut Vec<String>, ip: IpAddr) {
     }
 }
 
+/// Always offers the one self-signed certificate of this share.
+#[derive(Debug)]
+struct SingleCert(Arc<CertifiedKey>);
+
+impl ResolvesServerCert for SingleCert {
+    fn resolve(&self, _client_hello: ClientHello<'_>) -> Option<Arc<CertifiedKey>> {
+        Some(Arc::clone(&self.0))
+    }
+}
+
 fn page_tls_config(identity: &Identity) -> Result<rustls::ServerConfig, ShareQuicError> {
     let chain: Vec<CertificateDer<'static>> = identity
         .certificate_chain()
@@ -518,17 +609,23 @@ fn page_tls_config(identity: &Identity) -> Result<rustls::ServerConfig, ShareQui
         .iter()
         .map(|cert| CertificateDer::from(cert.der().to_vec()))
         .collect();
+    // The key is borrowed from `identity` and parsed in place: no second copy
+    // of the private key bytes is made here.
     let key = PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(
-        identity.private_key().secret_der().to_vec(),
+        identity.private_key().secret_der(),
     ));
+    let signing_key = rustls::crypto::ring::sign::any_supported_type(&key)
+        .map_err(|error| ShareQuicError::Tls(error.to_string()))?;
     let mut config = rustls::ServerConfig::builder_with_provider(Arc::new(
         rustls::crypto::ring::default_provider(),
     ))
     .with_safe_default_protocol_versions()
     .map_err(|error| ShareQuicError::Tls(error.to_string()))?
     .with_no_client_auth()
-    .with_single_cert(chain, key)
-    .map_err(|error| ShareQuicError::Tls(error.to_string()))?;
+    .with_cert_resolver(Arc::new(SingleCert(Arc::new(CertifiedKey::new(
+        chain,
+        signing_key,
+    )))));
     config.alpn_protocols = vec![b"http/1.1".to_vec()];
     Ok(config)
 }
@@ -537,14 +634,27 @@ async fn accept_loop(
     endpoint: Arc<wtransport::Endpoint<endpoint_side::Server>>,
     token: SecretString,
     publisher: broadcast::Sender<Vec<u8>>,
+    limits: ShareLimits,
 ) {
+    let slots = Arc::new(Semaphore::new(limits.max_connections));
+    let viewers = Arc::new(AtomicUsize::new(0));
     loop {
         let incoming = endpoint.accept().await;
+        // Every handshake and every viewer holds a slot; extra ones are
+        // refused before any work is spent on them.
+        let Ok(permit) = Arc::clone(&slots).try_acquire_owned() else {
+            debug!("share quic: connection cap reached");
+            incoming.refuse();
+            continue;
+        };
         let token = token.clone();
         let publisher = publisher.clone();
+        let viewers = Arc::clone(&viewers);
         tokio::spawn(async move {
-            let Ok(request) = incoming.await else {
-                debug!("share quic: handshake failed");
+            let _permit = permit;
+            let Ok(Ok(request)) = tokio::time::timeout(limits.request_timeout, incoming).await
+            else {
+                debug!("share quic: handshake failed or timed out");
                 return;
             };
             let supplied = percent_decode(query_value(request.path(), "token").unwrap_or(""));
@@ -553,66 +663,130 @@ async fn accept_loop(
                 request.forbidden().await;
                 return;
             }
-            let Ok(connection) = request.accept().await else {
-                debug!("share quic: session rejected");
+            let Some(slot) = ViewerSlot::acquire(&viewers, limits.max_viewers) else {
+                debug!("share quic: viewer cap reached");
+                request.too_many_requests().await;
                 return;
             };
-            serve_viewer(connection, publisher).await;
+            let Ok(Ok(connection)) =
+                tokio::time::timeout(limits.request_timeout, request.accept()).await
+            else {
+                debug!("share quic: session rejected or timed out");
+                return;
+            };
+            serve_viewer(connection, publisher, limits.write_timeout).await;
+            drop(slot);
         });
     }
 }
 
-async fn serve_viewer(connection: wtransport::Connection, publisher: broadcast::Sender<Vec<u8>>) {
+/// Next chunk for a viewer. A viewer that fell behind gets [`LAG_RESET`]
+/// instead of silently missing bytes; `None` means the share is over.
+async fn next_chunk(receiver: &mut broadcast::Receiver<Vec<u8>>) -> Option<Vec<u8>> {
+    match receiver.recv().await {
+        Ok(bytes) => Some(bytes),
+        Err(broadcast::error::RecvError::Lagged(skipped)) => {
+            debug!(skipped, "share quic: viewer lagged, resetting its screen");
+            Some(LAG_RESET.to_vec())
+        }
+        Err(broadcast::error::RecvError::Closed) => None,
+    }
+}
+
+async fn serve_viewer(
+    connection: wtransport::Connection,
+    publisher: broadcast::Sender<Vec<u8>>,
+    write_timeout: Duration,
+) {
+    // Subscribe first so nothing published while the stream opens is lost.
+    let mut receiver = publisher.subscribe();
     let Ok(opening) = connection.open_uni().await else {
         debug!("share quic: viewer accepted no stream");
         return;
     };
-    let Ok(mut send) = opening.await else {
+    let Ok(Ok(mut send)) = tokio::time::timeout(write_timeout, opening).await else {
         debug!("share quic: viewer stream did not open");
         return;
     };
-    let mut receiver = publisher.subscribe();
     loop {
         tokio::select! {
-            _ = connection.closed() => break,
-            incoming = receiver.recv() => match incoming {
-                Ok(bytes) => {
-                    if send.write_all(&bytes).await.is_err() {
-                        break;
-                    }
+            () = async { let _ = connection.closed().await; } => break,
+            chunk = next_chunk(&mut receiver) => {
+                let Some(bytes) = chunk else { break };
+                // A viewer that stops reading must not hold its slot forever.
+                if !matches!(
+                    tokio::time::timeout(write_timeout, send.write_all(&bytes)).await,
+                    Ok(Ok(()))
+                ) {
+                    debug!("share quic: viewer too slow or gone");
+                    break;
                 }
-                Err(broadcast::error::RecvError::Lagged(skipped)) => {
-                    debug!(skipped, "share quic: viewer lagged");
-                }
-                Err(broadcast::error::RecvError::Closed) => break,
-            },
+            }
         }
     }
-    let _ = send.finish().await;
+    let _ = tokio::time::timeout(write_timeout, send.finish()).await;
     connection.close(wtransport::VarInt::from_u32(0), b"done");
 }
 
-/// Serves the static page and its assets over one TLS connection.
-async fn page_loop(listener: TcpListener, acceptor: TlsAcceptor) {
+/// Serves the static page and its assets over one TLS connection each.
+async fn page_loop(listener: TcpListener, acceptor: TlsAcceptor, limits: ShareLimits) {
+    let slots = Arc::new(Semaphore::new(limits.max_connections));
+    // Dropping the set (the loop is aborted on stop) aborts every connection.
+    let mut tasks = JoinSet::new();
     loop {
-        let Ok((stream, peer)) = listener.accept().await else {
+        let accepted = tokio::select! {
+            accepted = listener.accept() => accepted,
+            Some(_) = tasks.join_next(), if !tasks.is_empty() => continue,
+        };
+        let (stream, peer) = match accepted {
+            Ok(accepted) => accepted,
+            Err(error) => {
+                debug!(%error, "share quic: page accept failed");
+                tokio::time::sleep(Duration::from_millis(50)).await;
+                continue;
+            }
+        };
+        let Ok(permit) = Arc::clone(&slots).try_acquire_owned() else {
+            debug!(%peer, "share quic: page connection cap reached");
             continue;
         };
         let acceptor = acceptor.clone();
-        tokio::spawn(async move {
-            let Ok(mut stream) = acceptor.accept(stream).await else {
-                debug!(%peer, "share quic: page TLS handshake failed");
-                return;
-            };
-            if serve_page(&mut stream).await.is_err() {
+        tasks.spawn(async move {
+            let _permit = permit;
+            if serve_page_connection(stream, &acceptor, limits)
+                .await
+                .is_err()
+            {
                 debug!(%peer, "share quic: page request failed");
             }
         });
     }
 }
 
-async fn serve_page(stream: &mut tokio_rustls::server::TlsStream<TcpStream>) -> io::Result<()> {
-    let request = read_request(stream).await?;
+/// One page request: handshake plus request under one deadline, each write
+/// under its own.
+async fn serve_page_connection(
+    stream: TcpStream,
+    acceptor: &TlsAcceptor,
+    limits: ShareLimits,
+) -> io::Result<()> {
+    let timed_out = || io::Error::new(io::ErrorKind::TimedOut, "share page timed out");
+    let (mut stream, request) = tokio::time::timeout(limits.request_timeout, async {
+        let mut stream = acceptor.accept(stream).await?;
+        let request = read_request(&mut stream).await?;
+        Ok::<_, io::Error>((stream, request))
+    })
+    .await
+    .map_err(|_| timed_out())??;
+    tokio::time::timeout(limits.write_timeout, serve_page(&mut stream, &request))
+        .await
+        .map_err(|_| timed_out())?
+}
+
+async fn serve_page(
+    stream: &mut tokio_rustls::server::TlsStream<TcpStream>,
+    request: &str,
+) -> io::Result<()> {
     let request_line = request.lines().next().unwrap_or("");
     let mut words = request_line.split_whitespace();
     let method = words.next().unwrap_or("");
@@ -694,11 +868,16 @@ fn query_value<'a>(target: &'a str, key: &str) -> Option<&'a str> {
 }
 
 /// Discovers public UDP endpoints and the first STUN address that answered.
-async fn discover_external(socket: &UdpSocket) -> (Vec<SocketAddr>, Option<SocketAddr>) {
+///
+/// Sends nothing when `servers` is empty (no consent).
+async fn discover_external(
+    socket: &UdpSocket,
+    servers: &[&str],
+) -> (Vec<SocketAddr>, Option<SocketAddr>) {
     let local_is_v4 = socket.local_addr().map(|a| a.is_ipv4()).unwrap_or(true);
     let mut found = Vec::new();
     let mut first_server = None;
-    for server in STUN_SERVERS {
+    for server in servers {
         let Ok(resolved) = tokio::net::lookup_host(*server).await else {
             continue;
         };
@@ -1041,9 +1220,15 @@ mod tests {
     /// Server on loopback with STUN skipped, so tests stay offline.
     async fn test_server() -> QuicShareServer {
         let socket = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
-        start_on_socket(socket, SecretString::from("test-token"), Vec::new(), None)
-            .await
-            .unwrap()
+        start_on_socket(
+            socket,
+            SecretString::from("test-token"),
+            Vec::new(),
+            None,
+            ShareLimits::default(),
+        )
+        .await
+        .unwrap()
     }
 
     #[tokio::test]
@@ -1055,9 +1240,9 @@ mod tests {
         assert!(body.contains("serverCertificateHashes"));
     }
 
-    /// Fetches `/` from the page listener, accepting the share's self-signed
+    /// Opens a TLS connection to the page listener, accepting the share's self-signed
     /// certificate the way a user who clicked through the browser warning does.
-    async fn fetch_page(server: &QuicShareServer) -> String {
+    async fn connect_tls(server: &QuicShareServer) -> tokio_rustls::client::TlsStream<TcpStream> {
         use tokio_rustls::rustls::client::danger::{
             HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier,
         };
@@ -1126,7 +1311,11 @@ mod tests {
         let connector = tokio_rustls::TlsConnector::from(Arc::new(config));
         let tcp = TcpStream::connect(server.page_addr()).await.unwrap();
         let name = ServerName::try_from("localhost").unwrap();
-        let mut stream = connector.connect(name, tcp).await.unwrap();
+        connector.connect(name, tcp).await.unwrap()
+    }
+
+    async fn fetch_page(server: &QuicShareServer) -> String {
+        let mut stream = connect_tls(server).await;
         stream
             .write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
             .await
@@ -1139,9 +1328,15 @@ mod tests {
     #[tokio::test]
     async fn native_client_receives_published_bytes() {
         let socket = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
-        let server = start_on_socket(socket, SecretString::from("viewer-token"), Vec::new(), None)
-            .await
-            .unwrap();
+        let server = start_on_socket(
+            socket,
+            SecretString::from("viewer-token"),
+            Vec::new(),
+            None,
+            ShareLimits::default(),
+        )
+        .await
+        .unwrap();
         let link = ShareLink::parse(&server.viewer_link_for(server.udp_addr(), 80, 24)).unwrap();
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
         let client = QuicShareClient::connect(&link, move |bytes| {
@@ -1170,9 +1365,15 @@ mod tests {
     #[tokio::test]
     async fn viewer_with_a_wrong_token_is_rejected() {
         let socket = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
-        let server = start_on_socket(socket, SecretString::from("right"), Vec::new(), None)
-            .await
-            .unwrap();
+        let server = start_on_socket(
+            socket,
+            SecretString::from("right"),
+            Vec::new(),
+            None,
+            ShareLimits::default(),
+        )
+        .await
+        .unwrap();
         let config = wtransport::ClientConfig::builder()
             .with_bind_default()
             .with_server_certificate_hashes([wtransport::tls::Sha256Digest::from(
@@ -1190,6 +1391,183 @@ mod tests {
         .await
         .unwrap();
         assert!(result.is_err());
+        server.stop();
+    }
+
+    fn tight_limits() -> ShareLimits {
+        ShareLimits {
+            max_connections: 4,
+            max_viewers: 1,
+            request_timeout: Duration::from_millis(300),
+            write_timeout: Duration::from_millis(300),
+            channel_capacity: 2,
+        }
+    }
+
+    async fn limited_server(limits: ShareLimits) -> QuicShareServer {
+        let socket = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
+        start_on_socket(
+            socket,
+            SecretString::from("limit-token"),
+            Vec::new(),
+            None,
+            limits,
+        )
+        .await
+        .unwrap()
+    }
+
+    /// True when the peer closes (or resets) the socket within `within`.
+    async fn closed_by_peer(stream: &mut TcpStream, within: Duration) -> bool {
+        let mut buf = [0u8; 16];
+        match tokio::time::timeout(within, stream.read(&mut buf)).await {
+            Ok(Ok(0) | Err(_)) => true,
+            Ok(Ok(_)) | Err(_) => false,
+        }
+    }
+
+    #[test]
+    fn stun_is_not_contacted_without_consent() {
+        assert!(stun_servers(StunConsent::Declined).is_empty());
+        assert_eq!(stun_servers(StunConsent::Granted), STUN_SERVERS);
+    }
+
+    #[test]
+    fn stun_servers_are_the_ones_the_dialog_names() {
+        // The consent dialog names Google and Cloudflare; a new operator here
+        // needs a new dialog text.
+        for server in STUN_SERVERS {
+            let host = server.split(':').next().unwrap();
+            assert!(
+                host.ends_with(".google.com") || host.ends_with(".cloudflare.com"),
+                "unnamed STUN operator: {host}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn stun_lookup_asks_only_the_servers_it_is_given() {
+        let fake = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let fake_addr = fake.local_addr().unwrap();
+        let answer = tokio::spawn(async move {
+            let mut buf = [0u8; 64];
+            let (len, from) = fake.recv_from(&mut buf).await.unwrap();
+            assert_eq!(len, 20);
+            let mut transaction = [0u8; 12];
+            transaction.copy_from_slice(&buf[8..20]);
+            let mapped = SocketAddr::from(([203, 0, 113, 7], 40000));
+            fake.send_to(&stun_response(&transaction, mapped), from)
+                .await
+                .unwrap();
+        });
+        let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let none = discover_external(&client, &[]).await;
+        assert_eq!(none, (Vec::new(), None));
+        let (found, first) = discover_external(&client, &[fake_addr.to_string().as_str()]).await;
+        answer.await.unwrap();
+        assert_eq!(found, vec![SocketAddr::from(([203, 0, 113, 7], 40000))]);
+        assert_eq!(first, Some(fake_addr));
+    }
+
+    #[tokio::test]
+    async fn declined_consent_starts_without_public_endpoints() {
+        let server = QuicShareServer::start(
+            SocketAddr::from(([127, 0, 0, 1], 0)),
+            SecretString::from("t"),
+            QuicShareOptions::default(),
+        )
+        .await
+        .unwrap();
+        assert!(server.public_addrs().is_empty());
+        server.stop();
+    }
+
+    #[tokio::test]
+    async fn lagged_viewer_gets_a_reset_then_the_newest_chunks() {
+        let (tx, mut rx) = broadcast::channel::<Vec<u8>>(2);
+        for n in 0..5u8 {
+            tx.send(vec![n]).unwrap();
+        }
+        assert_eq!(next_chunk(&mut rx).await.as_deref(), Some(LAG_RESET));
+        assert_eq!(next_chunk(&mut rx).await, Some(vec![3]));
+        assert_eq!(next_chunk(&mut rx).await, Some(vec![4]));
+        drop(tx);
+        assert_eq!(next_chunk(&mut rx).await, None);
+    }
+
+    #[tokio::test]
+    async fn idle_page_sockets_are_closed_and_the_cap_is_enforced() {
+        let server = limited_server(tight_limits()).await;
+        let addr = server.page_addr();
+        // Four sockets that never speak fill the cap.
+        let mut idle = Vec::new();
+        for _ in 0..4 {
+            idle.push(TcpStream::connect(addr).await.unwrap());
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        // The fifth is closed at accept, long before the request timeout.
+        let mut extra = TcpStream::connect(addr).await.unwrap();
+        assert!(closed_by_peer(&mut extra, Duration::from_millis(200)).await);
+        // The idle ones are closed by the request timeout.
+        for stream in &mut idle {
+            assert!(closed_by_peer(stream, Duration::from_secs(2)).await);
+        }
+        // Slots are free again: a real page request works.
+        let body = fetch_page(&server).await;
+        assert!(body.starts_with("HTTP/1.1 200 OK"));
+        server.stop();
+    }
+
+    #[tokio::test]
+    async fn many_idle_page_sockets_do_not_block_a_real_viewer() {
+        let server = limited_server(tight_limits()).await;
+        let addr = server.page_addr();
+        let mut sockets = Vec::new();
+        for _ in 0..100 {
+            if let Ok(stream) = TcpStream::connect(addr).await {
+                sockets.push(stream);
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(900)).await;
+        let body = fetch_page(&server).await;
+        assert!(body.starts_with("HTTP/1.1 200 OK"));
+        drop(sockets);
+        server.stop();
+    }
+
+    #[tokio::test]
+    async fn a_tls_client_that_sends_no_request_is_dropped() {
+        let server = limited_server(tight_limits()).await;
+        let mut stream = connect_tls(&server).await;
+        let mut buf = [0u8; 16];
+        let read = tokio::time::timeout(Duration::from_secs(2), stream.read(&mut buf)).await;
+        assert!(matches!(read, Ok(Ok(0) | Err(_))), "server kept the socket");
+        server.stop();
+    }
+
+    #[tokio::test]
+    async fn second_viewer_is_refused_and_the_slot_comes_back() {
+        let server = limited_server(tight_limits()).await;
+        let link = ShareLink::parse(&server.viewer_link_for(server.udp_addr(), 80, 24)).unwrap();
+        let first = QuicShareClient::connect(&link, |_| {}).await.unwrap();
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while server.publisher().receiver_count() == 0 {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert!(QuicShareClient::connect(&link, |_| {}).await.is_err());
+        first.stop();
+        tokio::time::timeout(Duration::from_secs(5), async {
+            while server.publisher().receiver_count() != 0 {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        })
+        .await
+        .unwrap();
+        let again = QuicShareClient::connect(&link, |_| {}).await.unwrap();
+        again.stop();
         server.stop();
     }
 }

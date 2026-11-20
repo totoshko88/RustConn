@@ -60,10 +60,10 @@ impl Default for ShareLimits {
 }
 
 /// Counts live viewers; the guard gives the slot back when it drops.
-struct ViewerSlot(Arc<AtomicUsize>);
+pub(super) struct ViewerSlot(Arc<AtomicUsize>);
 
 impl ViewerSlot {
-    fn acquire(count: &Arc<AtomicUsize>, max: usize) -> Option<Self> {
+    pub(super) fn acquire(count: &Arc<AtomicUsize>, max: usize) -> Option<Self> {
         count
             .try_update(Ordering::AcqRel, Ordering::Acquire, |n| {
                 (n < max).then_some(n + 1)
