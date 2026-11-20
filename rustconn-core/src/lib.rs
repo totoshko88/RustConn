@@ -149,10 +149,7 @@ pub use cli_download::{
     get_component, get_components_by_category, get_installation_status, get_pinned_versions,
     get_user_friendly_error, install_component, uninstall_component,
 };
-pub use cluster::{
-    Cluster, ClusterError, ClusterManager, ClusterMemberState, ClusterResult, ClusterSession,
-    ClusterSessionStatus, ClusterSessionSummary,
-};
+pub use cluster::{Cluster, ClusterError, ClusterManager, ClusterResult};
 pub use config::{
     AppSettings, ConfigManager, ConnectionSettings, KeybindingCategory, KeybindingDef,
     KeybindingSettings, NetworkSettings, SecretBackendType, StartupAction, default_keybindings,

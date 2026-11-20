@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The share token moved out of the query string** — the link is `http://host:port/#token=…`; the page reads the fragment, removes it from the address bar and sends it in an `Authorization` header, so it no longer reaches server logs, proxies or `Referer`. A link from an earlier build no longer works; share again. It is still plain HTTP on a LAN. (`rustconn-core/src/session/share.rs`)
 - **`send` discards output buffered before it** — a custom script that relied on an `expect` matching text that arrived before the preceding `send` now waits for output produced after the command. Scripts where each `expect` ends at the prompt are unaffected, as are the bundled `example-*` scripts that have engine tests (OpenWrt, Cisco, first-run). (`rustconn-core/src/automation/script.rs`)
 
+### Removed
+- **Unused cluster session tracking** — `ClusterSession`, `ClusterMemberState`, `ClusterSessionStatus`, `ClusterSessionSummary` and the matching `ClusterManager` methods were written to, never read, and tested only against themselves; connecting a cluster no longer starts one. Clusters, their members and broadcast behave as before. (`rustconn-core/src/cluster/mod.rs`, `rustconn/src/state/sessions.rs`, `rustconn/src/window/clusters.rs`)
+
 ### Improved
 - **Starting and stopping a share no longer freezes the window** — the relay is started and stopped off the main loop. (`rustconn/src/window/network_tools/share.rs`)
 
