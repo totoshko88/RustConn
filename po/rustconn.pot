@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 23:29+0200\n"
+"POT-Creation-Date: 2026-11-20 23:36+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -57,8 +57,8 @@ msgstr ""
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
-#: rustconn/src/terminal/tab_menu.rs:411 rustconn/src/terminal/tab_menu.rs:564
-#: rustconn/src/terminal/tab_menu.rs:804 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:416 rustconn/src/terminal/tab_menu.rs:569
+#: rustconn/src/terminal/tab_menu.rs:809 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:379
 #: rustconn/src/window/clusters.rs:434
 #: rustconn/src/window/connection_dialogs.rs:991
@@ -70,8 +70,8 @@ msgstr ""
 #: rustconn/src/window/mod.rs:4918 rustconn/src/window/mod.rs:6013
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
-#: rustconn/src/window/network_tools/share.rs:76
-#: rustconn/src/window/network_tools/share.rs:422
+#: rustconn/src/window/network_tools/share.rs:85
+#: rustconn/src/window/network_tools/share.rs:500
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:118 rustconn/src/window/operations.rs:591
@@ -165,10 +165,10 @@ msgstr ""
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1054 rustconn/src/split_view/adapter.rs:1377
-#: rustconn/src/terminal/tab_menu.rs:805 rustconn/src/vault_ops.rs:65
+#: rustconn/src/terminal/tab_menu.rs:810 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4919
-#: rustconn/src/window/network_tools/share.rs:168
-#: rustconn/src/window/network_tools/share.rs:395
+#: rustconn/src/window/network_tools/share.rs:235
+#: rustconn/src/window/network_tools/share.rs:473
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr ""
@@ -253,7 +253,7 @@ msgstr ""
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:971
-#: rustconn/src/terminal/mod.rs:1577
+#: rustconn/src/terminal/mod.rs:1580
 #: rustconn/src/terminal/session_lifecycle.rs:615
 #: rustconn/src/terminal/session_lifecycle.rs:760
 msgid "Session disconnected"
@@ -312,7 +312,7 @@ msgstr ""
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:6014
-#: rustconn/src/window/network_tools/share.rs:423
+#: rustconn/src/window/network_tools/share.rs:501
 msgid "Connect"
 msgstr ""
 
@@ -736,8 +736,8 @@ msgid "HMAC Key"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:556
-#: rustconn/src/window/network_tools.rs:208
-#: rustconn/src/window/network_tools.rs:212
+#: rustconn/src/window/network_tools.rs:219
+#: rustconn/src/window/network_tools.rs:223
 msgid "Access"
 msgstr ""
 
@@ -9457,7 +9457,7 @@ msgid "Find in Terminal"
 msgstr ""
 
 #: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:811
-#: rustconn/src/terminal/tab_menu.rs:99
+#: rustconn/src/terminal/tab_menu.rs:101
 msgid "Close Tab"
 msgstr ""
 
@@ -9469,7 +9469,7 @@ msgstr ""
 msgid "Previous Tab"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:620
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:622
 msgid "Tab Overview"
 msgstr ""
 
@@ -9514,7 +9514,7 @@ msgstr ""
 #: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/sidebar_ui.rs:580
 #: rustconn/src/split_view/adapter.rs:197
 #: rustconn/src/terminal/split_close.rs:321
-#: rustconn/src/terminal/tab_menu.rs:1349
+#: rustconn/src/terminal/tab_menu.rs:1354
 msgid "Remove Split"
 msgstr ""
 
@@ -11372,14 +11372,14 @@ msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:185 rustconn/src/terminal/config.rs:428
-#: rustconn/src/terminal/mod.rs:1605
+#: rustconn/src/terminal/mod.rs:1608
 #: rustconn/src/terminal/session_lifecycle.rs:795
-#: rustconn/src/terminal/tab_menu.rs:1266
+#: rustconn/src/terminal/tab_menu.rs:1271
 msgid "Reconnect"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1607
+#: rustconn/src/terminal/mod.rs:1610
 #: rustconn/src/terminal/session_lifecycle.rs:797
 msgid "Reconnect to this session"
 msgstr ""
@@ -12170,7 +12170,7 @@ msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:586 rustconn/src/split_view/adapter.rs:194
 #: rustconn/src/split_view/adapter.rs:1327
-#: rustconn/src/terminal/tab_menu.rs:1357
+#: rustconn/src/terminal/tab_menu.rs:1362
 msgid "Move to New Window"
 msgstr ""
 
@@ -12182,22 +12182,22 @@ msgstr ""
 msgid "Session Log…"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:620 rustconn/src/terminal/tab_menu.rs:1408
+#: rustconn/src/sidebar_ui.rs:620 rustconn/src/terminal/tab_menu.rs:1413
 msgid "Open SFTP"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
-#: rustconn/src/terminal/tab_menu.rs:1457
+#: rustconn/src/terminal/tab_menu.rs:1466
 msgid "Edit Remote File…"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:632 rustconn/src/terminal/script_recorder.rs:186
-#: rustconn/src/terminal/tab_menu.rs:1450
+#: rustconn/src/terminal/tab_menu.rs:1458
 msgid "Share Session (read-only)"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
-#: rustconn/src/terminal/tab_menu.rs:1443
+#: rustconn/src/terminal/tab_menu.rs:1448
 msgid "Record Script…"
 msgstr ""
 
@@ -12516,31 +12516,31 @@ msgstr ""
 msgid "Save Selection as Snippet…"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:616
+#: rustconn/src/terminal/mod.rs:618
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:633 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:635 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1248
+#: rustconn/src/terminal/mod.rs:1251
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1599
+#: rustconn/src/terminal/mod.rs:1602
 msgid "Command not found: {}"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1601
+#: rustconn/src/terminal/mod.rs:1604
 msgid "Failed to start '{}'"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1623
+#: rustconn/src/terminal/mod.rs:1626
 msgid "'{}' is not installed"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1626
+#: rustconn/src/terminal/mod.rs:1629
 msgid "Failed to start '{}': {}"
 msgstr ""
 
@@ -12580,8 +12580,8 @@ msgstr ""
 msgid "Playback complete"
 msgstr ""
 
-#: rustconn/src/terminal/recording.rs:365 rustconn/src/terminal/tab_menu.rs:455
-#: rustconn/src/terminal/tab_menu.rs:657
+#: rustconn/src/terminal/recording.rs:365 rustconn/src/terminal/tab_menu.rs:460
+#: rustconn/src/terminal/tab_menu.rs:662
 msgid "●REC"
 msgstr ""
 
@@ -12600,12 +12600,12 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/terminal/script_recorder.rs:176
-#: rustconn/src/terminal/tab_menu.rs:1439
+#: rustconn/src/terminal/tab_menu.rs:1444
 msgid "Stop Script Recording"
 msgstr ""
 
 #: rustconn/src/terminal/script_recorder.rs:190
-#: rustconn/src/terminal/tab_menu.rs:1464
+#: rustconn/src/terminal/tab_menu.rs:1473
 msgid "Start TFTP Server"
 msgstr ""
 
@@ -12685,149 +12685,153 @@ msgstr ""
 msgid "Panes:"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:97
+#: rustconn/src/terminal/tab_menu.rs:99
 msgid "Close Tab…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:350
+#: rustconn/src/terminal/tab_menu.rs:355
 msgid "Set Tab Group"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:358
+#: rustconn/src/terminal/tab_menu.rs:363
 msgid "New group name…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:363
+#: rustconn/src/terminal/tab_menu.rs:368
 msgid "Enter a group name for this tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:368
+#: rustconn/src/terminal/tab_menu.rs:373
 msgid "Existing groups:"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:396
+#: rustconn/src/terminal/tab_menu.rs:401
 msgid "or enter a new name:"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:412 rustconn/src/terminal/tab_menu.rs:565
+#: rustconn/src/terminal/tab_menu.rs:417 rustconn/src/terminal/tab_menu.rs:570
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:552
+#: rustconn/src/terminal/tab_menu.rs:557
 msgid "Rename Tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:554
+#: rustconn/src/terminal/tab_menu.rs:559
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:560
+#: rustconn/src/terminal/tab_menu.rs:565
 msgid "Tab name"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:791
+#: rustconn/src/terminal/tab_menu.rs:796
 msgid "Close {} tabs in group '{}'?"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:801 rustconn/src/terminal/tab_menu.rs:1300
+#: rustconn/src/terminal/tab_menu.rs:806 rustconn/src/terminal/tab_menu.rs:1305
 msgid "Close All in Group"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1094
+#: rustconn/src/terminal/tab_menu.rs:1099
 msgid "Save Output"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1100
+#: rustconn/src/terminal/tab_menu.rs:1105
 msgid "Text files"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1126
+#: rustconn/src/terminal/tab_menu.rs:1131
 msgid "Output saved"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1136
+#: rustconn/src/terminal/tab_menu.rs:1141
 msgid "Could not save output"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1198
+#: rustconn/src/terminal/tab_menu.rs:1203
 msgid "Move to New Window on {}"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1218
+#: rustconn/src/terminal/tab_menu.rs:1223
 msgid "Monitor {} ({})"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1219
+#: rustconn/src/terminal/tab_menu.rs:1224
 msgid "Monitor {}"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1273
+#: rustconn/src/terminal/tab_menu.rs:1278
 msgid "Unpin Tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1275
+#: rustconn/src/terminal/tab_menu.rs:1280
 msgid "Pin Tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1286
+#: rustconn/src/terminal/tab_menu.rs:1291
 msgid "Rename Tab…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1296
+#: rustconn/src/terminal/tab_menu.rs:1301
 msgid "Set Group…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1298
+#: rustconn/src/terminal/tab_menu.rs:1303
 msgid "Remove from Group"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1310
+#: rustconn/src/terminal/tab_menu.rs:1315
 msgid "Remove from Tab Broadcast"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1312
+#: rustconn/src/terminal/tab_menu.rs:1317
 msgid "Add to Tab Broadcast"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1334
+#: rustconn/src/terminal/tab_menu.rs:1339
 msgid "Monitor"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1344
+#: rustconn/src/terminal/tab_menu.rs:1349
 msgid "Split with Other Tabs…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1393
+#: rustconn/src/terminal/tab_menu.rs:1398
 msgid "Duplicate Tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1399
+#: rustconn/src/terminal/tab_menu.rs:1404
 msgid "Edit Connection…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1425
+#: rustconn/src/terminal/tab_menu.rs:1430
 msgid "Save Output…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1471
+#: rustconn/src/terminal/tab_menu.rs:1456
+msgid "Stop Sharing"
+msgstr ""
+
+#: rustconn/src/terminal/tab_menu.rs:1480
 msgid "Close Others"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1476
+#: rustconn/src/terminal/tab_menu.rs:1485
 msgid "Close to the Left"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1477
+#: rustconn/src/terminal/tab_menu.rs:1486
 msgid "Close to the Right"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1481
+#: rustconn/src/terminal/tab_menu.rs:1490
 msgid "Close All Ungrouped"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1485
+#: rustconn/src/terminal/tab_menu.rs:1494
 msgid "Close All Tabs"
 msgstr ""
 
@@ -14241,26 +14245,30 @@ msgstr ""
 msgid "Network changed — reconnecting affected sessions…"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:92
+#: rustconn/src/window/network_tools.rs:83
+msgid "Sharing stopped"
+msgstr ""
+
+#: rustconn/src/window/network_tools.rs:103
 #: rustconn/src/window/script_actions.rs:99
 msgid "That connection has no open session"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:165
+#: rustconn/src/window/network_tools.rs:176
 #: rustconn/src/window/network_tools/remote_edit.rs:69
 msgid "Remote file editor"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:166
+#: rustconn/src/window/network_tools.rs:177
 #: rustconn/src/window/network_tools/remote_edit.rs:70
 msgid "Connection not found"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:187
+#: rustconn/src/window/network_tools.rs:198
 msgid "This computer only"
 msgstr ""
 
-#: rustconn/src/window/network_tools.rs:198
+#: rustconn/src/window/network_tools.rs:209
 msgid "Internet — WebTransport in a browser"
 msgstr ""
 
@@ -14332,140 +14340,145 @@ msgstr ""
 msgid "Could not save the copy"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:54
+#: rustconn/src/window/network_tools/share.rs:63
 msgid "Select a terminal before sharing a session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:62
+#: rustconn/src/window/network_tools/share.rs:71
 msgid ""
 "Choose this computer only, the interface whose address the link should use, "
 "or the internet over WebTransport."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:68
+#: rustconn/src/window/network_tools/share.rs:77
 msgid "Share this session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:70
+#: rustconn/src/window/network_tools/share.rs:79
 msgid ""
 "The viewer gets the live terminal output read-only. Local and LAN links are "
 "unencrypted; the internet link opens in a browser over WebTransport (QUIC) "
-"and pins this share's certificate."
+"and pins this share's certificate. The tab shows ◉ and its menu has Stop "
+"Sharing."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:77
+#: rustconn/src/window/network_tools/share.rs:86
 msgid "Start sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:124
-#: rustconn/src/window/network_tools/share.rs:130
-#: rustconn/src/window/network_tools/share.rs:216
+#: rustconn/src/window/network_tools/share.rs:144
+#: rustconn/src/window/network_tools/share.rs:296
 msgid "Could not start session sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:151
+#: rustconn/src/window/network_tools/share.rs:217
 msgid ""
-"Anyone with this read-only link on the network can watch the session: {}"
+"Anyone who has this link can watch the session read-only, any number of "
+"times, until you stop sharing. The link uses plain HTTP, so other computers "
+"on your network can read what is shown. The tab is marked ◉ while it is "
+"shared. {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:156
+#: rustconn/src/window/network_tools/share.rs:222
 msgid ""
-"Anyone with this read-only link on this computer can watch the session: {}"
+"Anyone on this computer who has this link can watch the session read-only, "
+"any number of times, until you stop sharing. The tab is marked ◉ while it is "
+"shared. {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:161
-#: rustconn/src/window/network_tools/share.rs:387
-#: rustconn/src/window/network_tools/share.rs:577
+#: rustconn/src/window/network_tools/share.rs:227
+#: rustconn/src/window/network_tools/share.rs:465
+#: rustconn/src/window/network_tools/share.rs:655
 msgid "Session shared"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:166
-#: rustconn/src/window/network_tools/share.rs:393
+#: rustconn/src/window/network_tools/share.rs:232
+#: rustconn/src/window/network_tools/share.rs:471
 msgid "Copy link"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:167
-#: rustconn/src/window/network_tools/share.rs:394
+#: rustconn/src/window/network_tools/share.rs:233
+#: rustconn/src/window/network_tools/share.rs:472
 msgid "Stop sharing"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:176
-#: rustconn/src/window/network_tools/share.rs:302
+#: rustconn/src/window/network_tools/share.rs:242
+#: rustconn/src/window/network_tools/share.rs:380
 msgid "Link copied to clipboard"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:254
+#: rustconn/src/window/network_tools/share.rs:334
 msgid "Public endpoint (STUN)"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:256
+#: rustconn/src/window/network_tools/share.rs:336
 msgid "Endpoint (local network)"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:262
+#: rustconn/src/window/network_tools/share.rs:342
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:267
+#: rustconn/src/window/network_tools/share.rs:347
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:273
+#: rustconn/src/window/network_tools/share.rs:353
 msgid ""
 "Open the link in a current browser, or join it from another RustConn with "
 "“Join Shared Session…”. The browser warns once about the self-signed "
 "certificate; RustConn pins it automatically."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:277
+#: rustconn/src/window/network_tools/share.rs:357
 msgid ""
 "STUN did not answer, so this link only reaches viewers on the local network. "
 "Open it in a current browser, or join it from another RustConn with “Join "
 "Shared Session…”."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:351
+#: rustconn/src/window/network_tools/share.rs:429
 msgid "Read-only link"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:409
+#: rustconn/src/window/network_tools/share.rs:487
 msgid "Paste an https:// share link"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:411
+#: rustconn/src/window/network_tools/share.rs:489
 msgid "Share link"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:414
+#: rustconn/src/window/network_tools/share.rs:492
 msgid "Join a shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:416
+#: rustconn/src/window/network_tools/share.rs:494
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:436
-#: rustconn/src/window/network_tools/share.rs:465
+#: rustconn/src/window/network_tools/share.rs:514
+#: rustconn/src/window/network_tools/share.rs:543
 msgid "Could not join the shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:505
+#: rustconn/src/window/network_tools/share.rs:583
 msgid "Read-only shared session from {}"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:511
-#: rustconn/src/window/network_tools/share.rs:520
-#: rustconn/src/window/network_tools/share.rs:602
+#: rustconn/src/window/network_tools/share.rs:589
+#: rustconn/src/window/network_tools/share.rs:598
+#: rustconn/src/window/network_tools/share.rs:680
 msgid "Shared session"
 msgstr ""
 
-#: rustconn/src/window/network_tools/share.rs:512
+#: rustconn/src/window/network_tools/share.rs:590
 msgid "Read-only from {}"
 msgstr ""
 
