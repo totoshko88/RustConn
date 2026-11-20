@@ -16106,3 +16106,75 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Кластер сәтті сақталды."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file editor"
+msgstr "Қашықтағы файл өңдегіші"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Connection not found"
+msgstr "Байланыс табылмады"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Select an SSH terminal before editing a remote file"
+msgstr "Қашықтағы файлды өңдеу алдында SSH терминалын таңдаңыз"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edit remote file"
+msgstr "Қашықтағы файлды өңдеу"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file is downloaded to a temporary copy and uploaded when you choose Upload."
+msgstr "Файл уақытша көшірмеге жүктеледі және «Жүктеп салу» таңдалғанда серверге жіберіледі."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not open the remote file"
+msgstr "Қашықтағы файлды ашу мүмкін болмады"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file opened"
+msgstr "Қашықтағы файл ашылды"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Editing {}. Press Upload when the file is saved."
+msgstr "{} өңделуде. Файл сақталған соң «Жүктеп салу» түймесін басыңыз."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Upload"
+msgstr "Жүктеп салу"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Uploading…"
+msgstr "Жүктеп салынуда…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file was not changed"
+msgstr "Файл өзгертілмеді"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file uploaded"
+msgstr "Қашықтағы файл жүктеп салынды"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not upload the remote file"
+msgstr "Қашықтағы файлды жүктеп салу мүмкін болмады"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Your edited copy is kept at {}."
+msgstr "Өңделген көшірме мына жерде сақталған: {}."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Save a Copy…"
+msgstr "Көшірмені сақтау…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edited copy kept at {}"
+msgstr "Өңделген көшірме мына жерде сақталды: {}"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Copy saved to {}"
+msgstr "Көшірме мына жерге сақталды: {}"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not save the copy"
+msgstr "Көшірмені сақтау мүмкін болмады"

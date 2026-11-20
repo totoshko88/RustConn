@@ -16225,3 +16225,75 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connessione;terminal;remote;kube
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Il cluster è stato salvato con successo."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file editor"
+msgstr "Editor di file remoti"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Connection not found"
+msgstr "Connessione non trovata"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Select an SSH terminal before editing a remote file"
+msgstr "Seleziona un terminale SSH prima di modificare un file remoto"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edit remote file"
+msgstr "Modifica file remoto"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file is downloaded to a temporary copy and uploaded when you choose Upload."
+msgstr "Il file viene scaricato in una copia temporanea e caricato quando scegli Carica."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not open the remote file"
+msgstr "Impossibile aprire il file remoto"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file opened"
+msgstr "File remoto aperto"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Editing {}. Press Upload when the file is saved."
+msgstr "Modifica di {}. Premi Carica quando il file è salvato."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Upload"
+msgstr "Carica"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Uploading…"
+msgstr "Caricamento…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file was not changed"
+msgstr "Il file non è stato modificato"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file uploaded"
+msgstr "File remoto caricato"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not upload the remote file"
+msgstr "Impossibile caricare il file remoto"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Your edited copy is kept at {}."
+msgstr "La copia modificata è conservata in {}."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Save a Copy…"
+msgstr "Salva una copia…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edited copy kept at {}"
+msgstr "Copia modificata conservata in {}"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Copy saved to {}"
+msgstr "Copia salvata in {}"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not save the copy"
+msgstr "Impossibile salvare la copia"

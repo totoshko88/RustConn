@@ -16201,3 +16201,75 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ulanish;terminal;masofaviy;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klaster muvaffaqiyatli saqlandi."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file editor"
+msgstr "Masofaviy fayl tahrirlovchisi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Connection not found"
+msgstr "Ulanish topilmadi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Select an SSH terminal before editing a remote file"
+msgstr "Masofaviy faylni tahrirlashdan oldin SSH terminalini tanlang"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edit remote file"
+msgstr "Masofaviy faylni tahrirlash"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file is downloaded to a temporary copy and uploaded when you choose Upload."
+msgstr "Fayl vaqtinchalik nusxaga yuklab olinadi va “Yuklash” tanlanganda serverga yuboriladi."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not open the remote file"
+msgstr "Masofaviy faylni ochib bo‘lmadi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file opened"
+msgstr "Masofaviy fayl ochildi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Editing {}. Press Upload when the file is saved."
+msgstr "{} tahrirlanmoqda. Fayl saqlangach, “Yuklash” tugmasini bosing."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Upload"
+msgstr "Yuklash"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Uploading…"
+msgstr "Yuklanmoqda…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file was not changed"
+msgstr "Fayl o‘zgartirilmadi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file uploaded"
+msgstr "Masofaviy fayl yuklandi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not upload the remote file"
+msgstr "Masofaviy faylni yuklab bo‘lmadi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Your edited copy is kept at {}."
+msgstr "Tahrirlangan nusxangiz {} joyida saqlanadi."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Save a Copy…"
+msgstr "Nusxani saqlash…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edited copy kept at {}"
+msgstr "Tahrirlangan nusxa {} joyida saqlandi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Copy saved to {}"
+msgstr "Nusxa {} joyiga saqlandi"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not save the copy"
+msgstr "Nusxani saqlab bo‘lmadi"

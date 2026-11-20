@@ -16117,3 +16117,75 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;anslutning;terminal;fjärr;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Klustret har sparats."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file editor"
+msgstr "Redigerare för fjärrfiler"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Connection not found"
+msgstr "Anslutningen hittades inte"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Select an SSH terminal before editing a remote file"
+msgstr "Välj en SSH-terminal innan du redigerar en fjärrfil"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edit remote file"
+msgstr "Redigera fjärrfil"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file is downloaded to a temporary copy and uploaded when you choose Upload."
+msgstr "Filen laddas ned till en tillfällig kopia och laddas upp när du väljer Ladda upp."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not open the remote file"
+msgstr "Fjärrfilen kunde inte öppnas"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file opened"
+msgstr "Fjärrfilen öppnad"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Editing {}. Press Upload when the file is saved."
+msgstr "Redigerar {}. Välj Ladda upp när filen är sparad."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Upload"
+msgstr "Ladda upp"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Uploading…"
+msgstr "Laddar upp…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file was not changed"
+msgstr "Filen ändrades inte"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file uploaded"
+msgstr "Fjärrfilen uppladdad"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not upload the remote file"
+msgstr "Fjärrfilen kunde inte laddas upp"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Your edited copy is kept at {}."
+msgstr "Din redigerade kopia finns kvar i {}."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Save a Copy…"
+msgstr "Spara en kopia…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edited copy kept at {}"
+msgstr "Redigerad kopia sparad i {}"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Copy saved to {}"
+msgstr "Kopian sparades i {}"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not save the copy"
+msgstr "Kopian kunde inte sparas"

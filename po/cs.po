@@ -16103,3 +16103,75 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kuber
 
 #~ msgid "Cluster has been saved successfully."
 #~ msgstr "Cluster byl úspěšně uložen."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file editor"
+msgstr "Editor vzdálených souborů"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Connection not found"
+msgstr "Spojení nenalezeno"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Select an SSH terminal before editing a remote file"
+msgstr "Před úpravou vzdáleného souboru vyberte terminál SSH"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edit remote file"
+msgstr "Upravit vzdálený soubor"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file is downloaded to a temporary copy and uploaded when you choose Upload."
+msgstr "Soubor se stáhne do dočasné kopie a nahraje se, když zvolíte Nahrát."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not open the remote file"
+msgstr "Vzdálený soubor se nepodařilo otevřít"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file opened"
+msgstr "Vzdálený soubor otevřen"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Editing {}. Press Upload when the file is saved."
+msgstr "Upravuje se {}. Až soubor uložíte, stiskněte Nahrát."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Upload"
+msgstr "Nahrát"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Uploading…"
+msgstr "Nahrávání…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "The file was not changed"
+msgstr "Soubor nebyl změněn"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Remote file uploaded"
+msgstr "Vzdálený soubor nahrán"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not upload the remote file"
+msgstr "Vzdálený soubor se nepodařilo nahrát"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Your edited copy is kept at {}."
+msgstr "Upravená kopie je uložena v {}."
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Save a Copy…"
+msgstr "Uložit kopii…"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Edited copy kept at {}"
+msgstr "Upravená kopie zachována v {}"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Copy saved to {}"
+msgstr "Kopie uložena do {}"
+
+#: rustconn/src/window/network_tools/remote_edit.rs
+msgid "Could not save the copy"
+msgstr "Kopii se nepodařilo uložit"

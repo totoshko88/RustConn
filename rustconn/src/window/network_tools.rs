@@ -167,7 +167,7 @@ pub(crate) fn setup_network_tools(
             );
             return;
         };
-        begin_remote_edit_connection(&win, &connection);
+        begin_remote_edit_connection(&win, &st, &connection);
     });
     window.add_action(&edit_connection);
 }

@@ -3727,7 +3727,18 @@ Three tools for reading from a live session without giving anyone a way to write
 
 **TFTP Server.** Command palette → **Start TFTP Server** → choose a folder, then the **Port** (6969, unprivileged, or 69, the standard) and the **Access** interface (loopback or one local IPv4/IPv6 address). The dialog reports the resulting address and offers **Copy address** and **Stop server**. Port 69 is privileged on Linux, macOS and FreeBSD: a normal user gets an explanatory error instead of a server, so run RustConn with the needed rights, grant `CAP_NET_BIND_SERVICE` on Linux, or keep 6969. It answers TFTP RRQ only, in octet mode, with `blksize`/`tsize` OACK and retransmission. Names resolve inside the chosen folder: a leading `/` means the folder itself (RouterOS requests `/file`), while `..`, NUL bytes and symlinks escaping the folder are refused. The chosen interface is the one a device must reach; with **This computer only** the server binds loopback. One server runs at a time. From a local terminal: `curl -sS tftp://127.0.0.1:<port>/<file> -o copy` (curl must be built with TFTP).
 
-**Edit Remote File.** Select an SSH terminal tab → command palette → **Edit Remote File** → enter an absolute remote path → **Edit**. RustConn downloads the file into a temporary copy over `sftp` and opens it in the system text editor. Save it there, then press **Upload** in the RustConn dialog; **Cancel** discards the copy. Hosts without an SFTP subsystem (OpenWrt/Dropbear) fall back to legacy `scp -O`, and shell metacharacters are refused on that path. It works with key-based authentication only — a password is never put on a command line or in a batch file. Cisco IOS and other devices with neither `sftp` nor `scp` are not supported by this tool.
+**Edit Remote File.** Select an SSH terminal tab → command palette → **Edit Remote File** → enter an absolute remote path → **Edit**. RustConn downloads the file into a temporary copy over `sftp` and opens it in your default text editor. Save it there, then press **Upload** in the RustConn dialog; **Cancel** discards the copy. Download and upload run in the background, so the window stays usable, and each transfer stops after 120 seconds.
+
+If the upload fails, the edited copy is **not** deleted. The error dialog offers **Retry**, **Save a Copy…** and **Discard**; closing it with Escape keeps the copy in the temporary folder shown in the message.
+
+The transfer uses the connection's own SSH settings: key file, jump host chain (including a group or global jump host), ProxyCommand, custom options and SSH agent socket. Agent and X11 forwarding and port forwards are not used for the transfer. Limits:
+
+- Key or agent authentication only (`BatchMode=yes`). A password is never put on a command line or in a batch file, and the tool never asks for one.
+- Host, user name and jump host entries that start with `-` or contain spaces or control characters are refused, so an imported connection cannot pass options to `sftp`.
+- Files larger than 16 MiB are refused on download and on upload.
+- Hosts without an SFTP subsystem (OpenWrt/Dropbear) fall back to legacy `scp -O`, but only when the server says it has no SFTP subsystem. A missing file or a refused login shows its own error. On the `scp` path the remote path may contain only letters, digits and `. _ / @ : + = , % -`; other paths are refused with an explanation.
+- Cisco IOS and other devices with neither `sftp` nor `scp` are not supported.
+- The temporary copy is private to you (mode 0600) and has a plain file name; the remote file name is not used as typed.
 
 ### Broadcast Input
 
