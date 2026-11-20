@@ -49,7 +49,9 @@ mod tab_transfer;
 pub mod termprops;
 mod types;
 
-pub(crate) use tab_transfer::return_transferred_tabs;
+pub(crate) use tab_transfer::{
+    new_window_view, return_transferred_tabs, set_drop_handler, set_new_window_handler,
+};
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -743,25 +745,20 @@ impl TerminalNotebook {
         let pty_size_timers_on_close = Rc::clone(&self.pty_size_timers);
         let split_close_on_close = self.split_close_hooks();
 
-        // Handle create-window signal - we must connect this to prevent the default
-        // behavior which causes CRITICAL warnings. Returning None cancels the tearoff.
-        // Note: libadwaita will still show a CRITICAL warning, but this is unavoidable
-        // without implementing multi-window support.
-        self.tab_view.connect_create_window(|_| {
-            // Log instead of letting libadwaita complain
-            tracing::debug!("Tab tearoff attempted but not supported - cancelling");
-            // Return None to cancel the operation
-            // The CRITICAL warning from libadwaita is unavoidable
-            None
-        });
+        // A tab dropped outside every window opens a new window, whose view the
+        // tab then lands on (see `tab_transfer`).
+        self.tab_view.connect_create_window(|_| new_window_view());
 
         // A cluster window has a tab view of its own, and libadwaita lets a tab
-        // be dragged between any two: hand back a session tab dragged out of here.
+        // be dragged between any two: hand back a session tab dragged out of
+        // here, after which the window layer moves its session where it was
+        // dropped. The Welcome placeholder is handed back too, and stays.
         let sessions_home = self.sessions.clone();
         return_transferred_tabs(&self.tab_view, move |page| {
-            sessions_home
-                .try_borrow()
-                .is_ok_and(|sessions| sessions.values().any(|p| p == page))
+            TabPageContainer::is_welcome(&page.child())
+                || sessions_home
+                    .try_borrow()
+                    .is_ok_and(|sessions| sessions.values().any(|p| p == page))
         });
 
         // Handle close-page signal
