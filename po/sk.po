@@ -13083,8 +13083,8 @@ msgid "Split view for terminals"
 msgstr "Rozdelené zobrazenie pre terminály"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "Mriežka prehľadu kariet (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "Mriežka prehľadu kariet"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

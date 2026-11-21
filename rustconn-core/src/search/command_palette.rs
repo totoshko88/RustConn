@@ -189,13 +189,13 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
         .with_icon("input-keyboard-symbolic")
         .with_priority(38),
         PaletteItem::new(
-            "Split Horizontal",
+            "Split Down",
             CommandPaletteAction::GtkAction("win.split-horizontal".into()),
         )
         .with_icon("view-dual-symbolic")
         .with_priority(35),
         PaletteItem::new(
-            "Split Vertical",
+            "Split Right",
             CommandPaletteAction::GtkAction("win.split-vertical".into()),
         )
         .with_icon("view-dual-symbolic")

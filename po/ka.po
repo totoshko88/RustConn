@@ -13097,8 +13097,8 @@ msgid "Split view for terminals"
 msgstr "გაყოფილი ხედი ტერმინალებისთვის"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "ჩანართის მიმოხილვის ბადე (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "ჩანართის მიმოხილვის ბადე"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

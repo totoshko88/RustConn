@@ -2420,8 +2420,8 @@ Split view works with **any in-process (embedded) session**, not just VTE termin
 
 Sessions shown through an external viewer (xfreerdp, vncviewer, or an external SPICE viewer) cannot be placed in a split — attempting to split one shows "Split view is not available for external-viewer sessions. Switch this connection to embedded mode to use split." and leaves the layout unchanged.
 
-- **Horizontal Split** — Ctrl+Shift+H splits the current tab horizontally (side by side)
-- **Vertical Split** — Ctrl+Shift+S splits the current tab vertically (top and bottom)
+- **Split Down** — Ctrl+Shift+H splits the current tab into a top and a bottom pane
+- **Split Right** — Ctrl+Shift+S splits the current tab into a left and a right pane
 - **Close Pane** — Ctrl+Shift+X closes the focused pane; if only one pane remains, the split is dissolved and the session returns to normal tab mode
 - **Remove Split** — Ctrl+Shift+J, **Remove Split** in the split tab's context menu or in a pane header's menu, or **Remove Split** in the command palette, returns every session of the split to its own tab without closing any of them. On a tab that is not split it does nothing
 - **Closing a split tab** — a split lives in the tab of its first (owner) session; the other sessions have no tab of their own while they are in the split. The tab's title names the focused pane, which is not always the owner. Closing a tab whose split shows two or more sessions (X, middle-click, **Close Tab…** in the tab menu, or Ctrl+Shift+W) asks first. The dialog says which session the tab belongs to and lists the other sessions it shows (the first three, then how many more), and offers three answers: **Remove Split** (the default, Enter) returns every session to its own tab and closes none of them, the same as Ctrl+Shift+J; **Close All Sessions** disconnects the owner and every other session of the split; **Cancel** (Escape) keeps the tab as it was. Ctrl+Shift+W always acts on the tab, so it asks about the whole split even when another pane has focus (while a terminal has focus Ctrl+W goes to the shell and does not close the tab). **Close Others**, **Close to the Left**, **Close to the Right**, **Close All Tabs** and **Close All Ungrouped** ask once for the whole batch when it includes a split tab, and confirming closes the other sessions of those splits too; **Close All in Group** says so in its own confirmation. Closing one pane's session never asks: use **Close Pane** in the pane header's menu or Ctrl+Shift+X, or **Disconnect** in the sidebar. Scripts, clusters, a session that ends by itself and closing the window do not show this dialog either. To take one session out of the split, use **Move to Own Tab**
@@ -5345,8 +5345,8 @@ markers appear; nothing else changes.
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+Shift+H | Split Horizontal |
-| Ctrl+Shift+S | Split Vertical |
+| Ctrl+Shift+H | Split Down |
+| Ctrl+Shift+S | Split Right |
 | Ctrl+Shift+X | Close Pane |
 | Ctrl+Shift+R | Move to Own Tab (keeps the session, returns it to its own tab) |
 | Ctrl+Shift+J | Unsplit (return every session to its own tab) |

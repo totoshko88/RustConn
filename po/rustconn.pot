@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 14:00+0200\n"
+"POT-Creation-Date: 2026-11-21 14:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -121,7 +121,7 @@ msgstr ""
 #: rustconn/src/dialogs/command_palette.rs:697
 #: rustconn/src/dialogs/settings/mod.rs:245
 #: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:410
-#: rustconn/src/split_view/bridge.rs:2331 rustconn/src/window/ui.rs:97
+#: rustconn/src/split_view/bridge.rs:2303 rustconn/src/window/ui.rs:97
 #: rustconn/src/window/ui.rs:99 rustconn/src/window/ui.rs:339
 msgid "Settings"
 msgstr ""
@@ -278,7 +278,7 @@ msgstr ""
 #: rustconn/src/dialogs/command_palette.rs:705
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
 #: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
-#: rustconn/src/split_view/bridge.rs:2319 rustconn/src/window/ui.rs:357
+#: rustconn/src/split_view/bridge.rs:2288 rustconn/src/window/ui.rs:357
 msgid "Keyboard Shortcuts"
 msgstr ""
 
@@ -493,7 +493,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:82
 #: rustconn/src/dialogs/command_palette.rs:101
-#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2325
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2296
 msgid "Command Palette"
 msgstr ""
 
@@ -531,7 +531,7 @@ msgstr ""
 #: rustconn/src/dialogs/settings/ui_tab.rs:928
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:2034
-#: rustconn/src/split_view/bridge.rs:2326 rustconn/src/tray.rs:309
+#: rustconn/src/split_view/bridge.rs:2297 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:139
 #: rustconn/src/window/ui.rs:274
 msgid "Local Shell"
@@ -540,7 +540,7 @@ msgstr ""
 #: rustconn/src/dialogs/command_palette.rs:694
 #: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:783
 #: rustconn/src/sidebar_ui.rs:1529 rustconn/src/split_view/bridge.rs:2164
-#: rustconn/src/split_view/bridge.rs:2324
+#: rustconn/src/split_view/bridge.rs:2295
 #: rustconn/src/window/edit_dialogs.rs:785
 msgid "Quick Connect"
 msgstr ""
@@ -570,20 +570,22 @@ msgid "Toggle Keyboard Passthrough"
 msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:700
-#: rustconn/src/dialogs/shortcuts.rs:218
-msgid "Split Horizontal"
+#: rustconn/src/dialogs/shortcuts.rs:218 rustconn/src/split_view/bridge.rs:2299
+#: rustconn/src/window/ui.rs:107 rustconn/src/window/ui.rs:112
+msgid "Split Down"
 msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:701
-#: rustconn/src/dialogs/shortcuts.rs:219
-msgid "Split Vertical"
+#: rustconn/src/dialogs/shortcuts.rs:219 rustconn/src/split_view/bridge.rs:2300
+#: rustconn/src/window/ui.rs:117 rustconn/src/window/ui.rs:122
+msgid "Split Right"
 msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:702
 #: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/sidebar_ui.rs:580
 #: rustconn/src/split_view/adapter.rs:197
 #: rustconn/src/terminal/split_close.rs:321
-#: rustconn/src/terminal/tab_menu.rs:1351
+#: rustconn/src/terminal/tab_menu.rs:1354
 msgid "Remove Split"
 msgstr ""
 
@@ -609,13 +611,13 @@ msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
 #: rustconn/src/terminal/script_recorder.rs:186
-#: rustconn/src/terminal/tab_menu.rs:1463
+#: rustconn/src/terminal/tab_menu.rs:1466
 msgid "Share Session (read-only)"
 msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:709
 #: rustconn/src/terminal/script_recorder.rs:190
-#: rustconn/src/terminal/tab_menu.rs:1478
+#: rustconn/src/terminal/tab_menu.rs:1481
 msgid "Start TFTP Server"
 msgstr ""
 
@@ -728,7 +730,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:344
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:170
-#: rustconn/src/terminal/tab_menu.rs:1336
+#: rustconn/src/terminal/tab_menu.rs:1338
 msgid "Activity Monitor"
 msgstr ""
 
@@ -7003,8 +7005,8 @@ msgstr ""
 
 #: rustconn/src/dialogs/recording.rs:524 rustconn/src/dialogs/workspace.rs:127
 #: rustconn/src/dialogs/workspace.rs:238
-#: rustconn/src/sidebar/saved_searches.rs:238 rustconn/src/sidebar_ui.rs:443
-#: rustconn/src/sidebar_ui.rs:506 rustconn/src/window/edit_dialogs.rs:341
+#: rustconn/src/sidebar/saved_searches.rs:238
+#: rustconn/src/window/edit_dialogs.rs:341
 msgid "Rename"
 msgstr ""
 
@@ -7116,7 +7118,8 @@ msgid "Scripts are stored in the script library folder."
 msgstr ""
 
 #: rustconn/src/dialogs/script.rs:194 rustconn/src/dialogs/script.rs:195
-#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/split_view/bridge.rs:2327
+#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/sidebar_ui.rs:1484
+#: rustconn/src/split_view/bridge.rs:2298
 msgid "Search"
 msgstr ""
 
@@ -12244,6 +12247,10 @@ msgstr ""
 msgid "New Subgroup"
 msgstr ""
 
+#: rustconn/src/sidebar_ui.rs:443 rustconn/src/sidebar_ui.rs:506
+msgid "Rename…"
+msgstr ""
+
 #: rustconn/src/sidebar_ui.rs:446 rustconn/src/sidebar_ui.rs:520
 msgid "Move to Group…"
 msgstr ""
@@ -12280,7 +12287,7 @@ msgstr ""
 msgid "Duplicate as Range…"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:516 rustconn/src/terminal/tab_menu.rs:1403
+#: rustconn/src/sidebar_ui.rs:516 rustconn/src/terminal/tab_menu.rs:1406
 msgid "Duplicate via Wizard…"
 msgstr ""
 
@@ -12290,7 +12297,7 @@ msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:586 rustconn/src/split_view/adapter.rs:194
 #: rustconn/src/split_view/adapter.rs:1327
-#: rustconn/src/terminal/tab_menu.rs:1359
+#: rustconn/src/terminal/tab_menu.rs:1362
 msgid "Move to New Window"
 msgstr ""
 
@@ -12302,17 +12309,17 @@ msgstr ""
 msgid "Session Log…"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:620 rustconn/src/terminal/tab_menu.rs:1418
+#: rustconn/src/sidebar_ui.rs:620 rustconn/src/terminal/tab_menu.rs:1421
 msgid "Open SFTP"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
-#: rustconn/src/terminal/tab_menu.rs:1471
+#: rustconn/src/terminal/tab_menu.rs:1474
 msgid "Edit Remote File…"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
-#: rustconn/src/terminal/tab_menu.rs:1453
+#: rustconn/src/terminal/tab_menu.rs:1456
 msgid "Record Script…"
 msgstr ""
 
@@ -12431,10 +12438,6 @@ msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:1449
 msgid "Show or hide smart folders panel"
-msgstr ""
-
-#: rustconn/src/sidebar_ui.rs:1484
-msgid "Search (Ctrl+F)"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:1485
@@ -12583,51 +12586,47 @@ msgstr ""
 msgid "Drag & drop files to sessions"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2323
+#: rustconn/src/split_view/bridge.rs:2294
 msgid "New connection"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2328
-msgid "Split vertical / horizontal"
-msgstr ""
-
-#: rustconn/src/split_view/bridge.rs:2329
+#: rustconn/src/split_view/bridge.rs:2301
 msgid "Disable shortcuts"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2330
+#: rustconn/src/split_view/bridge.rs:2302
 msgid "Import connections"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2360
+#: rustconn/src/split_view/bridge.rs:2335
 msgid "Quick Access"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2364
+#: rustconn/src/split_view/bridge.rs:2339
 msgid "Fuzzy search & command palette"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2365
+#: rustconn/src/split_view/bridge.rs:2340
 msgid "Pin favorites to sidebar"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2366
+#: rustconn/src/split_view/bridge.rs:2341
 msgid "Split view for terminals"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
+#: rustconn/src/split_view/bridge.rs:2344
+msgid "Tab Overview grid"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2389
+#: rustconn/src/split_view/bridge.rs:2364
 msgid "Import Formats"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2611
+#: rustconn/src/split_view/bridge.rs:2586
 msgid "All tabs are already displayed in this split view"
 msgstr ""
 
-#: rustconn/src/split_view/bridge.rs:2658
+#: rustconn/src/split_view/bridge.rs:2633
 msgid "Select a tab to display"
 msgstr ""
 
@@ -12715,7 +12714,7 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/terminal/script_recorder.rs:176
-#: rustconn/src/terminal/tab_menu.rs:1449
+#: rustconn/src/terminal/tab_menu.rs:1452
 msgid "Stop Script Recording"
 msgstr ""
 
@@ -12901,43 +12900,43 @@ msgstr ""
 msgid "Add to Tab Broadcast"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1346
+#: rustconn/src/terminal/tab_menu.rs:1349
 msgid "Split with Other Tabs…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1395
+#: rustconn/src/terminal/tab_menu.rs:1398
 msgid "Duplicate Tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1409
+#: rustconn/src/terminal/tab_menu.rs:1412
 msgid "Edit Connection…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1435
+#: rustconn/src/terminal/tab_menu.rs:1438
 msgid "Save Output…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1461
+#: rustconn/src/terminal/tab_menu.rs:1464
 msgid "Stop Sharing"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1485
+#: rustconn/src/terminal/tab_menu.rs:1488
 msgid "Close Others"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1490
+#: rustconn/src/terminal/tab_menu.rs:1493
 msgid "Close to the Left"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1491
+#: rustconn/src/terminal/tab_menu.rs:1494
 msgid "Close to the Right"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1495
+#: rustconn/src/terminal/tab_menu.rs:1498
 msgid "Close All Ungrouped"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1499
+#: rustconn/src/terminal/tab_menu.rs:1502
 msgid "Close All Tabs"
 msgstr ""
 
@@ -15558,14 +15557,6 @@ msgstr ""
 
 #: rustconn/src/window/ui.rs:72
 msgid "Toggle Sidebar (F9)"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:107 rustconn/src/window/ui.rs:112
-msgid "Split Down"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:117 rustconn/src/window/ui.rs:122
-msgid "Split Right"
 msgstr ""
 
 #: rustconn/src/window/ui.rs:142

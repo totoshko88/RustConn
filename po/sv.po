@@ -13070,8 +13070,8 @@ msgid "Split view for terminals"
 msgstr "Delad vy för terminaler"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "Fliköversiktsrutnät (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "Fliköversiktsrutnät"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

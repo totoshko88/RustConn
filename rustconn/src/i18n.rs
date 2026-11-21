@@ -389,13 +389,19 @@ fn append_accel(text: &str, label: Option<&str>) -> String {
 // rebuilt on a keybinding change.
 #[must_use]
 pub fn with_accel(text: &str, action: &str) -> String {
+    append_accel(text, accel_label(action).as_deref())
+}
+
+/// The key combination bound to a GTK action, as shown to the user
+/// (`Ctrl+Shift+B`), or `None` when the action has no binding.
+#[must_use]
+pub fn accel_label(action: &str) -> Option<String> {
     use gtk4::prelude::*;
-    let label = gtk4::gio::Application::default()
+    gtk4::gio::Application::default()
         .and_downcast::<gtk4::Application>()
         .and_then(|app| app.accels_for_action(action).first().cloned())
         .and_then(|accel| gtk4::accelerator_parse(accel.as_str()))
-        .map(|(key, mods)| gtk4::accelerator_get_label(key, mods));
-    append_accel(text, label.as_deref())
+        .map(|(key, mods)| gtk4::accelerator_get_label(key, mods).to_string())
 }
 
 /// Translates a string with singular/plural forms.

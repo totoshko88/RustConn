@@ -344,13 +344,13 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
         KeybindingDef::new(
             "win.split-horizontal",
             "<Control><Shift>h",
-            "Split Horizontal",
+            "Split Down",
             SplitView,
         ),
         KeybindingDef::new(
             "win.split-vertical",
             "<Control><Shift>s",
-            "Split Vertical",
+            "Split Right",
             SplitView,
         ),
         KeybindingDef::new(

@@ -13008,8 +13008,8 @@ msgid "Split view for terminals"
 msgstr "Chia màn hình cho terminal"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "Lưới tổng quan thẻ (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "Lưới tổng quan thẻ"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

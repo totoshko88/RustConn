@@ -1333,7 +1333,10 @@ impl TerminalNotebook {
             // object re-points the existing stack page instead of adding a second
             // one. Verified with an isolated GTK repro (0 collisions over repeated
             // rebuilds) before adopting the pattern.
-            menu.append_submenu(Some(&i18n("Activity Monitor")), &Self::monitor_submenu());
+            // Only a VTE terminal has output to watch; embedded viewers do not.
+            if state.is_terminal {
+                menu.append_submenu(Some(&i18n("Activity Monitor")), &Self::monitor_submenu());
+            }
         }
 
         // Split section — only for the tab that hosts a split layout, and the
@@ -1563,6 +1566,21 @@ mod tests {
         });
         assert!(session.iter().any(|a| a == "tab.set-group"));
         assert!(session.iter().any(|a| a == "tab.toggle-broadcast"));
+    }
+
+    #[test]
+    fn the_monitor_submenu_is_offered_only_for_a_terminal_tab() {
+        let embedded = actions_for(super::TabMenuState {
+            has_session: true,
+            ..Default::default()
+        });
+        assert!(!embedded.iter().any(|a| a == "tab.set-monitor"));
+        let terminal = actions_for(super::TabMenuState {
+            has_session: true,
+            is_terminal: true,
+            ..Default::default()
+        });
+        assert!(terminal.iter().any(|a| a == "tab.set-monitor"));
     }
 
     #[test]

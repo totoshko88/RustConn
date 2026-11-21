@@ -13156,8 +13156,8 @@ msgid "Split view for terminals"
 msgstr "Terminallar uchun bo'lingan ko'rinish"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "Varaqlar ko'rinishi panjarasi (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "Varaqlar ko'rinishi panjarasi"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

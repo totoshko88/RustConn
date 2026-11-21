@@ -13160,8 +13160,8 @@ msgid "Split view for terminals"
 msgstr "Vista divisa per terminali"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "Griglia panoramica schede (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "Griglia panoramica schede"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

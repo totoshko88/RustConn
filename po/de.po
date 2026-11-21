@@ -13219,8 +13219,8 @@ msgid "Split view for terminals"
 msgstr "Geteilte Ansicht für Terminals"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "Tab-Übersicht-Raster (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "Tab-Übersicht-Raster"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

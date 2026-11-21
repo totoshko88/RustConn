@@ -13084,8 +13084,8 @@ msgid "Split view for terminals"
 msgstr "Падзелены выгляд для тэрміналаў"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "Сетка агляду ўкладак (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "Сетка агляду ўкладак"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

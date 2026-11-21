@@ -9,7 +9,7 @@ use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk, gio, glib};
 use libadwaita as adw;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, with_accel};
 
 thread_local! {
     /// Tracks the currently open context menu popover across the entire application.
@@ -440,7 +440,7 @@ pub fn show_context_menu_for_item(
             items.push(ContextMenuItem::Separator);
         }
         // § Organisation and properties
-        items.push(ContextMenuItem::action(&i18n("Rename"), "rename-item"));
+        items.push(ContextMenuItem::action(&i18n("Rename…"), "rename-item"));
         if !is_import_group {
             items.push(ContextMenuItem::action(
                 &i18n("Move to Group…"),
@@ -503,7 +503,7 @@ pub fn show_context_menu_for_item(
         items.push(ContextMenuItem::action(&favorite_label, "toggle-pin"));
         // § Organisation
         items.push(ContextMenuItem::Separator);
-        items.push(ContextMenuItem::action(&i18n("Rename"), "rename-item"));
+        items.push(ContextMenuItem::action(&i18n("Rename…"), "rename-item"));
         items.push(ContextMenuItem::action(
             &i18n("Duplicate"),
             "duplicate-connection",
@@ -1481,7 +1481,7 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     // GtkSearchBar's search-mode-enabled property.
     let search_toggle = gtk4::ToggleButton::new();
     search_toggle.set_icon_name("system-search-symbolic");
-    search_toggle.set_tooltip_text(Some(&i18n("Search (Ctrl+F)")));
+    search_toggle.set_tooltip_text(Some(&with_accel(&i18n("Search"), "win.search")));
     search_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Toggle search"))]);
     // 44px tap-target floor via CSS class, not set_size_request — see the note
     // in window/ui.rs; `window.compact-manual` can lower it for deliberate

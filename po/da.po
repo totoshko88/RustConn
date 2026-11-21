@@ -13060,8 +13060,8 @@ msgid "Split view for terminals"
 msgstr "Delt visning for terminaler"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "Faneoversigtsvisning (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "Faneoversigtsvisning"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"

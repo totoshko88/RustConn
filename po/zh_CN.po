@@ -12718,8 +12718,8 @@ msgid "Split view for terminals"
 msgstr "终端分屏视图"
 
 #: rustconn/src/split_view/bridge.rs:2369
-msgid "Tab Overview grid (Ctrl+Shift+O)"
-msgstr "标签页概览网格 (Ctrl+Shift+O)"
+msgid "Tab Overview grid"
+msgstr "标签页概览网格"
 
 #: rustconn/src/split_view/bridge.rs:2389
 msgid "Import Formats"
