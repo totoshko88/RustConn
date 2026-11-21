@@ -747,8 +747,11 @@ impl MainWindow {
         // Send fwknop SPA packet if configured (after knock, before port check)
         // The keys come from the secret store (F-08); a key still in the file
         // (pre-0.26.0 or not yet moved) is used as is.
-        // shortcut: the vault read runs on the GTK thread like the SPA send
-        // below; bounded by the vault op timeout. Upgrade with the connect path.
+        // ponytail: the vault read runs on the GTK thread, like the pre-connect
+        // task, the knock and the SPA send around it. Ceiling: one vault op
+        // timeout per vaulted key (two keys, up to 45 s each on a CLI backend).
+        // Upgrade: make this pre-connect stage asynchronous as a whole, then
+        // read the keys with `spawn_blocking_with_callback`.
         let spa_keys = match conn_clone.spa_config.as_ref() {
             Some(cfg) => match rustconn_core::connection::spa_vault::resolve_spa_keys(
                 conn_clone.id,

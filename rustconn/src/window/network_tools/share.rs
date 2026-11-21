@@ -349,6 +349,15 @@ fn start_quic_sharing(
     stun: StunConsent,
 ) {
     let token = SecretString::from(Uuid::new_v4().to_string());
+    // A public endpoint through NAT needs the wildcard address. Without STUN
+    // the link only reaches the LAN, so listen on the LAN address alone (or on
+    // loopback when there is none) rather than on every interface.
+    let bind_ip = match stun {
+        StunConsent::Granted => IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+        StunConsent::Declined => {
+            local_ipv4_guess().map_or(IpAddr::V4(Ipv4Addr::LOCALHOST), IpAddr::V4)
+        }
+    };
     let win = window.downgrade();
     let nb = notebook.clone();
     spawn_blocking_with_callback(
@@ -356,7 +365,7 @@ fn start_quic_sharing(
             quic_runtime().and_then(|runtime| {
                 runtime
                     .block_on(QuicShareServer::start(
-                        SocketAddr::from(([0, 0, 0, 0], 0)),
+                        SocketAddr::new(bind_ip, 0),
                         token,
                         QuicShareOptions {
                             stun,

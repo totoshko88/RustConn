@@ -186,6 +186,41 @@ async fn resolve_path(root: &Path, filename: &str) -> Result<PathBuf, TftpError>
     Ok(canonical)
 }
 
+/// Reads `path` after proving the opened file is the one `path` still names
+/// inside `root`.
+///
+/// `resolve_path` canonicalizes first and the file is opened later, so a
+/// writer to the served folder could swap a symlink in between. Opening first
+/// and comparing the handle with a fresh canonicalization (same device and
+/// inode, still under `root`) closes the window to a swap-and-swap-back.
+async fn read_confined(root: &Path, path: &Path) -> std::io::Result<Vec<u8>> {
+    use tokio::io::AsyncReadExt;
+    let mut file = tokio::fs::File::open(path).await?;
+    let again = tokio::fs::canonicalize(path).await?;
+    if !again.starts_with(root) {
+        return Err(std::io::Error::other("path left the served folder"));
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let opened = file.metadata().await?;
+        let named = tokio::fs::metadata(&again).await?;
+        if opened.dev() != named.dev() || opened.ino() != named.ino() {
+            return Err(std::io::Error::other("file changed while opening"));
+        }
+    }
+    let mut data = Vec::new();
+    // One byte past the cap tells an oversized file from one of exactly the cap.
+    (&mut file)
+        .take(MAX_FILE_SIZE + 1)
+        .read_to_end(&mut data)
+        .await?;
+    if data.len() as u64 > MAX_FILE_SIZE {
+        return Err(std::io::Error::other("file over size cap"));
+    }
+    Ok(data)
+}
+
 fn is_ack(packet: &[u8], block: u16) -> bool {
     packet.len() >= 4
         && packet[..2] == [0, 4]
@@ -248,7 +283,7 @@ async fn handle(socket: &UdpSocket, root: &Path, packet: &[u8], peer: SocketAddr
             return;
         }
         Err(e) => {
-            tracing::warn!(error = %e, filename = %req.filename, "TFTP path rejected");
+            tracing::warn!(error = %e, filename = ?req.filename, "TFTP path rejected");
             send_error(socket, peer, 2, "access violation").await;
             return;
         }
@@ -258,11 +293,11 @@ async fn handle(socket: &UdpSocket, root: &Path, packet: &[u8], peer: SocketAddr
         Err(_) => false,
     };
     if too_large {
-        tracing::warn!(filename = %req.filename, "TFTP file over size cap");
+        tracing::warn!(filename = ?req.filename, "TFTP file over size cap");
         send_error(socket, peer, 3, "file too large").await;
         return;
     }
-    let data = match tokio::fs::read(&path).await {
+    let data = match read_confined(root, &path).await {
         Ok(d) => d,
         Err(e) => {
             tracing::debug!(error = %e, "TFTP read failed");
@@ -350,6 +385,20 @@ mod tests {
         packet.extend_from_slice(filename);
         packet.extend_from_slice(b"\0octet\0");
         packet
+    }
+
+    #[tokio::test]
+    async fn read_confined_reads_inside_and_refuses_outside() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = std::fs::canonicalize(dir.path()).unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let inside_file = root.join("a.cfg");
+        std::fs::write(&inside_file, b"hello").unwrap();
+        assert_eq!(read_confined(&root, &inside_file).await.unwrap(), b"hello");
+
+        let secret = std::fs::canonicalize(outside.path()).unwrap().join("s");
+        std::fs::write(&secret, b"x").unwrap();
+        assert!(read_confined(&root, &secret).await.is_err());
     }
 
     #[test]

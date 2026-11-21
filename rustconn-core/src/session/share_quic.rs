@@ -657,7 +657,9 @@ async fn accept_loop(
                 debug!("share quic: handshake failed or timed out");
                 return;
             };
-            let supplied = percent_decode(query_value(request.path(), "token").unwrap_or(""));
+            let supplied = zeroize::Zeroizing::new(percent_decode(
+                query_value(request.path(), "token").unwrap_or(""),
+            ));
             if !constant_time_eq(supplied.as_bytes(), token.expose_secret().as_bytes()) {
                 debug!("share quic: token rejected");
                 request.forbidden().await;

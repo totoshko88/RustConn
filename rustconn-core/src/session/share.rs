@@ -325,7 +325,7 @@ async fn serve_connection(
             let _ = write_response(&mut stream, &head, XTERM_CSS.as_bytes()).await;
         }
         "/events" => {
-            let supplied = bearer_token(&request).unwrap_or_default();
+            let supplied = zeroize::Zeroizing::new(bearer_token(&request).unwrap_or_default());
             // Constant-time compare: fold XOR over every padded byte slot and the
             // length difference too, so no mismatch short-circuits the loop.
             let valid =
