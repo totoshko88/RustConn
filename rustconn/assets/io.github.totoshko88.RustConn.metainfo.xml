@@ -116,6 +116,22 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.26.0" date="2026-11-21">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.0</url>
+      <description>
+        <p>Version 0.26.0 - session sharing, TFTP server, remote file editor and script recording:</p>
+        <ul>
+          <li>Read-only session sharing in the browser or another RustConn, with a shared-tab marker and Stop Sharing.</li>
+          <li>A read-only TFTP server and a remote file editor.</li>
+          <li>Terminal input can be recorded into a script.</li>
+          <li>Duplicate via Wizard in the tab menu, Undo for deleting several items and a counting selection mode.</li>
+          <li>fwknop SPA keys are kept in the secret store, and the custom SSH agent socket now works.</li>
+          <li>The pre-connect task, port knock and SPA no longer freeze the window.</li>
+          <li>Menu wording, broadcast names and shortcut labels are unified and translated.</li>
+          <li>Updated dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.25.6" date="2026-11-20">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.25.6</url>
       <description>

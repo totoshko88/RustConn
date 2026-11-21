@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.26.0] - 2026-11-20
+## [0.26.0] - 2026-11-21
 
 ### Added
 - **Duplicate via Wizard… in the tab menu (#437)** — right-click a tab of a saved connection and choose **Duplicate via Wizard…** to open the connection wizard prefilled from that connection, with a new name. It uses the tab's own connection, not the sidebar selection. (`rustconn/src/terminal/tab_menu.rs`, `rustconn/src/window/edit_actions.rs`)
@@ -65,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Selection mode counts and ticks, and Escape leaves it** — the bulk-actions bar shows **Selected: N**, each selected row shows a tick, and **Escape** in the list leaves the mode (it used to clear the selection only, so the mode stayed on with no hint). **Clear Selection** still keeps the mode.
 - **Deleting several items offers Undo** — **Delete Selected** moved the items to Trash and showed a toast without a button, so the only way back was the Trash row. The toast now reads **Moved N item(s) to Trash** with **Undo**, which restores all of them (groups first). It also appears when some items failed to delete; those that went are still undoable.
 - **New texts translated in all 19 locales** — the share, TFTP, remote editor, script recorder, SPA vault, SSH agent, import warning, selection mode and menu wording strings are translated in every catalogue. Ukrainian uses «сеанс», not «сесія». (`po/`)
+### Dependencies
+- **ashpd 0.14.1 → 0.14.2**, **cc 1.11.2 → 1.11.3**, **clap 4.6.8 → 4.6.9**, **form_urlencoded 1.2.2 → 1.2.3**, **oo7 0.7.2 → 0.7.3**, **toml 1.2.1 → 1.2.2**, **url 2.5.8 → 2.5.9**, **walkdir 2.5.0 → 2.5.1**, **x509-cert 0.3.0 → 0.3.1**, **zbus 6.3.0 → 6.5.0**, **zcheapstr 1.3.0 → 1.4.0**, **zerocopy 0.8.63 → 0.8.64**, **zip 9.8.0 → 9.8.1**, **zruntime 0.2.3 → 0.2.4** (and their patch-level companions).
 
 ## [0.25.6] - 2026-11-20
 
