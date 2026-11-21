@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Starting and stopping a share no longer freezes the window** — the relay is started and stopped off the main loop. (`rustconn/src/window/network_tools/share.rs`)
 - **Selection mode counts and ticks, and Escape leaves it** — the bulk-actions bar shows **Selected: N**, each selected row shows a tick, and **Escape** in the list leaves the mode (it used to clear the selection only, so the mode stayed on with no hint). **Clear Selection** still keeps the mode.
 - **Deleting several items offers Undo** — **Delete Selected** moved the items to Trash and showed a toast without a button, so the only way back was the Trash row. The toast now reads **Moved N item(s) to Trash** with **Undo**, which restores all of them (groups first). It also appears when some items failed to delete; those that went are still undoable.
+- **New texts translated in all 19 locales** — the share, TFTP, remote editor, script recorder, SPA vault, SSH agent, import warning, selection mode and menu wording strings are translated in every catalogue. Ukrainian uses «сеанс», not «сесія». (`po/`)
 
 ## [0.25.6] - 2026-11-20
 
