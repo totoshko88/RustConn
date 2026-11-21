@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 14:17+0200\n"
+"POT-Creation-Date: 2026-11-21 14:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -260,9 +260,9 @@ msgstr ""
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:974
-#: rustconn/src/terminal/mod.rs:1585
 #: rustconn/src/terminal/session_lifecycle.rs:615
 #: rustconn/src/terminal/session_lifecycle.rs:760
+#: rustconn/src/terminal/spawn.rs:150
 msgid "Session disconnected"
 msgstr ""
 
@@ -599,8 +599,8 @@ msgid "Join Shared Session…"
 msgstr ""
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:621
-#: rustconn/src/terminal/mod.rs:627
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:636
+#: rustconn/src/terminal/mod.rs:642
 msgid "Tab Overview"
 msgstr ""
 
@@ -11496,15 +11496,14 @@ msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:185 rustconn/src/terminal/config.rs:428
-#: rustconn/src/terminal/mod.rs:1613
 #: rustconn/src/terminal/session_lifecycle.rs:795
-#: rustconn/src/terminal/tab_menu.rs:1268
+#: rustconn/src/terminal/spawn.rs:178 rustconn/src/terminal/tab_menu.rs:1268
 msgid "Reconnect"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1615
 #: rustconn/src/terminal/session_lifecycle.rs:797
+#: rustconn/src/terminal/spawn.rs:180
 msgid "Reconnect to this session"
 msgstr ""
 
@@ -12634,28 +12633,12 @@ msgstr ""
 msgid "Save Selection as Snippet…"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:640 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:655 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1256
+#: rustconn/src/terminal/notebook_output.rs:150
 msgid "Output filter '{}' is not installed; session output is not filtered"
-msgstr ""
-
-#: rustconn/src/terminal/mod.rs:1607
-msgid "Command not found: {}"
-msgstr ""
-
-#: rustconn/src/terminal/mod.rs:1609
-msgid "Failed to start '{}'"
-msgstr ""
-
-#: rustconn/src/terminal/mod.rs:1631
-msgid "'{}' is not installed"
-msgstr ""
-
-#: rustconn/src/terminal/mod.rs:1634
-msgid "Failed to start '{}': {}"
 msgstr ""
 
 #: rustconn/src/terminal/playback.rs:257
@@ -12760,6 +12743,22 @@ msgstr ""
 
 #: rustconn/src/terminal/session_lifecycle.rs:1175
 msgid "Run “{}” to sign in again in the browser"
+msgstr ""
+
+#: rustconn/src/terminal/spawn.rs:172
+msgid "Command not found: {}"
+msgstr ""
+
+#: rustconn/src/terminal/spawn.rs:174
+msgid "Failed to start '{}'"
+msgstr ""
+
+#: rustconn/src/terminal/spawn.rs:196
+msgid "'{}' is not installed"
+msgstr ""
+
+#: rustconn/src/terminal/spawn.rs:199
+msgid "Failed to start '{}': {}"
 msgstr ""
 
 #: rustconn/src/terminal/split_close.rs:43
