@@ -12591,7 +12591,7 @@ msgid "Close All Sessions"
 msgstr "Barcha seanslarni yopish"
 
 #: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 "Translatsiya faol — tugma bosishlar shu oynadagi {} varaqqa aks ettiriladi"
 
@@ -14034,7 +14034,7 @@ msgstr "Seansni asosiy oynaga qaytarib boʻlmadi."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Guruh translatsiyasi oʻchirildi — tugma bosishlar faqat faol varaqqa boradi"
 
@@ -14586,7 +14586,7 @@ msgid "Enable Broadcast"
 msgstr "Translatsiyani yoqish"
 
 #: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr "Guruh translatsiyasi faol — tugma bosishlar {} seansga aks ettiriladi"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
@@ -15037,13 +15037,13 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Klaviatura o'tkazishi o'chirildi — yorliqlar tiklandi"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr ""
 "Translyatsiya yoqildi — tugma bosishlari barcha bo‘lingan panellarga "
 "ko‘chiriladi"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr "Translyatsiya o‘chirildi — tugma bosishlari faqat faol panelga boradi"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15933,9 +15933,8 @@ msgid "Open Local Shell"
 msgstr "Mahalliy terminalni ochish"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
-msgstr ""
-"Tugma bosishlarini barcha bo‘lingan panellarga ko‘chirish (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes"
+msgstr "Tugma bosishlarini barcha bo‘lingan panellarga ko‘chirish"
 
 #: rustconn/src/window/ui.rs:169
 msgid "Tab Broadcast"
@@ -15955,16 +15954,16 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "Klaviatura o'tkazishi faol — o'chirish uchun bosing"
 
 #: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr "Snippetlar…"
+msgid "Snippets"
+msgstr "Snippetlar"
 
 #: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr "Klasterlar…"
+msgid "Clusters"
+msgstr "Klasterlar"
 
 #: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr "Ish maydonlari…"
+msgid "Workspaces"
+msgstr "Ish maydonlari"
 
 #: rustconn/src/window/ui.rs:284
 msgid "Templates…"

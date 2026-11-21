@@ -319,6 +319,7 @@ impl MainWindow {
         let notebook_tab = notebook.clone();
         let toggle_tab = self.group_broadcast_toggle.clone();
         let banner_tab = self.group_broadcast_banner.clone();
+        let toast_tab = self.toast_overlay.clone();
         let window_weak_tab = window.downgrade();
         toggle_tab_action.connect_activate(move |_, param| {
             let Some(sid) = param
@@ -335,6 +336,14 @@ impl MainWindow {
                 window_weak_tab.upgrade().as_ref(),
                 sid,
             );
+            // The toggle appears only with two members, and nothing else says
+            // so after the first Add.
+            if group_tab.contains(sid) && group_tab.member_count() == 1 {
+                toast_tab.show_toast(&crate::i18n::with_accel(
+                    &i18n("Add one more tab to start Tab Broadcast"),
+                    "win.toggle-group-broadcast",
+                ));
+            }
         });
         window.add_action(&toggle_tab_action);
 
@@ -437,7 +446,7 @@ impl MainWindow {
             }
             toggle.add_css_class("broadcasting");
             banner.set_title(&i18n_f(
-                "Group broadcast active — keystrokes mirrored to {} sessions",
+                "Tab Broadcast active — keystrokes mirrored to {} sessions",
                 &[&group.member_count().to_string()],
             ));
             banner.set_revealed(true);
@@ -452,7 +461,7 @@ impl MainWindow {
             toggle.remove_css_class("broadcasting");
             banner.set_revealed(false);
             toast.show_toast(&i18n(
-                "Tab broadcast disabled — keystrokes go to the focused tab only",
+                "Tab Broadcast disabled — keystrokes go to the focused tab only",
             ));
         }
         // Stopping from a tab outside the set leaves nothing to show.

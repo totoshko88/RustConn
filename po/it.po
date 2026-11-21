@@ -12594,7 +12594,7 @@ msgid "Close All Sessions"
 msgstr "Chiudi tutte le sessioni"
 
 #: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 "Trasmissione attiva — tasti rispecchiati su {} schede di questa finestra"
 
@@ -14041,7 +14041,7 @@ msgstr "Non è stato possibile riportare la sessione nella finestra principale."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Trasmissione di gruppo disabilitata — i tasti vanno solo alla scheda attiva"
 
@@ -14595,7 +14595,7 @@ msgid "Enable Broadcast"
 msgstr "Abilita trasmissione"
 
 #: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr "Trasmissione di gruppo attiva — tasti rispecchiati su {} sessioni"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
@@ -15056,13 +15056,13 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Passaggio diretto tastiera disattivato — scorciatoie ripristinate"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr ""
 "Broadcast attivo — le digitazioni vengono duplicate in tutti i pannelli "
 "divisi"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr "Broadcast disattivato — le digitazioni vanno solo al pannello attivo"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15957,8 +15957,8 @@ msgid "Open Local Shell"
 msgstr "Apri shell locale"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
-msgstr "Duplica le digitazioni in tutti i pannelli divisi (Ctrl+Maiusc+B)"
+msgid "Mirror keystrokes to all split panes"
+msgstr "Duplica le digitazioni in tutti i pannelli divisi"
 
 #: rustconn/src/window/ui.rs:169
 msgid "Tab Broadcast"
@@ -15978,16 +15978,16 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "Passaggio diretto tastiera attivo — clic per disattivare"
 
 #: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr "Snippet…"
+msgid "Snippets"
+msgstr "Snippet"
 
 #: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr "Cluster…"
+msgid "Clusters"
+msgstr "Cluster"
 
 #: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr "Spazi di lavoro…"
+msgid "Workspaces"
+msgstr "Spazi di lavoro"
 
 #: rustconn/src/window/ui.rs:284
 msgid "Templates…"

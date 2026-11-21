@@ -12520,7 +12520,7 @@ msgid "Close All Sessions"
 msgstr "Закрыць усе сеансы"
 
 #: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr "Трансляцыя актыўная — націсканні дублююцца на {} укладак гэтага акна"
 
 #: rustconn/src/sidebar/mod.rs:162
@@ -13966,7 +13966,7 @@ msgstr "Не ўдалося перамясціць сеанс назад у га
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Групавая трансляцыя выключана — націсканні ідуць толькі ў актыўную ўкладку"
 
@@ -14514,7 +14514,7 @@ msgid "Enable Broadcast"
 msgstr "Уключыць трансляцыю"
 
 #: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr "Групавая трансляцыя актыўная — націсканні дублююцца на {} сеансаў"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
@@ -14965,12 +14965,12 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Праходжанне клавіятуры вымкнута — скароты адноўлены"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr ""
 "Трансляцыю ўключана — націсканні клавіш дублююцца ва ўсе панэлі падзелу"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr ""
 "Трансляцыю выключана — націсканні клавіш ідуць толькі ў актыўную панэль"
 
@@ -15866,8 +15866,8 @@ msgid "Open Local Shell"
 msgstr "Адкрыць лакальную абалонку"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
-msgstr "Дубляваць націсканні клавіш ва ўсе панэлі падзелу (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes"
+msgstr "Дубляваць націсканні клавіш ва ўсе панэлі падзелу"
 
 #: rustconn/src/window/ui.rs:169
 msgid "Tab Broadcast"
@@ -15886,16 +15886,16 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "Праходжанне клавіятуры актыўнае — натісніце для вымкнення"
 
 #: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr "Сніпеты…"
+msgid "Snippets"
+msgstr "Сніпеты"
 
 #: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr "Кластары…"
+msgid "Clusters"
+msgstr "Кластары"
 
 #: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr "Працоўныя прасторы…"
+msgid "Workspaces"
+msgstr "Працоўныя прасторы"
 
 #: rustconn/src/window/ui.rs:284
 msgid "Templates…"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.25.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 01:50+0200\n"
+"POT-Creation-Date: 2026-11-21 02:00+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -51,14 +51,14 @@ msgstr ""
 #: rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:303
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:823
-#: rustconn/src/session_group_window.rs:700
+#: rustconn/src/session_group_window.rs:703
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1376
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
 #: rustconn/src/terminal/tab_menu.rs:416 rustconn/src/terminal/tab_menu.rs:569
-#: rustconn/src/terminal/tab_menu.rs:809 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:806 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:379
 #: rustconn/src/window/clusters.rs:434
 #: rustconn/src/window/connection_dialogs.rs:993
@@ -67,7 +67,7 @@ msgstr ""
 #: rustconn/src/window/group_broadcast.rs:267
 #: rustconn/src/window/key_setup.rs:1022 rustconn/src/window/mc_launch.rs:457
 #: rustconn/src/window/mod.rs:3842 rustconn/src/window/mod.rs:3906
-#: rustconn/src/window/mod.rs:4958 rustconn/src/window/mod.rs:6053
+#: rustconn/src/window/mod.rs:4973 rustconn/src/window/mod.rs:6068
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
@@ -115,9 +115,12 @@ msgstr ""
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 
-#: rustconn/src/app.rs:947 rustconn/src/dialogs/settings/mod.rs:245
+#: rustconn/src/app.rs:947 rustconn/src/detached_window.rs:492
+#: rustconn/src/dialogs/command_palette.rs:697
+#: rustconn/src/dialogs/settings/mod.rs:245
 #: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:410
-#: rustconn/src/split_view/bridge.rs:2331 rustconn/src/window/ui.rs:99
+#: rustconn/src/split_view/bridge.rs:2331 rustconn/src/window/ui.rs:97
+#: rustconn/src/window/ui.rs:99 rustconn/src/window/ui.rs:339
 msgid "Settings"
 msgstr ""
 
@@ -151,7 +154,8 @@ msgid ""
 "Read it before you share it."
 msgstr ""
 
-#: rustconn/src/app.rs:2214
+#: rustconn/src/app.rs:2214 rustconn/src/detached_window.rs:496
+#: rustconn/src/window/ui.rs:359
 msgid "Debug Logging"
 msgstr ""
 
@@ -166,8 +170,8 @@ msgstr ""
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
-#: rustconn/src/terminal/tab_menu.rs:810 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4959
+#: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
+#: rustconn/src/window/mod.rs:4974
 #: rustconn/src/window/network_tools/share.rs:256
 #: rustconn/src/window/network_tools/share.rs:558
 #: rustconn/src/window/network_tools/tftp.rs:173
@@ -253,8 +257,8 @@ msgstr ""
 #: rustconn/src/embedded_rdp/connection.rs:2762
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
-#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:971
-#: rustconn/src/terminal/mod.rs:1582
+#: rustconn/src/embedded_vnc/ui.rs:146 rustconn/src/session_group_window.rs:974
+#: rustconn/src/terminal/mod.rs:1585
 #: rustconn/src/terminal/session_lifecycle.rs:615
 #: rustconn/src/terminal/session_lifecycle.rs:760
 msgid "Session disconnected"
@@ -264,29 +268,25 @@ msgstr ""
 msgid "Press F11 to leave fullscreen"
 msgstr ""
 
-#: rustconn/src/detached_window.rs:477
+#: rustconn/src/detached_window.rs:477 rustconn/src/session_group_window.rs:466
 msgid "Move to Main Window"
 msgstr ""
 
-#: rustconn/src/detached_window.rs:492 rustconn/src/window/ui.rs:331
-msgid "Settings…"
-msgstr ""
-
-#: rustconn/src/detached_window.rs:494 rustconn/src/window/ui.rs:349
-msgid "Keyboard Shortcuts…"
+#: rustconn/src/detached_window.rs:494
+#: rustconn/src/dialogs/command_palette.rs:705
+#: rustconn/src/dialogs/settings/keybindings_tab.rs:58
+#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
+#: rustconn/src/split_view/bridge.rs:2319 rustconn/src/window/ui.rs:357
+msgid "Keyboard Shortcuts"
 msgstr ""
 
 #: rustconn/src/detached_window.rs:495 rustconn/src/dialogs/shortcuts.rs:183
-#: rustconn/src/window/ui.rs:350
+#: rustconn/src/window/ui.rs:358
 msgid "Help"
 msgstr ""
 
-#: rustconn/src/detached_window.rs:496 rustconn/src/window/ui.rs:351
-msgid "Debug Logging…"
-msgstr ""
-
 #: rustconn/src/detached_window.rs:497 rustconn/src/tray.rs:331
-#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:352
+#: rustconn/src/tray.rs:706 rustconn/src/window/ui.rs:360
 msgid "About RustConn"
 msgstr ""
 
@@ -312,7 +312,7 @@ msgstr ""
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1090
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
-#: rustconn/src/window/edit_dialogs.rs:793 rustconn/src/window/mod.rs:6054
+#: rustconn/src/window/edit_dialogs.rs:793 rustconn/src/window/mod.rs:6069
 #: rustconn/src/window/network_tools/share.rs:586
 msgid "Connect"
 msgstr ""
@@ -488,22 +488,136 @@ msgstr ""
 msgid "No clusters defined. Click 'New Cluster' to create one."
 msgstr ""
 
-#: rustconn/src/dialogs/command_palette.rs:78
-#: rustconn/src/dialogs/command_palette.rs:97
+#: rustconn/src/dialogs/command_palette.rs:82
+#: rustconn/src/dialogs/command_palette.rs:101
 #: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/split_view/bridge.rs:2325
 msgid "Command Palette"
 msgstr ""
 
-#: rustconn/src/dialogs/command_palette.rs:89
+#: rustconn/src/dialogs/command_palette.rs:93
 msgid "Search connections, > commands, @ tags, # groups, % tabs, ! snippets"
 msgstr ""
 
-#: rustconn/src/dialogs/command_palette.rs:120
+#: rustconn/src/dialogs/command_palette.rs:124
 msgid "Search results"
 msgstr ""
 
-#: rustconn/src/dialogs/command_palette.rs:124 rustconn/src/sidebar/mod.rs:759
+#: rustconn/src/dialogs/command_palette.rs:128 rustconn/src/sidebar/mod.rs:759
 msgid "No results"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:691
+#: rustconn/src/dialogs/connection_wizard/mod.rs:491
+#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:678
+#: rustconn/src/sidebar_ui.rs:784 rustconn/src/sidebar_ui.rs:1506
+#: rustconn/src/split_view/bridge.rs:2157 rustconn/src/window/ui.rs:265
+msgid "New Connection"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:692
+#: rustconn/src/dialogs/shortcuts.rs:192 rustconn/src/sidebar_ui.rs:785
+#: rustconn/src/sidebar_ui.rs:1307 rustconn/src/sidebar_ui.rs:1511
+#: rustconn/src/window/connection_dialogs.rs:380 rustconn/src/window/ui.rs:270
+msgid "New Group"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:693
+#: rustconn/src/dialogs/settings/terminal_tab.rs:490
+#: rustconn/src/dialogs/settings/ui_tab.rs:606
+#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/shortcuts.rs:196
+#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/bridge.rs:2326 rustconn/src/tray.rs:309
+#: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:139
+#: rustconn/src/window/ui.rs:274
+msgid "Local Shell"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:694
+#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:783
+#: rustconn/src/sidebar_ui.rs:1529 rustconn/src/split_view/bridge.rs:2164
+#: rustconn/src/split_view/bridge.rs:2324
+#: rustconn/src/window/edit_dialogs.rs:785
+msgid "Quick Connect"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:695
+#: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
+#: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
+#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1088
+#: rustconn/src/split_view/bridge.rs:2171 rustconn/src/window/edit_group.rs:985
+msgid "Import"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:696
+#: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
+#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/dialogs/widgets.rs:1087
+msgid "Export"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:698
+#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
+msgid "Toggle Fullscreen"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:699
+#: rustconn/src/dialogs/shortcuts.rs:230
+msgid "Toggle Keyboard Passthrough"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:700
+#: rustconn/src/dialogs/shortcuts.rs:218
+msgid "Split Horizontal"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:701
+#: rustconn/src/dialogs/shortcuts.rs:219
+msgid "Split Vertical"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:702
+#: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/sidebar_ui.rs:580
+#: rustconn/src/split_view/adapter.rs:197
+#: rustconn/src/terminal/split_close.rs:321
+#: rustconn/src/terminal/tab_menu.rs:1351
+msgid "Remove Split"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:703
+#: rustconn/src/dialogs/network_scan.rs:68 rustconn/src/window/ui.rs:302
+msgid "Network Scan"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:704 rustconn/src/window/ui.rs:313
+msgid "Join Shared Session…"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:706
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:621
+#: rustconn/src/terminal/mod.rs:627
+msgid "Tab Overview"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:707
+#: rustconn/src/dialogs/shortcuts.rs:213
+msgid "Switch Tab"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
+#: rustconn/src/terminal/script_recorder.rs:186
+#: rustconn/src/terminal/tab_menu.rs:1463
+msgid "Share Session (read-only)"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:709
+#: rustconn/src/terminal/script_recorder.rs:190
+#: rustconn/src/terminal/tab_menu.rs:1478
+msgid "Start TFTP Server"
+msgstr ""
+
+#: rustconn/src/dialogs/command_palette.rs:710
+msgid "Edit Remote File"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:84
@@ -611,6 +725,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:344
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:170
+#: rustconn/src/terminal/tab_menu.rs:1336
 msgid "Activity Monitor"
 msgstr ""
 
@@ -1401,6 +1516,36 @@ msgid ""
 "session instead."
 msgstr ""
 
+#: rustconn/src/dialogs/connection/dialog/build.rs:576
+#: rustconn/src/dialogs/connection/dialog/populate.rs:472
+#: rustconn/src/dialogs/connection/general_tab.rs:428
+#: rustconn/src/dialogs/widgets.rs:459
+msgid "(Root)"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/dialog/build.rs:578
+#: rustconn/src/dialogs/connection/dialog/build.rs:580
+#: rustconn/src/dialogs/connection/dialog/build.rs:585
+#: rustconn/src/dialogs/connection/dialog/build.rs:590
+#: rustconn/src/dialogs/connection/dialog/build.rs:592
+#: rustconn/src/dialogs/connection/dialog/populate.rs:522
+#: rustconn/src/dialogs/connection/rdp.rs:815
+#: rustconn/src/dialogs/connection/spice.rs:336
+#: rustconn/src/dialogs/connection/ssh.rs:668
+#: rustconn/src/dialogs/connection/vnc.rs:341
+#: rustconn/src/dialogs/connection/winrm.rs:45
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:137
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:704
+#: rustconn/src/dialogs/settings/network_tab.rs:61
+#: rustconn/src/dialogs/settings/network_tab.rs:64
+#: rustconn/src/dialogs/settings/network_tab.rs:125
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:442
+#: rustconn/src/dialogs/widgets.rs:464 rustconn/src/window/edit_dialogs.rs:816
+#: rustconn/src/window/edit_group.rs:828
+msgid "(None)"
+msgstr ""
+
 #: rustconn/src/dialogs/connection/dialog/build.rs:883
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1245
 #: rustconn/src/dialogs/connection/ssh.rs:689
@@ -1714,30 +1859,6 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:381
 msgid "HMAC Key (in vault)"
-msgstr ""
-
-#: rustconn/src/dialogs/connection/dialog/populate.rs:472
-#: rustconn/src/dialogs/connection/general_tab.rs:428
-#: rustconn/src/dialogs/widgets.rs:459
-msgid "(Root)"
-msgstr ""
-
-#: rustconn/src/dialogs/connection/dialog/populate.rs:522
-#: rustconn/src/dialogs/connection/rdp.rs:815
-#: rustconn/src/dialogs/connection/spice.rs:336
-#: rustconn/src/dialogs/connection/ssh.rs:668
-#: rustconn/src/dialogs/connection/vnc.rs:341
-#: rustconn/src/dialogs/connection/winrm.rs:45
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:137
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:704
-#: rustconn/src/dialogs/settings/network_tab.rs:61
-#: rustconn/src/dialogs/settings/network_tab.rs:64
-#: rustconn/src/dialogs/settings/network_tab.rs:125
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:442
-#: rustconn/src/dialogs/widgets.rs:464 rustconn/src/window/edit_dialogs.rs:816
-#: rustconn/src/window/edit_group.rs:828
-msgid "(None)"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1094
@@ -2425,7 +2546,7 @@ msgid "Container name (optional for single-container)"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:94
-#: rustconn/src/window/ui.rs:124
+#: rustconn/src/window/ui.rs:130
 msgid "Shell"
 msgstr ""
 
@@ -2751,7 +2872,7 @@ msgstr ""
 msgid "Share your local printer with the remote session"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:6027
+#: rustconn/src/dialogs/connection/rdp.rs:389 rustconn/src/window/mod.rs:6042
 msgid "Microphone"
 msgstr ""
 
@@ -2759,7 +2880,7 @@ msgstr ""
 msgid "Send the local microphone to the remote session"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:6030
+#: rustconn/src/dialogs/connection/rdp.rs:399 rustconn/src/window/mod.rs:6045
 msgid "Smart Cards"
 msgstr ""
 
@@ -3652,7 +3773,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:6033
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:6048
 msgid "Security Key (FIDO2)"
 msgstr ""
 
@@ -4614,6 +4735,7 @@ msgid "Next"
 msgstr ""
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:289
+#: rustconn/src/window/ui.rs:292
 msgid "Templates"
 msgstr ""
 
@@ -4657,14 +4779,6 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:1123
 msgid "Your Templates"
-msgstr ""
-
-#: rustconn/src/dialogs/connection_wizard/mod.rs:491
-#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
-#: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:678
-#: rustconn/src/sidebar_ui.rs:784 rustconn/src/sidebar_ui.rs:1506
-#: rustconn/src/split_view/bridge.rs:2157 rustconn/src/window/ui.rs:257
-msgid "New Connection"
 msgstr ""
 
 #: rustconn/src/dialogs/connection_wizard/mod.rs:601
@@ -4844,11 +4958,6 @@ msgstr ""
 
 #: rustconn/src/dialogs/export.rs:94
 msgid "Export Connections"
-msgstr ""
-
-#: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/dialogs/widgets.rs:1087
-msgid "Export"
 msgstr ""
 
 #: rustconn/src/dialogs/export.rs:188 rustconn/src/dialogs/export.rs:282
@@ -5152,7 +5261,7 @@ msgid ""
 "disk space."
 msgstr ""
 
-#: rustconn/src/dialogs/flatpak_components.rs:73
+#: rustconn/src/dialogs/flatpak_components.rs:73 rustconn/src/window/ui.rs:345
 msgid "Components"
 msgstr ""
 
@@ -5253,7 +5362,7 @@ msgid "Failed"
 msgstr ""
 
 #: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:184
-#: rustconn/src/sidebar_ui.rs:1389
+#: rustconn/src/sidebar_ui.rs:1389 rustconn/src/window/ui.rs:317
 msgid "Connection History"
 msgstr ""
 
@@ -5318,13 +5427,6 @@ msgstr ""
 
 #: rustconn/src/dialogs/import/mod.rs:54
 msgid "Import Connections"
-msgstr ""
-
-#: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
-#: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/dialogs/widgets.rs:1088
-#: rustconn/src/split_view/bridge.rs:2171 rustconn/src/window/edit_group.rs:985
-msgid "Import"
 msgstr ""
 
 #: rustconn/src/dialogs/import/mod.rs:164
@@ -6317,6 +6419,7 @@ msgid "Incorrect passphrase"
 msgstr ""
 
 #: rustconn/src/dialogs/log_viewer.rs:40 rustconn/src/dialogs/log_viewer.rs:135
+#: rustconn/src/window/ui.rs:320
 msgid "Session Logs"
 msgstr ""
 
@@ -6390,10 +6493,6 @@ msgstr ""
 
 #: rustconn/src/dialogs/mod.rs:52
 msgid "Only in full screen"
-msgstr ""
-
-#: rustconn/src/dialogs/network_scan.rs:68
-msgid "Network Scan"
 msgstr ""
 
 #: rustconn/src/dialogs/network_scan.rs:74
@@ -6544,7 +6643,7 @@ msgid "Connect to {}"
 msgstr ""
 
 #: rustconn/src/dialogs/password_generator.rs:25
-#: rustconn/src/dialogs/shortcuts.rs:186
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/window/ui.rs:298
 msgid "Password Generator"
 msgstr ""
 
@@ -6840,7 +6939,7 @@ msgstr ""
 msgid "Cannot open the file: {}"
 msgstr ""
 
-#: rustconn/src/dialogs/recording.rs:84
+#: rustconn/src/dialogs/recording.rs:84 rustconn/src/window/ui.rs:319
 msgid "Recordings"
 msgstr ""
 
@@ -6990,6 +7089,7 @@ msgstr ""
 #: rustconn/src/dialogs/script.rs:109 rustconn/src/dialogs/script.rs:139
 #: rustconn/src/dialogs/script.rs:142 rustconn/src/dialogs/script.rs:176
 #: rustconn/src/embedded_rdp/mod.rs:429 rustconn/src/embedded_rdp/mod.rs:1146
+#: rustconn/src/window/ui.rs:294
 msgid "Scripts"
 msgstr ""
 
@@ -7361,12 +7461,6 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:45
 msgid "Keybindings"
-msgstr ""
-
-#: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
-#: rustconn/src/split_view/bridge.rs:2319
-msgid "Keyboard Shortcuts"
 msgstr ""
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:97
@@ -8964,16 +9058,6 @@ msgstr ""
 msgid "Send Escape prefix instead of composed characters (for vim/emacs)"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:490
-#: rustconn/src/dialogs/settings/ui_tab.rs:606
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
-#: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034
-#: rustconn/src/split_view/bridge.rs:2326 rustconn/src/tray.rs:309
-#: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:266
-msgid "Local Shell"
-msgstr ""
-
 #: rustconn/src/dialogs/settings/terminal_tab.rs:491
 msgid "Custom command for the local shell tab"
 msgstr ""
@@ -9425,11 +9509,11 @@ msgstr ""
 msgid "Duplicate connection (sidebar)"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:322
+#: rustconn/src/dialogs/shortcuts.rs:92 rustconn/src/window/ui.rs:330
 msgid "Copy Connection"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:324
+#: rustconn/src/dialogs/shortcuts.rs:93 rustconn/src/window/ui.rs:332
 msgid "Paste Connection"
 msgstr ""
 
@@ -9478,29 +9562,16 @@ msgid "View"
 msgstr ""
 
 #: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/tray.rs:338
-#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:353
+#: rustconn/src/tray.rs:712 rustconn/src/window/ui.rs:361
 msgid "Quit"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:185
+#: rustconn/src/dialogs/shortcuts.rs:185 rustconn/src/window/ui.rs:318
 msgid "Statistics"
 msgstr ""
 
 #: rustconn/src/dialogs/shortcuts.rs:188
 msgid "SSH Tunnel Manager"
-msgstr ""
-
-#: rustconn/src/dialogs/shortcuts.rs:192 rustconn/src/sidebar_ui.rs:785
-#: rustconn/src/sidebar_ui.rs:1307 rustconn/src/sidebar_ui.rs:1511
-#: rustconn/src/window/connection_dialogs.rs:380 rustconn/src/window/ui.rs:262
-msgid "New Group"
-msgstr ""
-
-#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:783
-#: rustconn/src/sidebar_ui.rs:1529 rustconn/src/split_view/bridge.rs:2164
-#: rustconn/src/split_view/bridge.rs:2324
-#: rustconn/src/window/edit_dialogs.rs:785 rustconn/src/window/ui.rs:265
-msgid "Quick Connect"
 msgstr ""
 
 #: rustconn/src/dialogs/shortcuts.rs:197 rustconn/src/sidebar_ui.rs:766
@@ -9543,14 +9614,6 @@ msgstr ""
 msgid "Previous Tab"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:624
-msgid "Tab Overview"
-msgstr ""
-
-#: rustconn/src/dialogs/shortcuts.rs:213
-msgid "Switch Tab"
-msgstr ""
-
 #: rustconn/src/dialogs/shortcuts.rs:214
 msgid "Move Session to New Window"
 msgstr ""
@@ -9561,14 +9624,6 @@ msgstr ""
 
 #: rustconn/src/dialogs/shortcuts.rs:216
 msgid "Next Prompt"
-msgstr ""
-
-#: rustconn/src/dialogs/shortcuts.rs:218
-msgid "Split Horizontal"
-msgstr ""
-
-#: rustconn/src/dialogs/shortcuts.rs:219
-msgid "Split Vertical"
 msgstr ""
 
 #: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:198
@@ -9585,13 +9640,6 @@ msgstr ""
 msgid "Move to Own Tab"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/sidebar_ui.rs:580
-#: rustconn/src/split_view/adapter.rs:197
-#: rustconn/src/terminal/split_close.rs:321
-#: rustconn/src/terminal/tab_menu.rs:1354
-msgid "Remove Split"
-msgstr ""
-
 #: rustconn/src/dialogs/shortcuts.rs:223 rustconn/src/dialogs/split_tabs.rs:39
 msgid "Split with Other Tabs"
 msgstr ""
@@ -9604,10 +9652,6 @@ msgstr ""
 msgid "Reconnect Session"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/embedded.rs:258
-msgid "Toggle Fullscreen"
-msgstr ""
-
 #: rustconn/src/dialogs/shortcuts.rs:228 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr ""
@@ -9616,15 +9660,12 @@ msgstr ""
 msgid "Toggle Compact Interface"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:230
-msgid "Toggle Keyboard Passthrough"
-msgstr ""
-
-#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:154
+#: rustconn/src/dialogs/shortcuts.rs:231 rustconn/src/window/ui.rs:161
 msgid "Toggle Split Broadcast"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:232 rustconn/src/window/ui.rs:178
+#: rustconn/src/dialogs/shortcuts.rs:232
+#: rustconn/src/session_group_window.rs:599 rustconn/src/window/ui.rs:186
 msgid "Toggle Tab Broadcast"
 msgstr ""
 
@@ -9768,6 +9809,7 @@ msgid "Use ${variable_name} for placeholders"
 msgstr ""
 
 #: rustconn/src/dialogs/snippet.rs:296 rustconn/src/dialogs/variables.rs:169
+#: rustconn/src/window/ui.rs:293
 msgid "Variables"
 msgstr ""
 
@@ -10276,7 +10318,7 @@ msgstr ""
 msgid "Search error"
 msgstr ""
 
-#: rustconn/src/dialogs/tunnel.rs:57
+#: rustconn/src/dialogs/tunnel.rs:57 rustconn/src/window/ui.rs:303
 msgid "SSH Tunnels"
 msgstr ""
 
@@ -11446,14 +11488,14 @@ msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:185 rustconn/src/terminal/config.rs:428
-#: rustconn/src/terminal/mod.rs:1610
+#: rustconn/src/terminal/mod.rs:1613
 #: rustconn/src/terminal/session_lifecycle.rs:795
-#: rustconn/src/terminal/tab_menu.rs:1271
+#: rustconn/src/terminal/tab_menu.rs:1268
 msgid "Reconnect"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1612
+#: rustconn/src/terminal/mod.rs:1615
 #: rustconn/src/terminal/session_lifecycle.rs:797
 msgid "Reconnect to this session"
 msgstr ""
@@ -11841,7 +11883,7 @@ msgstr ""
 msgid "Fit to screen"
 msgstr ""
 
-#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:343
+#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:351
 msgid "Fullscreen"
 msgstr ""
 
@@ -11955,9 +11997,8 @@ msgid "Show all tabs of this window side by side"
 msgstr ""
 
 #: rustconn/src/session_group_window.rs:310
-#: rustconn/src/session_group_window.rs:589
 #: rustconn/src/split_view/adapter.rs:188
-#: rustconn/src/split_view/adapter.rs:1009 rustconn/src/window/ui.rs:145
+#: rustconn/src/split_view/adapter.rs:1009
 msgid "Broadcast"
 msgstr ""
 
@@ -11966,34 +12007,30 @@ msgstr ""
 msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr ""
 
-#: rustconn/src/session_group_window.rs:466
-msgid "Move Tab to Main Window"
+#: rustconn/src/session_group_window.rs:589 rustconn/src/window/ui.rs:176
+msgid "Tab Broadcast"
 msgstr ""
 
-#: rustconn/src/session_group_window.rs:594
+#: rustconn/src/session_group_window.rs:595
 msgid "Mirror keystrokes to all tabs in this window"
 msgstr ""
 
-#: rustconn/src/session_group_window.rs:596
-msgid "Toggle broadcast to all tabs in this window"
-msgstr ""
-
-#: rustconn/src/session_group_window.rs:694
+#: rustconn/src/session_group_window.rs:697
 msgid "Close this window?"
 msgstr ""
 
-#: rustconn/src/session_group_window.rs:696
+#: rustconn/src/session_group_window.rs:699
 msgid "This ends all {} sessions in this window."
 msgstr ""
 
-#: rustconn/src/session_group_window.rs:701
+#: rustconn/src/session_group_window.rs:704
 #: rustconn/src/terminal/split_close.rs:273
 #: rustconn/src/terminal/split_close.rs:322
 msgid "Close All Sessions"
 msgstr ""
 
-#: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+#: rustconn/src/session_group_window.rs:843
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 
 #: rustconn/src/sidebar/mod.rs:97
@@ -12238,7 +12275,7 @@ msgstr ""
 msgid "Duplicate as Range…"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:516 rustconn/src/terminal/tab_menu.rs:1406
+#: rustconn/src/sidebar_ui.rs:516 rustconn/src/terminal/tab_menu.rs:1403
 msgid "Duplicate via Wizard…"
 msgstr ""
 
@@ -12248,7 +12285,7 @@ msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:586 rustconn/src/split_view/adapter.rs:194
 #: rustconn/src/split_view/adapter.rs:1327
-#: rustconn/src/terminal/tab_menu.rs:1362
+#: rustconn/src/terminal/tab_menu.rs:1359
 msgid "Move to New Window"
 msgstr ""
 
@@ -12260,22 +12297,17 @@ msgstr ""
 msgid "Session Log…"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:620 rustconn/src/terminal/tab_menu.rs:1421
+#: rustconn/src/sidebar_ui.rs:620 rustconn/src/terminal/tab_menu.rs:1418
 msgid "Open SFTP"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
-#: rustconn/src/terminal/tab_menu.rs:1474
+#: rustconn/src/terminal/tab_menu.rs:1471
 msgid "Edit Remote File…"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:632 rustconn/src/terminal/script_recorder.rs:186
-#: rustconn/src/terminal/tab_menu.rs:1466
-msgid "Share Session (read-only)"
-msgstr ""
-
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
-#: rustconn/src/terminal/tab_menu.rs:1456
+#: rustconn/src/terminal/tab_menu.rs:1453
 msgid "Record Script…"
 msgstr ""
 
@@ -12404,7 +12436,7 @@ msgstr ""
 msgid "Toggle search"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:1508 rustconn/src/window/ui.rs:259
+#: rustconn/src/sidebar_ui.rs:1508 rustconn/src/window/ui.rs:267
 msgid "New Connection (Advanced)…"
 msgstr ""
 
@@ -12416,7 +12448,7 @@ msgstr ""
 msgid "Manage Snippets"
 msgstr ""
 
-#: rustconn/src/sidebar_ui.rs:1522 rustconn/src/window/ui.rs:299
+#: rustconn/src/sidebar_ui.rs:1522 rustconn/src/window/ui.rs:307
 msgid "Tools"
 msgstr ""
 
@@ -12598,31 +12630,27 @@ msgstr ""
 msgid "Save Selection as Snippet…"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:620
-msgid "Tab Overview (Ctrl+Shift+O)"
-msgstr ""
-
-#: rustconn/src/terminal/mod.rs:637 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:640 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1253
+#: rustconn/src/terminal/mod.rs:1256
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1604
+#: rustconn/src/terminal/mod.rs:1607
 msgid "Command not found: {}"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1606
+#: rustconn/src/terminal/mod.rs:1609
 msgid "Failed to start '{}'"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1628
+#: rustconn/src/terminal/mod.rs:1631
 msgid "'{}' is not installed"
 msgstr ""
 
-#: rustconn/src/terminal/mod.rs:1631
+#: rustconn/src/terminal/mod.rs:1634
 msgid "Failed to start '{}': {}"
 msgstr ""
 
@@ -12682,13 +12710,8 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/terminal/script_recorder.rs:176
-#: rustconn/src/terminal/tab_menu.rs:1452
+#: rustconn/src/terminal/tab_menu.rs:1449
 msgid "Stop Script Recording"
-msgstr ""
-
-#: rustconn/src/terminal/script_recorder.rs:190
-#: rustconn/src/terminal/tab_menu.rs:1481
-msgid "Start TFTP Server"
 msgstr ""
 
 #: rustconn/src/terminal/session_lifecycle.rs:317
@@ -12809,111 +12832,107 @@ msgstr ""
 msgid "Tab name"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:796
-msgid "Close {} tabs in group '{}'?"
+#: rustconn/src/terminal/tab_menu.rs:795
+msgid "Close all tabs in group “{}”?"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:806 rustconn/src/terminal/tab_menu.rs:1305
+#: rustconn/src/terminal/tab_menu.rs:803 rustconn/src/terminal/tab_menu.rs:1302
 msgid "Close All in Group"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1099
+#: rustconn/src/terminal/tab_menu.rs:1096
 msgid "Save Output"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1105
+#: rustconn/src/terminal/tab_menu.rs:1102
 msgid "Text files"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1131
+#: rustconn/src/terminal/tab_menu.rs:1128
 msgid "Output saved"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1141
+#: rustconn/src/terminal/tab_menu.rs:1138
 msgid "Could not save output"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1203
+#: rustconn/src/terminal/tab_menu.rs:1200
 msgid "Move to New Window on {}"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1223
+#: rustconn/src/terminal/tab_menu.rs:1220
 msgid "Monitor {} ({})"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1224
+#: rustconn/src/terminal/tab_menu.rs:1221
 msgid "Monitor {}"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1278
+#: rustconn/src/terminal/tab_menu.rs:1275
 msgid "Unpin Tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1280
+#: rustconn/src/terminal/tab_menu.rs:1277
 msgid "Pin Tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1291
+#: rustconn/src/terminal/tab_menu.rs:1288
 msgid "Rename Tab…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1301
+#: rustconn/src/terminal/tab_menu.rs:1298
 msgid "Set Group…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1303
+#: rustconn/src/terminal/tab_menu.rs:1300
 msgid "Remove from Group"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1315
+#: rustconn/src/terminal/tab_menu.rs:1312
 msgid "Remove from Tab Broadcast"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1317
+#: rustconn/src/terminal/tab_menu.rs:1314
 msgid "Add to Tab Broadcast"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1339
-msgid "Monitor"
-msgstr ""
-
-#: rustconn/src/terminal/tab_menu.rs:1349
+#: rustconn/src/terminal/tab_menu.rs:1346
 msgid "Split with Other Tabs…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1398
+#: rustconn/src/terminal/tab_menu.rs:1395
 msgid "Duplicate Tab"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1412
+#: rustconn/src/terminal/tab_menu.rs:1409
 msgid "Edit Connection…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1438
+#: rustconn/src/terminal/tab_menu.rs:1435
 msgid "Save Output…"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1464
+#: rustconn/src/terminal/tab_menu.rs:1461
 msgid "Stop Sharing"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1488
+#: rustconn/src/terminal/tab_menu.rs:1485
 msgid "Close Others"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1493
+#: rustconn/src/terminal/tab_menu.rs:1490
 msgid "Close to the Left"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1494
+#: rustconn/src/terminal/tab_menu.rs:1491
 msgid "Close to the Right"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1498
+#: rustconn/src/terminal/tab_menu.rs:1495
 msgid "Close All Ungrouped"
 msgstr ""
 
-#: rustconn/src/terminal/tab_menu.rs:1502
+#: rustconn/src/terminal/tab_menu.rs:1499
 msgid "Close All Tabs"
 msgstr ""
 
@@ -12957,6 +12976,7 @@ msgid "Recent Connections"
 msgstr ""
 
 #: rustconn/src/tray.rs:302 rustconn/src/tray.rs:693
+#: rustconn/src/window/ui.rs:273
 msgid "Quick Connect…"
 msgstr ""
 
@@ -12964,7 +12984,7 @@ msgstr ""
 msgid "{} Active Session(s)"
 msgstr ""
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:6010
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:6025
 msgid "Passphrase Does Not Open the Portable File"
 msgstr ""
 
@@ -13425,8 +13445,12 @@ msgstr ""
 
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
-#: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+#: rustconn/src/window/group_broadcast.rs:464
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
+msgstr ""
+
+#: rustconn/src/window/detach_actions.rs:647
+msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr ""
 
 #: rustconn/src/window/edit_actions.rs:405
@@ -13932,8 +13956,12 @@ msgstr ""
 msgid "Enable Broadcast"
 msgstr ""
 
-#: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+#: rustconn/src/window/group_broadcast.rs:343
+msgid "Add one more tab to start Tab Broadcast"
+msgstr ""
+
+#: rustconn/src/window/group_broadcast.rs:449
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr ""
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
@@ -14222,19 +14250,19 @@ msgstr ""
 msgid "Connection “{}” created"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4469
+#: rustconn/src/window/mod.rs:4484
 msgid "RustConn - {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4681
+#: rustconn/src/window/mod.rs:4696
 msgid "Settings saved"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4718
+#: rustconn/src/window/mod.rs:4733
 msgid "Passphrase Not Saved on This Computer"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4720
+#: rustconn/src/window/mod.rs:4735
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14242,77 +14270,77 @@ msgid ""
 "directory."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4766
+#: rustconn/src/window/mod.rs:4781
 msgid "Credentials Not Saved to Keyring"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4768
+#: rustconn/src/window/mod.rs:4783
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
 "service is running and unlocked, then save the settings again."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4952
+#: rustconn/src/window/mod.rs:4967
 msgid "Close RustConn?"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4954
+#: rustconn/src/window/mod.rs:4969
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4991
+#: rustconn/src/window/mod.rs:5006
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4996
+#: rustconn/src/window/mod.rs:5011
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:5021
+#: rustconn/src/window/mod.rs:5036
 msgid "Cloud sync failed for '{}': {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:5204
+#: rustconn/src/window/mod.rs:5219
 msgid "Startup connection not found"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:5277
+#: rustconn/src/window/mod.rs:5292
 msgid "Failed to open .rdp file"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:5313
+#: rustconn/src/window/mod.rs:5328
 msgid "Failed to open .vv file"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:5350
+#: rustconn/src/window/mod.rs:5365
 msgid "Tunnel “{}” stopped: {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:5366
+#: rustconn/src/window/mod.rs:5381
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:5926
+#: rustconn/src/window/mod.rs:5941
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:6012
+#: rustconn/src/window/mod.rs:6027
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
 "the passphrase the file was created with."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:6047
+#: rustconn/src/window/mod.rs:6062
 msgid "Share Local Devices?"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:6049
+#: rustconn/src/window/mod.rs:6064
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
@@ -14329,12 +14357,12 @@ msgstr ""
 msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr ""
 
-#: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+#: rustconn/src/window/navigation_actions.rs:287
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr ""
 
-#: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+#: rustconn/src/window/navigation_actions.rs:291
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr ""
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15312,7 +15340,7 @@ msgid_plural "{} connections from the saved session no longer exist"
 msgstr[0] ""
 msgstr[1] ""
 
-#: rustconn/src/window/sessions.rs:38
+#: rustconn/src/window/sessions.rs:38 rustconn/src/window/ui.rs:316
 msgid "Active Sessions"
 msgstr ""
 
@@ -15528,139 +15556,71 @@ msgstr ""
 msgid "Toggle Sidebar (F9)"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:97
-msgid "Settings (Ctrl+,)"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:106
-msgid "Split Down (Ctrl+Shift+H)"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:109
+#: rustconn/src/window/ui.rs:107 rustconn/src/window/ui.rs:112
 msgid "Split Down"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:113
-msgid "Split Right (Ctrl+Shift+S)"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:116
+#: rustconn/src/window/ui.rs:117 rustconn/src/window/ui.rs:122
 msgid "Split Right"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:133
-msgid "Local Shell (Ctrl+Shift+T)"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:136
+#: rustconn/src/window/ui.rs:142
 msgid "Open Local Shell"
 msgstr ""
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
+msgid "Split Broadcast"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:169
-msgid "Tab Broadcast"
+#: rustconn/src/window/ui.rs:157
+msgid "Mirror keystrokes to all split panes"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:175
+#: rustconn/src/window/ui.rs:182
 msgid "Mirror keystrokes to all tabs in the broadcast group"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:190
+#: rustconn/src/window/ui.rs:198
 msgid "Passthrough"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:196 rustconn/src/window/ui.rs:199
+#: rustconn/src/window/ui.rs:204 rustconn/src/window/ui.rs:207
 msgid "Keyboard passthrough active — click to disable"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:284
-msgid "Templates…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:285
-msgid "Variables…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:286
-msgid "Scripts…"
+#: rustconn/src/window/ui.rs:289
+msgid "Snippets"
 msgstr ""
 
 #: rustconn/src/window/ui.rs:290
-msgid "Password Generator…"
+msgid "Clusters"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:293
+#: rustconn/src/window/ui.rs:291
+msgid "Workspaces"
+msgstr ""
+
+#: rustconn/src/window/ui.rs:301
 msgid "Wake-on-LAN…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:294
-msgid "Network Scan…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:295
-msgid "SSH Tunnels…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:305
-msgid "Join Shared Session…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:308
-msgid "Active Sessions…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:309
-msgid "Connection History…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:310
-msgid "Statistics…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:311
-msgid "Recordings…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:312
-msgid "Session Logs…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:315
+#: rustconn/src/window/ui.rs:323
 msgid "Sessions"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:320
+#: rustconn/src/window/ui.rs:328
 msgid "Import Connections…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:321
+#: rustconn/src/window/ui.rs:329
 msgid "Export Connections…"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:337
-msgid "Components…"
-msgstr ""
-
-#: rustconn/src/window/ui.rs:344
+#: rustconn/src/window/ui.rs:352
 msgid "Compact Interface"
 msgstr ""
 
-#: rustconn/src/window/ui.rs:346
+#: rustconn/src/window/ui.rs:354
 msgid "Keyboard Passthrough"
 msgstr ""
 

@@ -12511,7 +12511,7 @@ msgid "Close All Sessions"
 msgstr "Барлық сеанстарды жабу"
 
 #: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr "Тарату белсенді — пернелер осы терезенің {} қойындысына айналанады"
 
 #: rustconn/src/sidebar/mod.rs:162
@@ -13951,7 +13951,7 @@ msgstr "Сеансты негізгі терезеге қайта жылжыту
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Топтық тарату өшірілді — пернелер тек фокустелген қойындыға барады"
 
 #: rustconn/src/window/edit_actions.rs:378
@@ -14496,7 +14496,7 @@ msgid "Enable Broadcast"
 msgstr "Таратуды қосу"
 
 #: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr "Топтық тарату белсенді — пернелер {} сеансқа айналанады"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
@@ -14947,11 +14947,11 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Пернетақта тікелей өтуі өшірілді — тіркесімдер қалпына келтірілді"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr "Тарату қосылған — пернелер басу барлық бөлінген тақталарға айналанады"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr "Тарату өшірілген — пернелер басу тек белсенді тақтаға барады"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15841,8 +15841,8 @@ msgid "Open Local Shell"
 msgstr "Жергілікті терминалды ашу"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
-msgstr "Пернелер басуды барлық бөлінген тақталарға қайталау (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes"
+msgstr "Пернелер басуды барлық бөлінген тақталарға қайталау"
 
 #: rustconn/src/window/ui.rs:169
 msgid "Tab Broadcast"
@@ -15861,16 +15861,16 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "Пернетақта тікелей өтуі белсенді — өшіру үшін басыңыз"
 
 #: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr "Сніпеттер…"
+msgid "Snippets"
+msgstr "Сніпеттер"
 
 #: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr "Кластерлер…"
+msgid "Clusters"
+msgstr "Кластерлер"
 
 #: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr "Жұмыс кеңістіктері…"
+msgid "Workspaces"
+msgstr "Жұмыс кеңістіктері"
 
 #: rustconn/src/window/ui.rs:284
 msgid "Templates…"

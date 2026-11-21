@@ -12534,7 +12534,7 @@ msgid "Close All Sessions"
 msgstr "ყველა სესიის დახურვა"
 
 #: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr "მაუწყებლობა აქტიურია — კლავიშები აისახება ამ ფანჯრის {} ჩანართზე"
 
 #: rustconn/src/sidebar/mod.rs:162
@@ -13979,7 +13979,7 @@ msgstr "სესიას მთავარ ფანჯარაში ვე
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "ჯგუფური მაუწყებლობა გამორთულია — კლავიშები მხოლოდ ფოკუსირებულ ჩანართზე მიდის"
 
@@ -14533,7 +14533,7 @@ msgid "Enable Broadcast"
 msgstr "მაუწყებლობის ჩართვა"
 
 #: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr "ჯგუფური მაუწყებლობა აქტიურია — კლავიშები აისახება {} სესიაზე"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
@@ -14986,11 +14986,11 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "გამჭოლი კლავიატურა გამორთულია — მალსახმობები აღდგა"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr "მაუწყებლობა ჩართულია — ღილაკის დაჭერები მეორდება ყველა გაყოფილ პანელში"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr ""
 "მაუწყებლობა გამორთულია — ღილაკის დაჭერები, მხოლოდ, ფოკუსის მქონე პანელებზე "
 "მიდის"
@@ -15887,8 +15887,8 @@ msgid "Open Local Shell"
 msgstr "ლოკალური გარსის გახსნა"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
-msgstr "კლავიშების ასახვა ყველა გაყოფილი პანელზე (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes"
+msgstr "კლავიშების ასახვა ყველა გაყოფილი პანელზე"
 
 #: rustconn/src/window/ui.rs:169
 msgid "Tab Broadcast"
@@ -15907,16 +15907,16 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "კლავიატურის გამჭოლობა აქტიურია — დააწკაპუნეთ გასათიშად"
 
 #: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr "ფრაგმენტები…"
+msgid "Snippets"
+msgstr "ფრაგმენტები"
 
 #: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr "კლასტერები…"
+msgid "Clusters"
+msgstr "კლასტერები"
 
 #: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr "სამუშაო სივრცეები…"
+msgid "Workspaces"
+msgstr "სამუშაო სივრცეები"
 
 #: rustconn/src/window/ui.rs:284
 msgid "Templates…"

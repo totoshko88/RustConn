@@ -12155,7 +12155,7 @@ msgid "Close All Sessions"
 msgstr "关闭所有会话"
 
 #: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr "广播已启用 — 按键镜像到此窗口中的 {} 个标签页"
 
 #: rustconn/src/sidebar/mod.rs:162
@@ -13564,7 +13564,7 @@ msgstr "无法将会话移回主窗口。"
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr "群组广播已禁用 — 按键仅发送到当前标签页"
 
 #: rustconn/src/window/edit_actions.rs:378
@@ -14087,7 +14087,7 @@ msgid "Enable Broadcast"
 msgstr "启用广播"
 
 #: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr "群组广播已启用 — 按键镜像到 {} 个会话"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
@@ -14510,11 +14510,11 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "键盘直通已禁用 — 快捷键已恢复"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr "广播已启用 — 按键将镜像到所有分割面板"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr "广播已禁用 — 按键仅发送到当前焦点面板"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15377,8 +15377,8 @@ msgid "Open Local Shell"
 msgstr "打开本地 Shell"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
-msgstr "将按键镜像到所有分割面板 (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes"
+msgstr "将按键镜像到所有分割面板"
 
 #: rustconn/src/window/ui.rs:169
 msgid "Tab Broadcast"
@@ -15397,16 +15397,16 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "键盘直通已激活 — 点击以禁用"
 
 #: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr "代码片段…"
+msgid "Snippets"
+msgstr "代码片段"
 
 #: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr "集群…"
+msgid "Clusters"
+msgstr "集群"
 
 #: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr "工作区…"
+msgid "Workspaces"
+msgstr "工作区"
 
 #: rustconn/src/window/ui.rs:284
 msgid "Templates…"

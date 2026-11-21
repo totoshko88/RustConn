@@ -22,7 +22,7 @@ use libadwaita as adw;
 use rustconn_core::split::{BalancedSplitStep, balanced_split_plan};
 use uuid::Uuid;
 
-use crate::i18n::{i18n, i18n_f};
+use crate::i18n::{i18n, i18n_f, with_accel};
 
 /// Default size of a session group window.
 const DEFAULT_WIDTH: i32 = 1100;
@@ -463,8 +463,8 @@ impl SessionGroupWindow {
             .build();
 
         let attach_button = Button::from_icon_name("view-restore-symbolic");
-        let attach_label = i18n("Move Tab to Main Window");
-        attach_button.set_tooltip_text(Some(&attach_label));
+        let attach_label = i18n("Move to Main Window");
+        attach_button.set_tooltip_text(Some(&with_accel(&attach_label, "win.toggle-detach")));
         attach_button.update_property(&[gtk4::accessible::Property::Label(&attach_label)]);
 
         let broadcast_toggle = Self::build_broadcast_toggle();
@@ -586,14 +586,17 @@ impl SessionGroupWindow {
         let content = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
         let icon = gtk4::Image::from_icon_name("network-transmit-receive-symbolic");
         icon.set_pixel_size(16);
-        let label = gtk4::Label::new(Some(&i18n("Broadcast")));
+        let label = gtk4::Label::new(Some(&i18n("Tab Broadcast")));
         label.add_css_class("caption");
         content.append(&icon);
         content.append(&label);
         toggle.set_child(Some(&content));
-        toggle.set_tooltip_text(Some(&i18n("Mirror keystrokes to all tabs in this window")));
+        toggle.set_tooltip_text(Some(&with_accel(
+            &i18n("Mirror keystrokes to all tabs in this window"),
+            "win.toggle-group-broadcast",
+        )));
         toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Toggle broadcast to all tabs in this window",
+            "Toggle Tab Broadcast",
         ))]);
         toggle.add_css_class("pill");
         toggle.set_visible(false);
@@ -837,7 +840,7 @@ impl SessionGroupWindow {
         if active {
             self.broadcast_toggle.add_css_class("broadcasting");
             self.broadcast_banner.set_title(&i18n_f(
-                "Broadcast active — keystrokes mirrored to {} tabs in this window",
+                "Tab Broadcast active — keystrokes mirrored to {} tabs in this window",
                 &[&count.to_string()],
             ));
         } else {

@@ -24,7 +24,7 @@ use libadwaita as adw;
 use libadwaita::prelude::*;
 use uuid::Uuid;
 
-use crate::i18n::{i18n, i18n_f};
+use crate::i18n::{i18n, i18n_f, with_accel};
 use crate::session_group_window::SessionGroupWindow;
 use crate::terminal::{DetachMonitor, DetachPresentation};
 
@@ -475,7 +475,7 @@ fn build_attach_button() -> Button {
     let button = Button::from_icon_name("view-restore-symbolic");
     button.add_css_class("flat");
     let label = i18n("Move to Main Window");
-    button.set_tooltip_text(Some(&label));
+    button.set_tooltip_text(Some(&with_accel(&label, "win.toggle-detach")));
     button.update_property(&[gtk4::accessible::Property::Label(&label)]);
     button
 }
@@ -489,11 +489,11 @@ fn build_attach_button() -> Button {
 /// menu's own strings.
 fn build_menu_button() -> MenuButton {
     let settings_section = gio::Menu::new();
-    settings_section.append(Some(&i18n("Settings…")), Some("win.settings"));
+    settings_section.append(Some(&i18n("Settings")), Some("win.settings"));
     let app_section = gio::Menu::new();
-    app_section.append(Some(&i18n("Keyboard Shortcuts…")), Some("app.shortcuts"));
+    app_section.append(Some(&i18n("Keyboard Shortcuts")), Some("app.shortcuts"));
     app_section.append(Some(&i18n("Help")), Some("app.help"));
-    app_section.append(Some(&i18n("Debug Logging…")), Some("app.debug-log"));
+    app_section.append(Some(&i18n("Debug Logging")), Some("app.debug-log"));
     app_section.append(Some(&i18n("About RustConn")), Some("app.about"));
     let menu = gio::Menu::new();
     menu.append_section(None, &settings_section);

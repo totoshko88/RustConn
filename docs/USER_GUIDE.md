@@ -2658,7 +2658,7 @@ The tab indicator and notification are cleared automatically when you switch to 
 **Per-Connection Override:**
 Edit connection → **Advanced** tab → **Activity Monitor** section.
 
-**Quick Mode Change:** Right-click any terminal tab → **Monitor ▸** and pick **Off**, **Activity**, **Silence** or **Command finished**.
+**Quick Mode Change:** Right-click any terminal tab → **Activity Monitor ▸** and pick **Off**, **Activity**, **Silence** or **Command finished**.
 
 ### Text Highlighting Rules
 
@@ -3469,7 +3469,7 @@ The tab title changes to `[GroupName] ConnectionName` and the tooltip shows the 
 
 **Close All Ungrouped:** Right-click any tab → **Close All Ungrouped** — closes everything that is *not* in a group, which is the quick way to clear scratch tabs while keeping your labelled sets.
 
-**Monitor Mode:** Right-click any tab → **Monitor ▸** and pick a mode — **Off**, **Activity**, **Silence** or **Command finished** — with the current one shown selected.
+**Monitor Mode:** Right-click any tab → **Activity Monitor ▸** and pick a mode — **Off**, **Activity**, **Silence** or **Command finished** — with the current one shown selected.
 
 Groups are visual only, but a grouped tab does come back grouped after a restart through Session Restore: the snapshot records each tab's group alongside its title and reapplies it when the tab reopens. A saved workspace reapplies the group too, for Local Shell tabs.
 
@@ -3611,14 +3611,14 @@ Without a terminal on stdin and without `--force`, `snippet run --execute` refus
 A cluster is a named set of connections you open together — a rack, a Kubernetes node pool, the three web servers behind one load balancer.
 
 **Create a cluster:**
-1. Menu → Tools → **Clusters…**
+1. Menu → Tools → **Clusters**
 2. Click **New Cluster** → enter a name → tick the member connections → **Create** (**Save** when editing an existing cluster)
 
 You can also select several connections in the sidebar and use **Create Cluster** in the bulk-action bar.
 
 **Auto-membership pattern:** instead of (or as well as) ticking members, enter a regular expression. Every connection whose name *or* host matches joins the cluster when it opens — `^prod-web\d+` collects `prod-web1`, `prod-web2`, … as you add them. The match is anywhere in the text unless you anchor it with `^`/`$`, and it is case-sensitive; start the pattern with `(?i)` to ignore case. The editor shows how many connections the pattern matches as you type, and the cluster list counts ticked and matched members together.
 
-**Open a cluster:** Menu → Tools → **Clusters…** → the ▶ button on the cluster's row. RustConn opens a tab for every member, whatever their protocol. A cluster of more than ten members asks before opening them all, so an over-broad pattern (`.` matches everything) cannot open every connection by accident. If any member's jump host no longer exists, RustConn asks once for the whole cluster before connecting those members without it.
+**Open a cluster:** Menu → Tools → **Clusters** → the ▶ button on the cluster's row. RustConn opens a tab for every member, whatever their protocol. A cluster of more than ten members asks before opening them all, so an over-broad pattern (`.` matches everything) cannot open every connection by accident. If any member's jump host no longer exists, RustConn asks once for the whole cluster before connecting those members without it.
 
 **Every tab of an open cluster joins a tab group named after the cluster.** The tab reads `[ClusterName] ConnectionName`, so you can see at a glance which tabs belong together, and every [tab group](#tab-grouping) operation applies to the cluster:
 
@@ -3628,7 +3628,7 @@ You can also select several connections in the sidebar and use **Create Cluster*
 
 **Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all, after a confirmation when two or more sessions are still open; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. **Broadcast in a cluster window:** once the window holds two or more terminal tabs, a **Broadcast** toggle appears at the right of its header bar ([#436](https://github.com/totoshko88/RustConn/issues/436)). Turn it on with the toggle or **Ctrl+Shift+A** and what you type in any tab of the window goes to all of its terminal tabs; a banner names how many tabs receive it, and its **Stop** button, the toggle or Ctrl+Shift+A turns it off. Each cluster window has its own broadcast, separate from the main window's [Tab Broadcast](#tab-broadcast), so two clusters in two windows can take different commands. More than five tabs ask for confirmation first, and embedded RDP, VNC and SPICE tabs are left out. **Tile Tabs in a cluster window:** with two or more tabs, a **Tile Tabs** toggle appears in the header bar next to **Broadcast** ([#436](https://github.com/totoshko88/RustConn/issues/436)). It hides the tab bar and shows every tab at once in a balanced grid, with a narrow title over each tile that carries the tab's name and a mark when the session has ended. The tile you click or type in is the active one, and **Ctrl+Shift+W** closes it (the session ends and the other tiles are rebuilt): **Move Tab to Main Window**, Ctrl+Shift+M, closing a tab and **Broadcast** act on it, or on all tiles for the broadcast, exactly as they do on the selected tab. While the broadcast is on and three or more terminal tabs are tiled, each tile shows a **Broadcast** check: untick it to keep that tab out (it neither sends nor receives); the check stays until you tick it again, and the broadcast stops if fewer than two tabs are left. With two tabs there is no check, since the header-bar toggle already covers that case, and dropping to two puts every tab back in. Drag the dividers to resize tiles. When a tab joins, leaves or closes, the grid is built again with equal tiles, and when only one tab is left the window goes back to tabs. The toggle now reads **Show Tabs**; click it to return to the tab bar with every tab as it was. The mode is not remembered, so a window opens with tabs each time. This is a view, not a split: a cluster window still has no split view. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
 
-**Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters… (**Disconnect all cluster sessions**).
+**Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters (**Disconnect all cluster sessions**).
 
 Notes on the automatic group:
 - The group name is the cluster's name exactly as written. Renaming a cluster affects the *next* time you open it, not tabs that are already open.

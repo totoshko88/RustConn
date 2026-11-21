@@ -573,23 +573,23 @@ impl ConnectionDialog {
         let monitoring_config_seed: Rc<RefCell<Option<MonitoringConfig>>> =
             Rc::new(RefCell::new(None));
         let groups_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
-            Rc::new(RefCell::new(vec![(None, "(Root)".to_string())]));
+            Rc::new(RefCell::new(vec![(None, i18n("(Root)"))]));
         let connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
-            Rc::new(RefCell::new(vec![(None, "(None)".to_string())]));
+            Rc::new(RefCell::new(vec![(None, i18n("(None)"))]));
         let rdp_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
-            Rc::new(RefCell::new(vec![(None, "(None)".to_string())]));
+            Rc::new(RefCell::new(vec![(None, i18n("(None)"))]));
         let rdp_freerdp_clients_data: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(
             crate::embedded_rdp::detect::available_freerdp_clients(),
         ));
         let vnc_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
-            Rc::new(RefCell::new(vec![(None, "(None)".to_string())]));
+            Rc::new(RefCell::new(vec![(None, i18n("(None)"))]));
         let vnc_viewers_data: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(
             rustconn_core::protocol::available_vnc_viewers(),
         ));
         let spice_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
-            Rc::new(RefCell::new(vec![(None, "(None)".to_string())]));
+            Rc::new(RefCell::new(vec![(None, i18n("(None)"))]));
         let web_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
-            Rc::new(RefCell::new(vec![(None, "(None)".to_string())]));
+            Rc::new(RefCell::new(vec![(None, i18n("(None)"))]));
 
         // Connect save button handler
         Self::connect_save_button(

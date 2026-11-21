@@ -617,7 +617,10 @@ impl TerminalNotebook {
 
         // Add overview button to the end of the TabBar
         let overview_button = gtk4::Button::from_icon_name("view-grid-symbolic");
-        overview_button.set_tooltip_text(Some(&i18n("Tab Overview (Ctrl+Shift+O)")));
+        overview_button.set_tooltip_text(Some(&crate::i18n::with_accel(
+            &i18n("Tab Overview"),
+            "win.tab-overview",
+        )));
         overview_button.add_css_class("flat");
         overview_button.set_action_name(Some("win.tab-overview"));
         overview_button

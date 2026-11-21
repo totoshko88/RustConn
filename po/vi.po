@@ -12443,7 +12443,7 @@ msgid "Close All Sessions"
 msgstr "Đóng tất cả phiên"
 
 #: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 "Đang phát đồng loạt — thao tác gõ phím được sao chép tới {} thẻ trong cửa sổ "
 "này"
@@ -13880,7 +13880,7 @@ msgstr "Không thể chuyển phiên về cửa sổ chính."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Đã tắt phát đồng loạt theo nhóm — thao tác gõ phím chỉ tới thẻ đang được chọn"
 
@@ -14422,7 +14422,7 @@ msgid "Enable Broadcast"
 msgstr "Bật phát đồng loạt"
 
 #: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr ""
 "Đang phát đồng loạt theo nhóm — thao tác gõ phím được sao chép tới {} phiên"
 
@@ -14875,12 +14875,12 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Đã tắt chuyển thẳng bàn phím — phím tắt được khôi phục"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr ""
 "Đã bật phát đồng loạt — thao tác gõ phím được sao chép tới mọi khung chia"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr "Đã tắt phát đồng loạt — thao tác gõ phím chỉ tới khung đang được chọn"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15762,8 +15762,8 @@ msgid "Open Local Shell"
 msgstr "Mở shell cục bộ"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
-msgstr "Sao chép thao tác gõ phím tới mọi khung chia (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes"
+msgstr "Sao chép thao tác gõ phím tới mọi khung chia"
 
 #: rustconn/src/window/ui.rs:169
 msgid "Tab Broadcast"
@@ -15782,16 +15782,16 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "Đang chuyển thẳng bàn phím — nhấp để tắt"
 
 #: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr "Đoạn lệnh…"
+msgid "Snippets"
+msgstr "Đoạn lệnh"
 
 #: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr "Cụm…"
+msgid "Clusters"
+msgstr "Cụm"
 
 #: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr "Không gian làm việc…"
+msgid "Workspaces"
+msgstr "Không gian làm việc"
 
 #: rustconn/src/window/ui.rs:284
 msgid "Templates…"

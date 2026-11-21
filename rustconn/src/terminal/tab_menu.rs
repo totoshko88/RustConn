@@ -792,10 +792,7 @@ impl TerminalNotebook {
             // A split tab in the group is covered by this one confirmation:
             // the body says so, and the confirmed close ends its guests too.
             let split_hosts = Rc::new(split_close_group.split_hosts(&sessions_to_close));
-            let mut body = i18n_f(
-                "Close {} tabs in group '{}'?",
-                &[&count.to_string(), &group_name],
-            );
+            let mut body = i18n_f("Close all tabs in group “{}”?", &[&group_name]);
             if !split_hosts.is_empty() {
                 body = format!(
                     "{body}\n\n{}",
@@ -1336,7 +1333,7 @@ impl TerminalNotebook {
             // object re-points the existing stack page instead of adding a second
             // one. Verified with an isolated GTK repro (0 collisions over repeated
             // rebuilds) before adopting the pattern.
-            menu.append_submenu(Some(&i18n("Monitor")), &Self::monitor_submenu());
+            menu.append_submenu(Some(&i18n("Activity Monitor")), &Self::monitor_submenu());
         }
 
         // Split section — only for the tab that hosts a split layout, and the

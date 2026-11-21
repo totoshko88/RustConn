@@ -12491,7 +12491,7 @@ msgid "Close All Sessions"
 msgstr "Zavřít všechny relace"
 
 #: rustconn/src/session_group_window.rs:840
-msgid "Broadcast active — keystrokes mirrored to {} tabs in this window"
+msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 "Vysílání je aktivní — stisky kláves se zrcadlí do {} karet v tomto okně"
 
@@ -13940,7 +13940,7 @@ msgstr "Relaci se nepodařilo přesunout zpět do hlavního okna."
 #: rustconn/src/window/detach_actions.rs:598
 #: rustconn/src/window/detach_actions.rs:622
 #: rustconn/src/window/group_broadcast.rs:455
-msgid "Tab broadcast disabled — keystrokes go to the focused tab only"
+msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Skupinové vysílání vypnuto — stisky kláves jdou jen do zaměřené karty"
 
 #: rustconn/src/window/edit_actions.rs:378
@@ -14483,7 +14483,7 @@ msgid "Enable Broadcast"
 msgstr "Povolit vysílání"
 
 #: rustconn/src/window/group_broadcast.rs:440
-msgid "Group broadcast active — keystrokes mirrored to {} sessions"
+msgid "Tab Broadcast active — keystrokes mirrored to {} sessions"
 msgstr "Skupinové vysílání je aktivní — stisky kláves se zrcadlí do {} relací"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
@@ -14934,12 +14934,12 @@ msgid "Keyboard passthrough disabled — shortcuts restored"
 msgstr "Průchod klávesnice zakázán — zkratky obnoveny"
 
 #: rustconn/src/window/navigation_actions.rs:286
-msgid "Broadcast enabled — keystrokes mirrored to all split panes"
+msgid "Split Broadcast enabled — keystrokes mirrored to all split panes"
 msgstr ""
 "Vysílání zapnuto — stisky kláves se duplikují do všech rozdělených panelů"
 
 #: rustconn/src/window/navigation_actions.rs:288
-msgid "Broadcast disabled — keystrokes go to focused pane only"
+msgid "Split Broadcast disabled — keystrokes go to the focused pane only"
 msgstr "Vysílání vypnuto — stisky kláves jdou jen do aktivního panelu"
 
 #: rustconn/src/window/network_monitor.rs:266
@@ -15837,8 +15837,8 @@ msgid "Open Local Shell"
 msgstr "Otevřít místní shell"
 
 #: rustconn/src/window/ui.rs:151
-msgid "Mirror keystrokes to all split panes (Ctrl+Shift+B)"
-msgstr "Duplikovat stisky kláves do všech rozdělených panelů (Ctrl+Shift+B)"
+msgid "Mirror keystrokes to all split panes"
+msgstr "Duplikovat stisky kláves do všech rozdělených panelů"
 
 #: rustconn/src/window/ui.rs:169
 msgid "Tab Broadcast"
@@ -15857,16 +15857,16 @@ msgid "Keyboard passthrough active — click to disable"
 msgstr "Průchod klávesnice aktivní — klikněte pro zakázání"
 
 #: rustconn/src/window/ui.rs:281
-msgid "Snippets…"
-msgstr "Snippety…"
+msgid "Snippets"
+msgstr "Snippety"
 
 #: rustconn/src/window/ui.rs:282
-msgid "Clusters…"
-msgstr "Clustery…"
+msgid "Clusters"
+msgstr "Clustery"
 
 #: rustconn/src/window/ui.rs:283
-msgid "Workspaces…"
-msgstr "Pracovní prostory…"
+msgid "Workspaces"
+msgstr "Pracovní prostory"
 
 #: rustconn/src/window/ui.rs:284
 msgid "Templates…"
