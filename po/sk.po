@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 17:09+0200\n"
+"POT-Creation-Date: 2026-11-21 17:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -69,8 +69,8 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
-#: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:594
+#: rustconn/src/window/network_tools/share.rs:363
+#: rustconn/src/window/network_tools/share.rs:634
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
@@ -187,7 +187,7 @@ msgstr "Ladiaci záznam"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:567
+#: rustconn/src/window/network_tools/share.rs:607
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Zavrieť"
@@ -334,7 +334,7 @@ msgstr "„{}“ pred pripojením vyžaduje nasledovné."
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:595
+#: rustconn/src/window/network_tools/share.rs:635
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Pripojiť"
@@ -13739,17 +13739,23 @@ msgstr ""
 msgid "Save to This Computer"
 msgstr "Uložiť do tohto počítača"
 
-#: rustconn/src/vault_ops.rs:2244
+#: rustconn/src/vault_ops.rs:2241
+msgid ""
+"SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still "
+"holds them: delete it once you have connected"
+msgstr "Kľúče SPA boli presunuté do úložiska tajomstiev. connections.toml.pre-spa-vault.bak ich stále obsahuje: odstráňte ho, keď sa pripojíte"
+
+#: rustconn/src/vault_ops.rs:2249
 msgid ""
 "SPA keys could not be moved to the vault and stay in the connection file"
 msgstr ""
 "Kľúče SPA sa nepodarilo presunúť do trezora a zostali v súbore pripojenia"
 
-#: rustconn/src/vault_ops.rs:2299
+#: rustconn/src/vault_ops.rs:2304
 msgid "Unused SPA keys could not be removed from the vault"
 msgstr "Nepoužité kľúče SPA sa nepodarilo odstrániť z trezora"
 
-#: rustconn/src/vault_ops.rs:2364
+#: rustconn/src/vault_ops.rs:2369
 msgid ""
 "SPA keys were not copied to the new connection; open it and enter them again"
 msgstr ""
@@ -15180,7 +15186,7 @@ msgid "Start sharing"
 msgstr "Spustiť zdieľanie"
 
 #: rustconn/src/window/network_tools/share.rs:153
-#: rustconn/src/window/network_tools/share.rs:382
+#: rustconn/src/window/network_tools/share.rs:422
 msgid "Could not start session sharing"
 msgstr "Zdieľanie relácie sa nepodarilo spustiť"
 
@@ -15207,31 +15213,39 @@ msgstr ""
 "zdieľania označená ◉. {}"
 
 #: rustconn/src/window/network_tools/share.rs:248
-#: rustconn/src/window/network_tools/share.rs:559
-#: rustconn/src/window/network_tools/share.rs:759
+#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:799
 msgid "Session shared"
 msgstr "Relácia zdieľaná"
 
 #: rustconn/src/window/network_tools/share.rs:253
-#: rustconn/src/window/network_tools/share.rs:565
+#: rustconn/src/window/network_tools/share.rs:605
 msgid "Copy link"
 msgstr "Kopírovať odkaz"
 
 #: rustconn/src/window/network_tools/share.rs:254
-#: rustconn/src/window/network_tools/share.rs:566
+#: rustconn/src/window/network_tools/share.rs:606
 msgid "Stop sharing"
 msgstr "Zastaviť zdieľanie"
 
 #: rustconn/src/window/network_tools/share.rs:263
-#: rustconn/src/window/network_tools/share.rs:476
+#: rustconn/src/window/network_tools/share.rs:516
 msgid "Link copied to clipboard"
 msgstr "Odkaz skopírovaný do schránky"
 
-#: rustconn/src/window/network_tools/share.rs:316
+#: rustconn/src/window/network_tools/share.rs:313
+msgid "Session sharing stopped after one hour. Share again to continue"
+msgstr "Zdieľanie relácie sa skončilo po hodine. Ak chcete pokračovať, zdieľajte znova"
+
+#: rustconn/src/window/network_tools/share.rs:321
+msgid "Viewers watching the shared session: {}"
+msgstr "Diváci zdieľanej relácie: {}"
+
+#: rustconn/src/window/network_tools/share.rs:356
 msgid "Look Up Your Public Address?"
 msgstr "Zistiť vašu verejnú adresu?"
 
-#: rustconn/src/window/network_tools/share.rs:318
+#: rustconn/src/window/network_tools/share.rs:358
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
 "servers run by Google (stun.l.google.com) and Cloudflare "
@@ -15246,23 +15260,23 @@ msgstr ""
 "údaje z terminálu. Bez zisťovania bude odkaz fungovať iba vo vašej miestnej "
 "sieti."
 
-#: rustconn/src/window/network_tools/share.rs:324
+#: rustconn/src/window/network_tools/share.rs:364
 msgid "Local Network Only"
 msgstr "Iba miestna sieť"
 
-#: rustconn/src/window/network_tools/share.rs:325
+#: rustconn/src/window/network_tools/share.rs:365
 msgid "Look Up Public Address"
 msgstr "Zistiť verejnú adresu"
 
-#: rustconn/src/window/network_tools/share.rs:423
+#: rustconn/src/window/network_tools/share.rs:463
 msgid "Public endpoint (STUN)"
 msgstr "Verejný koncový bod (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:425
+#: rustconn/src/window/network_tools/share.rs:465
 msgid "Endpoint (local network)"
 msgstr "Koncový bod (miestna sieť)"
 
-#: rustconn/src/window/network_tools/share.rs:431
+#: rustconn/src/window/network_tools/share.rs:471
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15270,7 +15284,7 @@ msgstr ""
 "Ak divákovi vyprší čas, presmerujte na smerovači porty TCP a UDP {} na tento "
 "počítač. Iný RustConn potrebuje iba UDP."
 
-#: rustconn/src/window/network_tools/share.rs:436
+#: rustconn/src/window/network_tools/share.rs:476
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15278,7 +15292,7 @@ msgstr ""
 "Ak divákovi vyprší čas, presmerujte na smerovači port TCP {} a port UDP {} "
 "na tento počítač. Iný RustConn potrebuje iba UDP."
 
-#: rustconn/src/window/network_tools/share.rs:442
+#: rustconn/src/window/network_tools/share.rs:482
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15292,7 +15306,7 @@ msgstr ""
 "budete pokračovať, porovnajte odtlačok SHA-256 certifikátu s časťou fp= v "
 "odkaze. Karta je počas zdieľania označená ◉."
 
-#: rustconn/src/window/network_tools/share.rs:446
+#: rustconn/src/window/network_tools/share.rs:486
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15306,23 +15320,23 @@ msgstr ""
 "budete pokračovať, porovnajte odtlačok SHA-256 certifikátu s časťou fp= v "
 "odkaze. Karta je počas zdieľania označená ◉."
 
-#: rustconn/src/window/network_tools/share.rs:523
+#: rustconn/src/window/network_tools/share.rs:563
 msgid "Read-only link"
 msgstr "Odkaz iba na čítanie"
 
-#: rustconn/src/window/network_tools/share.rs:581
+#: rustconn/src/window/network_tools/share.rs:621
 msgid "Paste an https:// share link"
 msgstr "Vložte zdieľaný odkaz https://"
 
-#: rustconn/src/window/network_tools/share.rs:583
+#: rustconn/src/window/network_tools/share.rs:623
 msgid "Share link"
 msgstr "Odkaz na zdieľanie"
 
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:626
 msgid "Join a shared session"
 msgstr "Pripojiť sa k zdieľanej relácii"
 
-#: rustconn/src/window/network_tools/share.rs:588
+#: rustconn/src/window/network_tools/share.rs:628
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15330,22 +15344,22 @@ msgstr ""
 "Vložte odkaz, ktorý vám poslal hostiteľ. RustConn sa pripojí priamo cez QUIC "
 "(UDP); UDP port hostiteľa musí byť dostupný."
 
-#: rustconn/src/window/network_tools/share.rs:608
-#: rustconn/src/window/network_tools/share.rs:637
+#: rustconn/src/window/network_tools/share.rs:648
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Could not join the shared session"
 msgstr "K zdieľanej relácii sa nepodarilo pripojiť"
 
-#: rustconn/src/window/network_tools/share.rs:677
+#: rustconn/src/window/network_tools/share.rs:717
 msgid "Read-only shared session from {}"
 msgstr "Zdieľaná relácia iba na čítanie od {}"
 
-#: rustconn/src/window/network_tools/share.rs:683
-#: rustconn/src/window/network_tools/share.rs:692
-#: rustconn/src/window/network_tools/share.rs:784
+#: rustconn/src/window/network_tools/share.rs:723
+#: rustconn/src/window/network_tools/share.rs:732
+#: rustconn/src/window/network_tools/share.rs:824
 msgid "Shared session"
 msgstr "Zdieľaná relácia"
 
-#: rustconn/src/window/network_tools/share.rs:684
+#: rustconn/src/window/network_tools/share.rs:724
 msgid "Read-only from {}"
 msgstr "Iba na čítanie od {}"
 

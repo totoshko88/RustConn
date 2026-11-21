@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 17:09+0200\n"
+"POT-Creation-Date: 2026-11-21 17:29+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -69,8 +69,8 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
-#: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:594
+#: rustconn/src/window/network_tools/share.rs:363
+#: rustconn/src/window/network_tools/share.rs:634
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
@@ -186,7 +186,7 @@ msgstr "Nhật ký gỡ lỗi"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:567
+#: rustconn/src/window/network_tools/share.rs:607
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Đóng"
@@ -333,7 +333,7 @@ msgstr "‘{}’ cần những thông tin sau trước khi có thể kết nối
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:595
+#: rustconn/src/window/network_tools/share.rs:635
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Kết nối"
@@ -13663,17 +13663,23 @@ msgstr ""
 msgid "Save to This Computer"
 msgstr "Lưu vào máy tính này"
 
-#: rustconn/src/vault_ops.rs:2244
+#: rustconn/src/vault_ops.rs:2241
+msgid ""
+"SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still "
+"holds them: delete it once you have connected"
+msgstr "Các khóa SPA đã được chuyển vào kho bí mật. connections.toml.pre-spa-vault.bak vẫn còn chứa chúng: hãy xóa nó khi kết nối hoạt động"
+
+#: rustconn/src/vault_ops.rs:2249
 msgid ""
 "SPA keys could not be moved to the vault and stay in the connection file"
 msgstr ""
 "Không thể chuyển khóa SPA vào kho bí mật; chúng vẫn nằm trong tệp kết nối"
 
-#: rustconn/src/vault_ops.rs:2299
+#: rustconn/src/vault_ops.rs:2304
 msgid "Unused SPA keys could not be removed from the vault"
 msgstr "Không thể xóa các khóa SPA không dùng khỏi kho bí mật"
 
-#: rustconn/src/vault_ops.rs:2364
+#: rustconn/src/vault_ops.rs:2369
 msgid ""
 "SPA keys were not copied to the new connection; open it and enter them again"
 msgstr ""
@@ -15090,7 +15096,7 @@ msgid "Start sharing"
 msgstr "Bắt đầu chia sẻ"
 
 #: rustconn/src/window/network_tools/share.rs:153
-#: rustconn/src/window/network_tools/share.rs:382
+#: rustconn/src/window/network_tools/share.rs:422
 msgid "Could not start session sharing"
 msgstr "Không thể bắt đầu chia sẻ phiên"
 
@@ -15117,31 +15123,39 @@ msgstr ""
 "dấu ◉ khi đang chia sẻ. {}"
 
 #: rustconn/src/window/network_tools/share.rs:248
-#: rustconn/src/window/network_tools/share.rs:559
-#: rustconn/src/window/network_tools/share.rs:759
+#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:799
 msgid "Session shared"
 msgstr "Đã chia sẻ phiên"
 
 #: rustconn/src/window/network_tools/share.rs:253
-#: rustconn/src/window/network_tools/share.rs:565
+#: rustconn/src/window/network_tools/share.rs:605
 msgid "Copy link"
 msgstr "Sao chép liên kết"
 
 #: rustconn/src/window/network_tools/share.rs:254
-#: rustconn/src/window/network_tools/share.rs:566
+#: rustconn/src/window/network_tools/share.rs:606
 msgid "Stop sharing"
 msgstr "Dừng chia sẻ"
 
 #: rustconn/src/window/network_tools/share.rs:263
-#: rustconn/src/window/network_tools/share.rs:476
+#: rustconn/src/window/network_tools/share.rs:516
 msgid "Link copied to clipboard"
 msgstr "Đã sao chép liên kết vào bảng nhớ tạm"
 
-#: rustconn/src/window/network_tools/share.rs:316
+#: rustconn/src/window/network_tools/share.rs:313
+msgid "Session sharing stopped after one hour. Share again to continue"
+msgstr "Việc chia sẻ phiên đã dừng sau một giờ. Hãy chia sẻ lại để tiếp tục"
+
+#: rustconn/src/window/network_tools/share.rs:321
+msgid "Viewers watching the shared session: {}"
+msgstr "Số người đang xem phiên được chia sẻ: {}"
+
+#: rustconn/src/window/network_tools/share.rs:356
 msgid "Look Up Your Public Address?"
 msgstr "Tra cứu địa chỉ công khai của bạn?"
 
-#: rustconn/src/window/network_tools/share.rs:318
+#: rustconn/src/window/network_tools/share.rs:358
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
 "servers run by Google (stun.l.google.com) and Cloudflare "
@@ -15155,23 +15169,23 @@ msgstr ""
 "thấy địa chỉ IP của máy tính này. Không có dữ liệu terminal nào được gửi cho "
 "họ. Nếu không tra cứu, liên kết chỉ hoạt động trong mạng cục bộ của bạn."
 
-#: rustconn/src/window/network_tools/share.rs:324
+#: rustconn/src/window/network_tools/share.rs:364
 msgid "Local Network Only"
 msgstr "Chỉ mạng cục bộ"
 
-#: rustconn/src/window/network_tools/share.rs:325
+#: rustconn/src/window/network_tools/share.rs:365
 msgid "Look Up Public Address"
 msgstr "Tra cứu địa chỉ công khai"
 
-#: rustconn/src/window/network_tools/share.rs:423
+#: rustconn/src/window/network_tools/share.rs:463
 msgid "Public endpoint (STUN)"
 msgstr "Điểm cuối công khai (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:425
+#: rustconn/src/window/network_tools/share.rs:465
 msgid "Endpoint (local network)"
 msgstr "Điểm cuối (mạng cục bộ)"
 
-#: rustconn/src/window/network_tools/share.rs:431
+#: rustconn/src/window/network_tools/share.rs:471
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15179,7 +15193,7 @@ msgstr ""
 "Nếu người xem bị hết thời gian chờ, hãy chuyển tiếp cổng TCP và UDP {} tới "
 "máy tính này trên bộ định tuyến. RustConn khác chỉ cần UDP."
 
-#: rustconn/src/window/network_tools/share.rs:436
+#: rustconn/src/window/network_tools/share.rs:476
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15187,7 +15201,7 @@ msgstr ""
 "Nếu người xem bị hết thời gian chờ, hãy chuyển tiếp cổng TCP {} và cổng UDP "
 "{} tới máy tính này trên bộ định tuyến. RustConn khác chỉ cần UDP."
 
-#: rustconn/src/window/network_tools/share.rs:442
+#: rustconn/src/window/network_tools/share.rs:482
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15201,7 +15215,7 @@ msgstr ""
 "tục, hãy so sánh dấu vân tay SHA-256 của chứng chỉ với phần fp= trong liên "
 "kết. Thẻ được đánh dấu ◉ khi đang chia sẻ."
 
-#: rustconn/src/window/network_tools/share.rs:446
+#: rustconn/src/window/network_tools/share.rs:486
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15215,23 +15229,23 @@ msgstr ""
 "chỉ: trước khi tiếp tục, hãy so sánh dấu vân tay SHA-256 của chứng chỉ với "
 "phần fp= trong liên kết. Thẻ được đánh dấu ◉ khi đang chia sẻ."
 
-#: rustconn/src/window/network_tools/share.rs:523
+#: rustconn/src/window/network_tools/share.rs:563
 msgid "Read-only link"
 msgstr "Liên kết chỉ xem"
 
-#: rustconn/src/window/network_tools/share.rs:581
+#: rustconn/src/window/network_tools/share.rs:621
 msgid "Paste an https:// share link"
 msgstr "Dán liên kết chia sẻ https://"
 
-#: rustconn/src/window/network_tools/share.rs:583
+#: rustconn/src/window/network_tools/share.rs:623
 msgid "Share link"
 msgstr "Liên kết chia sẻ"
 
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:626
 msgid "Join a shared session"
 msgstr "Tham gia phiên được chia sẻ"
 
-#: rustconn/src/window/network_tools/share.rs:588
+#: rustconn/src/window/network_tools/share.rs:628
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15239,22 +15253,22 @@ msgstr ""
 "Dán liên kết mà người chủ phiên đã gửi cho bạn. RustConn kết nối trực tiếp "
 "qua QUIC (UDP); cổng UDP của máy chủ phải truy cập được."
 
-#: rustconn/src/window/network_tools/share.rs:608
-#: rustconn/src/window/network_tools/share.rs:637
+#: rustconn/src/window/network_tools/share.rs:648
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Could not join the shared session"
 msgstr "Không thể tham gia phiên được chia sẻ"
 
-#: rustconn/src/window/network_tools/share.rs:677
+#: rustconn/src/window/network_tools/share.rs:717
 msgid "Read-only shared session from {}"
 msgstr "Phiên được chia sẻ chỉ xem từ {}"
 
-#: rustconn/src/window/network_tools/share.rs:683
-#: rustconn/src/window/network_tools/share.rs:692
-#: rustconn/src/window/network_tools/share.rs:784
+#: rustconn/src/window/network_tools/share.rs:723
+#: rustconn/src/window/network_tools/share.rs:732
+#: rustconn/src/window/network_tools/share.rs:824
 msgid "Shared session"
 msgstr "Phiên được chia sẻ"
 
-#: rustconn/src/window/network_tools/share.rs:684
+#: rustconn/src/window/network_tools/share.rs:724
 msgid "Read-only from {}"
 msgstr "Chỉ xem từ {}"
 

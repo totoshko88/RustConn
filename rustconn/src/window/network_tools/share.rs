@@ -271,18 +271,58 @@ fn present_http_share(
     dialog.present(Some(window));
 }
 
-/// Stops the share when the shared tab goes away: a share with no terminal
-/// behind it would stay open and look active.
+/// A share that nobody stopped ends by itself after this long: the link has no
+/// expiry of its own, so a forgotten share would otherwise stay open.
+const SHARE_MAX_AGE: std::time::Duration = std::time::Duration::from_hours(1);
+
+/// Live viewers of the share that is running now, relay or WebTransport.
+fn viewer_count() -> usize {
+    ACTIVE_SHARE
+        .with(|cell| {
+            cell.borrow()
+                .as_ref()
+                .map(|a| a.server.publisher().receiver_count())
+        })
+        .or_else(|| {
+            ACTIVE_QUIC.with(|cell| {
+                cell.borrow()
+                    .as_ref()
+                    .map(|a| a.server.publisher().receiver_count())
+            })
+        })
+        .unwrap_or(0)
+}
+
+/// Watches a share. Stops it when the shared tab goes away (a share with no
+/// terminal behind it would stay open and look active) or when it has run for
+/// [`SHARE_MAX_AGE`], and tells the user when the number of viewers changes.
 fn watch_shared_tab(serial: u64, session_id: Uuid, notebook: SharedNotebook) {
+    let started = std::time::Instant::now();
+    let mut viewers = 0;
     glib::timeout_add_seconds_local(2, move || {
         if current_serial() != Some(serial) {
             return glib::ControlFlow::Break;
         }
-        if notebook.terminal_grid(session_id).is_some() {
-            return glib::ControlFlow::Continue;
+        if notebook.terminal_grid(session_id).is_none() {
+            stop_all_sharing();
+            return glib::ControlFlow::Break;
         }
-        stop_all_sharing();
-        glib::ControlFlow::Break
+        if started.elapsed() >= SHARE_MAX_AGE {
+            stop_all_sharing();
+            crate::toast::show_warning_toast_on_active_window(&i18n(
+                "Session sharing stopped after one hour. Share again to continue",
+            ));
+            return glib::ControlFlow::Break;
+        }
+        let now = viewer_count();
+        if now != viewers {
+            viewers = now;
+            crate::toast::show_info_toast_on_active_window(&i18n_f(
+                "Viewers watching the shared session: {}",
+                &[&now.to_string()],
+            ));
+        }
+        glib::ControlFlow::Continue
     });
 }
 

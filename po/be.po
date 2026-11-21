@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 17:09+0200\n"
+"POT-Creation-Date: 2026-11-21 17:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -70,8 +70,8 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
-#: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:594
+#: rustconn/src/window/network_tools/share.rs:363
+#: rustconn/src/window/network_tools/share.rs:634
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
@@ -189,7 +189,7 @@ msgstr "Журнал адладкі"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:567
+#: rustconn/src/window/network_tools/share.rs:607
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Закрыць"
@@ -336,7 +336,7 @@ msgstr "«{}» перад злучэннем патрабуе наступнае
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:595
+#: rustconn/src/window/network_tools/share.rs:635
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Злучыцца"
@@ -13738,17 +13738,23 @@ msgstr ""
 msgid "Save to This Computer"
 msgstr "Захаваць на гэтым камп'ютары"
 
-#: rustconn/src/vault_ops.rs:2244
+#: rustconn/src/vault_ops.rs:2241
+msgid ""
+"SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still "
+"holds them: delete it once you have connected"
+msgstr "Ключы SPA перанесены ў сховішча сакрэтаў. connections.toml.pre-spa-vault.bak усё яшчэ змяшчае іх: выдаліце яго, калі злучэнне спрацуе"
+
+#: rustconn/src/vault_ops.rs:2249
 msgid ""
 "SPA keys could not be moved to the vault and stay in the connection file"
 msgstr ""
 "Ключы SPA не ўдалося перанесці ў сховішча, і яны засталіся ў файле злучэння"
 
-#: rustconn/src/vault_ops.rs:2299
+#: rustconn/src/vault_ops.rs:2304
 msgid "Unused SPA keys could not be removed from the vault"
 msgstr "Нявыкарыстаныя ключы SPA не ўдалося выдаліць са сховішча"
 
-#: rustconn/src/vault_ops.rs:2364
+#: rustconn/src/vault_ops.rs:2369
 msgid ""
 "SPA keys were not copied to the new connection; open it and enter them again"
 msgstr ""
@@ -15179,7 +15185,7 @@ msgid "Start sharing"
 msgstr "Пачаць абмен"
 
 #: rustconn/src/window/network_tools/share.rs:153
-#: rustconn/src/window/network_tools/share.rs:382
+#: rustconn/src/window/network_tools/share.rs:422
 msgid "Could not start session sharing"
 msgstr "Не ўдалося пачаць абмен сеансам"
 
@@ -15206,31 +15212,39 @@ msgstr ""
 "агульны, укладка пазначана ◉. {}"
 
 #: rustconn/src/window/network_tools/share.rs:248
-#: rustconn/src/window/network_tools/share.rs:559
-#: rustconn/src/window/network_tools/share.rs:759
+#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:799
 msgid "Session shared"
 msgstr "Сеанс абагулены"
 
 #: rustconn/src/window/network_tools/share.rs:253
-#: rustconn/src/window/network_tools/share.rs:565
+#: rustconn/src/window/network_tools/share.rs:605
 msgid "Copy link"
 msgstr "Капіяваць спасылку"
 
 #: rustconn/src/window/network_tools/share.rs:254
-#: rustconn/src/window/network_tools/share.rs:566
+#: rustconn/src/window/network_tools/share.rs:606
 msgid "Stop sharing"
 msgstr "Спыніць абмен"
 
 #: rustconn/src/window/network_tools/share.rs:263
-#: rustconn/src/window/network_tools/share.rs:476
+#: rustconn/src/window/network_tools/share.rs:516
 msgid "Link copied to clipboard"
 msgstr "Спасылка скапіявана ў буфер абмену"
 
-#: rustconn/src/window/network_tools/share.rs:316
+#: rustconn/src/window/network_tools/share.rs:313
+msgid "Session sharing stopped after one hour. Share again to continue"
+msgstr "Агульны доступ да сеанса спынены праз гадзіну. Падзяліцеся зноў, каб працягнуць"
+
+#: rustconn/src/window/network_tools/share.rs:321
+msgid "Viewers watching the shared session: {}"
+msgstr "Гледачоў агульнага сеанса: {}"
+
+#: rustconn/src/window/network_tools/share.rs:356
 msgid "Look Up Your Public Address?"
 msgstr "Даведацца публічны адрас?"
 
-#: rustconn/src/window/network_tools/share.rs:318
+#: rustconn/src/window/network_tools/share.rs:358
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
 "servers run by Google (stun.l.google.com) and Cloudflare "
@@ -15244,23 +15258,23 @@ msgstr ""
 "кампаніі бачаць IP-адрас гэтага камп’ютара. Даныя тэрмінала ім не "
 "перадаюцца. Без запыту спасылка працуе толькі ў лакальнай сетцы."
 
-#: rustconn/src/window/network_tools/share.rs:324
+#: rustconn/src/window/network_tools/share.rs:364
 msgid "Local Network Only"
 msgstr "Толькі лакальная сетка"
 
-#: rustconn/src/window/network_tools/share.rs:325
+#: rustconn/src/window/network_tools/share.rs:365
 msgid "Look Up Public Address"
 msgstr "Даведацца публічны адрас"
 
-#: rustconn/src/window/network_tools/share.rs:423
+#: rustconn/src/window/network_tools/share.rs:463
 msgid "Public endpoint (STUN)"
 msgstr "Публічная кропка доступу (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:425
+#: rustconn/src/window/network_tools/share.rs:465
 msgid "Endpoint (local network)"
 msgstr "Кропка доступу (лакальная сетка)"
 
-#: rustconn/src/window/network_tools/share.rs:431
+#: rustconn/src/window/network_tools/share.rs:471
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15268,7 +15282,7 @@ msgstr ""
 "Калі гледач не можа падключыцца па часе, перанакіруйце на маршрутызатары "
 "TCP- і UDP-порт {} на гэты камп’ютар. Іншаму RustConn патрэбен толькі UDP."
 
-#: rustconn/src/window/network_tools/share.rs:436
+#: rustconn/src/window/network_tools/share.rs:476
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15276,7 +15290,7 @@ msgstr ""
 "Калі гледач не можа падключыцца па часе, перанакіруйце на маршрутызатары TCP-"
 "порт {} і UDP-порт {} на гэты камп’ютар. Іншаму RustConn патрэбен толькі UDP."
 
-#: rustconn/src/window/network_tools/share.rs:442
+#: rustconn/src/window/network_tools/share.rs:482
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15290,7 +15304,7 @@ msgstr ""
 "чым працягнуць, параўнайце адбітак SHA-256 сертыфіката з часткай fp= у "
 "спасылцы. Пакуль сеанс агульны, укладка пазначана ◉."
 
-#: rustconn/src/window/network_tools/share.rs:446
+#: rustconn/src/window/network_tools/share.rs:486
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15304,23 +15318,23 @@ msgstr ""
 "сертыфікат: перш чым працягнуць, параўнайце адбітак SHA-256 сертыфіката з "
 "часткай fp= у спасылцы. Пакуль сеанс агульны, укладка пазначана ◉."
 
-#: rustconn/src/window/network_tools/share.rs:523
+#: rustconn/src/window/network_tools/share.rs:563
 msgid "Read-only link"
 msgstr "Спасылка толькі для чытання"
 
-#: rustconn/src/window/network_tools/share.rs:581
+#: rustconn/src/window/network_tools/share.rs:621
 msgid "Paste an https:// share link"
 msgstr "Устаўце спасылку https:// для абмену"
 
-#: rustconn/src/window/network_tools/share.rs:583
+#: rustconn/src/window/network_tools/share.rs:623
 msgid "Share link"
 msgstr "Спасылка для абмену"
 
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:626
 msgid "Join a shared session"
 msgstr "Далучыцца да агульнага сеанса"
 
-#: rustconn/src/window/network_tools/share.rs:588
+#: rustconn/src/window/network_tools/share.rs:628
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15328,22 +15342,22 @@ msgstr ""
 "Устаўце спасылку, якую даслаў вам вядучы. RustConn злучаецца наўпрост праз "
 "QUIC (UDP); UDP-порт вядучага павінен быць даступны."
 
-#: rustconn/src/window/network_tools/share.rs:608
-#: rustconn/src/window/network_tools/share.rs:637
+#: rustconn/src/window/network_tools/share.rs:648
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Could not join the shared session"
 msgstr "Не ўдалося далучыцца да агульнага сеанса"
 
-#: rustconn/src/window/network_tools/share.rs:677
+#: rustconn/src/window/network_tools/share.rs:717
 msgid "Read-only shared session from {}"
 msgstr "Агульны сеанс толькі для чытання ад {}"
 
-#: rustconn/src/window/network_tools/share.rs:683
-#: rustconn/src/window/network_tools/share.rs:692
-#: rustconn/src/window/network_tools/share.rs:784
+#: rustconn/src/window/network_tools/share.rs:723
+#: rustconn/src/window/network_tools/share.rs:732
+#: rustconn/src/window/network_tools/share.rs:824
 msgid "Shared session"
 msgstr "Агульны сеанс"
 
-#: rustconn/src/window/network_tools/share.rs:684
+#: rustconn/src/window/network_tools/share.rs:724
 msgid "Read-only from {}"
 msgstr "Толькі для чытання ад {}"
 

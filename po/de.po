@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 17:09+0200\n"
+"POT-Creation-Date: 2026-11-21 17:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: German\n"
@@ -69,8 +69,8 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
-#: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:594
+#: rustconn/src/window/network_tools/share.rs:363
+#: rustconn/src/window/network_tools/share.rs:634
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
@@ -189,7 +189,7 @@ msgstr "Debug-Protokollierung"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:567
+#: rustconn/src/window/network_tools/share.rs:607
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Schließen"
@@ -336,7 +336,7 @@ msgstr "‚{}‘ benötigt Folgendes, bevor eine Verbindung möglich ist."
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:595
+#: rustconn/src/window/network_tools/share.rs:635
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Verbinden"
@@ -13880,19 +13880,25 @@ msgstr ""
 msgid "Save to This Computer"
 msgstr "Auf diesem Computer speichern"
 
-#: rustconn/src/vault_ops.rs:2244
+#: rustconn/src/vault_ops.rs:2241
+msgid ""
+"SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still "
+"holds them: delete it once you have connected"
+msgstr "SPA-Schlüssel wurden in den Geheimnisspeicher verschoben. connections.toml.pre-spa-vault.bak enthält sie noch: Löschen Sie die Datei, sobald die Verbindung klappt"
+
+#: rustconn/src/vault_ops.rs:2249
 msgid ""
 "SPA keys could not be moved to the vault and stay in the connection file"
 msgstr ""
 "SPA-Schlüssel konnten nicht in den Tresor verschoben werden und bleiben in "
 "der Verbindungsdatei"
 
-#: rustconn/src/vault_ops.rs:2299
+#: rustconn/src/vault_ops.rs:2304
 msgid "Unused SPA keys could not be removed from the vault"
 msgstr ""
 "Nicht verwendete SPA-Schlüssel konnten nicht aus dem Tresor entfernt werden"
 
-#: rustconn/src/vault_ops.rs:2364
+#: rustconn/src/vault_ops.rs:2369
 msgid ""
 "SPA keys were not copied to the new connection; open it and enter them again"
 msgstr ""
@@ -15358,7 +15364,7 @@ msgid "Start sharing"
 msgstr "Teilen starten"
 
 #: rustconn/src/window/network_tools/share.rs:153
-#: rustconn/src/window/network_tools/share.rs:382
+#: rustconn/src/window/network_tools/share.rs:422
 msgid "Could not start session sharing"
 msgstr "Sitzungsfreigabe konnte nicht gestartet werden"
 
@@ -15385,31 +15391,39 @@ msgstr ""
 "markiert, solange er geteilt wird. {}"
 
 #: rustconn/src/window/network_tools/share.rs:248
-#: rustconn/src/window/network_tools/share.rs:559
-#: rustconn/src/window/network_tools/share.rs:759
+#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:799
 msgid "Session shared"
 msgstr "Sitzung geteilt"
 
 #: rustconn/src/window/network_tools/share.rs:253
-#: rustconn/src/window/network_tools/share.rs:565
+#: rustconn/src/window/network_tools/share.rs:605
 msgid "Copy link"
 msgstr "Link kopieren"
 
 #: rustconn/src/window/network_tools/share.rs:254
-#: rustconn/src/window/network_tools/share.rs:566
+#: rustconn/src/window/network_tools/share.rs:606
 msgid "Stop sharing"
 msgstr "Teilen beenden"
 
 #: rustconn/src/window/network_tools/share.rs:263
-#: rustconn/src/window/network_tools/share.rs:476
+#: rustconn/src/window/network_tools/share.rs:516
 msgid "Link copied to clipboard"
 msgstr "Link in die Zwischenablage kopiert"
 
-#: rustconn/src/window/network_tools/share.rs:316
+#: rustconn/src/window/network_tools/share.rs:313
+msgid "Session sharing stopped after one hour. Share again to continue"
+msgstr "Die Sitzungsfreigabe wurde nach einer Stunde beendet. Zum Fortsetzen erneut teilen"
+
+#: rustconn/src/window/network_tools/share.rs:321
+msgid "Viewers watching the shared session: {}"
+msgstr "Zuschauer der geteilten Sitzung: {}"
+
+#: rustconn/src/window/network_tools/share.rs:356
 msgid "Look Up Your Public Address?"
 msgstr "Öffentliche Adresse ermitteln?"
 
-#: rustconn/src/window/network_tools/share.rs:318
+#: rustconn/src/window/network_tools/share.rs:358
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
 "servers run by Google (stun.l.google.com) and Cloudflare "
@@ -15424,23 +15438,23 @@ msgstr ""
 "Computers. Terminaldaten werden nicht an sie gesendet. Ohne die Abfrage "
 "funktioniert der Link nur in Ihrem lokalen Netzwerk."
 
-#: rustconn/src/window/network_tools/share.rs:324
+#: rustconn/src/window/network_tools/share.rs:364
 msgid "Local Network Only"
 msgstr "Nur lokales Netzwerk"
 
-#: rustconn/src/window/network_tools/share.rs:325
+#: rustconn/src/window/network_tools/share.rs:365
 msgid "Look Up Public Address"
 msgstr "Öffentliche Adresse ermitteln"
 
-#: rustconn/src/window/network_tools/share.rs:423
+#: rustconn/src/window/network_tools/share.rs:463
 msgid "Public endpoint (STUN)"
 msgstr "Öffentlicher Endpunkt (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:425
+#: rustconn/src/window/network_tools/share.rs:465
 msgid "Endpoint (local network)"
 msgstr "Endpunkt (lokales Netzwerk)"
 
-#: rustconn/src/window/network_tools/share.rs:431
+#: rustconn/src/window/network_tools/share.rs:471
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15449,7 +15463,7 @@ msgstr ""
 "UDP-Port {} im Router an diesen Computer weiter. Ein anderes RustConn "
 "benötigt nur UDP."
 
-#: rustconn/src/window/network_tools/share.rs:436
+#: rustconn/src/window/network_tools/share.rs:476
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15458,7 +15472,7 @@ msgstr ""
 "{} und UDP-Port {} im Router an diesen Computer weiter. Ein anderes RustConn "
 "benötigt nur UDP."
 
-#: rustconn/src/window/network_tools/share.rs:442
+#: rustconn/src/window/network_tools/share.rs:482
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15473,7 +15487,7 @@ msgstr ""
 "Fingerabdruck des Zertifikats mit dem fp=-Teil des Links. Der Tab ist mit ◉ "
 "markiert, solange er geteilt wird."
 
-#: rustconn/src/window/network_tools/share.rs:446
+#: rustconn/src/window/network_tools/share.rs:486
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15488,23 +15502,23 @@ msgstr ""
 "Fingerabdruck des Zertifikats mit dem fp=-Teil des Links. Der Tab ist mit ◉ "
 "markiert, solange er geteilt wird."
 
-#: rustconn/src/window/network_tools/share.rs:523
+#: rustconn/src/window/network_tools/share.rs:563
 msgid "Read-only link"
 msgstr "Schreibgeschützter Link"
 
-#: rustconn/src/window/network_tools/share.rs:581
+#: rustconn/src/window/network_tools/share.rs:621
 msgid "Paste an https:// share link"
 msgstr "Einen https://-Freigabelink einfügen"
 
-#: rustconn/src/window/network_tools/share.rs:583
+#: rustconn/src/window/network_tools/share.rs:623
 msgid "Share link"
 msgstr "Freigabelink"
 
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:626
 msgid "Join a shared session"
 msgstr "Einer geteilten Sitzung beitreten"
 
-#: rustconn/src/window/network_tools/share.rs:588
+#: rustconn/src/window/network_tools/share.rs:628
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15512,22 +15526,22 @@ msgstr ""
 "Fügen Sie den Link ein, den der Host Ihnen geschickt hat. RustConn verbindet "
 "sich direkt über QUIC (UDP); der UDP-Port des Hosts muss erreichbar sein."
 
-#: rustconn/src/window/network_tools/share.rs:608
-#: rustconn/src/window/network_tools/share.rs:637
+#: rustconn/src/window/network_tools/share.rs:648
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Could not join the shared session"
 msgstr "Der geteilten Sitzung konnte nicht beigetreten werden"
 
-#: rustconn/src/window/network_tools/share.rs:677
+#: rustconn/src/window/network_tools/share.rs:717
 msgid "Read-only shared session from {}"
 msgstr "Schreibgeschützte geteilte Sitzung von {}"
 
-#: rustconn/src/window/network_tools/share.rs:683
-#: rustconn/src/window/network_tools/share.rs:692
-#: rustconn/src/window/network_tools/share.rs:784
+#: rustconn/src/window/network_tools/share.rs:723
+#: rustconn/src/window/network_tools/share.rs:732
+#: rustconn/src/window/network_tools/share.rs:824
 msgid "Shared session"
 msgstr "Geteilte Sitzung"
 
-#: rustconn/src/window/network_tools/share.rs:684
+#: rustconn/src/window/network_tools/share.rs:724
 msgid "Read-only from {}"
 msgstr "Schreibgeschützt von {}"
 

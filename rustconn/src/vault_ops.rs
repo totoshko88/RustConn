@@ -2235,7 +2235,12 @@ pub fn schedule_spa_key_move(state: &crate::state::SharedAppState) {
                 if let Ok(mut st) = state.try_borrow_mut() {
                     match st.connection_manager().apply_spa_vault_move(&report.moved) {
                         Ok(0) => {}
-                        Ok(n) => tracing::info!(connections = n, "SPA keys moved to the vault"),
+                        Ok(n) => {
+                            tracing::info!(connections = n, "SPA keys moved to the vault");
+                            crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
+                                "SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still holds them: delete it once you have connected",
+                            ));
+                        }
                         Err(e) => tracing::error!(error = %e, "SPA keys stay in connections.toml"),
                     }
                 }

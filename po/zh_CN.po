@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 17:09+0200\n"
+"POT-Creation-Date: 2026-11-21 17:29+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -70,8 +70,8 @@ msgstr "确定"
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
-#: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:594
+#: rustconn/src/window/network_tools/share.rs:363
+#: rustconn/src/window/network_tools/share.rs:634
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
@@ -183,7 +183,7 @@ msgstr "调试日志"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:567
+#: rustconn/src/window/network_tools/share.rs:607
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "关闭"
@@ -325,7 +325,7 @@ msgstr "“{}” 连接前需要以下信息。"
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:595
+#: rustconn/src/window/network_tools/share.rs:635
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "连接"
@@ -13347,16 +13347,22 @@ msgstr ""
 msgid "Save to This Computer"
 msgstr "保存到此计算机"
 
-#: rustconn/src/vault_ops.rs:2244
+#: rustconn/src/vault_ops.rs:2241
+msgid ""
+"SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still "
+"holds them: delete it once you have connected"
+msgstr "SPA 密钥已移至密钥存储。connections.toml.pre-spa-vault.bak 仍包含这些密钥：连接成功后请将其删除"
+
+#: rustconn/src/vault_ops.rs:2249
 msgid ""
 "SPA keys could not be moved to the vault and stay in the connection file"
 msgstr "SPA 密钥无法移入密钥库，仍保留在连接文件中"
 
-#: rustconn/src/vault_ops.rs:2299
+#: rustconn/src/vault_ops.rs:2304
 msgid "Unused SPA keys could not be removed from the vault"
 msgstr "无法从密钥库中移除未使用的 SPA 密钥"
 
-#: rustconn/src/vault_ops.rs:2364
+#: rustconn/src/vault_ops.rs:2369
 msgid ""
 "SPA keys were not copied to the new connection; open it and enter them again"
 msgstr "SPA 密钥未复制到新连接；请打开该连接并重新输入"
@@ -14711,7 +14717,7 @@ msgid "Start sharing"
 msgstr "开始共享"
 
 #: rustconn/src/window/network_tools/share.rs:153
-#: rustconn/src/window/network_tools/share.rs:382
+#: rustconn/src/window/network_tools/share.rs:422
 msgid "Could not start session sharing"
 msgstr "无法开始共享会话"
 
@@ -14736,31 +14742,39 @@ msgstr ""
 "共享期间标签页标有 ◉。{}"
 
 #: rustconn/src/window/network_tools/share.rs:248
-#: rustconn/src/window/network_tools/share.rs:559
-#: rustconn/src/window/network_tools/share.rs:759
+#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:799
 msgid "Session shared"
 msgstr "会话已共享"
 
 #: rustconn/src/window/network_tools/share.rs:253
-#: rustconn/src/window/network_tools/share.rs:565
+#: rustconn/src/window/network_tools/share.rs:605
 msgid "Copy link"
 msgstr "复制链接"
 
 #: rustconn/src/window/network_tools/share.rs:254
-#: rustconn/src/window/network_tools/share.rs:566
+#: rustconn/src/window/network_tools/share.rs:606
 msgid "Stop sharing"
 msgstr "停止共享"
 
 #: rustconn/src/window/network_tools/share.rs:263
-#: rustconn/src/window/network_tools/share.rs:476
+#: rustconn/src/window/network_tools/share.rs:516
 msgid "Link copied to clipboard"
 msgstr "链接已复制到剪贴板"
 
-#: rustconn/src/window/network_tools/share.rs:316
+#: rustconn/src/window/network_tools/share.rs:313
+msgid "Session sharing stopped after one hour. Share again to continue"
+msgstr "会话共享已在一小时后停止。请重新共享以继续"
+
+#: rustconn/src/window/network_tools/share.rs:321
+msgid "Viewers watching the shared session: {}"
+msgstr "正在观看共享会话的人数：{}"
+
+#: rustconn/src/window/network_tools/share.rs:356
 msgid "Look Up Your Public Address?"
 msgstr "查询您的公网地址？"
 
-#: rustconn/src/window/network_tools/share.rs:318
+#: rustconn/src/window/network_tools/share.rs:358
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
 "servers run by Google (stun.l.google.com) and Cloudflare "
@@ -14773,23 +14787,23 @@ msgstr ""
 "地址和端口。这些公司会看到此计算机的 IP 地址，但不会收到任何终端数据。不查询"
 "的话，链接仅在您的本地网络中有效。"
 
-#: rustconn/src/window/network_tools/share.rs:324
+#: rustconn/src/window/network_tools/share.rs:364
 msgid "Local Network Only"
 msgstr "仅限本地网络"
 
-#: rustconn/src/window/network_tools/share.rs:325
+#: rustconn/src/window/network_tools/share.rs:365
 msgid "Look Up Public Address"
 msgstr "查询公网地址"
 
-#: rustconn/src/window/network_tools/share.rs:423
+#: rustconn/src/window/network_tools/share.rs:463
 msgid "Public endpoint (STUN)"
 msgstr "公网端点 (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:425
+#: rustconn/src/window/network_tools/share.rs:465
 msgid "Endpoint (local network)"
 msgstr "端点（本地网络）"
 
-#: rustconn/src/window/network_tools/share.rs:431
+#: rustconn/src/window/network_tools/share.rs:471
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -14797,7 +14811,7 @@ msgstr ""
 "如果查看者连接超时，请在路由器上将 TCP 和 UDP 端口 {} 转发到此计算机。另一个 "
 "RustConn 只需要 UDP。"
 
-#: rustconn/src/window/network_tools/share.rs:436
+#: rustconn/src/window/network_tools/share.rs:476
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -14805,7 +14819,7 @@ msgstr ""
 "如果查看者连接超时，请在路由器上将 TCP 端口 {} 和 UDP 端口 {} 转发到此计算"
 "机。另一个 RustConn 只需要 UDP。"
 
-#: rustconn/src/window/network_tools/share.rs:442
+#: rustconn/src/window/network_tools/share.rs:482
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -14817,7 +14831,7 @@ msgstr ""
 "另一个 RustConn 会自动校验证书。浏览器会显示证书警告：继续之前，请将证书的 "
 "SHA-256 指纹与链接中的 fp= 部分比对。共享期间标签页标有 ◉。"
 
-#: rustconn/src/window/network_tools/share.rs:446
+#: rustconn/src/window/network_tools/share.rs:486
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -14829,23 +14843,23 @@ msgstr ""
 "享。另一个 RustConn 会自动校验证书。浏览器会显示证书警告：继续之前，请将证书"
 "的 SHA-256 指纹与链接中的 fp= 部分比对。共享期间标签页标有 ◉。"
 
-#: rustconn/src/window/network_tools/share.rs:523
+#: rustconn/src/window/network_tools/share.rs:563
 msgid "Read-only link"
 msgstr "只读链接"
 
-#: rustconn/src/window/network_tools/share.rs:581
+#: rustconn/src/window/network_tools/share.rs:621
 msgid "Paste an https:// share link"
 msgstr "粘贴 https:// 共享链接"
 
-#: rustconn/src/window/network_tools/share.rs:583
+#: rustconn/src/window/network_tools/share.rs:623
 msgid "Share link"
 msgstr "共享链接"
 
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:626
 msgid "Join a shared session"
 msgstr "加入共享会话"
 
-#: rustconn/src/window/network_tools/share.rs:588
+#: rustconn/src/window/network_tools/share.rs:628
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -14853,22 +14867,22 @@ msgstr ""
 "粘贴主机发给您的链接。RustConn 通过 QUIC (UDP) 直接连接；主机的 UDP 端口必须"
 "可达。"
 
-#: rustconn/src/window/network_tools/share.rs:608
-#: rustconn/src/window/network_tools/share.rs:637
+#: rustconn/src/window/network_tools/share.rs:648
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Could not join the shared session"
 msgstr "无法加入共享会话"
 
-#: rustconn/src/window/network_tools/share.rs:677
+#: rustconn/src/window/network_tools/share.rs:717
 msgid "Read-only shared session from {}"
 msgstr "来自 {} 的只读共享会话"
 
-#: rustconn/src/window/network_tools/share.rs:683
-#: rustconn/src/window/network_tools/share.rs:692
-#: rustconn/src/window/network_tools/share.rs:784
+#: rustconn/src/window/network_tools/share.rs:723
+#: rustconn/src/window/network_tools/share.rs:732
+#: rustconn/src/window/network_tools/share.rs:824
 msgid "Shared session"
 msgstr "共享会话"
 
-#: rustconn/src/window/network_tools/share.rs:684
+#: rustconn/src/window/network_tools/share.rs:724
 msgid "Read-only from {}"
 msgstr "来自 {} 的只读"
 
