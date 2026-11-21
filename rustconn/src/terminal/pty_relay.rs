@@ -174,6 +174,15 @@ impl PtyRelay {
         input.send_blocking(Zeroizing::new(data.to_vec())).is_ok()
     }
 
+    /// Whether the child's terminal echoes input.
+    ///
+    /// `false` while a program reads a password. An error reading the state
+    /// counts as echoing, so an unreadable terminal is recorded as typed
+    /// rather than hidden.
+    pub fn echo_enabled(&self) -> bool {
+        rustconn_pty_sys::pty_echo_enabled(&self.winsize_fd).unwrap_or(true)
+    }
+
     /// Tells the child the window size, if it differs from the last one sent.
     ///
     /// Returns `true` when a change was pushed. Sending an unchanged size would

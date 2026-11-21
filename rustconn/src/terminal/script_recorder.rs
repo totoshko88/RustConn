@@ -254,6 +254,7 @@ impl TerminalNotebook {
         });
 
         let recording = Rc::clone(&self.script_recording);
+        let relays = Rc::clone(&self.pty_relays);
         self.connect_commit(session_id, move |text| {
             if in_automated_send() {
                 return;
@@ -269,7 +270,16 @@ impl TerminalNotebook {
             if active.session_id != session_id {
                 return;
             }
-            active.recorder.record(text);
+            // No echo means a password prompt: keep the keystrokes off disk.
+            let echoing = relays
+                .borrow()
+                .get(&session_id)
+                .is_none_or(|relay| relay.echo_enabled());
+            if echoing {
+                active.recorder.record(text);
+            } else {
+                active.recorder.record_hidden(text);
+            }
         });
 
         tracing::info!(%session_id, "Script recording started");
@@ -327,7 +337,8 @@ impl TerminalNotebook {
 
 /// Comment emitted at the top of every recorded file.
 const RECORDING_NOTICE: &str = "Recorded by RustConn. Review before running: \
-steps are a blind replay, and a host that answers at a different pace will desync.";
+steps are a blind replay, and a host that answers at a different pace will desync. Input typed while the \
+terminal did not echo (a password prompt) is replaced by ${password}.";
 
 /// Makes a connection name safe to use as a filename.
 ///

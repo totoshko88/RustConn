@@ -2927,6 +2927,7 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 Right-click inside a terminal tab → **Record Script…**, type the commands you want in the script, then right-click → **Stop Script Recording**. The toast reports the step count and the file path: `<config_dir>/rustconn/scripts/<connection>-<YYYYMMDD-HHMMSS>.rsc` on Linux (a `-1`, `-2` suffix is added rather than overwriting an existing file). The file is an ordinary `.rsc` script and opens in **Tools → Scripts…**.
 
 - Enter is recorded as its own `send {ENTER}` step, and text that merely looks like key syntax (`awk '{print $1}'`) stays literal — the recorder does not reinterpret what you typed.
+- Input typed while the terminal does not echo (a password prompt from `sudo`, `ssh` or `passwd`) is not stored: the script gets `send ${password}` and `{ENTER}`, and the replay asks for a `password` variable. A password typed at a prompt that does echo is still saved as typed.
 - Tab is recorded as its own `send {TAB}` step. Backspace removes the last character typed on the current line (after Enter or Tab it cannot reach back). Arrow keys, function keys and other escape sequences are dropped, so a command recalled with Up is not recorded: type it out instead.
 - Automated sends (auto-login, expect rules, snippets, macros) are not recorded. Anything **you** type is, including a password or a secret answer, so do not record while typing one. The file is saved readable by you only (mode 0600).
 

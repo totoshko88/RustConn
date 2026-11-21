@@ -1752,6 +1752,8 @@ pub struct StepRecorder {
     buffer: String,
     steps: Vec<ScriptStep>,
     escape: EscapeState,
+    /// Hidden characters seen since the last Enter, which are not stored.
+    hidden_pending: bool,
 }
 
 /// Where the recorder is inside a terminal escape sequence. Kept across
@@ -1818,6 +1820,41 @@ impl StepRecorder {
                 }
                 ch if ch.is_control() => {}
                 ch => self.buffer.push(ch),
+            }
+        }
+    }
+
+    /// Feeds input typed while the terminal does not echo (a password prompt).
+    ///
+    /// The characters are never stored. Enter then records the step
+    /// `send ${password}` followed by `{ENTER}`, so the recording replays with
+    /// a variable the user supplies instead of holding a secret on disk. Text
+    /// buffered before the hidden input is flushed first. Escape sequences are
+    /// dropped as in [`Self::record`].
+    pub fn record_hidden(&mut self, text: &str) {
+        self.flush();
+        let mut chars = text.chars().peekable();
+        while let Some(ch) = chars.next() {
+            if self.skip_escape(ch) {
+                continue;
+            }
+            match ch {
+                '\x1b' => self.escape = EscapeState::Esc,
+                '\r' | '\n' => {
+                    if ch == '\r' && chars.peek() == Some(&'\n') {
+                        chars.next();
+                    }
+                    if std::mem::take(&mut self.hidden_pending) {
+                        let seq = KeySequence::from_elements(vec![KeyElement::Variable(
+                            "password".to_string(),
+                        )]);
+                        self.steps.push(ScriptStep::Send(seq));
+                    }
+                    self.push_enter();
+                }
+                '\x7f' | '\x08' => {}
+                ch if ch.is_control() => {}
+                _ => self.hidden_pending = true,
             }
         }
     }
@@ -1951,6 +1988,30 @@ mod recorder_tests {
         assert_eq!(steps.len(), 2);
         let rendered = render_script("awk", &steps, &[]);
         assert_eq!(parse_program(&rendered).unwrap().steps(), steps);
+    }
+
+    #[test]
+    fn hidden_input_is_replaced_by_a_variable_and_never_stored() {
+        let mut rec = StepRecorder::new();
+        rec.record("sudo ls\r");
+        rec.record_hidden("hunter2\r");
+        let steps = rec.finish();
+        let rendered = render_script("t", &steps, &[]);
+        assert!(!rendered.contains("hunter2"));
+        assert_eq!(steps.len(), 4);
+        assert_eq!(
+            steps[2],
+            ScriptStep::Send(KeySequence::from_elements(vec![KeyElement::Variable(
+                "password".to_string()
+            )]))
+        );
+    }
+
+    #[test]
+    fn hidden_enter_alone_records_only_the_enter() {
+        let mut rec = StepRecorder::new();
+        rec.record_hidden("\r");
+        assert_eq!(rec.finish().len(), 1);
     }
 
     #[test]
