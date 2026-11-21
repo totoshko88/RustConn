@@ -14,6 +14,12 @@ rustconn/src/toast.rs
 rustconn/src/alert.rs
 rustconn/src/command_macros.rs
 rustconn/src/window/mod.rs
+rustconn/src/window/construct.rs
+rustconn/src/window/entry_dialogs.rs
+rustconn/src/window/session_start.rs
+rustconn/src/window/settings_glue.rs
+rustconn/src/window/startup.rs
+rustconn/src/window/wizard.rs
 rustconn/src/window/macro_dispatch.rs
 rustconn/src/window/protocols.rs
 rustconn/src/window/rdp_vnc.rs
