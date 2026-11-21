@@ -595,7 +595,7 @@ fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<T
                 group
                     .toast_overlay()
                     .add_toast(crate::toast::plain_toast(&i18n(
-                        "Tab broadcast disabled — keystrokes go to the focused tab only",
+                        "Tab Broadcast disabled — keystrokes go to the focused tab only",
                     )));
             }
         })
@@ -619,7 +619,7 @@ fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<T
                 group
                     .toast_overlay()
                     .add_toast(crate::toast::plain_toast(&i18n(
-                        "Tab broadcast disabled — keystrokes go to the focused tab only",
+                        "Tab Broadcast disabled — keystrokes go to the focused tab only",
                     )));
             }
         });
@@ -639,6 +639,14 @@ fn wire_group_window_broadcast(group: &Rc<SessionGroupWindow>, notebook: &Weak<T
             return;
         }
         apply(wanted);
+        if wanted && count < 2 {
+            // `apply` leaves the broadcast off; say why instead of ignoring the key.
+            group
+                .toast_overlay()
+                .add_toast(crate::toast::plain_toast(&i18n(
+                    "Tab Broadcast needs two or more terminal tabs",
+                )));
+        }
     });
     let request_toggle = Rc::clone(&request);
     group.set_on_broadcast_toggled(move |wanted| request_toggle(wanted));

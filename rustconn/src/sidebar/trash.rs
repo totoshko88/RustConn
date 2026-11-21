@@ -78,6 +78,26 @@ pub fn parse_item_target(target: &str) -> Option<(TrashKind, Uuid)> {
     Some((kind, Uuid::parse_str(id).ok()?))
 }
 
+/// The `win.undo-delete-many` target that restores several trashed items: the
+/// [`restore_target`] of each, comma-separated.
+#[must_use]
+pub fn restore_many_target(items: &[(TrashKind, Uuid)]) -> String {
+    items
+        .iter()
+        .map(|(kind, id)| restore_target(*kind, *id))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// Splits a [`restore_many_target`], groups first so a connection restored
+/// afterwards finds its group already back. Malformed parts are dropped.
+#[must_use]
+pub fn parse_many_targets(target: &str) -> Vec<(TrashKind, Uuid)> {
+    let mut items: Vec<_> = target.split(',').filter_map(parse_item_target).collect();
+    items.sort_by_key(|(kind, _)| *kind == TrashKind::Connection);
+    items
+}
+
 /// Whether the Trash row is shown: only while there is something in it.
 #[must_use]
 pub const fn row_visible(entries: &[TrashEntry]) -> bool {
@@ -97,6 +117,22 @@ pub fn sort_entries(entries: &mut [TrashEntry]) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn many_targets_round_trip_with_groups_first() {
+        use super::*;
+        let (c, g) = (Uuid::new_v4(), Uuid::new_v4());
+        let target = restore_many_target(&[(TrashKind::Connection, c), (TrashKind::Group, g)]);
+        assert_eq!(
+            parse_many_targets(&target),
+            [(TrashKind::Group, g), (TrashKind::Connection, c)]
+        );
+        assert!(
+            parse_many_targets("").is_empty(),
+            "nothing deleted, nothing to undo"
+        );
+        assert!(parse_many_targets("connection:nope,bogus").is_empty());
+    }
+
     use super::*;
 
     fn entry(kind: TrashKind, name: &str) -> TrashEntry {

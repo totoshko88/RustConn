@@ -17,6 +17,7 @@ use super::MainWindow;
 use crate::alert;
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
+use crate::sidebar::trash::{TrashKind, restore_many_target};
 use crate::state::SharedAppState;
 
 /// Type alias for shared sidebar reference
@@ -269,6 +270,11 @@ pub fn duplicate_selected_connection(
         {
             Ok(_) => {
                 drop(state_mut);
+                // The SPA keys live in their own vault entries under the id.
+                crate::vault_ops::schedule_spa_key_copy(
+                    state,
+                    vec![(original.clone(), duplicate_for_vault.clone())],
+                );
                 // Defer sidebar reload to prevent UI freeze
                 let state = state.clone();
                 let sidebar = sidebar.clone();
@@ -425,6 +431,13 @@ pub fn duplicate_selected_group(
     // Carry the vault credentials over, as a single duplicate does: a copy that
     // keeps `password_source = Vault` without an entry of its own would prompt.
     // The group list is read after the copy, so the new paths exist.
+    crate::vault_ops::schedule_spa_key_copy(
+        state,
+        plan.connections
+            .iter()
+            .map(|pair| (pair.original.clone(), pair.copy.clone()))
+            .collect(),
+    );
     let vault_pairs: Vec<_> = plan
         .connections
         .iter()
@@ -745,6 +758,14 @@ fn create_range_duplicates(
         });
     }
 
+    crate::vault_ops::schedule_spa_key_copy(
+        state,
+        created
+            .iter()
+            .map(|copy| (source.clone(), copy.clone()))
+            .collect(),
+    );
+
     // The same credential copy a single duplicate makes, one thread for all.
     if source.password_source == rustconn_core::models::PasswordSource::Vault {
         let source = source.clone();
@@ -904,9 +925,14 @@ pub fn paste_connection(window: &gtk4::Window, state: &SharedAppState, sidebar: 
     }
 
     if let Ok(mut state_mut) = state.try_borrow_mut() {
+        let original = state_mut.clipboard_original_connection();
         match state_mut.paste_connection() {
-            Ok(_) => {
+            Ok(new_id) => {
+                let pasted = state_mut.get_connection(new_id).cloned();
                 drop(state_mut);
+                if let Some((from, to)) = original.zip(pasted) {
+                    crate::vault_ops::schedule_spa_key_copy(state, vec![(from, to)]);
+                }
                 // Defer sidebar reload to prevent UI freeze
                 let state = state.clone();
                 let sidebar = sidebar.clone();
@@ -984,6 +1010,20 @@ fn create_bulk_delete_dialog(
     dialog.present(Some(window));
 }
 
+/// The toast after a bulk delete. Undo restores the items that went to Trash.
+fn show_bulk_delete_toast(window: &gtk4::Window, count: usize, trashed: &[(TrashKind, Uuid)]) {
+    let message = i18n_f("Moved {} item(s) to Trash", &[&count.to_string()]);
+    if trashed.is_empty() {
+        crate::toast::show_toast_on_window(window, &message, crate::toast::ToastType::Success);
+    } else {
+        crate::toast::show_undo_many_toast_on_window(
+            window,
+            &message,
+            &restore_many_target(trashed),
+        );
+    }
+}
+
 /// Performs bulk deletion and shows results
 fn perform_bulk_delete(
     state: &SharedAppState,
@@ -993,6 +1033,7 @@ fn perform_bulk_delete(
 ) {
     let mut success_count = 0;
     let mut failures: Vec<String> = Vec::new();
+    let mut trashed: Vec<(TrashKind, Uuid)> = Vec::new();
 
     if let Ok(mut state_mut) = state.try_borrow_mut() {
         for id in &selected_ids {
@@ -1004,6 +1045,11 @@ fn perform_bulk_delete(
                 .or_else(|| state_mut.get_group(*id).map(|g| g.name.clone()))
                 .unwrap_or_else(|| id.to_string());
             // Try to delete as connection first, then as group
+            let kind = if state_mut.get_connection(*id).is_some() {
+                TrashKind::Connection
+            } else {
+                TrashKind::Group
+            };
             let delete_result = state_mut
                 .delete_connection(*id)
                 .or_else(|_| state_mut.delete_group(*id));
@@ -1011,6 +1057,7 @@ fn perform_bulk_delete(
             match delete_result {
                 Ok(()) => {
                     success_count += 1;
+                    trashed.push((kind, *id));
                     // The items wait in the trash, with their vault credentials,
                     // until Empty Trash; the Trash row restores them.
                 }
@@ -1026,18 +1073,12 @@ fn perform_bulk_delete(
     glib::idle_add_local_once(move || {
         MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
 
-        // Show results
-        if failures.is_empty() {
-            // Non-blocking success feedback (GNOME HIG: use a toast, not a dialog).
-            crate::toast::show_toast_on_window(
-                &window,
-                &i18n_f(
-                    "Successfully deleted {} item(s).",
-                    &[&success_count.to_string()],
-                ),
-                crate::toast::ToastType::Success,
-            );
-        } else {
+        // Non-blocking feedback with Undo (GNOME HIG: a toast, not a dialog),
+        // also when some items failed: the ones that went are still undoable.
+        if success_count > 0 {
+            show_bulk_delete_toast(&window, success_count, &trashed);
+        }
+        if !failures.is_empty() {
             alert::show_error(
                 &window,
                 &i18n("Deletion Partially Complete"),

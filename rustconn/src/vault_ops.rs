@@ -1581,9 +1581,33 @@ pub fn save_variable_to_vault(
     var_name: &str,
     password: &secrecy::SecretString,
 ) -> Result<(), String> {
+    save_secret_by_key(
+        settings,
+        &rustconn_core::variable_secret_key(var_name),
+        var_name,
+        password,
+    )
+}
+
+/// Saves one secret under a flat vault key, in the backend the settings prefer.
+///
+/// The body of [`save_variable_to_vault`], shared with the SPA keys (F-08):
+/// KDBX gets the key as an entry name, every other backend as its flat lookup
+/// key. `label` is only for logs and must not be the secret.
+///
+/// # Errors
+///
+/// Returns an error string if the configured backend is unreachable, the
+/// KeePass database cannot be written to, or no fallback backend is
+/// available when the primary backend fails.
+fn save_secret_by_key(
+    settings: &rustconn_core::config::SecretSettings,
+    lookup_key: &str,
+    var_name: &str,
+    password: &secrecy::SecretString,
+) -> Result<(), String> {
     use rustconn_core::config::SecretBackendType;
 
-    let lookup_key = rustconn_core::variable_secret_key(var_name);
     let backend_type = select_backend_for_load(settings);
 
     tracing::debug!(?backend_type, var_name, "Saving secret variable to vault");
@@ -1608,7 +1632,7 @@ pub fn save_variable_to_vault(
                     kdbx,
                     settings.kdbx_password.as_ref(),
                     key,
-                    &lookup_key,
+                    lookup_key,
                     "",
                     password,
                     None,
@@ -1625,7 +1649,7 @@ pub fn save_variable_to_vault(
                     // If KeePass save failed and fallback is enabled, try LibSecret
                     Err(_) if settings.enable_fallback => {
                         tracing::info!(var_name, "KeePass save failed, falling back to LibSecret");
-                        dispatch_vault_op(settings, &lookup_key, VaultOp::Store(&creds))?;
+                        dispatch_vault_op(settings, lookup_key, VaultOp::Store(&creds))?;
                         Ok(())
                     }
                     Err(e) => Err(format!("{e}")),
@@ -1635,14 +1659,14 @@ pub fn save_variable_to_vault(
                     var_name,
                     "KeePass not configured, falling back to LibSecret"
                 );
-                dispatch_vault_op(settings, &lookup_key, VaultOp::Store(&creds))?;
+                dispatch_vault_op(settings, lookup_key, VaultOp::Store(&creds))?;
                 Ok(())
             } else {
                 Err("KeePass enabled but no database file configured".to_string())
             }
         }
         _ => {
-            dispatch_vault_op(settings, &lookup_key, VaultOp::Store(&creds))?;
+            dispatch_vault_op(settings, lookup_key, VaultOp::Store(&creds))?;
             Ok(())
         }
     }
@@ -1666,13 +1690,30 @@ pub fn load_variable_from_vault_with_path(
     kdbx_entry_path: Option<&str>,
     vault_entry_name: Option<&str>,
 ) -> Result<Option<zeroize::Zeroizing<String>>, String> {
+    load_secret_with_key(
+        settings,
+        var_name,
+        &rustconn_core::variable_secret_key(var_name),
+        kdbx_entry_path,
+        vault_entry_name,
+    )
+}
+
+/// The body of [`load_variable_from_vault_with_path`] for any default flat key;
+/// the SPA keys (F-08) call it with no custom entry path or name.
+fn load_secret_with_key(
+    settings: &rustconn_core::config::SecretSettings,
+    var_name: &str,
+    default_key: &str,
+    kdbx_entry_path: Option<&str>,
+    vault_entry_name: Option<&str>,
+) -> Result<Option<zeroize::Zeroizing<String>>, String> {
     use rustconn_core::config::SecretBackendType;
     use secrecy::ExposeSecret;
 
-    let default_key = rustconn_core::variable_secret_key(var_name);
     // Filter out empty/whitespace-only custom paths — treat them as "no custom path".
     let effective_custom_path = kdbx_entry_path.filter(|p| !p.trim().is_empty());
-    let lookup_key = effective_custom_path.unwrap_or(&default_key);
+    let lookup_key = effective_custom_path.unwrap_or(default_key);
     let backend_type = select_backend_for_load(settings);
 
     tracing::debug!(
@@ -1722,7 +1763,7 @@ pub fn load_variable_from_vault_with_path(
                             var_name,
                             "KeePass lookup returned nothing, trying LibSecret fallback"
                         );
-                        let fallback = dispatch_vault_op(settings, &default_key, VaultOp::Retrieve);
+                        let fallback = dispatch_vault_op(settings, default_key, VaultOp::Retrieve);
                         match fallback {
                             Ok(Some(creds)) if creds.expose_password().is_some() => Ok(creds
                                 .expose_password()
@@ -1746,7 +1787,7 @@ pub fn load_variable_from_vault_with_path(
                 // Direct lookup by exact vault entry name
                 retrieve_by_vault_entry_name(settings, entry_name)
             } else {
-                let creds = dispatch_vault_op(settings, &default_key, VaultOp::Retrieve)?;
+                let creds = dispatch_vault_op(settings, default_key, VaultOp::Retrieve)?;
                 Ok(creds.and_then(|c| {
                     c.expose_password()
                         .map(|p| zeroize::Zeroizing::new(p.to_string()))
@@ -2062,6 +2103,10 @@ pub fn delete_vault_credential(
         "Deleting vault credential for connection"
     );
 
+    // The SPA keys (F-08) are separate vault entries keyed by the connection id.
+    // Best effort: a failure is logged and never hides the result below.
+    delete_spa_keys(settings, connection);
+
     match backend_type {
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
             if let Some(kdbx_path) = kdbx_path_for_connection(settings, connection, groups).as_ref()
@@ -2110,6 +2155,222 @@ pub fn delete_vault_credential(
             primary_result
         }
     }
+}
+
+/// The vault side of the SPA keys (F-08): one entry per key, flat key
+/// `rustconn/spa/{id}/{kind}` (see [`rustconn_core::connection::spa_vault`]).
+///
+/// KDBX takes the key as an entry name like a secret variable does, in the
+/// global database: the per-connection database override is not consulted.
+pub struct VaultSpaKeyStore<'a>(pub &'a rustconn_core::config::SecretSettings);
+
+impl rustconn_core::connection::spa_vault::SpaKeyStore for VaultSpaKeyStore<'_> {
+    fn store(&self, key: &str, value: &secrecy::SecretString) -> Result<(), String> {
+        save_secret_by_key(self.0, key, "spa-key", value)
+    }
+
+    fn load(&self, key: &str) -> Result<Option<secrecy::SecretString>, String> {
+        load_secret_with_key(self.0, "spa-key", key, None, None)
+            .map(|found| found.map(|z| secrecy::SecretString::from(z.as_str().to_owned())))
+    }
+
+    fn delete(&self, key: &str) -> Result<(), String> {
+        use rustconn_core::config::SecretBackendType;
+
+        match select_backend_for_load(self.0) {
+            SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+                self.0.kdbx_path.as_ref().map_or(Ok(()), |kdbx_path| {
+                    rustconn_core::secret::KeePassStatus::delete_entry_from_kdbx(
+                        std::path::Path::new(kdbx_path),
+                        self.0.kdbx_password.as_ref(),
+                        self.0.kdbx_key_file.as_deref().map(std::path::Path::new),
+                        &format!("RustConn/{key}"),
+                        self.0.kdbx_yubikey_slot.as_deref(),
+                        self.0.kdbx_read_only,
+                    )
+                    .map_err(|e| format!("{e}"))
+                })
+            }
+            _ => dispatch_vault_op(self.0, key, VaultOp::Delete).map(|_| ()),
+        }
+    }
+}
+
+/// Moves plaintext SPA keys of all connections into the vault (F-08).
+///
+/// Runs a moment later on the main loop (so the caller may still hold a state
+/// borrow), reads the vault on a worker thread, then clears the file copies
+/// that were confirmed. A key the vault refused (locked, missing, read-only)
+/// stays in the file and a warning toast says so; the next start or save
+/// retries. One run at a time.
+pub fn schedule_spa_key_move(state: &crate::state::SharedAppState) {
+    static RUNNING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    let state = state.clone();
+    gtk4::glib::idle_add_local_once(move || {
+        let (pending, secrets) = {
+            let Ok(mut st) = state.try_borrow_mut() else {
+                return;
+            };
+            (
+                st.connection_manager()
+                    .connections_with_plaintext_spa_keys(),
+                st.settings().secrets.clone(),
+            )
+        };
+        if pending.is_empty() || RUNNING.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                rustconn_core::connection::spa_vault::move_keys_to_vault(
+                    &pending,
+                    &VaultSpaKeyStore(&secrets),
+                )
+            },
+            move |report| {
+                RUNNING.store(false, std::sync::atomic::Ordering::SeqCst);
+                for (id, why) in &report.failed {
+                    tracing::warn!(connection_id = %id, reason = %why, "SPA key stays in connections.toml");
+                }
+                if let Ok(mut st) = state.try_borrow_mut() {
+                    match st.connection_manager().apply_spa_vault_move(&report.moved) {
+                        Ok(0) => {}
+                        Ok(n) => {
+                            tracing::info!(connections = n, "SPA keys moved to the vault");
+                            crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
+                                "SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still holds them. It is deleted after the first successful SPA connection",
+                            ));
+                        }
+                        Err(e) => tracing::error!(error = %e, "SPA keys stay in connections.toml"),
+                    }
+                }
+                if !report.failed.is_empty() {
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                        "SPA keys could not be moved to the vault and stay in the connection file",
+                    ));
+                }
+            },
+        );
+    });
+}
+
+/// Removes the SPA key entries of a permanently deleted connection.
+///
+/// Only runs for a connection whose file says a key is in the vault, so a
+/// connection without SPA costs no vault call. Best effort: a failure is logged.
+fn delete_spa_keys(
+    settings: &rustconn_core::config::AppSettings,
+    connection: &rustconn_core::models::Connection,
+) {
+    use rustconn_core::connection::spa_vault::{VaultFlags, remove_spa_keys};
+
+    let flags = VaultFlags::of(connection.spa_config.as_ref());
+    if flags.is_empty() {
+        return;
+    }
+    for error in remove_spa_keys(connection.id, flags, &VaultSpaKeyStore(&settings.secrets)) {
+        tracing::warn!(
+            connection_id = %connection.id,
+            %error,
+            "Could not delete an SPA key from the vault"
+        );
+    }
+}
+
+/// Removes the SPA entries an edit left behind (SPA switched off), after the
+/// dialog saved. Runs on a worker thread; a failure is a toast, because the
+/// entries stay in the vault with no flag pointing at them.
+pub fn remove_orphaned_spa_keys(
+    settings: &rustconn_core::config::AppSettings,
+    old: &rustconn_core::models::Connection,
+    new: &rustconn_core::models::Connection,
+) {
+    use rustconn_core::connection::spa_vault::{orphaned_after_edit, remove_spa_keys};
+
+    let orphans = orphaned_after_edit(old, new);
+    if orphans.is_empty() {
+        return;
+    }
+    let secrets = settings.secrets.clone();
+    let id = old.id;
+    crate::utils::spawn_blocking_with_callback(
+        move || remove_spa_keys(id, orphans, &VaultSpaKeyStore(&secrets)),
+        move |errors| {
+            for error in &errors {
+                tracing::warn!(connection_id = %id, %error, "Could not remove an unused SPA key from the vault");
+            }
+            if !errors.is_empty() {
+                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                    "Unused SPA keys could not be removed from the vault",
+                ));
+            }
+        },
+    );
+}
+
+/// Copies the SPA vault entries of each `(original, copy)` pair to the copy's
+/// id, after the copies exist (duplicate, group duplicate, paste).
+///
+/// Runs on a worker thread. A pair whose copy did not fully arrive has its
+/// `*_key_in_vault` flags cleared again and a toast says so, so no connection
+/// claims a key the vault lacks. Pairs without a vaulted SPA key cost nothing.
+pub fn schedule_spa_key_copy(
+    state: &crate::state::SharedAppState,
+    pairs: Vec<(
+        rustconn_core::models::Connection,
+        rustconn_core::models::Connection,
+    )>,
+) {
+    use rustconn_core::connection::spa_vault::{VaultFlags, copy_spa_keys};
+
+    let pairs: Vec<_> = pairs
+        .into_iter()
+        .filter(|(from, _)| !VaultFlags::of(from.spa_config.as_ref()).is_empty())
+        .collect();
+    if pairs.is_empty() {
+        return;
+    }
+    let state = state.clone();
+    gtk4::glib::idle_add_local_once(move || {
+        let Ok(st) = state.try_borrow() else {
+            return;
+        };
+        let secrets = st.settings().secrets.clone();
+        drop(st);
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                let store = VaultSpaKeyStore(&secrets);
+                pairs
+                    .iter()
+                    .filter_map(|(from, to)| {
+                        let cfg = from.spa_config.as_ref()?;
+                        let report = copy_spa_keys(from.id, cfg, to.id, &store);
+                        (!report.missing.is_empty()).then_some((to.id, report))
+                    })
+                    .collect::<Vec<_>>()
+            },
+            move |failed| {
+                if failed.is_empty() {
+                    return;
+                }
+                for (id, report) in &failed {
+                    for error in &report.failed {
+                        tracing::warn!(connection_id = %id, %error, "SPA keys were not copied to the duplicate");
+                    }
+                    if let Ok(mut st) = state.try_borrow_mut()
+                        && let Err(e) = st
+                            .connection_manager()
+                            .clear_spa_vault_flags(*id, report.missing)
+                    {
+                        tracing::error!(connection_id = %id, error = %e, "Could not clear the SPA key flags");
+                    }
+                }
+                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                    "SPA keys were not copied to the new connection; open it and enter them again",
+                ));
+            },
+        );
+    });
 }
 
 /// The KDBX entry [`delete_vault_credential`] removes for `connection`: the
@@ -3110,6 +3371,7 @@ pub fn plan_credential_transfer(
     source: rustconn_core::config::SecretBackendType,
     destination: rustconn_core::config::SecretBackendType,
 ) -> CredentialTransferPlan {
+    use rustconn_core::connection::spa_vault::{SpaKeyKind, spa_secret_key};
     use rustconn_core::models::PasswordSource;
 
     let mut items = Vec::new();
@@ -3133,6 +3395,27 @@ pub fn plan_credential_transfer(
             destination_key,
             username: conn.username.clone(),
         });
+    }
+
+    // SPA keys (F-08) are flat entries under the connection id, the same on
+    // every backend, so source and destination key are one string.
+    for conn in connections {
+        let flags = rustconn_core::connection::spa_vault::VaultFlags::of(conn.spa_config.as_ref());
+        for (present, kind, what) in [
+            (flags.rijndael, SpaKeyKind::Rijndael, "SPA Rijndael key"),
+            (flags.hmac, SpaKeyKind::Hmac, "SPA HMAC key"),
+        ] {
+            if !present {
+                continue;
+            }
+            let key = spa_secret_key(conn.id, kind);
+            items.push(CredentialTransferItem {
+                label: format!("{} ({what})", conn.name),
+                source_keys: vec![key.clone()],
+                destination_key: key,
+                username: None,
+            });
+        }
     }
 
     for group in groups {
@@ -4135,6 +4418,49 @@ mod tests {
             "Groups/Prod",
             "KDBX keys them by entry path, prefix stripped"
         );
+    }
+
+    /// F-08: the transfer carries the SPA entries a connection flags as in the
+    /// vault, under the same flat key on both sides, and nothing for the rest.
+    #[test]
+    fn plan_includes_flagged_spa_entries_only() {
+        use rustconn_core::connection::spa_vault::{SpaKeyKind, spa_secret_key};
+
+        let mut both = Connection::new_ssh("spa".to_string(), "h".to_string(), 22);
+        let mut cfg = rustconn_core::connection::knock::SpaConfig::new();
+        cfg.rijndael_key_in_vault = true;
+        cfg.hmac_key_in_vault = true;
+        both.spa_config = Some(cfg.clone());
+        let mut one = Connection::new_ssh("one".to_string(), "h".to_string(), 22);
+        cfg.hmac_key_in_vault = false;
+        one.spa_config = Some(cfg);
+        let plain = Connection::new_ssh("plain".to_string(), "h".to_string(), 22);
+        let (both_id, one_id) = (both.id, one.id);
+
+        let spa_plan = plan_credential_transfer(
+            &rustconn_core::config::AppSettings::default(),
+            &[both, one, plain],
+            &[],
+            SecretBackendType::LibSecret,
+            SecretBackendType::KdbxFile,
+        );
+        let keys: Vec<_> = spa_plan
+            .items
+            .iter()
+            .map(|i| (i.source_keys.clone(), i.destination_key.clone()))
+            .collect();
+        let rij = spa_secret_key(both_id, SpaKeyKind::Rijndael);
+        let hmac = spa_secret_key(both_id, SpaKeyKind::Hmac);
+        let one_rij = spa_secret_key(one_id, SpaKeyKind::Rijndael);
+        assert_eq!(
+            keys,
+            vec![
+                (vec![rij.clone()], rij),
+                (vec![hmac.clone()], hmac),
+                (vec![one_rij.clone()], one_rij),
+            ]
+        );
+        assert!(spa_plan.collisions.is_empty());
     }
 
     /// The defect this guard exists for: the flat key shape carries no group, so

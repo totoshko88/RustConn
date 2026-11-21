@@ -481,13 +481,6 @@ fn dispatch_cluster_connect(
         "Connecting cluster"
     );
 
-    // Start cluster session in state
-    if let Ok(mut state_mut) = state.try_borrow_mut()
-        && let Err(e) = state_mut.start_cluster_session(cluster_id)
-    {
-        tracing::error!(?e, cluster = %cluster_name, "Failed to start cluster session");
-    }
-
     // Mark every connection as pending; the central hook in
     // `TerminalNotebook::notify_tab_added` resolves them when each tab actually
     // appears, registering the new session in the cluster's session list and

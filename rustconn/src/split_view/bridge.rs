@@ -2278,37 +2278,6 @@ impl SplitViewBridge {
         col
     }
 
-    /// Formats a `"Ctrl+Shift+T"`-style shortcut for on-screen display.
-    ///
-    /// On macOS the combo is rendered with native modifier/key symbols
-    /// (`⌃ ⇧ ⌥ ⌘ ⌫ ↩ ⇥ ⎋`) and no separators (e.g. `⌃⇧T`), matching platform
-    /// conventions. The real bindings are unchanged — RustConn still uses the
-    /// Control key on macOS, so Control is shown as `⌃`, not `⌘`. On every other
-    /// platform the string is returned unchanged.
-    fn format_shortcut(combo: &str) -> String {
-        #[cfg(not(target_os = "macos"))]
-        {
-            combo.to_string()
-        }
-        #[cfg(target_os = "macos")]
-        {
-            combo
-                .split('+')
-                .map(|part| match part {
-                    "Ctrl" | "Control" => "⌃",
-                    "Shift" => "⇧",
-                    "Alt" | "Option" => "⌥",
-                    "Cmd" | "Command" | "Super" | "Meta" => "⌘",
-                    "Backspace" => "⌫",
-                    "Enter" | "Return" => "↩",
-                    "Tab" => "⇥",
-                    "Esc" | "Escape" => "⎋",
-                    other => other,
-                })
-                .collect::<String>()
-        }
-    }
-
     /// Builds the Keyboard Shortcuts column for the welcome screen
     fn build_welcome_shortcuts_column() -> GtkBox {
         let col = GtkBox::new(Orientation::Vertical, 6);
@@ -2319,21 +2288,27 @@ impl SplitViewBridge {
             .title(i18n("Keyboard Shortcuts"))
             .build();
 
-        let shortcuts: [(&str, String); 9] = [
-            ("Ctrl+N", i18n("New connection")),
-            ("Ctrl+Shift+Q", i18n("Quick Connect")),
-            ("Ctrl+P", i18n("Command Palette")),
-            ("Ctrl+Shift+T", i18n("Local Shell")),
-            ("Ctrl+F", i18n("Search")),
-            ("Ctrl+Shift+S/H", i18n("Split vertical / horizontal")),
-            ("Ctrl+Shift+Backspace", i18n("Disable shortcuts")),
-            ("Ctrl+I", i18n("Import connections")),
-            ("Ctrl+,", i18n("Settings")),
+        // Keys come from the live accelerators, so a rebinding in Settings shows
+        // here on the next window. An action without a key shows no key label.
+        let shortcuts: [(&str, String); 10] = [
+            ("win.new-connection", i18n("New connection")),
+            ("win.quick-connect", i18n("Quick Connect")),
+            ("win.command-palette", i18n("Command Palette")),
+            ("win.local-shell", i18n("Local Shell")),
+            ("win.search", i18n("Search")),
+            ("win.split-horizontal", i18n("Split Down")),
+            ("win.split-vertical", i18n("Split Right")),
+            ("win.toggle-passthrough", i18n("Disable shortcuts")),
+            ("win.import", i18n("Import connections")),
+            ("win.settings", i18n("Settings")),
         ];
 
-        for (shortcut, description) in &shortcuts {
+        for (action, description) in &shortcuts {
             let row = adw::ActionRow::builder().title(description).build();
-            let combo = Self::format_shortcut(shortcut);
+            let Some(combo) = crate::i18n::accel_label(action) else {
+                shortcuts_group.add(&row);
+                continue;
+            };
             let label = gtk4::Label::builder()
                 .label(&combo)
                 // A key combo must never wrap character-by-character (#204);
@@ -2366,7 +2341,7 @@ impl SplitViewBridge {
             ("view-dual-symbolic", i18n("Split view for terminals")),
             (
                 "view-grid-symbolic",
-                i18n("Tab Overview grid (Ctrl+Shift+O)"),
+                crate::i18n::with_accel(&i18n("Tab Overview grid"), "win.tab-overview"),
             ),
         ];
 

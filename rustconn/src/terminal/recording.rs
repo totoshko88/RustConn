@@ -94,7 +94,12 @@ impl TerminalNotebook {
                 let cmd = format!(
                     " script -q -f --log-out '{remote_data}' --log-timing '{remote_timing}'\n"
                 );
-                terminal.feed_child(cmd.as_bytes());
+                // Suppressed: this is RustConn's own bookkeeping command, not
+                // something the user typed, so it must not reach a script
+                // recording running against the same session.
+                script_recorder::suppress_recording(|| {
+                    terminal.feed_child(cmd.as_bytes());
+                });
                 // Erase the echoed command after a short delay so the PTY echo
                 // has time to arrive before we clear the line.
                 let term_clone = terminal.clone();
@@ -107,7 +112,12 @@ impl TerminalNotebook {
                 let timing_str = timing_path.display().to_string();
                 let cmd =
                     format!(" script -q -f --log-out '{data_str}' --log-timing '{timing_str}'\n");
-                terminal.feed_child(cmd.as_bytes());
+                // Suppressed: this is RustConn's own bookkeeping command, not
+                // something the user typed, so it must not reach a script
+                // recording running against the same session.
+                script_recorder::suppress_recording(|| {
+                    terminal.feed_child(cmd.as_bytes());
+                });
                 // Erase the echoed command after a short delay so the PTY echo
                 // has time to arrive before we clear the line.
                 let term_clone = terminal.clone();
@@ -228,7 +238,9 @@ impl TerminalNotebook {
         // Unlike `exit\n`, EOF produces no visible echo and is safely ignored
         // if the sub-shell has already exited.
         if let Some(terminal) = self.get_terminal(session_id) {
-            terminal.feed_child(b"\x04");
+            script_recorder::suppress_recording(|| {
+                terminal.feed_child(b"\x04");
+            });
         }
 
         self.update_recording_indicator(session_id, false);
@@ -425,26 +437,36 @@ fn retrieve_remote_recording(remote: &RemoteRecordingInfo) -> bool {
     );
 
     let fetch = |remote_path: &str, local_path: &std::path::Path| {
-        std::process::Command::new("scp")
-            .args(&scp_args)
+        let mut cmd = std::process::Command::new("scp");
+        cmd.args(&scp_args)
             .arg(format!("{user_host}:{remote_path}"))
-            .arg(local_path.as_os_str())
-            .output()
-            .is_ok_and(|o| o.status.success())
+            .arg(local_path.as_os_str());
+        rustconn_core::sftp::apply_agent_env_with_overrides(
+            &mut cmd,
+            params.agent_socket.as_deref(),
+            None,
+        );
+        cmd.output().is_ok_and(|o| o.status.success())
     };
 
     let data_ok = fetch(&remote.remote_data, &remote.local_data);
     let timing_ok = fetch(&remote.remote_timing, &remote.local_timing);
 
     // Clean up remote temp files (best-effort)
-    let _ = std::process::Command::new("ssh")
+    let mut cleanup = std::process::Command::new("ssh");
+    cleanup
         .args(&ssh_args)
         .arg(&user_host)
         .arg(remote_cleanup_command(
             &remote.remote_data,
             &remote.remote_timing,
-        ))
-        .output();
+        ));
+    rustconn_core::sftp::apply_agent_env_with_overrides(
+        &mut cleanup,
+        params.agent_socket.as_deref(),
+        None,
+    );
+    let _ = cleanup.output();
 
     data_ok && timing_ok
 }

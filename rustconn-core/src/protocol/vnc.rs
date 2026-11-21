@@ -1,6 +1,6 @@
 //! VNC protocol handler
 
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
+use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, VncConfig};
 
@@ -265,10 +265,6 @@ impl Protocol for VncProtocol {
         }
 
         Ok(())
-    }
-
-    fn capabilities(&self) -> ProtocolCapabilities {
-        ProtocolCapabilities::graphical(false, false, true)
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {

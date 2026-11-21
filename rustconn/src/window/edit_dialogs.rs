@@ -202,6 +202,13 @@ pub fn edit_connection_by_id(
 
                 match state_mut.update_connection(id, updated_conn) {
                     Ok(()) => {
+                        crate::vault_ops::schedule_spa_key_move(&state_clone);
+                        // SPA switched off: its vault entries are no longer used.
+                        crate::vault_ops::remove_orphaned_spa_keys(
+                            state_mut.settings(),
+                            &old_conn,
+                            &new_conn,
+                        );
                         // Save password to vault if needed
                         if password_source == PasswordSource::Vault
                             && let Some(pwd) = password

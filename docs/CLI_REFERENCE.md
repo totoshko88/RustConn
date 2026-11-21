@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.25.6** | Command-line interface for RustConn connection management
+**Version 0.26.0** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -701,11 +701,15 @@ rustconn-cli import -f ssh-config --dry-run file     # Preview without saving
 | `--auto` | Auto-detect available import sources (Asbru-CM, Remmina, SSH config) and import all found |
 | `--dry-run` | Show what would be imported without saving changes |
 
+An entry that fails validation (no name or host, port 0, a jump host missing from the import, a group with no name, a snippet with no name or command) is still imported unchanged and printed as a warning. The warnings carry no host, user or password.
+
 The `--auto` flag scans default locations (`~/.config/asbru-cm/`, `~/.local/share/remmina/`, `~/.ssh/config`) and imports from all detected sources. Duplicates (same name + host) are skipped.
 
 Additional import formats: `rdp` (Microsoft RDP files), `rdm` (Remote Desktop Manager), `virt-viewer` (`.vv` files), `libvirt` (GNOME Boxes / virsh XML), `secure-crt` (SecureCRT `.ini` session directory), `putty` (PuTTY / KiTTY sessions exported from the Windows Registry as `.reg`), `mremoteng` (mRemoteNG `confCons.xml`; a fully encrypted file is refused with an error). Passwords are never included in import/export files — re-enter them after importing.
 
 MobaXterm import maps SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH and Browser (→ Web) session types. Rsh/Rlogin is imported as Telnet, and FTP as SFTP (RustConn has no FTP client, so check the port — SFTP uses 22 — and credentials before connecting). Session types with no RustConn equivalent (XDMCP, file browser, local shell, AWS S3, WSL) are reported as skipped. A Serial session keeps its baud rate and framing but carries the Windows COM port name verbatim, so retarget it to a `/dev/tty*` path before connecting.
+
+> Session sharing, the TFTP server, the remote file editor and script recording act on a live terminal and are GUI-only. `rustconn-cli` has no equivalent.
 
 ### wol — Wake-on-LAN
 

@@ -24,6 +24,9 @@ extend-exclude = [
     # upstream typo ("fragement"); patching vendored code to satisfy a local
     # spell checker would make the next re-vendor a conflict for no gain.
     "packaging/flatpak/flatpak-cargo-generator.py",
+    # Vendored xterm.js (minified, one line) and its CSS and licence. Upstream
+    # owns the spelling; see the README in that directory.
+    "rustconn-core/src/session/share_assets/",
 ]
 
 [default.extend-words]

@@ -16,7 +16,9 @@
 //! `expect`/`capture`/`readline` match against output that arrived since the
 //! previous step consumed. On a match the buffer is trimmed to the end of the
 //! match, so the next step sees only output that arrived after this one
-//! completed.
+//! completed. `send` starts a new window by discarding whatever is still
+//! buffered: a prompt printed before the command must not satisfy the
+//! `expect` that follows it.
 //!
 //! # Control flow
 //!
@@ -32,7 +34,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::automation::{KeyElement, KeySequence};
+use crate::automation::{KeyElement, KeySequence, SpecialKey};
 use crate::variables::VariableManager;
 
 /// A `$name` or `${name}` reference to a script variable.
@@ -566,6 +568,10 @@ impl ScriptEngine {
         match step {
             ScriptStep::Send(sequence) => {
                 let sequence = self.substitute_sequence(&sequence);
+                // Output buffered before this command belongs to the previous
+                // step: a prompt left there would satisfy the following
+                // `expect` before the command has even run.
+                self.buffer.clear();
                 host.send(&sequence);
                 self.advance();
             }
@@ -1698,6 +1704,416 @@ fn split_pair(first: &str, second: &str) -> (String, String) {
     }
 }
 
+/// First line of a script written by [`StepRecorder`].
+const SCRIPT_HEADER: &str = "# rustconn script";
+
+/// Renders recorded steps as `.rsc` source, header and all.
+///
+/// [`StepRecorder`] produces only [`ScriptStep::Send`] and [`ScriptStep::Wait`];
+/// any other verb is skipped, because the recorder has no source text for it.
+/// Comments are carried through so the recorder's suggestions survive a
+/// load/edit/save cycle.
+#[must_use]
+pub fn render_script(name: &str, steps: &[ScriptStep], comments: &[String]) -> String {
+    let mut out = format!("{SCRIPT_HEADER} — {name}\n");
+    for comment in comments {
+        for line in comment.lines() {
+            out.push_str("# ");
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    for step in steps {
+        match step {
+            ScriptStep::Send(sequence) => {
+                out.push_str("send ");
+                out.push_str(&sequence.to_string());
+                out.push('\n');
+            }
+            ScriptStep::Wait(ms) => {
+                out.push_str("wait ");
+                out.push_str(&ms.to_string());
+                out.push('\n');
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Turns recorded text into the steps a script should carry.
+///
+/// Enter flushes whatever has accumulated as one `send`; the newline is dropped
+/// because `{ENTER}` carries the intent. Any other text is buffered so that a
+/// paste of several lines becomes several steps rather than one unreadable
+/// blob.
+#[derive(Debug, Default)]
+pub struct StepRecorder {
+    buffer: String,
+    steps: Vec<ScriptStep>,
+    escape: EscapeState,
+    /// Hidden characters seen since the last Enter, which are not stored.
+    hidden_pending: bool,
+}
+
+/// Where the recorder is inside a terminal escape sequence. Kept across
+/// `record` calls because VTE may split one sequence over several commits.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+enum EscapeState {
+    #[default]
+    Ground,
+    /// After `ESC`: the next character picks the sequence kind.
+    Esc,
+    /// Inside `ESC [ ...` until a final byte `@`..`~`.
+    Csi,
+    /// After `ESC O`: exactly one more character (F1-F4, application arrows).
+    Ss3,
+    /// Inside `ESC ]`, `ESC P`, `ESC X`, `ESC ^` or `ESC _` until BEL or `ESC \`.
+    String,
+}
+
+impl StepRecorder {
+    /// A recorder with nothing buffered.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Feeds one chunk of committed terminal input.
+    ///
+    /// A newline flushes the buffered text and then records an Enter press:
+    /// the newline itself cannot go into `send` text, and without the explicit
+    /// `{ENTER}` a replayed command would never be submitted. Tab flushes the
+    /// text and records `{TAB}` as its own step. Backspace (DEL or BS) removes
+    /// the last buffered character; once a line has been flushed it cannot be
+    /// edited any more and Backspace is ignored. Escape sequences (arrows,
+    /// function keys, bracketed-paste markers, terminal replies such as
+    /// `ESC [ 1;1 R`, OSC strings) are dropped whole, so none of their
+    /// printable tail (`[A`) reaches the script. Other control characters are
+    /// dropped: writing them would put raw control bytes in a text file. Users
+    /// wanting Ctrl-C should type `{CTRL_C}`.
+    ///
+    /// Limit: text the shell recalls itself (history with Up, completion) is
+    /// output, not input, so it is not recorded; only the keys typed are.
+    pub fn record(&mut self, text: &str) {
+        let mut chars = text.chars().peekable();
+        while let Some(ch) = chars.next() {
+            if self.skip_escape(ch) {
+                continue;
+            }
+            match ch {
+                '\x1b' => self.escape = EscapeState::Esc,
+                '\r' | '\n' => {
+                    // A pasted CRLF is one Enter, not two.
+                    if ch == '\r' && chars.peek() == Some(&'\n') {
+                        chars.next();
+                    }
+                    self.flush();
+                    self.push_enter();
+                }
+                '\t' => {
+                    self.flush();
+                    self.push_key(SpecialKey::Tab);
+                }
+                '\x7f' | '\x08' => {
+                    self.buffer.pop();
+                }
+                ch if ch.is_control() => {}
+                ch => self.buffer.push(ch),
+            }
+        }
+    }
+
+    /// Feeds input typed while the terminal does not echo (a password prompt).
+    ///
+    /// The characters are never stored. Enter then records the step
+    /// `send ${password}` followed by `{ENTER}`, so the recording replays with
+    /// a variable the user supplies instead of holding a secret on disk. Text
+    /// buffered before the hidden input is flushed first. Escape sequences are
+    /// dropped as in [`Self::record`].
+    pub fn record_hidden(&mut self, text: &str) {
+        self.flush();
+        let mut chars = text.chars().peekable();
+        while let Some(ch) = chars.next() {
+            if self.skip_escape(ch) {
+                continue;
+            }
+            match ch {
+                '\x1b' => self.escape = EscapeState::Esc,
+                '\r' | '\n' => {
+                    if ch == '\r' && chars.peek() == Some(&'\n') {
+                        chars.next();
+                    }
+                    if std::mem::take(&mut self.hidden_pending) {
+                        let seq = KeySequence::from_elements(vec![KeyElement::Variable(
+                            "password".to_string(),
+                        )]);
+                        self.steps.push(ScriptStep::Send(seq));
+                    }
+                    self.push_enter();
+                }
+                '\x7f' | '\x08' => {}
+                ch if ch.is_control() => {}
+                _ => self.hidden_pending = true,
+            }
+        }
+    }
+
+    /// Advances the escape state machine; true when `ch` was part of a sequence.
+    fn skip_escape(&mut self, ch: char) -> bool {
+        match self.escape {
+            EscapeState::Ground => return false,
+            EscapeState::Esc => {
+                self.escape = match ch {
+                    '[' => EscapeState::Csi,
+                    'O' => EscapeState::Ss3,
+                    ']' | 'P' | 'X' | '^' | '_' => EscapeState::String,
+                    // ESC ESC stays in Esc; ESC <char> (Alt+key) is two characters.
+                    '\x1b' => EscapeState::Esc,
+                    _ => EscapeState::Ground,
+                };
+            }
+            EscapeState::Csi => match ch {
+                '@'..='~' => self.escape = EscapeState::Ground,
+                // A new ESC aborts a malformed sequence and starts the next one.
+                '\x1b' => self.escape = EscapeState::Esc,
+                _ => {}
+            },
+            EscapeState::Ss3 => self.escape = EscapeState::Ground,
+            EscapeState::String => match ch {
+                '\x07' => self.escape = EscapeState::Ground,
+                // ESC \ is the string terminator; the Esc state swallows the `\`.
+                '\x1b' => self.escape = EscapeState::Esc,
+                _ => {}
+            },
+        }
+        true
+    }
+
+    /// Appends one Enter press as its own step.
+    fn push_enter(&mut self) {
+        self.push_key(SpecialKey::Enter);
+    }
+
+    /// Appends one special key press as its own step.
+    fn push_key(&mut self, key: SpecialKey) {
+        let seq = KeySequence::from_elements(vec![KeyElement::SpecialKey(key)]);
+        self.steps.push(ScriptStep::Send(seq));
+    }
+
+    /// Flushes buffered text as a `send` step. No-op when nothing is buffered.
+    pub fn flush(&mut self) {
+        if self.buffer.is_empty() {
+            return;
+        }
+        let text = std::mem::take(&mut self.buffer);
+        // Literal text, not key syntax: a typed `{print $1}` is text, and
+        // parsing it would fail and drop the command from the recording.
+        let sequence = KeySequence::from_elements(vec![KeyElement::Text(text)]);
+        self.steps.push(ScriptStep::Send(sequence));
+    }
+
+    /// Number of completed steps so far. Buffered text is not counted, since
+    /// it only becomes a step once a newline or [`Self::finish`] arrives.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.steps.len()
+    }
+
+    /// Whether nothing has been recorded yet.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.steps.is_empty()
+    }
+
+    /// Emits the buffered text as a final step and returns everything recorded.
+    pub fn finish(mut self) -> Vec<ScriptStep> {
+        self.flush();
+        self.steps
+    }
+}
+
+#[cfg(test)]
+mod recorder_tests {
+    use super::*;
+
+    #[test]
+    fn round_trips_braces_and_dollars() {
+        // The escaping that matters: a recorded `echo ${x}` must not come back
+        // as a variable reference, and a literal brace must not open a key.
+        let original = vec![ScriptStep::Send(
+            KeySequence::parse("echo ${x} {{done}} $5").unwrap(),
+        )];
+        let rendered = render_script("t", &original, &["# note".to_string()]);
+        assert_eq!(parse_program(&rendered).unwrap().steps(), original);
+    }
+
+    /// One `send <text>` followed by one `send {ENTER}`.
+    fn typed(text: &str) -> Vec<ScriptStep> {
+        vec![
+            ScriptStep::Send(KeySequence::parse(text).unwrap()),
+            ScriptStep::Send(KeySequence::from_elements(vec![KeyElement::SpecialKey(
+                SpecialKey::Enter,
+            )])),
+        ]
+    }
+
+    #[test]
+    fn recorder_flushes_on_enter_and_records_the_enter() {
+        let mut rec = StepRecorder::new();
+        rec.record("whoami\r");
+        rec.record("uptime\r");
+        let steps = rec.finish();
+        assert_eq!(steps.len(), 4);
+        assert_eq!(steps, [typed("whoami"), typed("uptime")].concat());
+    }
+
+    #[test]
+    fn enter_alone_is_recorded_and_crlf_is_one_enter() {
+        let mut rec = StepRecorder::new();
+        rec.record("\r\n\r");
+        let enter = ScriptStep::Send(KeySequence::from_elements(vec![KeyElement::SpecialKey(
+            SpecialKey::Enter,
+        )]));
+        assert_eq!(rec.finish(), vec![enter.clone(), enter]);
+    }
+
+    #[test]
+    fn recorder_keeps_text_that_looks_like_key_syntax() {
+        // `{print $1}` is not a special key; parsing it would fail and the
+        // command would silently vanish from the recording.
+        let mut rec = StepRecorder::new();
+        rec.record("awk '{print $1}'\r");
+        let steps = rec.finish();
+        assert_eq!(steps.len(), 2);
+        let rendered = render_script("awk", &steps, &[]);
+        assert_eq!(parse_program(&rendered).unwrap().steps(), steps);
+    }
+
+    #[test]
+    fn hidden_input_is_replaced_by_a_variable_and_never_stored() {
+        let mut rec = StepRecorder::new();
+        rec.record("sudo ls\r");
+        rec.record_hidden("hunter2\r");
+        let steps = rec.finish();
+        let rendered = render_script("t", &steps, &[]);
+        assert!(!rendered.contains("hunter2"));
+        assert_eq!(steps.len(), 4);
+        assert_eq!(
+            steps[2],
+            ScriptStep::Send(KeySequence::from_elements(vec![KeyElement::Variable(
+                "password".to_string()
+            )]))
+        );
+    }
+
+    #[test]
+    fn hidden_enter_alone_records_only_the_enter() {
+        let mut rec = StepRecorder::new();
+        rec.record_hidden("\r");
+        assert_eq!(rec.finish().len(), 1);
+    }
+
+    #[test]
+    fn recorder_drops_control_chars() {
+        let mut rec = StepRecorder::new();
+        rec.record("ls\x03-l\r");
+        assert_eq!(rec.finish(), typed("ls-l"));
+    }
+
+    fn key(k: SpecialKey) -> ScriptStep {
+        ScriptStep::Send(KeySequence::from_elements(vec![KeyElement::SpecialKey(k)]))
+    }
+
+    fn text(t: &str) -> ScriptStep {
+        ScriptStep::Send(KeySequence::from_elements(vec![KeyElement::Text(t.into())]))
+    }
+
+    #[test]
+    fn recorder_drops_csi_sequences() {
+        // Up, Down, Home, F5, bracketed-paste markers and a cursor-position reply.
+        let mut rec = StepRecorder::new();
+        rec.record("ls\x1b[A\x1b[B\x1b[H\x1b[15~\x1b[200~pasted\x1b[201~\x1b[1;1R\r");
+        assert_eq!(rec.finish(), typed("lspasted"));
+    }
+
+    #[test]
+    fn recorder_drops_ss3_osc_and_alt_keys() {
+        let mut rec = StepRecorder::new();
+        rec.record("a\x1bOAb\x1b]0;title\x07c\x1b]52;c;QQ==\x1b\\d\x1bxe\r");
+        assert_eq!(rec.finish(), typed("abcde"));
+    }
+
+    #[test]
+    fn recorder_handles_sequence_split_across_chunks() {
+        let mut rec = StepRecorder::new();
+        rec.record("ls\x1b");
+        rec.record("[");
+        rec.record("A");
+        rec.record("\x1b[1;");
+        rec.record("1Rx\r");
+        assert_eq!(rec.finish(), typed("lsx"));
+    }
+
+    #[test]
+    fn recorder_backspace_edits_the_buffer() {
+        let mut rec = StepRecorder::new();
+        rec.record("lss\x7f\x08\x7f\x7fx\r");
+        assert_eq!(rec.finish(), typed("x"));
+    }
+
+    #[test]
+    fn backspace_on_empty_buffer_is_ignored() {
+        let mut rec = StepRecorder::new();
+        rec.record("\x7f\x7f");
+        assert!(rec.finish().is_empty());
+    }
+
+    #[test]
+    fn recorder_maps_tab_to_a_tab_step() {
+        let mut rec = StepRecorder::new();
+        rec.record("cd /et\t\r");
+        assert_eq!(
+            rec.finish(),
+            vec![text("cd /et"), key(SpecialKey::Tab), key(SpecialKey::Enter)]
+        );
+    }
+
+    #[test]
+    fn recorder_up_backspace_text_tab_has_no_escape_residue() {
+        let mut rec = StepRecorder::new();
+        rec.record("ls\x1b[A\x7fx\t");
+        let steps = rec.finish();
+        assert_eq!(steps, vec![text("lx"), key(SpecialKey::Tab)]);
+        let rendered = render_script("t", &steps, &[]);
+        assert!(!rendered.contains("[A"), "{rendered}");
+        assert_eq!(parse_program(&rendered).unwrap().steps(), steps);
+    }
+
+    #[test]
+    fn recorder_keeps_buffered_text_on_finish() {
+        let mut rec = StepRecorder::new();
+        rec.record("no trailing enter");
+        assert_eq!(
+            rec.finish(),
+            vec![ScriptStep::Send(
+                KeySequence::parse("no trailing enter").unwrap()
+            )]
+        );
+    }
+
+    #[test]
+    fn len_does_not_count_buffered_text() {
+        let mut rec = StepRecorder::new();
+        assert!(rec.is_empty());
+        rec.record("partial");
+        // Not a step yet — no newline, so `finish` has not been called.
+        assert_eq!(rec.len(), 0);
+        rec.record("\r");
+        assert_eq!(rec.len(), 2, "text plus the Enter it submitted");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1832,6 +2248,36 @@ mod tests {
         assert_eq!(host.events, vec!["send:ok{ENTER}"]);
         // Output before the match is consumed along with it.
         assert!(engine.buffer().is_empty());
+    }
+
+    #[test]
+    fn send_discards_output_buffered_before_the_command() {
+        let mut host = FakeHost::default();
+        let mut engine =
+            ScriptEngine::parse("send \"show running-config{ENTER}\"\nexpect \"/[#>]\\s*$/\" 5\n")
+                .unwrap();
+        // The screen already shows the prompt of the previous command.
+        engine.on_output(b"R1# ");
+        engine.pump(&mut host);
+        assert_eq!(
+            engine.pending(),
+            PendingKind::Expect,
+            "the stale prompt must not satisfy the expect"
+        );
+
+        assert!(engine.on_output(b"show running-config\r\nhostname R1\r\nR1# "));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+    }
+
+    #[test]
+    fn expect_matches_output_that_preceded_the_script() {
+        let mut host = FakeHost::default();
+        let mut engine = ScriptEngine::parse("expect \"#\"\n").unwrap();
+        // The GUI seeds the engine with the visible terminal text.
+        engine.on_output(b"R1# ");
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
     }
 
     #[test]

@@ -202,6 +202,27 @@ fn set_cloexec(fd: &OwnedFd) -> io::Result<()> {
 }
 
 // ============================================================================
+// Echo state (tcgetattr)
+// ============================================================================
+
+/// Whether the terminal behind a PTY master currently echoes typed input.
+///
+/// A program that asks for a password (`sudo`, `ssh`, `passwd`) clears `ECHO`
+/// on the terminal for the duration of the prompt, so `false` means the next
+/// keystrokes are probably secret. Reads the settings only; nothing changes.
+///
+/// # Errors
+///
+/// Returns `io::Error` if `tcgetattr` fails, for instance after the child has
+/// gone and the slave side is closed.
+#[cfg(unix)]
+pub fn pty_echo_enabled(master_fd: impl AsFd) -> io::Result<bool> {
+    use nix::sys::termios::{LocalFlags, tcgetattr};
+    let attrs = tcgetattr(master_fd).map_err(|e| io::Error::from_raw_os_error(e as i32))?;
+    Ok(attrs.local_flags.contains(LocalFlags::ECHO))
+}
+
+// ============================================================================
 // Window size (TIOCSWINSZ)
 // ============================================================================
 
@@ -408,6 +429,18 @@ mod tests {
     fn set_winsize_succeeds() {
         let pair = open_pty_pair().expect("openpty");
         pty_set_winsize(&pair.master, 24, 80).expect("TIOCSWINSZ should succeed");
+    }
+
+    /// `pty_echo_enabled` follows the `ECHO` flag a password prompt clears.
+    #[test]
+    fn echo_state_follows_the_terminal_flag() {
+        use nix::sys::termios::{LocalFlags, SetArg, tcgetattr, tcsetattr};
+        let pair = open_pty_pair().expect("openpty");
+        assert!(pty_echo_enabled(&pair.master).expect("tcgetattr"));
+        let mut attrs = tcgetattr(&pair.slave).expect("tcgetattr slave");
+        attrs.local_flags.remove(LocalFlags::ECHO);
+        tcsetattr(&pair.slave, SetArg::TCSANOW, &attrs).expect("tcsetattr");
+        assert!(!pty_echo_enabled(&pair.master).expect("tcgetattr"));
     }
 
     /// An idle PTY reports "not readable" and returns after the timeout.

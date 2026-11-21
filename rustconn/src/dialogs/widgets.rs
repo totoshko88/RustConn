@@ -42,14 +42,44 @@ pub fn dialog_header(end_label: &str) -> (adw::HeaderBar, Button) {
     (header, end_btn)
 }
 
-/// Packs an action button into a dialog header bar.  On macOS uses `pack_end`
-/// (right) to keep action buttons away from the left-side close button; on
-/// other platforms `pack_start` (left, GNOME HIG).
+/// Which side of a header bar the close button sits on, from a
+/// `gtk-decoration-layout` string such as `appmenu:minimize,maximize,close`.
+///
+/// Returns `Some(true)` for the start side, `Some(false)` for the end side and
+/// `None` when the layout has no close button.
+#[must_use]
+pub fn close_button_on_start(layout: &str) -> Option<bool> {
+    let (start, end) = layout.split_once(':').unwrap_or((layout, ""));
+    let has_close = |side: &str| side.split(',').any(|item| item.trim() == "close");
+    if has_close(start) {
+        Some(true)
+    } else if has_close(end) {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+/// Packs a header-bar action (Add, New, Refresh, a dialog's primary button)
+/// on the side opposite the close button, so the two never sit together.
+///
+/// The side follows the user's `gtk-decoration-layout` (GNOME's
+/// `button-layout`): by default the close button is at the end and the action
+/// at the start (GNOME HIG: main header actions at the start); with `close:`
+/// the action moves to the end. libadwaita places only the window controls by
+/// that layout, not hand-made buttons, hence this helper. Dialogs that carry
+/// their own Cancel button keep the fixed HIG order (Cancel first, affirmative
+/// last) and do not use it. macOS always packs at the end.
 pub fn dialog_pack_action(header: &adw::HeaderBar, button: &impl IsA<gtk4::Widget>) {
-    #[cfg(target_os = "macos")]
-    header.pack_end(button);
-    #[cfg(not(target_os = "macos"))]
-    header.pack_start(button);
+    let close_on_start = gtk4::Settings::default()
+        .and_then(|s| s.gtk_decoration_layout())
+        .and_then(|l| close_button_on_start(&l))
+        == Some(true);
+    if cfg!(target_os = "macos") || close_on_start {
+        header.pack_end(button);
+    } else {
+        header.pack_start(button);
+    }
 }
 
 /// Whether a Jump Host dropdown position names a saved connection rather than
@@ -1084,6 +1114,20 @@ fn _i18n_markers() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn close_button_side_follows_layout() {
+        assert_eq!(
+            close_button_on_start("appmenu:minimize,maximize,close"),
+            Some(false)
+        );
+        assert_eq!(close_button_on_start(":close"), Some(false));
+        assert_eq!(close_button_on_start("close:"), Some(true));
+        assert_eq!(close_button_on_start("close,minimize:menu"), Some(true));
+        assert_eq!(close_button_on_start("icon:minimize"), None);
+        assert_eq!(close_button_on_start(""), None);
+        assert_eq!(close_button_on_start("close"), Some(true));
+    }
 
     #[test]
     fn test_labels_functions() {

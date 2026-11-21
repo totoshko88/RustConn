@@ -11,6 +11,8 @@ use chrono::Utc;
 use tokio::sync::{mpsc, watch};
 use uuid::Uuid;
 
+use super::knock::SpaConfig;
+use super::spa_vault;
 use crate::config::ConfigManager;
 use crate::config::merge::{SharedBase, merge_three_way, same_entries, shared_base, try_lock_base};
 use crate::error::{ConfigError, ConfigResult};
@@ -391,9 +393,23 @@ impl ConnectionManager {
     /// Returns an error if validation fails or persistence fails.
     pub fn create_connection_from(&mut self, connection: Connection) -> ConfigResult<Uuid> {
         ConfigManager::validate_connection(&connection)?;
+        self.insert_connection(connection)
+    }
 
-        // Intern strings for memory efficiency
+    /// Adds an imported connection without validating it.
+    ///
+    /// Import reports validation problems as warnings
+    /// ([`ImportResult::with_validation_warnings`](crate::import::ImportResult::with_validation_warnings))
+    /// and never drops an entry, so the connection is stored as it came.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if persistence fails.
+    pub fn import_connection(&mut self, connection: Connection) -> ConfigResult<Uuid> {
+        self.insert_connection(connection)
+    }
 
+    fn insert_connection(&mut self, connection: Connection) -> ConfigResult<Uuid> {
         let id = connection.id;
         let mut connection = connection;
         // Append to end of target group to preserve existing order
@@ -480,6 +496,119 @@ impl ConnectionManager {
         self.notify_sync_export(self.connections.get(&id).and_then(|c| c.group_id));
 
         Ok(())
+    }
+
+    /// Clears the plaintext SPA keys that [`spa_vault::move_keys_to_vault`] confirmed
+    /// in the secret store and sets the `*_key_in_vault` flags (F-08).
+    ///
+    /// Covers live and trashed connections. Before the first change it copies
+    /// `connections.toml` to `connections.toml.pre-spa-vault.bak`; if that copy
+    /// fails nothing is changed and the keys stay in the file. A key edited
+    /// since the move started is left alone. Returns how many connections changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the backup cannot be written or saving fails.
+    pub fn apply_spa_vault_move(&mut self, moved: &[spa_vault::MovedKeys]) -> ConfigResult<usize> {
+        let touches = |cfg: &Option<SpaConfig>, m: &spa_vault::MovedKeys| {
+            cfg.as_ref().is_some_and(|c| m.would_change(c))
+        };
+        let any = moved.iter().any(|m| {
+            touches(
+                &self
+                    .connections
+                    .get(&m.id)
+                    .and_then(|c| c.spa_config.clone()),
+                m,
+            ) || touches(
+                &self
+                    .trash_connections
+                    .get(&m.id)
+                    .and_then(|(c, _)| c.spa_config.clone()),
+                m,
+            )
+        });
+        if !any {
+            return Ok(0);
+        }
+        let backup = self
+            .config_manager
+            .backup_connections_file("pre-spa-vault")?;
+        tracing::info!(backup = %backup.display(), "Backed up connections.toml before moving SPA keys to the vault");
+
+        let (mut live, mut trashed) = (0, 0);
+        for m in moved {
+            if let Some(cfg) = self
+                .connections
+                .get_mut(&m.id)
+                .and_then(|c| c.spa_config.as_mut())
+                && m.apply_to(cfg)
+            {
+                live += 1;
+                let group = self.connections.get(&m.id).and_then(|c| c.group_id);
+                self.notify_sync_export(group);
+            }
+            if let Some(cfg) = self
+                .trash_connections
+                .get_mut(&m.id)
+                .and_then(|(c, _)| c.spa_config.as_mut())
+                && m.apply_to(cfg)
+            {
+                trashed += 1;
+            }
+        }
+        if live > 0 {
+            self.persist_connections()?;
+        }
+        if trashed > 0 {
+            self.persist_trash()?;
+        }
+        Ok(live + trashed)
+    }
+
+    /// Clears the `*_key_in_vault` flags named by `flags` on a live connection
+    /// whose vault entry did not arrive (a failed duplicate), so the flag never
+    /// claims a key the vault does not hold. Returns whether anything changed.
+    ///
+    /// # Errors
+    /// Returns an error if saving fails.
+    pub fn clear_spa_vault_flags(
+        &mut self,
+        id: Uuid,
+        flags: spa_vault::VaultFlags,
+    ) -> ConfigResult<bool> {
+        let Some(cfg) = self
+            .connections
+            .get_mut(&id)
+            .and_then(|c| c.spa_config.as_mut())
+        else {
+            return Ok(false);
+        };
+        let changed =
+            (flags.rijndael && cfg.rijndael_key_in_vault) || (flags.hmac && cfg.hmac_key_in_vault);
+        cfg.rijndael_key_in_vault &= !flags.rijndael;
+        cfg.hmac_key_in_vault &= !flags.hmac;
+        if changed {
+            self.persist_connections()?;
+        }
+        Ok(changed)
+    }
+
+    /// Directory that holds `connections.toml` and its backups.
+    #[must_use]
+    pub fn config_dir(&self) -> std::path::PathBuf {
+        self.config_manager.config_dir().to_path_buf()
+    }
+
+    /// Connections, live and trashed, that still hold a plaintext SPA key.
+    #[must_use]
+    pub fn connections_with_plaintext_spa_keys(&self) -> Vec<Connection> {
+        self.connections
+            .values()
+            .chain(self.trash_connections.values().map(|(c, _)| c))
+            .filter(|c| spa_vault::has_plaintext_keys(c))
+            .cloned()
+            .collect()
     }
 
     /// Sets the pinned (favorite) state of a connection and persists it.
@@ -2421,6 +2550,18 @@ mod tests {
         names
     }
 
+    #[tokio::test]
+    async fn import_connection_keeps_an_invalid_entry_that_create_connection_from_rejects() {
+        let (mut manager, _temp) = create_test_manager();
+        let bad = Connection::new_ssh(String::new(), String::new(), 0);
+
+        assert!(manager.create_connection_from(bad.clone()).is_err());
+        let id = manager.import_connection(bad).unwrap();
+
+        let stored = manager.get_connection(id).unwrap();
+        assert_eq!((stored.port, stored.host.as_str()), (0, ""));
+    }
+
     fn ssh(name: &str) -> Connection {
         Connection::new_ssh(name.to_string(), "h".to_string(), 22)
     }
@@ -3564,5 +3705,69 @@ mod tests {
                 .len(),
             0
         );
+    }
+
+    #[tokio::test]
+    async fn clear_spa_vault_flags_unflags_only_the_named_keys() {
+        use crate::connection::knock::SpaConfig;
+        let mut conn = ssh("spa-dup");
+        let mut cfg = SpaConfig::new();
+        cfg.rijndael_key_in_vault = true;
+        cfg.hmac_key_in_vault = true;
+        conn.spa_config = Some(cfg);
+        let id = conn.id;
+        let (mut manager, config, _dir) = loaded_manager(std::slice::from_ref(&conn));
+        let only_hmac = spa_vault::VaultFlags {
+            rijndael: false,
+            hmac: true,
+        };
+        assert!(manager.clear_spa_vault_flags(id, only_hmac).unwrap());
+        // Repeating changes nothing.
+        assert!(!manager.clear_spa_vault_flags(id, only_hmac).unwrap());
+        manager.flush_persistence().await.unwrap();
+        let reread = config.load_connections().unwrap();
+        let cfg = reread[0].spa_config.as_ref().unwrap();
+        assert!(cfg.rijndael_key_in_vault && !cfg.hmac_key_in_vault);
+        // No SPA config or unknown id: nothing happens.
+        assert!(
+            !manager
+                .clear_spa_vault_flags(Uuid::new_v4(), only_hmac)
+                .unwrap()
+        );
+    }
+
+    #[tokio::test]
+    async fn spa_vault_move_backs_up_then_clears_the_file() {
+        use crate::connection::knock::SpaConfig;
+        let mut conn = ssh("spa-host");
+        let mut cfg = SpaConfig::new();
+        cfg.rijndael_key_ref = Some("PLAIN-RIJ".to_string());
+        cfg.hmac_key_ref = Some("PLAIN-HMAC".to_string());
+        conn.spa_config = Some(cfg);
+        let id = conn.id;
+        let (mut manager, config, dir) = loaded_manager(std::slice::from_ref(&conn));
+        let moved = [spa_vault::MovedKeys::for_test(
+            id,
+            "PLAIN-RIJ",
+            "PLAIN-HMAC",
+        )];
+
+        assert_eq!(manager.connections_with_plaintext_spa_keys().len(), 1);
+        assert_eq!(manager.apply_spa_vault_move(&moved).unwrap(), 1);
+        manager.flush_persistence().await.unwrap();
+
+        let backup = dir.path().join("connections.toml.pre-spa-vault.bak");
+        let backed_up = std::fs::read_to_string(&backup).unwrap();
+        assert!(backed_up.contains("PLAIN-RIJ") && backed_up.contains("PLAIN-HMAC"));
+        let now = std::fs::read_to_string(dir.path().join("connections.toml")).unwrap();
+        assert!(!now.contains("PLAIN-"), "{now}");
+        let reread = config.load_connections().unwrap();
+        let cfg = reread[0].spa_config.as_ref().unwrap();
+        assert!(cfg.rijndael_key_in_vault && cfg.hmac_key_in_vault);
+
+        // Second run: nothing to do, backup untouched.
+        assert!(manager.connections_with_plaintext_spa_keys().is_empty());
+        assert_eq!(manager.apply_spa_vault_move(&moved).unwrap(), 0);
+        assert_eq!(std::fs::read_to_string(&backup).unwrap(), backed_up);
     }
 }

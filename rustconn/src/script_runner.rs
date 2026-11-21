@@ -209,7 +209,7 @@ impl ScriptHost for GuiHost {
 
         // `cluster=` is parsed by core but not implemented here. Say so instead of
         // silently starting a plain session. shortcut: reject, implement via
-        // `ClusterManager::start_session` if scripts ever need it.
+        // a cluster launcher if scripts ever need it.
         if let Some(cluster) = cluster {
             let message = format!("start: cluster=<name> is not supported (got `{cluster}`)");
             glib::idle_add_local_once(move || {

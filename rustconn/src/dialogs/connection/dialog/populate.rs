@@ -365,11 +365,27 @@ impl ConnectionDialog {
         // Set SPA (fwknop) config
         if let Some(ref spa_cfg) = conn.spa_config {
             self.spa_enabled_toggle.set_active(true);
-            if let Some(ref rij) = spa_cfg.rijndael_key_ref {
-                self.spa_rij_key_entry.set_text(rij);
-            }
-            if let Some(ref hmac) = spa_cfg.hmac_key_ref {
-                self.spa_hmac_key_entry.set_text(hmac);
+            // A key in the vault is never read back into the dialog: the row
+            // stays empty and is marked, and an empty marked row keeps the key.
+            for (entry, plain, in_vault, title) in [
+                (
+                    &self.spa_rij_key_entry,
+                    &spa_cfg.rijndael_key_ref,
+                    spa_cfg.rijndael_key_in_vault,
+                    i18n("Rijndael Key (in vault)"),
+                ),
+                (
+                    &self.spa_hmac_key_entry,
+                    &spa_cfg.hmac_key_ref,
+                    spa_cfg.hmac_key_in_vault,
+                    i18n("HMAC Key (in vault)"),
+                ),
+            ] {
+                entry.set_text(plain.as_deref().unwrap_or(""));
+                if in_vault {
+                    entry.set_title(&title);
+                    entry.set_widget_name(super::super::builders::SPA_KEY_IN_VAULT);
+                }
             }
             self.spa_access_entry.set_text(&spa_cfg.access);
             self.spa_port_spin.set_value(f64::from(spa_cfg.dest_port));

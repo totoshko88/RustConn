@@ -301,6 +301,11 @@ pub(super) fn cmd_import(
         }
     }
 
+    // Warnings are logged by `with_validation_warnings`; print them for the user.
+    for warning in &import_result.warnings {
+        println!("  Warning: {warning}");
+    }
+
     if !import_result.errors.is_empty() {
         for error in &import_result.errors {
             tracing::error!("Import error: {error}");
@@ -419,7 +424,8 @@ fn import_connections(
                 snippets: native.snippets,
                 smart_folders: native.smart_folders,
                 warnings: Vec::new(),
-            });
+            }
+            .with_validation_warnings());
         }
         ImportFormatArg::Ansible => Box::new(AnsibleInventoryImporter::new()),
         ImportFormatArg::SshConfig => Box::new(SshConfigImporter::new()),
@@ -439,6 +445,7 @@ fn import_connections(
 
     importer
         .import_from_path(file)
+        .map(rustconn_core::import::ImportResult::with_validation_warnings)
         .map_err(|e| CliError::Import(e.to_string()))
 }
 
@@ -495,11 +502,16 @@ fn cmd_import_auto(config_path: Option<&Path>, dry_run: bool) -> Result<(), CliE
 
         match source.import() {
             Ok(result) => {
+                let result = result.with_validation_warnings();
                 println!(
                     "  Found {} connections, {} groups",
                     result.connections.len(),
                     result.groups.len()
                 );
+
+                for warning in &result.warnings {
+                    println!("  Warning: {warning}");
+                }
 
                 if dry_run {
                     for conn in &result.connections {

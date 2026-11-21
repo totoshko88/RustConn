@@ -446,24 +446,103 @@ where
     Ok(runtime.block_on(scan(target, options, cancel, on_progress)))
 }
 
-/// Guesses the network this machine is on, as a `/24` in CIDR notation.
+/// A local IP address and the interface that owns it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalInterface {
+    /// Interface name (`eth0`, `en0`, `zt…`); empty when the platform could
+    /// not name it.
+    pub name: String,
+    /// The interface's address.
+    pub address: IpAddr,
+}
+
+/// Lists the usable local addresses of this machine: IPv4 and IPv6, one entry
+/// per address.
 ///
-/// Used to pre-fill the scan target. It asks the kernel which local address
-/// would be used to reach a public one — connecting a UDP socket picks a route
-/// and sends nothing — and assumes a `/24` around it, which is what most home
-/// and office networks are. `None` when there is no IPv4 route.
+/// Loopback, unspecified and IPv6 link-local addresses are left out. A
+/// link-local address needs a zone identifier and is not reachable from the
+/// viewer without it; global and ULA IPv6 addresses are included, and the
+/// caller brackets IPv6 in URLs. Used by session sharing and the TFTP dialog
+/// so the user can pick which network a viewer or device should use. Empty
+/// when the platform cannot enumerate interfaces.
 #[must_use]
-pub fn local_network_guess() -> Option<String> {
+pub fn local_interfaces() -> Vec<LocalInterface> {
+    #[cfg(unix)]
+    {
+        use nix::ifaddrs::getifaddrs;
+        use nix::net::if_::InterfaceFlags;
+
+        let Ok(addresses) = getifaddrs() else {
+            return Vec::new();
+        };
+        let mut interfaces: Vec<LocalInterface> = addresses
+            .filter_map(|ifaddr| {
+                if !ifaddr.flags.contains(InterfaceFlags::IFF_UP) {
+                    return None;
+                }
+                let address = ifaddr.address.as_ref()?;
+                let address = if let Some(inet) = address.as_sockaddr_in() {
+                    IpAddr::V4(inet.ip())
+                } else {
+                    let ip = address.as_sockaddr_in6()?.ip();
+                    if ip.is_unicast_link_local() {
+                        return None;
+                    }
+                    IpAddr::V6(ip)
+                };
+                if address.is_loopback() || address.is_unspecified() {
+                    return None;
+                }
+                Some(LocalInterface {
+                    name: ifaddr.interface_name,
+                    address,
+                })
+            })
+            .collect();
+        interfaces.sort_by(|a, b| (&a.name, a.address).cmp(&(&b.name, b.address)));
+        interfaces.dedup();
+        interfaces
+    }
+    #[cfg(not(unix))]
+    {
+        local_ipv4_guess()
+            .map(|address| {
+                vec![LocalInterface {
+                    name: String::new(),
+                    address: IpAddr::V4(address),
+                }]
+            })
+            .unwrap_or_default()
+    }
+}
+
+/// Guesses the local IPv4 address the kernel would use for an outside route.
+///
+/// It connects a UDP socket to TEST-NET-1, which picks a route and sends
+/// nothing, then reads the source address. `None` when there is no IPv4
+/// route. Used to build a LAN link for [session sharing](crate::session::share)
+/// and to pre-fill the scan target.
+#[must_use]
+pub fn local_ipv4_guess() -> Option<Ipv4Addr> {
     let socket = std::net::UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).ok()?;
     // 192.0.2.1 is TEST-NET-1 (RFC 5737): routable syntax, never a real host.
     socket.connect((Ipv4Addr::new(192, 0, 2, 1), 9)).ok()?;
     match socket.local_addr().ok()?.ip() {
-        IpAddr::V4(local) if !local.is_loopback() && !local.is_unspecified() => {
-            let [a, b, c, _] = local.octets();
-            Some(format!("{a}.{b}.{c}.0/24"))
-        }
+        IpAddr::V4(local) if !local.is_loopback() && !local.is_unspecified() => Some(local),
         _ => None,
     }
+}
+
+/// Guesses the network this machine is on, as a `/24` in CIDR notation.
+///
+/// Used to pre-fill the scan target. It assumes a `/24` around the local
+/// address, which is what most home and office networks are. `None` when there
+/// is no IPv4 route.
+#[must_use]
+pub fn local_network_guess() -> Option<String> {
+    let local = local_ipv4_guess()?;
+    let [a, b, c, _] = local.octets();
+    Some(format!("{a}.{b}.{c}.0/24"))
 }
 
 #[cfg(test)]
@@ -477,6 +556,17 @@ mod tests {
             target.last().to_string(),
             target.host_count(),
         )
+    }
+
+    #[test]
+    fn local_interfaces_skip_loopback_link_local_and_unspecified() {
+        for interface in local_interfaces() {
+            assert!(!interface.address.is_loopback(), "{interface:?}");
+            assert!(!interface.address.is_unspecified(), "{interface:?}");
+            if let IpAddr::V6(v6) = interface.address {
+                assert!(!v6.is_unicast_link_local(), "{interface:?}");
+            }
+        }
     }
 
     #[test]

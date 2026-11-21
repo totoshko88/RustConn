@@ -147,6 +147,37 @@ pub enum ImportWarning {
         /// Name of the imported connection.
         connection_name: String,
     },
+    /// An imported connection has no name. It was kept as it is.
+    ConnectionNameEmpty {
+        /// 1-based position of the connection in the import.
+        position: usize,
+    },
+    /// An imported connection has no host. It was kept as it is.
+    ConnectionHostEmpty {
+        /// Name of the imported connection.
+        connection_name: String,
+    },
+    /// An imported connection has port 0. It was kept as it is.
+    ConnectionPortZero {
+        /// Name of the imported connection.
+        connection_name: String,
+    },
+    /// An imported connection names a jump host that is not in the import.
+    /// It was kept as it is.
+    JumpHostMissing {
+        /// Name of the imported connection.
+        connection_name: String,
+    },
+    /// An imported group has no name. It was kept as it is.
+    GroupNameEmpty {
+        /// 1-based position of the group in the import.
+        position: usize,
+    },
+    /// An imported snippet has no name or no command. It was kept as it is.
+    SnippetIncomplete {
+        /// 1-based position of the snippet in the import.
+        position: usize,
+    },
 }
 
 impl ImportWarning {
@@ -184,6 +215,24 @@ impl ImportWarning {
             Self::FtpImportedAsSftp { .. } => {
                 "Connection '{}' was an FTP session, imported as SFTP — RustConn has no FTP client. Check the port (SFTP uses 22), the credentials and whether the server speaks SFTP before connecting."
             }
+            Self::ConnectionNameEmpty { .. } => {
+                "Connection {} has no name. It was imported as it is; give it a name."
+            }
+            Self::ConnectionHostEmpty { .. } => {
+                "Connection '{}' has no host. It was imported as it is; set a host before connecting."
+            }
+            Self::ConnectionPortZero { .. } => {
+                "Connection '{}' has port 0. It was imported as it is; set a port before connecting."
+            }
+            Self::JumpHostMissing { .. } => {
+                "Connection '{}' uses a jump host that is not part of this import. It was imported as it is; check its jump host before connecting."
+            }
+            Self::GroupNameEmpty { .. } => {
+                "Group {} has no name. It was imported as it is; give it a name."
+            }
+            Self::SnippetIncomplete { .. } => {
+                "Snippet {} has no name or no command. It was imported as it is; complete it before running."
+            }
         }
     }
 
@@ -215,7 +264,13 @@ impl ImportWarning {
             Self::TemplatesNotImported { count }
             | Self::ClustersNotImported { count }
             | Self::VariablesNotImported { count } => vec![count.to_string()],
-            Self::FtpImportedAsSftp { connection_name } => vec![connection_name.clone()],
+            Self::FtpImportedAsSftp { connection_name }
+            | Self::ConnectionHostEmpty { connection_name }
+            | Self::ConnectionPortZero { connection_name }
+            | Self::JumpHostMissing { connection_name } => vec![connection_name.clone()],
+            Self::ConnectionNameEmpty { position }
+            | Self::GroupNameEmpty { position }
+            | Self::SnippetIncomplete { position } => vec![position.to_string()],
         }
     }
 }

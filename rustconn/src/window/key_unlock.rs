@@ -75,9 +75,10 @@ pub(super) fn ssh_unlock_targets(
     }
     // The order the terminal spawn sets `SSH_AUTH_SOCK` in; the jump hop's ssh
     // inherits that environment.
-    let socket = ssh_inheritance::resolve_ssh_agent_socket(conn, &groups)
-        .filter(|s| !s.is_empty())
-        .or_else(rustconn_core::sftp::default_agent_socket);
+    let socket = rustconn_core::sftp::resolve_ssh_agent_socket(
+        ssh_inheritance::resolve_ssh_agent_socket(conn, &groups).as_deref(),
+        None,
+    );
     retain_askable(targets_from(
         keys.into_iter().map(PathBuf::from),
         socket.as_deref(),
@@ -94,7 +95,11 @@ pub(super) fn sftp_unlock_targets(
         .and_then(|p| rustconn_core::resolve_key_path(&p));
     retain_askable(targets_from(
         key.into_iter(),
-        rustconn_core::sftp::default_agent_socket().as_deref(),
+        rustconn_core::sftp::resolve_ssh_agent_socket(
+            ssh_inheritance::resolve_ssh_agent_socket(conn, groups).as_deref(),
+            None,
+        )
+        .as_deref(),
     ))
 }
 

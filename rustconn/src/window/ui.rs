@@ -7,7 +7,7 @@ use gtk4::prelude::*;
 use gtk4::{Button, Label, MenuButton, gio};
 use libadwaita as adw;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, with_accel};
 
 /// Creates the header bar with title and controls
 ///
@@ -94,7 +94,7 @@ pub fn create_header_bar() -> (
     // The user relies on one-click Settings; a menu-only entry was a
     // productivity regression, so the cog is restored to the header.
     let settings_button = Button::from_icon_name("preferences-system-symbolic");
-    settings_button.set_tooltip_text(Some(&i18n("Settings (Ctrl+,)")));
+    settings_button.set_tooltip_text(Some(&with_accel(&i18n("Settings"), "win.settings")));
     settings_button.set_action_name(Some("win.settings"));
     settings_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Settings"))]);
     header_bar.pack_end(&settings_button);
@@ -103,14 +103,20 @@ pub fn create_header_bar() -> (
     // popover. Splitting is a frequent action; a dropdown added a click, so the
     // separate Split Right / Split Down buttons are restored to the header.
     let split_horizontal_button = Button::from_icon_name("object-flip-vertical-symbolic");
-    split_horizontal_button.set_tooltip_text(Some(&i18n("Split Down (Ctrl+Shift+H)")));
+    split_horizontal_button.set_tooltip_text(Some(&with_accel(
+        &i18n("Split Down"),
+        "win.split-horizontal",
+    )));
     split_horizontal_button.set_action_name(Some("win.split-horizontal"));
     split_horizontal_button
         .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Down"))]);
     header_bar.pack_end(&split_horizontal_button);
 
     let split_vertical_button = Button::from_icon_name("object-flip-horizontal-symbolic");
-    split_vertical_button.set_tooltip_text(Some(&i18n("Split Right (Ctrl+Shift+S)")));
+    split_vertical_button.set_tooltip_text(Some(&with_accel(
+        &i18n("Split Right"),
+        "win.split-vertical",
+    )));
     split_vertical_button.set_action_name(Some("win.split-vertical"));
     split_vertical_button
         .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Right"))]);
@@ -130,7 +136,7 @@ pub fn create_header_bar() -> (
     shell_box.append(&shell_icon);
     shell_box.append(&shell_label);
     shell_button.set_child(Some(&shell_box));
-    shell_button.set_tooltip_text(Some(&i18n("Local Shell (Ctrl+Shift+T)")));
+    shell_button.set_tooltip_text(Some(&with_accel(&i18n("Local Shell"), "win.local-shell")));
     shell_button.set_action_name(Some("win.local-shell"));
     shell_button.add_css_class("accent");
     shell_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Open Local Shell"))]);
@@ -142,13 +148,14 @@ pub fn create_header_bar() -> (
     let bc_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
     let bc_icon = gtk4::Image::from_icon_name("network-transmit-receive-symbolic");
     bc_icon.set_pixel_size(16);
-    let bc_label = Label::new(Some(&i18n("Broadcast")));
+    let bc_label = Label::new(Some(&i18n("Split Broadcast")));
     bc_label.add_css_class("caption");
     bc_box.append(&bc_icon);
     bc_box.append(&bc_label);
     broadcast_toggle.set_child(Some(&bc_box));
-    broadcast_toggle.set_tooltip_text(Some(&i18n(
-        "Mirror keystrokes to all split panes (Ctrl+Shift+B)",
+    broadcast_toggle.set_tooltip_text(Some(&with_accel(
+        &i18n("Mirror keystrokes to all split panes"),
+        "win.toggle-broadcast",
     )));
     broadcast_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Toggle Split Broadcast",
@@ -171,8 +178,9 @@ pub fn create_header_bar() -> (
     gbc_box.append(&gbc_icon);
     gbc_box.append(&gbc_label);
     group_broadcast_toggle.set_child(Some(&gbc_box));
-    group_broadcast_toggle.set_tooltip_text(Some(&i18n(
-        "Mirror keystrokes to all tabs in the broadcast group",
+    group_broadcast_toggle.set_tooltip_text(Some(&with_accel(
+        &i18n("Mirror keystrokes to all tabs in the broadcast group"),
+        "win.toggle-group-broadcast",
     )));
     group_broadcast_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Toggle Tab Broadcast",
@@ -262,7 +270,7 @@ pub fn create_app_menu() -> gio::Menu {
     conn_section.append(Some(&i18n("New Group")), Some("win.new-group"));
     // "Select Connections" (multi-select mode) acts on the connection list, so
     // it lives in the sidebar's secondary menu, not here.
-    conn_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
+    conn_section.append(Some(&i18n("Quick Connect…")), Some("win.quick-connect"));
     conn_section.append(Some(&i18n("Local Shell")), Some("win.local-shell"));
     menu.append_section(None, &conn_section);
 
@@ -278,21 +286,21 @@ pub fn create_app_menu() -> gio::Menu {
     // registrations in `window/snippet_actions.rs` and `window/edit_actions.rs`
     // before adding either here.
     let tools_submenu = gio::Menu::new();
-    tools_submenu.append(Some(&i18n("Snippets…")), Some("win.manage-snippets"));
-    tools_submenu.append(Some(&i18n("Clusters…")), Some("win.manage-clusters"));
-    tools_submenu.append(Some(&i18n("Workspaces…")), Some("win.manage-workspaces"));
-    tools_submenu.append(Some(&i18n("Templates…")), Some("win.manage-templates"));
-    tools_submenu.append(Some(&i18n("Variables…")), Some("win.manage-variables"));
-    tools_submenu.append(Some(&i18n("Scripts…")), Some("win.manage-scripts"));
+    tools_submenu.append(Some(&i18n("Snippets")), Some("win.manage-snippets"));
+    tools_submenu.append(Some(&i18n("Clusters")), Some("win.manage-clusters"));
+    tools_submenu.append(Some(&i18n("Workspaces")), Some("win.manage-workspaces"));
+    tools_submenu.append(Some(&i18n("Templates")), Some("win.manage-templates"));
+    tools_submenu.append(Some(&i18n("Variables")), Some("win.manage-variables"));
+    tools_submenu.append(Some(&i18n("Scripts")), Some("win.manage-scripts"));
 
     let tools_section_sep = gio::Menu::new();
     tools_section_sep.append(
-        Some(&i18n("Password Generator…")),
+        Some(&i18n("Password Generator")),
         Some("win.password-generator"),
     );
     tools_section_sep.append(Some(&i18n("Wake-on-LAN…")), Some("win.wake-on-lan-dialog"));
-    tools_section_sep.append(Some(&i18n("Network Scan…")), Some("win.network-scan"));
-    tools_section_sep.append(Some(&i18n("SSH Tunnels…")), Some("win.ssh-tunnels"));
+    tools_section_sep.append(Some(&i18n("Network Scan")), Some("win.network-scan"));
+    tools_section_sep.append(Some(&i18n("SSH Tunnels")), Some("win.ssh-tunnels"));
     tools_submenu.append_section(None, &tools_section_sep);
 
     let tools_section = gio::Menu::new();
@@ -301,11 +309,15 @@ pub fn create_app_menu() -> gio::Menu {
 
     // Sessions submenu — monitoring and history
     let sessions_submenu = gio::Menu::new();
-    sessions_submenu.append(Some(&i18n("Active Sessions…")), Some("win.show-sessions"));
-    sessions_submenu.append(Some(&i18n("Connection History…")), Some("win.show-history"));
-    sessions_submenu.append(Some(&i18n("Statistics…")), Some("win.show-statistics"));
-    sessions_submenu.append(Some(&i18n("Recordings…")), Some("win.manage-recordings"));
-    sessions_submenu.append(Some(&i18n("Session Logs…")), Some("win.show-logs"));
+    sessions_submenu.append(
+        Some(&i18n("Join Shared Session…")),
+        Some("win.join-shared-session"),
+    );
+    sessions_submenu.append(Some(&i18n("Active Sessions")), Some("win.show-sessions"));
+    sessions_submenu.append(Some(&i18n("Connection History")), Some("win.show-history"));
+    sessions_submenu.append(Some(&i18n("Statistics")), Some("win.show-statistics"));
+    sessions_submenu.append(Some(&i18n("Recordings")), Some("win.manage-recordings"));
+    sessions_submenu.append(Some(&i18n("Session Logs")), Some("win.show-logs"));
 
     let sessions_section = gio::Menu::new();
     sessions_section.append_submenu(Some(&i18n("Sessions")), &sessions_submenu);
@@ -324,13 +336,13 @@ pub fn create_app_menu() -> gio::Menu {
 
     // Settings section (separated from app meta per GNOME HIG)
     let settings_section = gio::Menu::new();
-    settings_section.append(Some(&i18n("Settings…")), Some("win.settings"));
+    settings_section.append(Some(&i18n("Settings")), Some("win.settings"));
     // External CLI components menu — visible in any confined sandbox (snap or
     // Flatpak), where host binaries are unavailable and tools are downloaded
     // into the app's writable data dir. The action is always registered but
     // does nothing outside a sandbox.
     if rustconn_core::is_sandboxed() {
-        settings_section.append(Some(&i18n("Components…")), Some("win.flatpak-components"));
+        settings_section.append(Some(&i18n("Components")), Some("win.flatpak-components"));
     }
     menu.append_section(None, &settings_section);
 
@@ -342,9 +354,9 @@ pub fn create_app_menu() -> gio::Menu {
         Some(&i18n("Keyboard Passthrough")),
         Some("win.toggle-passthrough"),
     );
-    app_section.append(Some(&i18n("Keyboard Shortcuts…")), Some("app.shortcuts"));
+    app_section.append(Some(&i18n("Keyboard Shortcuts")), Some("app.shortcuts"));
     app_section.append(Some(&i18n("Help")), Some("app.help"));
-    app_section.append(Some(&i18n("Debug Logging…")), Some("app.debug-log"));
+    app_section.append(Some(&i18n("Debug Logging")), Some("app.debug-log"));
     app_section.append(Some(&i18n("About RustConn")), Some("app.about"));
     app_section.append(Some(&i18n("Quit")), Some("app.quit"));
     menu.append_section(None, &app_section);

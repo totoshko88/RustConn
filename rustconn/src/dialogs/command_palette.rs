@@ -7,6 +7,7 @@
 //! - Plain text → fuzzy search connections
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use adw::prelude::*;
@@ -65,6 +66,9 @@ pub struct CommandPaletteDialog {
     /// palette holds only this summary, not the snippet model, so it stays a
     /// view over data the window materialises.
     snippets: Rc<RefCell<Vec<SnippetSummary>>>,
+    /// Key combination shown beside a command, by GTK action name, taken from
+    /// the user's keybinding settings by the window.
+    shortcuts: Rc<RefCell<HashMap<String, String>>>,
     on_action: PaletteCallback,
     search_engine: Rc<SearchEngine>,
     parent: Option<gtk4::Widget>,
@@ -143,6 +147,7 @@ impl CommandPaletteDialog {
             list_box: list_box.clone(),
             items: Rc::new(RefCell::new(Vec::new())),
             snippets: Rc::new(RefCell::new(Vec::new())),
+            shortcuts: Rc::new(RefCell::new(HashMap::new())),
             connections: Rc::new(RefCell::new(Vec::new())),
             groups: Rc::new(RefCell::new(Vec::new())),
             open_tabs: Rc::new(RefCell::new(Vec::new())),
@@ -158,6 +163,7 @@ impl CommandPaletteDialog {
             let groups = palette.groups.clone();
             let open_tabs = palette.open_tabs.clone();
             let snippets = palette.snippets.clone();
+            let shortcuts = palette.shortcuts.clone();
             let list_box_clone = list_box.clone();
             let engine = palette.search_engine.clone();
             search_entry.connect_search_changed(move |entry| {
@@ -168,6 +174,7 @@ impl CommandPaletteDialog {
                     &groups.borrow(),
                     &open_tabs.borrow(),
                     &snippets.borrow(),
+                    &shortcuts.borrow(),
                     &engine,
                 );
                 Self::populate_list(&list_box_clone, &new_items);
@@ -272,6 +279,11 @@ impl CommandPaletteDialog {
         *self.open_tabs.borrow_mut() = tabs;
     }
 
+    /// Sets the key combinations shown beside commands, by GTK action name
+    pub fn set_shortcuts(&self, shortcuts: HashMap<String, String>) {
+        *self.shortcuts.borrow_mut() = shortcuts;
+    }
+
     /// Sets the snippets available for `!` run mode
     pub fn set_snippets(&self, snippets: Vec<SnippetSummary>) {
         *self.snippets.borrow_mut() = snippets;
@@ -295,6 +307,7 @@ impl CommandPaletteDialog {
             &self.groups.borrow(),
             &self.open_tabs.borrow(),
             &self.snippets.borrow(),
+            &self.shortcuts.borrow(),
             &self.search_engine,
         );
         Self::populate_list(&self.list_box, &items);
@@ -320,11 +333,12 @@ impl CommandPaletteDialog {
         groups: &[ConnectionGroup],
         open_tabs: &[OpenTabInfo],
         snippets: &[SnippetSummary],
+        shortcuts: &HashMap<String, String>,
         engine: &SearchEngine,
     ) -> Vec<PaletteItem> {
         let (mode, query) = parse_palette_input(input);
         match mode {
-            PaletteMode::Commands => Self::filter_commands(query, engine),
+            PaletteMode::Commands => Self::filter_commands(query, shortcuts, engine),
             PaletteMode::Tags => Self::filter_by_tag(query, connections),
             PaletteMode::Groups => Self::filter_by_group(query, connections, groups),
             PaletteMode::OpenTabs => Self::filter_open_tabs(query, open_tabs, engine),
@@ -366,19 +380,43 @@ impl CommandPaletteDialog {
     }
 
     /// Filters built-in commands by query
-    fn filter_commands(query: &str, engine: &SearchEngine) -> Vec<PaletteItem> {
-        let mut cmds = builtin_commands();
+    fn filter_commands(
+        query: &str,
+        shortcuts: &HashMap<String, String>,
+        engine: &SearchEngine,
+    ) -> Vec<PaletteItem> {
+        // Each command is shown translated, with the key bound to it now. The
+        // query is matched against the translated label and the English one,
+        // so typing either finds it.
+        let mut cmds: Vec<(String, PaletteItem)> = builtin_commands()
+            .into_iter()
+            .map(|mut item| {
+                let english = std::mem::take(&mut item.label);
+                item.label = i18n(&english);
+                item.description = item
+                    .action
+                    .keybinding_action()
+                    .and_then(|action| shortcuts.get(action))
+                    .cloned();
+                (english, item)
+            })
+            .collect();
         if query.is_empty() {
-            cmds.sort_by_key(|b| std::cmp::Reverse(b.priority));
+            cmds.sort_by_key(|(_, item)| std::cmp::Reverse(item.priority));
         } else {
-            cmds.retain(|item| engine.fuzzy_score(query, &item.label) > 0.0);
-            cmds.sort_by(|a, b| {
-                let sa = engine.fuzzy_score(query, &a.label);
-                let sb = engine.fuzzy_score(query, &b.label);
-                sb.partial_cmp(&sa).unwrap_or(std::cmp::Ordering::Equal)
+            let score = |english: &str, item: &PaletteItem| {
+                engine
+                    .fuzzy_score(query, &item.label)
+                    .max(engine.fuzzy_score(query, english))
+            };
+            cmds.retain(|(english, item)| score(english, item) > 0.0);
+            cmds.sort_by(|(ea, a), (eb, b)| {
+                score(eb, b)
+                    .partial_cmp(&score(ea, a))
+                    .unwrap_or(std::cmp::Ordering::Equal)
             });
         }
-        cmds
+        cmds.into_iter().map(|(_, item)| item).collect()
     }
 
     /// Filters open tabs by fuzzy query
@@ -636,5 +674,58 @@ impl CommandPaletteDialog {
             cb(item.action.clone());
         }
         dialog.close();
+    }
+}
+
+/// Never called: gives `xgettext` the labels of the palette commands, which
+/// `rustconn-core` owns and the palette translates at run time.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "exists so xgettext can see labels that rustconn-core owns"
+    )
+)]
+fn command_label_markers() -> Vec<String> {
+    vec![
+        i18n("New Connection"),
+        i18n("New Group"),
+        i18n("Local Shell"),
+        i18n("Quick Connect"),
+        i18n("Import"),
+        i18n("Export"),
+        i18n("Settings"),
+        i18n("Toggle Fullscreen"),
+        i18n("Toggle Keyboard Passthrough"),
+        i18n("Split Down"),
+        i18n("Split Right"),
+        i18n("Remove Split"),
+        i18n("Network Scan"),
+        i18n("Join Shared Session…"),
+        i18n("Keyboard Shortcuts"),
+        i18n("Tab Overview"),
+        i18n("Switch Tab"),
+        i18n("Share Session (read-only)"),
+        i18n("Stop Sharing"),
+        i18n("Stop Script Recording"),
+        i18n("Start TFTP Server"),
+        i18n("Edit Remote File"),
+    ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_palette_command_label_has_a_marker() {
+        let markers = command_label_markers();
+        for item in builtin_commands() {
+            assert!(
+                markers.contains(&i18n(&item.label)),
+                "palette command '{}' has no entry in command_label_markers(), so no msgid",
+                item.label
+            );
+        }
     }
 }

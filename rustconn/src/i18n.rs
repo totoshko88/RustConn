@@ -370,6 +370,40 @@ pub fn i18n_f(msgid: &str, args: &[&str]) -> String {
     result
 }
 
+/// Returns `text` followed by ` (key combination)`, or `text` alone without one.
+fn append_accel(text: &str, label: Option<&str>) -> String {
+    match label {
+        Some(label) => format!("{text} ({label})"),
+        None => text.to_owned(),
+    }
+}
+
+/// Appends the key combination bound to a GTK action to an already translated
+/// tooltip, as `Mirror keystrokes (Ctrl+Shift+B)`.
+///
+/// The combination is read from the application when called, so it shows the
+/// user's own binding instead of a default typed into the msgid. An action
+/// without a binding leaves the text unchanged.
+// shortcut: read once when the widget is built, so a rebinding made in Settings
+// reaches the tooltip on the next window, not live. Upgrade when tooltips are
+// rebuilt on a keybinding change.
+#[must_use]
+pub fn with_accel(text: &str, action: &str) -> String {
+    append_accel(text, accel_label(action).as_deref())
+}
+
+/// The key combination bound to a GTK action, as shown to the user
+/// (`Ctrl+Shift+B`), or `None` when the action has no binding.
+#[must_use]
+pub fn accel_label(action: &str) -> Option<String> {
+    use gtk4::prelude::*;
+    gtk4::gio::Application::default()
+        .and_downcast::<gtk4::Application>()
+        .and_then(|app| app.accels_for_action(action).first().cloned())
+        .and_then(|accel| gtk4::accelerator_parse(accel.as_str()))
+        .map(|(key, mods)| gtk4::accelerator_get_label(key, mods).to_string())
+}
+
 /// Translates a string with singular/plural forms.
 ///
 /// # Example
@@ -592,6 +626,16 @@ mod language_list_tests {
                 "lang_to_locale(\"{lang}\") gives `{locale}`, not an ll_CC.UTF-8 locale"
             );
         }
+    }
+
+    #[test]
+    fn append_accel_adds_the_label_only_when_there_is_one() {
+        use super::append_accel;
+        assert_eq!(
+            append_accel("Mirror keystrokes", Some("Ctrl+Shift+B")),
+            "Mirror keystrokes (Ctrl+Shift+B)"
+        );
+        assert_eq!(append_accel("Mirror keystrokes", None), "Mirror keystrokes");
     }
 }
 

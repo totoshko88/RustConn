@@ -89,21 +89,6 @@ impl AppState {
         self.cluster_manager.get_all_clusters()
     }
 
-    /// Starts a cluster session for tracking connection states, over the
-    /// cluster's resolved membership (explicit members plus auto-membership
-    /// matches), so a pattern-only cluster is tracked like any other.
-    pub fn start_cluster_session(&mut self, cluster_id: Uuid) -> Result<(), String> {
-        self.cluster_manager
-            .start_session(cluster_id, self.connection_manager.list_connections())
-            .map(|_| ())
-            .map_err(|e| format!("Failed to start cluster session: {e}"))
-    }
-
-    /// Ends a cluster session
-    pub fn end_cluster_session(&mut self, cluster_id: Uuid) {
-        self.cluster_manager.end_session(cluster_id);
-    }
-
     /// Saves clusters to disk
     fn save_clusters(&self) -> Result<(), String> {
         let clusters = self.cluster_manager.clusters_to_vec();
@@ -402,6 +387,12 @@ impl AppState {
         let group_id = connection.group_id;
         self.clipboard.copy(&connection, group_id);
         Ok(())
+    }
+
+    /// The connection the clipboard was copied from, if any.
+    #[must_use]
+    pub fn clipboard_original_connection(&self) -> Option<Connection> {
+        self.clipboard.original_connection().cloned()
     }
 
     /// Pastes a connection from the clipboard

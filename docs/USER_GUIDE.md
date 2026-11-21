@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.25.6** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.26.0** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -55,6 +55,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Tab Broadcast](#tab-broadcast)
    - [Command Palette](#command-palette)
    - [Run Local Script](#run-local-script)
+   - [Read-only Network Tools](#read-only-network-tools)
    - [Global Variables](#global-variables)
    - [Password Generator](#password-generator)
    - [Wake-on-LAN](#wake-on-lan)
@@ -119,7 +120,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 RustConn uses a two-panel layout in the GNOME style (like Files or Settings): the
 sidebar and the session area each have their own header bar. The window controls
 follow your system's button layout and always sit at the window's edges, whether
-the sidebar is shown or hidden.
+the sidebar is shown or hidden. Add, New, Refresh and the primary button of single-button dialogs sit on the side opposite the close button, so with `button-layout` set to `close:` they move to the end. Dialogs with their own Cancel button keep the GNOME order (Cancel first, affirmative last).
 
 ```
 ┌────────────────────────┬────────────────────────────────────┐
@@ -429,7 +430,7 @@ quicssh is **not bundled**. You install it yourself and put it on your PATH; the
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
 **Advanced Tabs:**
-- **Advanced** — Terminal theme override, remote monitoring override, session recording, activity monitor, retry, port knocking and fwknop SPA, highlight rules, Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
+- **Advanced** — Terminal theme override, remote monitoring override, session recording, activity monitor, retry, port knocking and fwknop SPA (the SPA keys are stored in the secret store, not in the connection file; an empty key row marked "in vault" keeps the stored key, and typing a new key replaces it. On the first start after upgrading to 0.26.0, plaintext keys are copied to the vault, read back and then removed from `connections.toml`; before that the file is copied to `connections.toml.pre-spa-vault.bak` (owner-only, it still holds the keys, so it is deleted after the first successful SPA connection). A locked or read-only backend leaves the keys in the file and the next start retries. Exports, Group Sync files and copies made on another machine carry no key, so enter it there. A RustConn older than 0.26.0 does not know the vault and skips the SPA packet silently after a downgrade. Moving to another backend needs **Credential Transfer**, which moves the SPA entries too), highlight rules, Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
 - **Automation** — Automatic login (expected text of the device's username/password prompts), expect rules for auto-responding to terminal patterns, pattern tester with built-in templates (Sudo, SSH Host Key, Login, etc.), pre-connect task, post-disconnect task (with conditions: first/last connection only)
 - **Data** — Local variables (connection-scoped, override global variables), custom properties (Text/URL/Protected metadata)
 - **Logging** — Session logging (enable/disable, log path template with variables, timestamp format, max file size, retention days, granular content options: log activity, log input, log output, add timestamps)
@@ -780,7 +781,7 @@ Temporary connection without saving:
 Deleted items are moved to Trash and can be restored:
 - A single connection or group is deleted after a confirmation dialog; then an "Undo" notification appears
 - Click "Undo" to restore the deleted item
-- Deleting several selected items at once also moves them to Trash; there is no "Undo" notification for that, so use the Trash row
+- Deleting several selected items at once also moves them to Trash; the notification "Moved N item(s) to Trash" has an "Undo" that restores all of them. If it has gone, restore from the Trash row
 - Items stay in Trash, with their saved vault credentials, until you choose **Empty Trash**
 - Trash is persisted across sessions for recovery
 
@@ -2419,8 +2420,8 @@ Split view works with **any in-process (embedded) session**, not just VTE termin
 
 Sessions shown through an external viewer (xfreerdp, vncviewer, or an external SPICE viewer) cannot be placed in a split — attempting to split one shows "Split view is not available for external-viewer sessions. Switch this connection to embedded mode to use split." and leaves the layout unchanged.
 
-- **Horizontal Split** — Ctrl+Shift+H splits the current tab horizontally (side by side)
-- **Vertical Split** — Ctrl+Shift+S splits the current tab vertically (top and bottom)
+- **Split Down** — Ctrl+Shift+H splits the current tab into a top and a bottom pane
+- **Split Right** — Ctrl+Shift+S splits the current tab into a left and a right pane
 - **Close Pane** — Ctrl+Shift+X closes the focused pane; if only one pane remains, the split is dissolved and the session returns to normal tab mode
 - **Remove Split** — Ctrl+Shift+J, **Remove Split** in the split tab's context menu or in a pane header's menu, or **Remove Split** in the command palette, returns every session of the split to its own tab without closing any of them. On a tab that is not split it does nothing
 - **Closing a split tab** — a split lives in the tab of its first (owner) session; the other sessions have no tab of their own while they are in the split. The tab's title names the focused pane, which is not always the owner. Closing a tab whose split shows two or more sessions (X, middle-click, **Close Tab…** in the tab menu, or Ctrl+Shift+W) asks first. The dialog says which session the tab belongs to and lists the other sessions it shows (the first three, then how many more), and offers three answers: **Remove Split** (the default, Enter) returns every session to its own tab and closes none of them, the same as Ctrl+Shift+J; **Close All Sessions** disconnects the owner and every other session of the split; **Cancel** (Escape) keeps the tab as it was. Ctrl+Shift+W always acts on the tab, so it asks about the whole split even when another pane has focus (while a terminal has focus Ctrl+W goes to the shell and does not close the tab). **Close Others**, **Close to the Left**, **Close to the Right**, **Close All Tabs** and **Close All Ungrouped** ask once for the whole batch when it includes a split tab, and confirming closes the other sessions of those splits too; **Close All in Group** says so in its own confirmation. Closing one pane's session never asks: use **Close Pane** in the pane header's menu or Ctrl+Shift+X, or **Disconnect** in the sidebar. Scripts, clusters, a session that ends by itself and closing the window do not show this dialog either. To take one session out of the split, use **Move to Own Tab**
@@ -2590,7 +2591,7 @@ Open with **Ctrl+Shift+F** in any terminal session.
 - **Text search** — Plain text matching (default)
 - **Regex** — Toggle "Regex" checkbox for regular expression patterns; invalid patterns show an error message
 - **Case sensitive** — Toggle case sensitivity
-- **Highlight All** — Highlights all matches in the terminal (enabled by default)
+- **Highlight All** — Tints every visible match in the terminal (enabled by default). The search bar is a bottom sheet; the terminal gives up its height while it is open, so a match on the last row stays visible
 - **Navigation** — Up/Down buttons or Enter to jump between matches; search wraps around
 - Highlights are cleared automatically when closing the dialog (Close button or Escape)
 
@@ -2657,7 +2658,7 @@ The tab indicator and notification are cleared automatically when you switch to 
 **Per-Connection Override:**
 Edit connection → **Advanced** tab → **Activity Monitor** section.
 
-**Quick Mode Change:** Right-click any terminal tab → **Monitor ▸** and pick **Off**, **Activity**, **Silence** or **Command finished**.
+**Quick Mode Change:** Right-click any terminal tab → **Activity Monitor ▸** and pick **Off**, **Activity**, **Silence** or **Command finished**.
 
 ### Text Highlighting Rules
 
@@ -2757,8 +2758,9 @@ A folder cannot be dropped into itself or into one of its own subfolders — suc
 
 Group Operations Mode enables bulk actions on multiple connections at once. It is
 toggled with the **Select Connections** button in the sidebar's bottom toolbar. The
-mode switches the list to multi-selection and shows the bulk-actions bar; it adds
-no checkboxes.
+mode switches the list to multi-selection and shows the bulk-actions bar. Each row
+shows a tick at its right edge while it is selected, and the line above the bar
+counts the selected items (**Selected: 3**).
 
 **Available actions in the bulk-actions bar:**
 
@@ -2775,9 +2777,9 @@ no checkboxes.
 
 1. Click **Select Connections** in the sidebar's bottom toolbar to enter Group Operations Mode
 2. Select rows with **Ctrl+click** (add or remove one) or **Shift+click** (a range), or use **Select All**
-3. Choose an action in the bar. Right-clicking a selected row keeps the selection and opens a menu with the same bulk actions plus **Run Local Script…**
+3. Choose an action in the bar. Right-clicking a selected row keeps the selection and opens a menu with the same bulk actions plus **Run Local Script…**. The **Menu** key and **Shift+F10** open the same menu, **Delete** deletes the whole selection (after the confirmation), and **F2**, **Ctrl+E** and **Ctrl+D** do nothing while several rows are selected
 4. Confirm the action in the dialog
-5. Click **Select Connections** again to leave the mode. **Escape** only clears the selection
+5. Press **Escape** or click **Select Connections** again to leave the mode and drop the selection (use **Clear Selection** to stay in the mode)
 
 **Batch Edit:** the pencil button opens **Fields to change**. Tick the check box in front of a field to change it, fill the field in, and press **Apply**; unticked fields are left alone. **Group** moves the connections (a password stored in the Vault moves with them), **Tags** *replaces* the existing tags, and **Icon** sets an emoji or GTK icon name (empty clears it). A toast offers **Undo** for ten seconds.
 
@@ -2920,6 +2922,15 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 - Open **Tools → Scripts…** to create, edit, validate, delete and run scripts. The editor validates on save — a script with a syntax error never reaches disk.
 - A script runs against the **active session**. Start one from the Scripts dialog, or attach it to a connection/group to run automatically after the session starts.
 
+**Recording a script**
+
+Right-click inside a terminal tab → **Record Script…**, type the commands you want in the script, then right-click → **Stop Script Recording**. The toast reports the step count and the file path: `<config_dir>/rustconn/scripts/<connection>-<YYYYMMDD-HHMMSS>.rsc` on Linux (a `-1`, `-2` suffix is added rather than overwriting an existing file). The file is an ordinary `.rsc` script and opens in **Tools → Scripts…**.
+
+- Enter is recorded as its own `send {ENTER}` step, and text that merely looks like key syntax (`awk '{print $1}'`) stays literal — the recorder does not reinterpret what you typed.
+- Input typed while the terminal does not echo (a password prompt from `sudo`, `ssh` or `passwd`) is not stored: the script gets `send ${password}` and `{ENTER}`, and the replay asks for a `password` variable. A password typed at a prompt that does echo is still saved as typed.
+- Tab is recorded as its own `send {TAB}` step. Backspace removes the last character typed on the current line (after Enter or Tab it cannot reach back). Arrow keys, function keys and other escape sequences are dropped, so a command recalled with Up is not recorded: type it out instead.
+- Automated sends (auto-login, expect rules, snippets, macros) are not recorded. Anything **you** type is, including a password or a secret answer, so do not record while typing one. The file is saved readable by you only (mode 0600).
+
 **Auto-run scripts**
 
 - Connection editor → **Automation** → **Auto-run Scripts**: script ids run after this connection's session starts.
@@ -2930,9 +2941,9 @@ Scripts are small instruction files that drive a live session the same way Ásbr
 
 | Command | Meaning |
 |---------|---------|
-| `send <sequence>` | Send text (same syntax as key sequences: `{ENTER}`, `{TAB}`, `{WAIT:500}` …) |
+| `send <sequence>` | Send text (same syntax as key sequences: `{ENTER}`, `{TAB}`, `{WAIT:500}` …); output buffered before the send is discarded |
 | `wait <ms>` | Pause for milliseconds |
-| `expect <regex> [<sec>]` | Wait until the output matches a regex (or times out) |
+| `expect <regex> [<sec>]` | Wait until new output matches a regex (or times out) |
 | `capture <regex> <var> [<sec>]` | Like `expect`, but store capture group 1 in a variable |
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
@@ -3459,7 +3470,7 @@ The tab title changes to `[GroupName] ConnectionName` and the tooltip shows the 
 
 **Close All Ungrouped:** Right-click any tab → **Close All Ungrouped** — closes everything that is *not* in a group, which is the quick way to clear scratch tabs while keeping your labelled sets.
 
-**Monitor Mode:** Right-click any tab → **Monitor ▸** and pick a mode — **Off**, **Activity**, **Silence** or **Command finished** — with the current one shown selected.
+**Monitor Mode:** Right-click any tab → **Activity Monitor ▸** and pick a mode — **Off**, **Activity**, **Silence** or **Command finished** — with the current one shown selected.
 
 Groups are visual only, but a grouped tab does come back grouped after a restart through Session Restore: the snapshot records each tab's group alongside its title and reapplies it when the tab reopens. A saved workspace reapplies the group too, for Local Shell tabs.
 
@@ -3601,14 +3612,14 @@ Without a terminal on stdin and without `--force`, `snippet run --execute` refus
 A cluster is a named set of connections you open together — a rack, a Kubernetes node pool, the three web servers behind one load balancer.
 
 **Create a cluster:**
-1. Menu → Tools → **Clusters…**
+1. Menu → Tools → **Clusters**
 2. Click **New Cluster** → enter a name → tick the member connections → **Create** (**Save** when editing an existing cluster)
 
 You can also select several connections in the sidebar and use **Create Cluster** in the bulk-action bar.
 
 **Auto-membership pattern:** instead of (or as well as) ticking members, enter a regular expression. Every connection whose name *or* host matches joins the cluster when it opens — `^prod-web\d+` collects `prod-web1`, `prod-web2`, … as you add them. The match is anywhere in the text unless you anchor it with `^`/`$`, and it is case-sensitive; start the pattern with `(?i)` to ignore case. The editor shows how many connections the pattern matches as you type, and the cluster list counts ticked and matched members together.
 
-**Open a cluster:** Menu → Tools → **Clusters…** → the ▶ button on the cluster's row. RustConn opens a tab for every member, whatever their protocol. A cluster of more than ten members asks before opening them all, so an over-broad pattern (`.` matches everything) cannot open every connection by accident. If any member's jump host no longer exists, RustConn asks once for the whole cluster before connecting those members without it.
+**Open a cluster:** Menu → Tools → **Clusters** → the ▶ button on the cluster's row. RustConn opens a tab for every member, whatever their protocol. A cluster of more than ten members asks before opening them all, so an over-broad pattern (`.` matches everything) cannot open every connection by accident. If any member's jump host no longer exists, RustConn asks once for the whole cluster before connecting those members without it.
 
 **Every tab of an open cluster joins a tab group named after the cluster.** The tab reads `[ClusterName] ConnectionName`, so you can see at a glance which tabs belong together, and every [tab group](#tab-grouping) operation applies to the cluster:
 
@@ -3618,7 +3629,7 @@ You can also select several connections in the sidebar and use **Create Cluster*
 
 **Open a cluster in its own window:** the button next to ▶ on the cluster's row (**Connect to cluster in a new window**) connects the same members, but gathers their tabs in a separate window titled after the cluster instead of the main window's tab bar, so a cluster can sit on another monitor or workspace. In that window, closing a tab ends its session and closing the window ends them all, after a confirmation when two or more sessions are still open; the button at the left of its header bar (**Move Tab to Main Window**, also Ctrl+Shift+M) hands the selected tab back to the main window without disconnecting it. Members shown by an external viewer cannot be moved and stay in the main window. Tabs in a cluster window carry no `[ClusterName]` prefix, since the window itself is the grouping. **Broadcast in a cluster window:** once the window holds two or more terminal tabs, a **Broadcast** toggle appears at the right of its header bar ([#436](https://github.com/totoshko88/RustConn/issues/436)). Turn it on with the toggle or **Ctrl+Shift+A** and what you type in any tab of the window goes to all of its terminal tabs; a banner names how many tabs receive it, and its **Stop** button, the toggle or Ctrl+Shift+A turns it off. Each cluster window has its own broadcast, separate from the main window's [Tab Broadcast](#tab-broadcast), so two clusters in two windows can take different commands. More than five tabs ask for confirmation first, and embedded RDP, VNC and SPICE tabs are left out. **Tile Tabs in a cluster window:** with two or more tabs, a **Tile Tabs** toggle appears in the header bar next to **Broadcast** ([#436](https://github.com/totoshko88/RustConn/issues/436)). It hides the tab bar and shows every tab at once in a balanced grid, with a narrow title over each tile that carries the tab's name and a mark when the session has ended. The tile you click or type in is the active one, and **Ctrl+Shift+W** closes it (the session ends and the other tiles are rebuilt): **Move Tab to Main Window**, Ctrl+Shift+M, closing a tab and **Broadcast** act on it, or on all tiles for the broadcast, exactly as they do on the selected tab. While the broadcast is on and three or more terminal tabs are tiled, each tile shows a **Broadcast** check: untick it to keep that tab out (it neither sends nor receives); the check stays until you tick it again, and the broadcast stops if fewer than two tabs are left. With two tabs there is no check, since the header-bar toggle already covers that case, and dropping to two puts every tab back in. Drag the dividers to resize tiles. When a tab joins, leaves or closes, the grid is built again with equal tiles, and when only one tab is left the window goes back to tabs. The toggle now reads **Show Tabs**; click it to return to the tab bar with every tab as it was. The mode is not remembered, so a window opens with tabs each time. This is a view, not a split: a cluster window still has no split view. A cluster window has no tab context menu, no split view, and no keyboard passthrough or F10 menu; to use those, move the tab back to the main window first (dragging a tab to another window's tab bar does not move it, and the tab returns to its window).
 
-**Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters… (**Disconnect all cluster sessions**).
+**Close a cluster:** either **Close All in Group** from any member tab, or the ■ button on the cluster's row in Clusters (**Disconnect all cluster sessions**).
 
 Notes on the automatic group:
 - The group name is the cluster's name exactly as written. Renaming a cluster affects the *next* time you open it, not tabs that are already open.
@@ -3626,7 +3637,7 @@ Notes on the automatic group:
 - You can override it per tab: **Remove from Group**, or **Set Group…** to move one member elsewhere. The tab stays part of the cluster for the Disconnect button either way.
 - Groups are visual and session-scoped; they are not written to disk.
 
-**Broadcast:** a cluster that opens in its own window has a **Broadcast** toggle in that window's header bar (Ctrl+Shift+A), described above. In the main window, typing into several hosts at once is a split-view feature (see [Broadcast Input](#broadcast-input)) or a [Tab Broadcast](#tab-broadcast) of tabs you add by hand.
+**Broadcast:** a cluster that opens in its own window has a **Tab Broadcast** toggle in that window's header bar (Ctrl+Shift+A), described above. In the main window, typing into several hosts at once is a split-view feature (see [Broadcast Input](#broadcast-input)) or a [Tab Broadcast](#tab-broadcast) of tabs you add by hand.
 
 **Use cases:**
 - Rolling out configuration changes across multiple servers
@@ -3695,6 +3706,7 @@ Where a knock *sequence* can be replayed or observed by anyone watching the wire
 - Before connecting, RustConn builds the SPA payload, encrypts it with AES-256-CBC (OpenSSL-compatible `Salted__` / EVP_BytesToKey key derivation), appends an HMAC-SHA256 digest, and sends it as one UDP datagram. A fresh random salt and timestamp make every packet unique.
 - SPA runs only when both keys are set; otherwise it is skipped. It can be combined with a knock sequence, but on its own it is the more secure of the two.
 - The keys never appear in the config file — only vault references are stored.
+- Duplicating or pasting a connection copies both vault entries to the copy. If that fails, a toast says so and the copy has no keys until you enter them. Credential Transfer moves the entries to another backend, and switching SPA off in the editor removes them.
 
 ### Run Local Script
 
@@ -3708,6 +3720,29 @@ Runs a script from this computer on several hosts: a `.ps1` file in PowerShell o
 - **Connection failed** means SSH could not connect or log in, or the connection dropped. A script that exits with status 255 is reported as a failed script, like any other status.
 - **Stop**, the time limit and a lost connection all stop the script on the host: it gets SIGTERM, then SIGKILL two seconds later, along with the processes it started. A command running as another user, such as under `sudo`, can outlive it, and so can anything that moved to its own session with `setsid`.
 - Output is kept up to 4 MiB per host, and scripts can be up to 1 MiB.
+
+### Read-only Network Tools
+
+Four tools for working with a live session or a remote host without giving anyone a way to write back: read-only sharing, a read-only TFTP server, a remote file editor and script recording. They are in the terminal's right-click menu, the tab's right-click menu (addressed to that tab's session), the connection's context menu, and the command palette (**Ctrl+Shift+P**). In the connection menu, **Edit Remote File…** is available for any SSH connection (no live session needed), while **Share Session** and **Record Script…** appear when exactly one session of that connection is running. None is in the application menu, because each acts on a terminal and the app menu cannot promise which one. **Record Script…** is only in the terminal, tab and connection menus, not in the command palette: a palette command that targets "the focused session" could record the wrong host's commands into a file.
+
+**Share Session (read-only).** Select a terminal tab, open the terminal or tab menu, and choose **Share Session (read-only)**. Before starting, the **Access** list offers **This computer only** (the default), one of the machine's IPv4 or IPv6 addresses, or **Internet — WebTransport in a browser**. A LAN link uses that interface's address and the relay binds only to it. The link is not one-time: it works for any number of viewers, as often as they like, until you stop sharing. A LAN link is plain HTTP, so other computers on the network can read what is shown, and the random token is its only protection. The token sits in the part of the link after `#`, which a browser does not send to the server, keep in a log or pass on in a `Referer` header; the page removes it from the address bar and sends it in a header. While a tab is shared its title starts with **◉** and its right-click menu offers **Stop Sharing**; closing the tab also stops the relay. Limits: 64 open connections, 8 live viewers (more get 503), 10 seconds to send a request. A viewer that falls behind gets a cleared screen and a short notice instead of a half-drawn one. **Copy link** puts it on the clipboard; **Stop sharing** ends the relay. The page is a real terminal (the vendored xterm.js), so colours, cursor addressing and full-screen programs such as `atop` render correctly instead of showing escape sequences. There is no input path and no upload; the token is compared in constant time, never logged and never written into the page. Asking for the stream without the token, or with a wrong one, returns 403; a token in the query string is not accepted. A share stops by itself after one hour (a toast says so; share again to continue), and a toast reports how many viewers are watching whenever that number changes. One relay runs at a time; starting another replaces the first.
+
+*Internet mode.* **Internet — WebTransport in a browser** first asks whether it may contact public STUN servers (Google, `stun.l.google.com`, and Cloudflare, `stun.cloudflare.com`) for the address and port the internet sees. Those companies see this computer's IP address; no terminal data goes to them. Nothing is sent before you choose: **Look Up Public Address** contacts them, **Local Network Only** shares without any lookup (the link then reaches only the local network), and Cancel starts nothing. RustConn then serves a small HTTPS page over TCP-TLS and carries the terminal over WebTransport (HTTP/3 on QUIC/UDP). The dialog lists the discovered endpoints and builds an `https://…` link for the selected one; the token and the certificate pin live in the URL fragment. Open the link in a current browser (Chrome or Edge 100+, Firefox 125+, Safari 26.4+). *Trust model for a browser:* the page itself loads over TCP-TLS with the share's self-signed certificate, so the browser shows a certificate warning, and nothing can be checked until you accept it (trust on first use). After that, the WebTransport connection is pinned to the certificate by the SHA-256 in the link. Someone who sits between you and the sharer on that first load can serve a forged page. Its script can read the token and the pin from the link, join the real share as a viewer, and show you fake output. Before you accept, compare the certificate fingerprint the browser shows with the `fp=` value of the link, and send the link only over a channel you trust. The warning goes away only with a certificate from a public authority, which this share does not obtain. *Trust model for another RustConn:* **Join Shared Session…** never loads the page; it checks the pin from the link and sends the token only to a peer that holds that certificate. The link is then the one secret to protect. Another RustConn can open the same link instead: command palette → **Join Shared Session…**, paste it, and a read-only terminal window opens. That native viewer talks WebTransport directly and needs only the UDP port, not the page or its TCP port. Only output produced while connected is shown; there is no scrollback beyond the viewer window, input or upload. Closing the tab or window ends the view. Internet mode uses IPv4 and the public IPv4 STUN servers. Reachability depends on the router: an endpoint-independent (full-cone) UDP mapping or a forwarded UDP port works, and the browser page's TCP port must be reachable too. A restricted or symmetric NAT, CGNAT, and a local firewall that drops inbound traffic need a relay or firewall rules, which this mode does not configure. If the viewer times out, forward the TCP and UDP ports shown in the dialog on the router and allow them locally. The share has the same limits as the relay: 64 open connections, 8 live viewers, 10 seconds for the TLS handshake and request, 15 seconds per write, and a viewer that falls behind gets a terminal reset and a short notice. While the tab is shared its title starts with **◉**, its right-click menu offers **Stop Sharing**, and closing the tab stops the share.
+
+**TFTP Server.** Command palette → **Start TFTP Server** → choose a folder, then the **Port** (6969, unprivileged, or 69, the standard) and the **Access** interface (loopback or one local IPv4/IPv6 address). The dialog reports the resulting address and offers **Copy address** and **Stop server**. Port 69 is privileged on Linux, macOS and FreeBSD: a normal user gets an explanatory error instead of a server, so run RustConn with the needed rights, grant `CAP_NET_BIND_SERVICE` on Linux, or keep 6969. It answers TFTP RRQ only, in octet mode, with `blksize`/`tsize` OACK and retransmission. Names resolve inside the chosen folder: a leading `/` means the folder itself (RouterOS requests `/file`), while `..`, NUL bytes and symlinks escaping the folder are refused. The chosen interface is the one a device must reach; with **This computer only** the server binds loopback. One server runs at a time and serves up to eight transfers at once; files over 32 MiB are refused. Choosing your home folder or a folder with `.ssh` in it shows a warning first, because the server gives any device that can reach it read access to everything inside. From a local terminal: `curl -sS tftp://127.0.0.1:<port>/<file> -o copy` (curl must be built with TFTP).
+
+**Edit Remote File.** Select an SSH terminal tab → command palette → **Edit Remote File** → enter an absolute remote path → **Edit**. RustConn downloads the file into a temporary copy over `sftp` and opens it in your default text editor. Save it there, then press **Upload** in the RustConn dialog; **Cancel** discards the copy. Download and upload run in the background, so the window stays usable, and each transfer stops after 120 seconds.
+
+If the upload fails, the edited copy is **not** deleted. The error dialog offers **Retry**, **Save a Copy…** and **Discard**; closing it with Escape keeps the copy in the temporary folder shown in the message.
+
+The transfer uses the connection's own SSH settings: key file, jump host chain (including a group or global jump host), ProxyCommand, custom options and SSH agent socket. Agent and X11 forwarding and port forwards are not used for the transfer. Limits:
+
+- Key or agent authentication only (`BatchMode=yes`). A password is never put on a command line or in a batch file, and the tool never asks for one.
+- Host, user name and jump host entries that start with `-` or contain spaces or control characters are refused, so an imported connection cannot pass options to `sftp`.
+- Files larger than 16 MiB are refused on download and on upload.
+- Hosts without an SFTP subsystem (OpenWrt/Dropbear) fall back to legacy `scp -O`, but only when the server says it has no SFTP subsystem. A missing file or a refused login shows its own error. On the `scp` path the remote path may contain only letters, digits and `. _ / @ : + = , % -`; other paths are refused with an explanation.
+- Cisco IOS and other devices with neither `sftp` nor `scp` are not supported.
+- The temporary copy is private to you (mode 0600) and has a plain file name; the remote file name is not used as typed.
 
 ### Broadcast Input
 
@@ -4185,6 +4220,8 @@ Also in this group: **Auto-hide the sidebar on connect**, and **Open tunnelled b
 
 **SSH Agent group:** Status (running/stopped with socket path), Loaded Keys (with remove option), Available Keys (keys in `~/.ssh/` with add option). A key added here has no lifetime and stays off RustConn's list of keys to remove, so RustConn does not remove it on exit, lock or suspend.
 
+**Custom Socket:** set a path to use that ssh-agent socket for every SSH launch (terminal, SFTP, Midnight Commander, tunnels, monitoring, remote file edit, `ssh-add`, and `rustconn-cli`). The order is: the connection's own agent socket, then its group's, then this setting, then the agent RustConn started, then `SSH_AUTH_SOCK`. Leave it empty to use `SSH_AUTH_SOCK`. A leading `~/` is expanded; a relative path is refused. The row turns red and says why when the path does not exist, is not a socket, or belongs to another user. A launch that still uses such a path prints a warning in the terminal tab. In the Flatpak, only a path the app can see works, for example under `$XDG_RUNTIME_DIR` (see Flatpak Sandbox Overrides).
+
 ### Connection page
 
 **Network group:** *Global Jump Host* (a saved SSH connection) and *Global ProxyJump* (free text, OpenSSH syntax). The outermost of the three bastion tiers — it applies to every connection that inherits, including ungrouped ones, which no group can reach. Set both and they chain: the Jump Host is contacted first and the ProxyJump value is reached through it. A connection set to *Direct* ignores both. See [Network Mode and Where a Jump Host Comes From](#network-mode-and-where-a-jump-host-comes-from).
@@ -4342,6 +4379,8 @@ gtk-enable-animations=false
 - Virt-Viewer (.vv files — SPICE/VNC from libvirt, Proxmox VE)
 - Libvirt / GNOME Boxes (domain XML — VNC, SPICE, RDP from QEMU/KVM VMs)
 - RustConn Native (.rcn)
+
+**Warnings.** An entry that fails validation (a connection with no name or host, port 0, or a jump host that is not part of the import; a group with no name; a snippet with no name or command) is still imported unchanged and listed in the result's **Warnings**. The warnings carry no host, user or password.
 
 Double-click source to start import immediately.
 
@@ -5309,8 +5348,8 @@ markers appear; nothing else changes.
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+Shift+H | Split Horizontal |
-| Ctrl+Shift+S | Split Vertical |
+| Ctrl+Shift+H | Split Down |
+| Ctrl+Shift+S | Split Right |
 | Ctrl+Shift+X | Close Pane |
 | Ctrl+Shift+R | Move to Own Tab (keeps the session, returns it to its own tab) |
 | Ctrl+Shift+J | Unsplit (return every session to its own tab) |

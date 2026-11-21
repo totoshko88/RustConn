@@ -37,7 +37,7 @@ use std::rc::Rc;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::{
-    Box as GtkBox, Button, DropTarget, EventControllerKey, GestureClick, ListItem, ListView,
+    Box as GtkBox, Button, DropTarget, EventControllerKey, GestureClick, Label, ListItem, ListView,
     Orientation, PolicyType, ScrolledWindow, SearchEntry, SignalListItemFactory, SingleSelection,
     TreeExpander, TreeListModel, TreeListRow, Widget, gdk, gio, glib,
 };
@@ -48,7 +48,7 @@ use rustconn_core::models::{Connection, SmartFolder};
 use rustconn_core::search::DebouncedSearchEngine;
 use uuid::Uuid;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 use crate::sidebar_ui;
 use crate::smart_folder_ui::SmartFoldersSidebar;
 
@@ -59,6 +59,43 @@ use crate::smart_folder_ui::SmartFoldersSidebar;
 /// must account for it, and rows *inside* it are the same connections shown a
 /// second time (their real place carries the star emblem instead).
 pub const PINNED_GROUP_ID: &str = "__pinned__";
+
+/// IDs of the selected connections and groups, each once, in list order.
+///
+/// Rows without a UUID id (the Trash row and what it holds) are skipped.
+fn selected_ids(selection: &SelectionModelWrapper) -> Vec<Uuid> {
+    let positions = selection.get_selected_positions();
+
+    let mut ids = Vec::new();
+    for pos in positions {
+        if let Some(model) = selection.model()
+            && let Some(item) = model.item(pos)
+        {
+            // Handle TreeListRow wrapping
+            let conn_item = if let Some(row) = item.downcast_ref::<TreeListRow>() {
+                row.item().and_downcast::<ConnectionItem>()
+            } else {
+                item.downcast::<ConnectionItem>().ok()
+            };
+
+            // A pinned connection has two rows (Favorites and its own group),
+            // so the same id can be selected twice; every caller wants it once.
+            if let Some(conn_item) = conn_item
+                && let Ok(uuid) = Uuid::parse_str(&conn_item.id())
+                && !ids.contains(&uuid)
+            {
+                ids.push(uuid);
+            }
+        }
+    }
+    ids
+}
+
+/// The bulk actions bar's count line. One msgid for every count, so no plural
+/// forms are needed in the catalogues.
+fn selected_count_text(count: usize) -> String {
+    i18n_f("Selected: {}", &[&count.to_string()])
+}
 
 /// Sidebar widget for connection tree display
 #[expect(dead_code, reason = "Many fields kept for GTK widget lifecycle")]
@@ -76,6 +113,8 @@ pub struct ConnectionSidebar {
     selection_model: Rc<RefCell<SelectionModelWrapper>>,
     /// Bulk actions revealer (animated show/hide in group ops mode)
     bulk_actions_revealer: gtk4::Revealer,
+    /// "N selected" line of the bulk actions bar
+    selection_counter: Label,
     /// Current mode
     group_ops_mode: Rc<RefCell<bool>>,
 
@@ -319,7 +358,7 @@ impl ConnectionSidebar {
         );
 
         // Create bulk actions toolbar wrapped in Revealer (hidden by default)
-        let bulk_actions_bar = sidebar_ui::create_bulk_actions_bar();
+        let (bulk_actions_bar, selection_counter) = sidebar_ui::create_bulk_actions_bar();
         let bulk_actions_revealer = gtk4::Revealer::builder()
             .transition_type(gtk4::RevealerTransitionType::SlideDown)
             .transition_duration(200)
@@ -418,6 +457,13 @@ impl ConnectionSidebar {
             // Use is_multi() to check if we're in multi-selection mode
             let is_multi_mode = selection_model_clone.borrow().is_multi();
             let ctrl = modifier.contains(gdk::ModifierType::CONTROL_MASK);
+            // Several rows selected: one-row commands do nothing rather than
+            // act on an arbitrary row of the selection; Delete takes them all.
+            let several = is_multi_mode
+                && list_view_weak
+                    .upgrade()
+                    .and_then(|lv| lv.model())
+                    .is_some_and(|m| view::has_multi_selection(&m));
 
             // Handle keyboard navigation
             // Shortcuts like Delete, Ctrl+E, Ctrl+D are scoped to the sidebar
@@ -433,10 +479,20 @@ impl ConnectionSidebar {
                     glib::Propagation::Proceed
                 }
                 gdk::Key::Delete => {
-                    // Delete selected connection/group
+                    // Delete selected connection/group, or the whole selection
                     if let Some(lv) = list_view_weak.upgrade() {
-                        let _ = lv.activate_action("win.delete-connection", None);
+                        let action = if several {
+                            "win.delete-selected"
+                        } else {
+                            "win.delete-connection"
+                        };
+                        let _ = lv.activate_action(action, None);
                     }
+                    glib::Propagation::Stop
+                }
+                gdk::Key::F2 | gdk::Key::e | gdk::Key::E | gdk::Key::d | gdk::Key::D
+                    if several && (ctrl || key == gdk::Key::F2) =>
+                {
                     glib::Propagation::Stop
                 }
                 gdk::Key::F2 => {
@@ -487,8 +543,11 @@ impl ConnectionSidebar {
                     glib::Propagation::Stop
                 }
                 gdk::Key::Escape if is_multi_mode => {
-                    // Escape: Clear selection in multi-selection mode
-                    selection_model_clone.borrow().clear_selection();
+                    // Escape leaves the selection mode; the toggle action also
+                    // swaps the model back, which drops the selection.
+                    if let Some(lv) = list_view_weak.upgrade() {
+                        let _ = lv.activate_action("win.group-operations", None);
+                    }
                     glib::Propagation::Stop
                 }
                 gdk::Key::Menu => {
@@ -874,6 +933,7 @@ impl ConnectionSidebar {
             tree_model,
             selection_model,
             bulk_actions_revealer,
+            selection_counter,
             group_ops_mode,
 
             search_history,
@@ -1542,8 +1602,21 @@ impl ConnectionSidebar {
             }
         }
 
+        // Keep the "N selected" line in step with the new model.
+        if let SelectionModelWrapper::Multi(m) = &new_wrapper {
+            let counter = self.selection_counter.clone();
+            let wrapper = Rc::clone(&self.selection_model);
+            m.connect_selection_changed(move |_, _, _| {
+                if let Ok(selection) = wrapper.try_borrow() {
+                    counter.set_text(&selected_count_text(selected_ids(&selection).len()));
+                }
+            });
+        }
+
         // Store the new wrapper
         *self.selection_model.borrow_mut() = new_wrapper;
+        self.selection_counter
+            .set_text(&selected_count_text(self.get_selected_ids().len()));
 
         // Update CSS class for visual feedback
         if enabled {
@@ -1556,32 +1629,7 @@ impl ConnectionSidebar {
     /// Gets all selected connection/group IDs
     #[must_use]
     pub fn get_selected_ids(&self) -> Vec<Uuid> {
-        let selection = self.selection_model.borrow();
-        let positions = selection.get_selected_positions();
-
-        let mut ids = Vec::new();
-        for pos in positions {
-            if let Some(model) = selection.model()
-                && let Some(item) = model.item(pos)
-            {
-                // Handle TreeListRow wrapping
-                let conn_item = if let Some(row) = item.downcast_ref::<TreeListRow>() {
-                    row.item().and_downcast::<ConnectionItem>()
-                } else {
-                    item.downcast::<ConnectionItem>().ok()
-                };
-
-                // A pinned connection has two rows (Favorites and its own group),
-                // so the same id can be selected twice; every caller wants it once.
-                if let Some(conn_item) = conn_item
-                    && let Ok(uuid) = Uuid::parse_str(&conn_item.id())
-                    && !ids.contains(&uuid)
-                {
-                    ids.push(uuid);
-                }
-            }
-        }
-        ids
+        selected_ids(&self.selection_model.borrow())
     }
 
     /// Gets the first selected `ConnectionItem` (works in both single and multi-selection modes)
@@ -1730,6 +1778,15 @@ impl ConnectionSidebar {
         };
         let selection = model.selection();
         if selection.is_empty() {
+            return;
+        }
+        if view::has_multi_selection(&model) {
+            sidebar_ui::show_multi_select_context_menu(
+                list_view,
+                16.0,
+                16.0,
+                sidebar_ui::MenuActivation::Keyboard,
+            );
             return;
         }
         let pos = selection.nth(0);
@@ -2515,7 +2572,7 @@ impl Default for ConnectionItem {
 
 #[cfg(test)]
 mod tests {
-    use super::arrow_expands;
+    use super::{arrow_expands, selected_count_text};
 
     #[test]
     fn arrow_keys_swap_in_rtl() {
@@ -2524,5 +2581,50 @@ mod tests {
         assert!(!arrow_expands(false, false));
         assert!(!arrow_expands(true, true));
         assert!(arrow_expands(false, true));
+    }
+
+    #[test]
+    fn count_line_names_the_number() {
+        assert!(selected_count_text(0).contains('0'));
+        assert!(selected_count_text(12).contains("12"));
+    }
+
+    /// Selection mode counts the selected rows, ticks them, and leaving it
+    /// drops the selection. Needs a display: run alone under Xvfb.
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact <this test path>`"]
+    fn selection_mode_counts_selected_rows() {
+        use super::{ConnectionItem, ConnectionSidebar};
+
+        if gtk4::init().is_err() {
+            return;
+        }
+        let sidebar = ConnectionSidebar::new();
+        for name in ["a", "b", "c"] {
+            let id = uuid::Uuid::new_v4().to_string();
+            sidebar
+                .store()
+                .append(&ConnectionItem::new_connection(&id, name, "ssh", "host"));
+        }
+        let shown = || sidebar.selection_counter.text().to_string();
+
+        sidebar.set_group_operations_mode(true);
+        assert_eq!(shown(), selected_count_text(0), "empty selection");
+
+        sidebar.select_all();
+        assert_eq!(shown(), selected_count_text(3));
+        assert_eq!(sidebar.get_selected_ids().len(), 3);
+
+        sidebar.clear_selection();
+        assert_eq!(shown(), selected_count_text(0), "cleared");
+
+        sidebar.select_all();
+        sidebar.set_group_operations_mode(false);
+        assert!(
+            sidebar.get_selected_ids().len() <= 1,
+            "leaving drops the multi selection"
+        );
+        sidebar.set_group_operations_mode(true);
+        assert_eq!(shown(), selected_count_text(0), "re-entering starts empty");
     }
 }

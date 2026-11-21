@@ -31,6 +31,7 @@ mod port_check;
 mod retry;
 pub mod routing_memory;
 pub mod spa;
+pub mod spa_vault;
 pub mod ssh_inheritance;
 mod ssh_prompt;
 mod virtual_scroll;

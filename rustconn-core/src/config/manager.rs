@@ -682,6 +682,43 @@ impl ConfigManager {
         Ok(connections)
     }
 
+    /// Copies `connections.toml` to `connections.toml.<tag>.bak` (owner-only)
+    /// before the SPA key move rewrites it (F-08).
+    ///
+    /// An existing copy is kept, not replaced: it is the oldest state, the one
+    /// that still holds every key, and a later run must not overwrite it with a
+    /// half-migrated file. A missing `connections.toml` needs no copy.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ConfigError::Write`] if the file cannot be read or the copy
+    /// cannot be written; the caller must then leave the file alone.
+    pub fn backup_connections_file(&self, tag: &str) -> ConfigResult<PathBuf> {
+        let path = self.config_dir.join(CONNECTIONS_FILE);
+        let backup = self
+            .config_dir
+            .join(format!("{CONNECTIONS_FILE}.{tag}.bak"));
+        let bytes = match fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(backup),
+            Err(e) => {
+                return Err(ConfigError::Write(format!(
+                    "Failed to read {} to back it up: {e}",
+                    path.display()
+                )));
+            }
+        };
+        match version_skew::write_owner_only(&backup, &bytes, Existing::Refuse) {
+            Ok(()) => Ok(backup),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Ok(backup),
+            Err(e) => Err(ConfigError::Write(format!(
+                "Failed to back up {} to {}: {e}",
+                path.display(),
+                backup.display()
+            ))),
+        }
+    }
+
     /// Saves connections to the configuration file
     ///
     /// Creates the configuration directory if it doesn't exist.

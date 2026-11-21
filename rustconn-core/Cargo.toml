@@ -31,6 +31,7 @@ serde_yaml = { workspace = true }
 toml = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
+tempfile = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
 secrecy = { workspace = true }
@@ -40,6 +41,9 @@ shellexpand = { workspace = true }
 regex = { workspace = true }
 ring = { workspace = true }
 hex = { workspace = true }
+# WebTransport transport and its per-session pinned certificate (session sharing).
+wtransport = { workspace = true }
+tokio-rustls = { workspace = true }
 data-encoding = "2.10"
 # fwknop SPA packet builder (AES-256-CBC + EVP_BytesToKey)
 aes = "0.9"
@@ -134,7 +138,7 @@ ironrdp-mstsgu = { version = "0.1", features = ["native-tls"], optional = true }
 # Pin native-tls to avoid Tlsv13 compile bug in 0.2.17
 native-tls = { workspace = true, optional = true }
 # `user` for `getuid`: the mc wrapper root must belong to this user (mc_ssh).
-nix = { workspace = true, features = ["fs", "signal", "process", "user"] }
+nix = { workspace = true, features = ["fs", "net", "signal", "process", "user"] }
 # MPTCP (Multipath TCP) socket creation — safe API, no unsafe needed
 socket2 = { workspace = true }
 
@@ -209,7 +213,6 @@ lock-events = ["dep:zbus"]
 
 [dev-dependencies]
 proptest = { workspace = true }
-tempfile = { workspace = true }
 criterion = { version = "0.8.2", features = ["html_reports"] }
 
 [[bench]]

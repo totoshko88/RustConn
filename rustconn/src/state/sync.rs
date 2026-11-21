@@ -969,7 +969,8 @@ impl AppState {
                     self.generate_unique_connection_name(&connection.name, connection.protocol);
             }
 
-            match self.connection_manager.create_connection_from(connection) {
+            // Import warns about invalid entries and never drops one.
+            match self.connection_manager.import_connection(connection) {
                 Ok(_) => imported += 1,
                 Err(e) => tracing::warn!(name = %conn.name, %e, "Failed to import connection"),
             }

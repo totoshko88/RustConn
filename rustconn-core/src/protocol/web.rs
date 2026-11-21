@@ -5,7 +5,7 @@
 //! Credentials are stored in the configured secret backend for
 //! copy-to-clipboard functionality.
 
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
+use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, WebConfig};
 
@@ -510,33 +510,6 @@ impl Protocol for WebProtocol {
         }
 
         Ok(())
-    }
-
-    fn capabilities(&self) -> ProtocolCapabilities {
-        ProtocolCapabilities {
-            #[cfg(feature = "web-embedded")]
-            embedded: true,
-            #[cfg(not(feature = "web-embedded"))]
-            embedded: false,
-            external_fallback: true,
-            file_transfer: false,
-            audio: false,
-            clipboard: false,
-            #[cfg(feature = "web-embedded")]
-            split_view: true,
-            #[cfg(not(feature = "web-embedded"))]
-            split_view: false,
-            terminal_based: false,
-            multi_monitor: false,
-            usb_redirection: false,
-            port_forwarding: false,
-            wayland_forwarding: false,
-            x11_forwarding: false,
-            session_recording: false,
-            remote_monitoring: false,
-            command_snippets: false,
-            wake_on_lan: false,
-        }
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {

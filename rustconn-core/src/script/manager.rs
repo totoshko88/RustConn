@@ -11,6 +11,15 @@ use std::path::PathBuf;
 use crate::automation::ScriptParseError;
 use crate::config::ConfigManager;
 
+/// The scripts directory under the OS config root, when one can be resolved.
+///
+/// Matches what [`ScriptManager`] uses for the default configuration, for
+/// callers (the terminal recorder) that have no `ConfigManager` at hand.
+#[must_use]
+pub fn scripts_dir() -> Option<PathBuf> {
+    dirs::config_dir().map(|dir| dir.join("rustconn").join("scripts"))
+}
+
 /// Errors produced by [`ScriptManager`].
 #[derive(Debug, thiserror::Error)]
 pub enum ScriptError {

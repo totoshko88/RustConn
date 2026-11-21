@@ -1,4 +1,32 @@
 -------------------------------------------------------------------
+Sat Nov 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.0
+- Version bump to 0.26.0
+- Added: Duplicate via Wizard in the tab menu (#437); built-in script
+  recording (#373); read-only session sharing over HTTP and WebTransport, with
+  a shared-tab marker and Stop Sharing; read-only TFTP server; remote file
+  editor
+- Added: fwknop SPA keys move from connections.toml to the secret store (F-08)
+- Fixed: the custom SSH agent socket in Settings now reaches every ssh launch
+  (F-01); terminal search Highlight All draws the matches (#441, #442); the
+  remote editor keeps edits when an upload fails; script recorder, TFTP and
+  share relay hardening; keys act on the whole multi-selection
+- Fixed: the pre-connect task, port knock and SPA no longer freeze the window;
+  QUIC sharing without STUN listens on one address; TFTP reads are re-checked
+  after open
+- Changed: Header-bar actions follow the GNOME layout; menu wording, broadcast
+  names, command palette labels and tooltips are unified and translated in all
+  locales
+- Improved: import lists entries that fail validation; selection mode counts
+  and ticks; deleting several items offers Undo
+- Dependencies: ashpd 0.14.2, clap 4.6.9, oo7 0.7.3, toml 1.2.2, url 2.5.9,
+  zbus 6.5.0, zcheapstr 1.4.0, zip 9.8.1 and others
+- Fixed: a viewer who joins a shared session while a full-screen program (htop, vim) runs
+  no longer keeps its leftovers after the program exits
+- Improved: Stop Sharing and Stop Script Recording in the command palette; a tab being
+  recorded shows a marker; a share warns five minutes before it ends; the SPA key backup
+  is deleted after the first SPA connection
+
+-------------------------------------------------------------------
 Fri Nov 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.6
 - Version bump to 0.25.6
 - Added: Open SFTP in the tab menu of an SSH or SFTP tab (#240)

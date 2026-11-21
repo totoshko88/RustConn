@@ -4,7 +4,7 @@
 //! for SSH connections with SFTP enabled.
 
 use std::path::PathBuf;
-use std::sync::OnceLock;
+use std::sync::{OnceLock, RwLock};
 
 use crate::models::{Connection, ConnectionGroup, SshKeySource};
 
@@ -39,122 +39,239 @@ pub fn get_agent_info() -> Option<&'static SshAgentInfo> {
     AGENT_INFO.get()
 }
 
-/// Applies `SSH_AUTH_SOCK` (and `SSH_AGENT_PID` if available) to a
-/// [`std::process::Command`] so the child process can reach the agent.
+/// The agent socket from Settings, shared by every launch in this process.
 ///
-/// Sources (in priority order):
-/// 1. Global [`SshAgentInfo`] stored via [`set_agent_info`]
-/// 2. Inherited process environment (no-op — already inherited)
+/// Set by [`set_global_agent_socket`] when settings load or change, so the
+/// terminal, SFTP, mc, tunnel, monitoring and `ssh-add` paths all see the
+/// same value without each one being handed the settings.
+static GLOBAL_AGENT_SOCKET: RwLock<Option<String>> = RwLock::new(None);
+
+/// Stores the global SSH agent socket from Settings (`None` or empty clears it).
+///
+/// The value is trimmed and `~` is expanded. It is stored even when
+/// [`validate_socket_path`] rejects it: ssh then fails on that path where the
+/// user can see it, rather than quietly using another agent.
+pub fn set_global_agent_socket(path: Option<&str>) {
+    let normalized = path.and_then(normalize_socket_path);
+    if let Ok(mut slot) = GLOBAL_AGENT_SOCKET.write() {
+        *slot = normalized;
+    }
+}
+
+fn global_agent_socket() -> Option<String> {
+    GLOBAL_AGENT_SOCKET
+        .read()
+        .ok()
+        .and_then(|slot| slot.clone())
+}
+
+/// Trims a socket path and expands a leading `~` or `~/` to `home`.
+/// Empty input gives `None`. `~user` and relative paths are returned as they
+/// are, so [`validate_socket_path`] can report them.
+fn normalize_socket_path_with(raw: &str, home: Option<&str>) -> Option<String> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    let home = home.filter(|h| !h.is_empty());
+    match (raw, home) {
+        ("~", Some(home)) => Some(home.to_owned()),
+        (_, Some(home)) if raw.starts_with("~/") => {
+            Some(format!("{}{}", home.trim_end_matches('/'), &raw[1..]))
+        }
+        _ => Some(raw.to_owned()),
+    }
+}
+
+/// [`normalize_socket_path_with`] using `$HOME`.
+#[must_use]
+pub fn normalize_socket_path(raw: &str) -> Option<String> {
+    normalize_socket_path_with(raw, std::env::var("HOME").ok().as_deref())
+}
+
+/// Picks the agent socket by precedence.
+///
+/// Order: per-connection, global setting, the agent RustConn found or started
+/// (`detected`), the inherited `SSH_AUTH_SOCK` (`env`). Empty and blank values
+/// count as unset.
+///
+/// `detected` is the inherited `SSH_AUTH_SOCK` whenever that agent was alive at
+/// startup, so it only differs from `env` when `env` was stale and RustConn
+/// started its own agent; it goes first so a stale variable cannot win.
+/// A relative or missing path is returned as given: see [`validate_socket_path`].
+#[must_use]
+pub fn pick_agent_socket(
+    per_connection: Option<&str>,
+    global: Option<&str>,
+    detected: Option<&str>,
+    env: Option<&str>,
+) -> Option<String> {
+    [per_connection, global, detected, env]
+        .into_iter()
+        .flatten()
+        .find_map(normalize_socket_path)
+}
+
+/// The socket the user chose for a launch, if any.
+///
+/// The connection's own, else the one from Settings. `None` when neither is
+/// set, i.e. the launch uses whatever agent is found. This is the value worth
+/// validating and reporting.
+#[must_use]
+pub fn custom_agent_socket(per_connection: Option<&str>) -> Option<String> {
+    pick_agent_socket(per_connection, global_agent_socket().as_deref(), None, None)
+}
+
+/// The one place that decides which ssh-agent socket a launch uses.
+///
+/// Precedence: `per_connection` (a connection's or group's own socket, see
+/// [`crate::connection::ssh_inheritance::resolve_ssh_agent_socket`]), then
+/// `global_override`, then the socket from Settings
+/// ([`set_global_agent_socket`]), then the agent RustConn found or started at
+/// startup, then the inherited `SSH_AUTH_SOCK`. `None` means no agent is known
+/// and the child inherits whatever the environment holds.
+#[must_use]
+pub fn resolve_ssh_agent_socket(
+    per_connection: Option<&str>,
+    global_override: Option<&str>,
+) -> Option<String> {
+    let global = global_override
+        .and_then(normalize_socket_path)
+        .or_else(global_agent_socket);
+    pick_agent_socket(
+        per_connection,
+        global.as_deref(),
+        AGENT_INFO.get().map(|info| info.socket_path.as_str()),
+        std::env::var("SSH_AUTH_SOCK").ok().as_deref(),
+    )
+}
+
+/// The environment a child needs to reach the resolved agent, as
+/// `(name, value)` pairs, for callers that use another `Command` type
+/// (tokio) or build an environment vector (VTE).
+///
+/// `SSH_AGENT_PID` is included only when the socket is the agent RustConn
+/// started, since a pid says nothing about another agent.
+#[must_use]
+pub fn agent_env_vars(per_connection: Option<&str>) -> Vec<(&'static str, String)> {
+    agent_env_vars_with(per_connection, None)
+}
+
+fn agent_env_vars_with(
+    per_connection: Option<&str>,
+    global_override: Option<&str>,
+) -> Vec<(&'static str, String)> {
+    let Some(socket) = resolve_ssh_agent_socket(per_connection, global_override) else {
+        return Vec::new();
+    };
+    let pid = AGENT_INFO
+        .get()
+        .filter(|info| info.socket_path == socket)
+        .and_then(|info| info.pid.clone());
+    let mut vars = vec![("SSH_AUTH_SOCK", socket)];
+    if let Some(pid) = pid {
+        vars.push(("SSH_AGENT_PID", pid));
+    }
+    vars
+}
+
+/// Applies the resolved agent socket (see [`resolve_ssh_agent_socket`]) to a
+/// [`std::process::Command`] so the child reaches the agent the user chose.
+///
+/// Uses the Settings socket, the agent RustConn started and the inherited
+/// environment. Use [`apply_agent_env_with_overrides`] when the connection has
+/// its own socket.
 ///
 /// This replaces the former `std::env::set_var("SSH_AUTH_SOCK", …)`
 /// pattern, which became `unsafe` in Rust 2024 edition.
 pub fn apply_agent_env(cmd: &mut std::process::Command) {
-    if let Some(info) = AGENT_INFO.get() {
-        cmd.env("SSH_AUTH_SOCK", &info.socket_path);
-        if let Some(ref pid) = info.pid {
-            cmd.env("SSH_AGENT_PID", pid);
-        }
+    apply_agent_env_with_overrides(cmd, None, None);
+}
+
+/// [`apply_agent_env_with_overrides`] for a [`tokio::process::Command`].
+pub fn apply_agent_env_async(cmd: &mut tokio::process::Command, per_connection: Option<&str>) {
+    for (key, value) in agent_env_vars(per_connection) {
+        cmd.env(key, value);
     }
 }
 
-/// Result of validating a socket path.
-///
-/// Used by the GUI to provide real-time feedback on socket path entries.
-/// Validation is advisory — only `NotAbsolute` is a hard warning; `NotFound`
-/// is informational because the socket may be created later.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SocketPathValidation {
-    /// Path is valid and the socket file exists.
-    Valid,
-    /// Path is absolute but the socket file doesn't exist (non-blocking warning).
-    NotFound,
-    /// Path is not absolute (does not start with `/`).
-    NotAbsolute,
-    /// Path is empty (no validation needed).
-    Empty,
-}
-
-/// Validates a socket path and returns a [`SocketPathValidation`] result.
-///
-/// - Empty string → `Empty`
-/// - Non-absolute (doesn't start with `/`) → `NotAbsolute`
-/// - Absolute but file doesn't exist → `NotFound`
-/// - Absolute and file exists → `Valid`
-#[must_use]
-pub fn validate_socket_path(path: &str) -> SocketPathValidation {
-    if path.is_empty() {
-        return SocketPathValidation::Empty;
-    }
-    if !path.starts_with('/') {
-        return SocketPathValidation::NotAbsolute;
-    }
-    if std::path::Path::new(path).exists() {
-        SocketPathValidation::Valid
-    } else {
-        SocketPathValidation::NotFound
-    }
-}
-
-/// Resolves the SSH agent socket path using the priority chain:
-/// per-connection → global setting → OnceLock agent info → None (inherit env).
-///
-/// Returns `Some(path)` if an override should be applied, `None` if the
-/// child process should inherit `SSH_AUTH_SOCK` from the parent environment.
-///
-/// Empty strings are filtered out internally, so callers don't need to
-/// distinguish `Some("")` from `None`.
-#[must_use]
-pub fn resolve_ssh_agent_socket(
-    per_connection: Option<&str>,
-    global_setting: Option<&str>,
-) -> Option<String> {
-    // Per-connection override (highest priority)
-    if let Some(path) = per_connection
-        && !path.is_empty()
-    {
-        return Some(path.to_string());
-    }
-
-    // Global setting (second priority)
-    if let Some(path) = global_setting
-        && !path.is_empty()
-    {
-        return Some(path.to_string());
-    }
-
-    // OnceLock agent info (third priority)
-    if let Some(info) = AGENT_INFO.get()
-        && !info.socket_path.is_empty()
-    {
-        return Some(info.socket_path.clone());
-    }
-
-    // None — inherit SSH_AUTH_SOCK from parent environment
-    None
-}
-
-/// Applies `SSH_AUTH_SOCK` to a [`std::process::Command`] using the priority chain.
-///
-/// Uses [`resolve_ssh_agent_socket`] to determine the socket path. If an
-/// override is found, sets `SSH_AUTH_SOCK` on the command. Otherwise falls
-/// back to the existing [`apply_agent_env`] behavior (OnceLock only).
+/// Like [`apply_agent_env`], for a connection that may carry its own socket
+/// (`per_connection`) or a caller-held Settings value (`global_override`).
 pub fn apply_agent_env_with_overrides(
     cmd: &mut std::process::Command,
     per_connection: Option<&str>,
-    global_setting: Option<&str>,
+    global_override: Option<&str>,
 ) {
-    if let Some(socket_path) = resolve_ssh_agent_socket(per_connection, global_setting) {
-        cmd.env("SSH_AUTH_SOCK", &socket_path);
-        // Also set SSH_AGENT_PID if available from OnceLock
-        if let Some(info) = AGENT_INFO.get()
-            && let Some(ref pid) = info.pid
-        {
-            cmd.env("SSH_AGENT_PID", pid);
-        }
-    } else {
-        // No overrides — fall back to existing behavior
-        apply_agent_env(cmd);
+    for (key, value) in agent_env_vars_with(per_connection, global_override) {
+        cmd.env(key, value);
     }
+}
+
+/// Result of validating an ssh-agent socket path.
+///
+/// Used by the GUI to tell the user why a socket path will not work.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SocketPathValidation {
+    /// The path is a socket owned by the current user.
+    Valid,
+    /// The path is absolute but nothing exists there.
+    NotFound,
+    /// The path is not absolute (after `~` expansion).
+    NotAbsolute,
+    /// Something exists at the path but it is not a socket.
+    NotSocket,
+    /// The socket belongs to another user.
+    NotOwned,
+    /// The path is empty (no validation needed).
+    Empty,
+}
+
+/// Validates an ssh-agent socket path.
+///
+/// Trims the text and expands a leading `~`, then checks in this order:
+/// empty, absolute, exists, is a socket, owned by the current user. The check
+/// follows symlinks, as ssh does.
+#[must_use]
+pub fn validate_socket_path(path: &str) -> SocketPathValidation {
+    validate_socket_path_as(path, current_uid())
+}
+
+fn current_uid() -> Option<u32> {
+    #[cfg(unix)]
+    {
+        Some(nix::unistd::getuid().as_raw())
+    }
+    #[cfg(not(unix))]
+    {
+        None
+    }
+}
+
+/// [`validate_socket_path`] against an explicit user id (`None` skips the
+/// ownership check).
+fn validate_socket_path_as(path: &str, uid: Option<u32>) -> SocketPathValidation {
+    let Some(path) = normalize_socket_path(path) else {
+        return SocketPathValidation::Empty;
+    };
+    if !path.starts_with('/') {
+        return SocketPathValidation::NotAbsolute;
+    }
+    let Ok(metadata) = std::fs::metadata(&path) else {
+        return SocketPathValidation::NotFound;
+    };
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{FileTypeExt, MetadataExt};
+        if !metadata.file_type().is_socket() {
+            return SocketPathValidation::NotSocket;
+        }
+        if uid.is_some_and(|uid| metadata.uid() != uid) {
+            return SocketPathValidation::NotOwned;
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = (&metadata, uid);
+    SocketPathValidation::Valid
 }
 
 /// Builds an SFTP URI for the given connection.
@@ -558,20 +675,10 @@ pub fn get_ssh_key_path(connection: &Connection, groups: &[ConnectionGroup]) -> 
 
 /// Checks whether ssh-agent is reachable.
 ///
-/// Looks for a valid socket in two places:
-/// 1. The global [`SshAgentInfo`] (set by [`set_agent_info`])
-/// 2. The inherited `SSH_AUTH_SOCK` environment variable
+/// True when the socket [`default_agent_socket`] resolves to exists.
 #[must_use]
 pub fn is_ssh_agent_available() -> bool {
-    if let Some(info) = AGENT_INFO.get()
-        && std::path::Path::new(&info.socket_path).exists()
-    {
-        return true;
-    }
-    std::env::var("SSH_AUTH_SOCK")
-        .ok()
-        .filter(|s| !s.is_empty())
-        .is_some_and(|sock| std::path::Path::new(&sock).exists())
+    default_agent_socket().is_some_and(|sock| std::path::Path::new(&sock).exists())
 }
 
 /// Ensures an ssh-agent is running and returns its connection info.
@@ -695,33 +802,20 @@ pub fn ensure_ssh_agent() -> Option<SshAgentInfo> {
     })
 }
 
-/// The agent socket a child spawned through [`apply_agent_env`] talks to: the
-/// agent RustConn found or started at startup (`agent_info`), else the
-/// inherited `SSH_AUTH_SOCK` (`env_socket`). Empty values count as unset.
-fn agent_socket_from(agent_info: Option<&str>, env_socket: Option<String>) -> Option<String> {
-    agent_info
-        .filter(|s| !s.is_empty())
-        .map(str::to_owned)
-        .or_else(|| env_socket.filter(|s| !s.is_empty()))
-}
-
-/// The agent socket SFTP, mc and an SSH session without a per-connection
-/// agent socket use: the agent RustConn found or started at startup, else the
-/// inherited `SSH_AUTH_SOCK`. `None` when neither is set.
+/// The agent socket SFTP, mc, tunnels and an SSH session without a
+/// per-connection agent socket use: [`resolve_ssh_agent_socket`] with no
+/// connection socket. `None` when no agent is known.
 #[must_use]
 pub fn default_agent_socket() -> Option<String> {
-    agent_socket_from(
-        AGENT_INFO.get().map(|info| info.socket_path.as_str()),
-        std::env::var("SSH_AUTH_SOCK").ok(),
-    )
+    resolve_ssh_agent_socket(None, None)
 }
 
 /// Loads one SSH private key into the ssh-agent that SFTP and mc will use, the
 /// add path the GUI's launchers and the CLI share (A3).
 ///
-/// The agent is the one a child spawned through [`apply_agent_env`] reaches:
-/// the agent RustConn found or started at startup, else the inherited
-/// `SSH_AUTH_SOCK`. That socket is resolved once and used for the whole add,
+/// The agent is the one a child spawned through [`apply_agent_env`] reaches,
+/// from [`resolve_ssh_agent_socket`] with the connection's own `agent_socket`.
+/// That socket is resolved once and used for the whole add,
 /// through [`crate::ssh_agent::SshAgentManager::add_own_key`]: asking the agent
 /// which keys it holds, the `ssh-add -t 43200`
 /// ([`crate::ssh_agent::OWN_KEY_LIFETIME`]) and recording the key when its own
@@ -748,8 +842,11 @@ pub fn default_agent_socket() -> Option<String> {
 /// `ssh-add` stderr when the agent rejects the key, or a message when no
 /// agent socket is known, the agent cannot be asked which keys it holds, or
 /// `ssh-add` could not be run or did not finish in time.
-pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), IdentityLoadError> {
-    let Some(socket) = default_agent_socket() else {
+pub fn ensure_identity_loaded(
+    key_path: &std::path::Path,
+    agent_socket: Option<&str>,
+) -> Result<(), IdentityLoadError> {
+    let Some(socket) = resolve_ssh_agent_socket(agent_socket, None) else {
         tracing::warn!(
             ?key_path,
             "no SSH agent socket is known; not adding the key"
@@ -814,7 +911,9 @@ pub fn ensure_key_in_agent(connection: &Connection, groups: &[ConnectionGroup]) 
         return true; // Don't block SFTP — agent may have it
     }
 
-    ensure_identity_loaded(&key_path).is_ok()
+    let agent_socket =
+        crate::connection::ssh_inheritance::resolve_ssh_agent_socket(connection, groups);
+    ensure_identity_loaded(&key_path, agent_socket.as_deref()).is_ok()
 }
 
 /// Returns the XDG Downloads directory path as a string.
@@ -1123,15 +1222,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_validate_socket_path_valid() {
-        let dir = tempfile::tempdir().unwrap();
-        let sock_path = dir.path().join("test.sock");
-        std::fs::write(&sock_path, b"").unwrap();
-        let path_str = sock_path.to_str().unwrap();
-        assert_eq!(validate_socket_path(path_str), SocketPathValidation::Valid);
-    }
-
     // --- Task 2.5: resolve_ssh_agent_socket tests ---
 
     #[test]
@@ -1236,27 +1326,155 @@ mod tests {
         assert!(ensure_key_in_agent(&conn, &[]));
     }
 
-    /// The SFTP add asks, adds to and records against the agent mc and sftp
-    /// reach through `apply_agent_env`: the one RustConn started wins over
-    /// the inherited `SSH_AUTH_SOCK`, which may be unset or stale then.
+    // --- F-01: one resolution function for every ssh launch ---
+
     #[test]
-    fn the_sftp_add_uses_the_agent_rustconn_started_over_the_inherited_one() {
+    fn pick_follows_the_documented_precedence() {
+        let pick = pick_agent_socket;
         assert_eq!(
-            agent_socket_from(
-                Some("/run/user/1000/rustconn-ssh-agent.sock"),
-                Some("/tmp/ssh-stale/agent.1".to_owned())
+            pick(Some("/c"), Some("/g"), Some("/d"), Some("/e")),
+            Some("/c".into())
+        );
+        assert_eq!(
+            pick(None, Some("/g"), Some("/d"), Some("/e")),
+            Some("/g".into())
+        );
+        assert_eq!(pick(None, None, Some("/d"), Some("/e")), Some("/d".into()));
+        assert_eq!(pick(None, None, None, Some("/e")), Some("/e".into()));
+        assert_eq!(pick(None, None, None, None), None);
+    }
+
+    #[test]
+    fn pick_treats_empty_and_blank_values_as_unset() {
+        assert_eq!(
+            pick_agent_socket(Some(""), Some("  "), Some(""), Some("/e")),
+            Some("/e".into())
+        );
+        assert_eq!(pick_agent_socket(Some(" "), None, None, Some("")), None);
+    }
+
+    #[test]
+    fn pick_trims_and_keeps_a_relative_path_for_the_validator_to_report() {
+        assert_eq!(
+            pick_agent_socket(
+                Some(
+                    "  /a.sock 
+"
+                ),
+                None,
+                None,
+                None
             ),
-            Some("/run/user/1000/rustconn-ssh-agent.sock".to_owned())
+            Some("/a.sock".into())
         );
         assert_eq!(
-            agent_socket_from(None, Some("/tmp/ssh-x/agent.1".to_owned())),
-            Some("/tmp/ssh-x/agent.1".to_owned())
+            pick_agent_socket(Some("rel/agent"), Some("/g"), None, None),
+            Some("rel/agent".into())
+        );
+    }
+
+    #[test]
+    fn tilde_expands_only_as_a_leading_home_reference() {
+        let n = |raw| normalize_socket_path_with(raw, Some("/home/me"));
+        assert_eq!(n("~/a.sock"), Some("/home/me/a.sock".into()));
+        assert_eq!(n("~"), Some("/home/me".into()));
+        assert_eq!(n("~other/a"), Some("~other/a".into()));
+        assert_eq!(n("/x/~/a"), Some("/x/~/a".into()));
+        assert_eq!(n(""), None);
+        assert_eq!(
+            normalize_socket_path_with("~/a", Some("/home/me/")),
+            Some("/home/me/a".into())
+        );
+        assert_eq!(normalize_socket_path_with("~/a", None), Some("~/a".into()));
+    }
+
+    #[test]
+    fn an_explicit_global_override_wins_over_detected_and_env_but_not_the_connection() {
+        assert_eq!(
+            resolve_ssh_agent_socket(Some("/c.sock"), Some("/g.sock")),
+            Some("/c.sock".into())
         );
         assert_eq!(
-            agent_socket_from(Some(""), Some("/tmp/ssh-x/agent.1".to_owned())),
-            Some("/tmp/ssh-x/agent.1".to_owned())
+            resolve_ssh_agent_socket(None, Some("/g.sock")),
+            Some("/g.sock".into())
         );
-        assert_eq!(agent_socket_from(None, Some(String::new())), None);
-        assert_eq!(agent_socket_from(None, None), None);
+    }
+
+    #[cfg(unix)]
+    mod validation {
+        use super::*;
+        use std::os::unix::net::UnixListener;
+
+        fn socket_in(dir: &std::path::Path) -> String {
+            let path = dir.join("agent.sock");
+            // The listener is leaked on purpose: the file must outlive the call.
+            std::mem::forget(UnixListener::bind(&path).unwrap());
+            path.to_str().unwrap().to_owned()
+        }
+
+        #[test]
+        fn a_socket_owned_by_the_user_is_valid() {
+            let dir = tempfile::tempdir().unwrap();
+            assert_eq!(
+                validate_socket_path(&socket_in(dir.path())),
+                SocketPathValidation::Valid
+            );
+        }
+
+        #[test]
+        fn surrounding_whitespace_is_ignored() {
+            let dir = tempfile::tempdir().unwrap();
+            let padded = format!("  {}\n", socket_in(dir.path()));
+            assert_eq!(validate_socket_path(&padded), SocketPathValidation::Valid);
+        }
+
+        #[test]
+        fn a_regular_file_is_not_a_socket() {
+            let dir = tempfile::tempdir().unwrap();
+            let file = dir.path().join("agent.sock");
+            std::fs::write(&file, b"").unwrap();
+            assert_eq!(
+                validate_socket_path(file.to_str().unwrap()),
+                SocketPathValidation::NotSocket
+            );
+        }
+
+        #[test]
+        fn a_directory_is_not_a_socket() {
+            let dir = tempfile::tempdir().unwrap();
+            assert_eq!(
+                validate_socket_path(dir.path().to_str().unwrap()),
+                SocketPathValidation::NotSocket
+            );
+        }
+
+        #[test]
+        fn a_socket_of_another_user_is_not_owned() {
+            let dir = tempfile::tempdir().unwrap();
+            let path = socket_in(dir.path());
+            let me = nix::unistd::getuid().as_raw();
+            assert_eq!(
+                validate_socket_path_as(&path, Some(me.wrapping_add(1))),
+                SocketPathValidation::NotOwned
+            );
+            assert_eq!(
+                validate_socket_path_as(&path, None),
+                SocketPathValidation::Valid
+            );
+        }
+
+        #[test]
+        fn a_missing_file_and_a_relative_path_are_reported_apart() {
+            assert_eq!(
+                validate_socket_path("/nonexistent/rc/agent.sock"),
+                SocketPathValidation::NotFound
+            );
+            assert_eq!(
+                validate_socket_path("agent.sock"),
+                SocketPathValidation::NotAbsolute
+            );
+            assert_eq!(validate_socket_path(""), SocketPathValidation::Empty);
+            assert_eq!(validate_socket_path("   "), SocketPathValidation::Empty);
+        }
     }
 }

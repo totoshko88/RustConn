@@ -18,6 +18,16 @@ use super::*;
     reason = "independent per-tab facts, each gating one menu section or item"
 )]
 pub struct TabMenuState {
+    /// The session the tab is named after, when it has one. The session tools
+    /// address it explicitly instead of the active tab.
+    pub session: Option<Uuid>,
+    /// A script recording is in progress somewhere in the window; only one
+    /// runs at a time, so the menu offers Stop instead of Record.
+    pub is_script_recording: bool,
+    /// The session is being shared right now; the menu offers Stop instead of Share.
+    pub is_shared: bool,
+    /// The session is an SSH/SFTP terminal, so a remote file can be edited.
+    pub can_edit_remote: bool,
     /// The tab hosts a session. The Welcome tab does not, and the group,
     /// broadcast and monitor items would do nothing there.
     pub has_session: bool,
@@ -170,6 +180,8 @@ impl TerminalNotebook {
         let disconnected_for_menu = self.disconnected_sessions.clone();
         let directional_close_for_menu = self.show_directional_close.clone();
         let split_tab_titles_for_menu = self.split_tab_titles.clone();
+        let recording_for_menu = self.script_recording.clone();
+        let shared_for_menu = self.shared_sessions.clone();
         let menu_for_setup = menu;
 
         // Create the action group and the stateful monitor action up front, so
@@ -254,6 +266,13 @@ impl TerminalNotebook {
                                 .is_some_and(|has_connection| has_connection(*cid))
                         });
                     TabMenuState {
+                        session: session_id,
+                        is_script_recording: recording_for_menu.borrow().is_some(),
+                        is_shared: session_id
+                            .is_some_and(|sid| shared_for_menu.borrow().contains(&sid)),
+                        can_edit_remote: session_id
+                            .and_then(|sid| info_ref.get(&sid))
+                            .is_some_and(|i| matches!(i.protocol.as_str(), "ssh" | "sftp")),
                         has_session: session_id.is_some(),
                         connection,
                         monitor_mode: mode,
@@ -443,7 +462,12 @@ impl TerminalNotebook {
                         page.title().as_str(),
                         old_group.as_deref(),
                         Some(&group_name),
-                        &[BROADCAST_TITLE_MARKER, &rec],
+                        &[
+                            BROADCAST_TITLE_MARKER,
+                            SHARED_TITLE_MARKER,
+                            SCRIPT_TITLE_MARKER,
+                            &rec,
+                        ],
                     );
                     page.set_title(&title);
 
@@ -645,7 +669,12 @@ impl TerminalNotebook {
                     page.title().as_str(),
                     old_group.as_deref(),
                     None,
-                    &[BROADCAST_TITLE_MARKER, &rec],
+                    &[
+                        BROADCAST_TITLE_MARKER,
+                        SHARED_TITLE_MARKER,
+                        SCRIPT_TITLE_MARKER,
+                        &rec,
+                    ],
                 );
                 page.set_title(&title);
             }
@@ -773,10 +802,7 @@ impl TerminalNotebook {
             // A split tab in the group is covered by this one confirmation:
             // the body says so, and the confirmed close ends its guests too.
             let split_hosts = Rc::new(split_close_group.split_hosts(&sessions_to_close));
-            let mut body = i18n_f(
-                "Close {} tabs in group '{}'?",
-                &[&count.to_string(), &group_name],
-            );
+            let mut body = i18n_f("Close all tabs in group “{}”?", &[&group_name]);
             if !split_hosts.is_empty() {
                 body = format!(
                     "{body}\n\n{}",
@@ -1317,7 +1343,10 @@ impl TerminalNotebook {
             // object re-points the existing stack page instead of adding a second
             // one. Verified with an isolated GTK repro (0 collisions over repeated
             // rebuilds) before adopting the pattern.
-            menu.append_submenu(Some(&i18n("Monitor")), &Self::monitor_submenu());
+            // Only a VTE terminal has output to watch; embedded viewers do not.
+            if state.is_terminal {
+                menu.append_submenu(Some(&i18n("Activity Monitor")), &Self::monitor_submenu());
+            }
         }
 
         // Split section — only for the tab that hosts a split layout, and the
@@ -1382,6 +1411,14 @@ impl TerminalNotebook {
                 Some(&connection_id.to_string().to_variant()),
             );
             edit_section.append_item(&duplicate);
+            // Same wording as the sidebar: a new saved connection, prefilled
+            // from this tab's, opened in the wizard.
+            let duplicate_wizard = gio::MenuItem::new(Some(&i18n("Duplicate via Wizard…")), None);
+            duplicate_wizard.set_action_and_target_value(
+                Some("win.duplicate-via-wizard-by-id"),
+                Some(&connection_id.to_string().to_variant()),
+            );
+            edit_section.append_item(&duplicate_wizard);
             let edit = gio::MenuItem::new(Some(&i18n("Edit Connection…")), None);
             edit.set_action_and_target_value(
                 Some("win.edit-connection-by-id"),
@@ -1410,6 +1447,49 @@ impl TerminalNotebook {
             let save_section = gio::Menu::new();
             save_section.append(Some(&i18n("Save Output…")), Some("tab.save-output"));
             menu.append_section(None, &save_section);
+        }
+
+        // Session tools — recorder, read-only sharing and the remote editor.
+        // Every item carries the right-clicked tab's session id, because the
+        // window actions the palette uses would otherwise act on the active
+        // tab, which may be a different host by the time the menu is used.
+        if state.is_terminal
+            && let Some(session) = state.session
+        {
+            let tools = gio::Menu::new();
+            if state.is_script_recording {
+                tools.append(
+                    Some(&i18n("Stop Script Recording")),
+                    Some("win.stop-record-script"),
+                );
+            } else {
+                let record = gio::MenuItem::new(Some(&i18n("Record Script…")), None);
+                record.set_action_and_target_value(
+                    Some("win.record-script-for"),
+                    Some(&session.to_string().to_variant()),
+                );
+                tools.append_item(&record);
+            }
+            if state.is_shared {
+                tools.append(Some(&i18n("Stop Sharing")), Some("win.stop-sharing"));
+            } else {
+                let share = gio::MenuItem::new(Some(&i18n("Share Session (read-only)")), None);
+                share.set_action_and_target_value(
+                    Some("win.share-session-for"),
+                    Some(&session.to_string().to_variant()),
+                );
+                tools.append_item(&share);
+            }
+            if state.can_edit_remote {
+                let edit = gio::MenuItem::new(Some(&i18n("Edit Remote File…")), None);
+                edit.set_action_and_target_value(
+                    Some("win.edit-remote-file-for"),
+                    Some(&session.to_string().to_variant()),
+                );
+                tools.append_item(&edit);
+            }
+            tools.append(Some(&i18n("Start TFTP Server")), Some("win.start-tftp"));
+            menu.append_section(None, &tools);
         }
 
         // Close section — minimal by default, expanded when groups exist
@@ -1499,6 +1579,21 @@ mod tests {
     }
 
     #[test]
+    fn the_monitor_submenu_is_offered_only_for_a_terminal_tab() {
+        let embedded = actions_for(super::TabMenuState {
+            has_session: true,
+            ..Default::default()
+        });
+        assert!(!embedded.iter().any(|a| a == "tab.set-monitor"));
+        let terminal = actions_for(super::TabMenuState {
+            has_session: true,
+            is_terminal: true,
+            ..Default::default()
+        });
+        assert!(terminal.iter().any(|a| a == "tab.set-monitor"));
+    }
+
+    #[test]
     fn a_split_owner_is_offered_remove_split_not_split_with() {
         let actions = actions_for(super::TabMenuState {
             hosts_split: true,
@@ -1522,9 +1617,15 @@ mod tests {
         });
         assert!(offered.iter().any(|a| a == "win.open-new-session-by-id"));
         assert!(offered.iter().any(|a| a == "win.edit-connection-by-id"));
+        assert!(
+            offered
+                .iter()
+                .any(|a| a == "win.duplicate-via-wizard-by-id")
+        );
 
         let hidden = actions_for(super::TabMenuState::default());
         assert!(!hidden.iter().any(|a| a == "win.open-new-session-by-id"));
+        assert!(!hidden.iter().any(|a| a == "win.duplicate-via-wizard-by-id"));
     }
 
     #[test]
@@ -1574,6 +1675,47 @@ mod tests {
     #[test]
     fn only_an_allowed_verdict_shows_the_detach_item() {
         assert!(offers_detach(DetachVerdict::Allowed));
+    }
+
+    #[test]
+    fn session_tools_are_offered_only_for_a_terminal_and_edit_only_for_ssh() {
+        let session = uuid::Uuid::new_v4();
+        let terminal = actions_for(super::TabMenuState {
+            is_terminal: true,
+            session: Some(session),
+            ..Default::default()
+        });
+        for action in [
+            "win.record-script-for",
+            "win.share-session-for",
+            "win.start-tftp",
+        ] {
+            assert!(terminal.iter().any(|a| a == action), "{action}");
+        }
+        assert!(!terminal.iter().any(|a| a == "win.edit-remote-file-for"));
+
+        let ssh = actions_for(super::TabMenuState {
+            is_terminal: true,
+            session: Some(session),
+            can_edit_remote: true,
+            ..Default::default()
+        });
+        assert!(ssh.iter().any(|a| a == "win.edit-remote-file-for"));
+
+        let welcome = actions_for(super::TabMenuState::default());
+        assert!(!welcome.iter().any(|a| a == "win.share-session-for"));
+    }
+
+    #[test]
+    fn a_shared_tab_offers_stop_instead_of_share() {
+        let shared = actions_for(super::TabMenuState {
+            is_terminal: true,
+            session: Some(uuid::Uuid::new_v4()),
+            is_shared: true,
+            ..Default::default()
+        });
+        assert!(shared.iter().any(|a| a == "win.stop-sharing"));
+        assert!(!shared.iter().any(|a| a == "win.share-session-for"));
     }
 
     #[test]

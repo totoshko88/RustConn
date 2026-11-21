@@ -711,6 +711,9 @@ impl AppState {
                 WorkspaceProfileManager::new_empty(config_manager.clone())
             });
 
+        // Every ssh-based launch reads the Settings agent socket from core.
+        rustconn_core::sftp::set_global_agent_socket(settings.ssh_agent_socket.as_deref());
+
         Ok(Self {
             connection_manager,
             session_manager,
@@ -2346,6 +2349,7 @@ impl AppState {
             self.mark_simple_sync_dirty();
         }
 
+        rustconn_core::sftp::set_global_agent_socket(settings.ssh_agent_socket.as_deref());
         self.settings = settings;
         Ok(())
     }
@@ -2370,6 +2374,12 @@ impl AppState {
     #[must_use]
     pub fn expanded_groups(&self) -> &std::collections::HashSet<uuid::Uuid> {
         &self.settings.ui.expanded_groups
+    }
+
+    /// Directory that holds the configuration files.
+    #[must_use]
+    pub fn config_dir(&self) -> std::path::PathBuf {
+        self.config_manager.config_dir().to_path_buf()
     }
 
     /// Gets the connection manager

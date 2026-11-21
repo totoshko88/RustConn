@@ -42,10 +42,12 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
     // then proceed: warn-and-direct, matching the GUI. The group/network loads
     // are best-effort — this is advisory and must never block a connection.
     let groups = config_manager.load_groups().unwrap_or_default();
-    let network = config_manager
-        .load_settings()
-        .map(|settings| settings.network)
-        .unwrap_or_default();
+    let loaded_settings = config_manager.load_settings().unwrap_or_default();
+    let network = loaded_settings.network.clone();
+    // The Settings agent socket applies to every ssh this command starts.
+    rustconn_core::sftp::set_global_agent_socket(loaded_settings.ssh_agent_socket.as_deref());
+    let agent_socket =
+        rustconn_core::connection::ssh_inheritance::resolve_ssh_agent_socket(connection, &groups);
     //
     // The protocol gate lives in core: a Telnet/Serial/Kubernetes/… connection
     // never routes through a bastion, so an inherited dangling one is not
@@ -122,10 +124,10 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
         }
         let launch = winrm_launch(connection, &client)
             .ok_or_else(|| CliError::Connection("Could not build the WinRM command".to_string()))?;
-        return execute_connection_command(&launch);
+        return execute_connection_command(&launch, agent_socket.as_deref());
     }
 
-    execute_connection_command(&command)
+    execute_connection_command(&command, agent_socket.as_deref())
 }
 
 /// The launch of WinRM `connection` with `client`.
@@ -248,7 +250,10 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
 }
 
 /// Executes the connection command
-fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliError> {
+fn execute_connection_command(
+    command: &ConnectionCommand,
+    agent_socket: Option<&str>,
+) -> Result<(), CliError> {
     use std::process::Command;
 
     if !rustconn_core::which::is_available(&command.program) {
@@ -265,6 +270,7 @@ fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliErro
 
         let mut cmd = Command::new(&command.program);
         cmd.args(&command.args);
+        rustconn_core::sftp::apply_agent_env_with_overrides(&mut cmd, agent_socket, None);
 
         tracing::info!("Executing: {}", format_command_for_log(command));
 
@@ -279,6 +285,7 @@ fn execute_connection_command(command: &ConnectionCommand) -> Result<(), CliErro
     {
         let mut cmd = Command::new(&command.program);
         cmd.args(&command.args);
+        rustconn_core::sftp::apply_agent_env_with_overrides(&mut cmd, agent_socket, None);
 
         tracing::info!("Executing: {}", format_command_for_log(command));
 

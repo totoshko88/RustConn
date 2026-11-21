@@ -12,7 +12,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.25.6"
+version = "0.26.0"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -72,6 +72,16 @@ zeroize = "1.8"
 ring = "0.17"
 argon2 = "0.6"
 hex = "0.4"
+
+# WebTransport (HTTP/3 over QUIC) for read-only session sharing. The page is
+# served over TCP-TLS with the same per-session certificate, whose SHA-256
+# travels inside the share link and is pinned by the browser, so no CA is needed
+# and the token never rides on an unauthenticated channel.
+wtransport = { version = "0.7", default-features = false, features = [
+    "ring",
+    "self-signed",
+] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
 
 # Secret Service (keyring) client used on Linux/BSD only — never compiled on
 # macOS (see rustconn-core target table). default-features off drops the

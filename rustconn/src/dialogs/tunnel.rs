@@ -561,9 +561,20 @@ fn wire_tunnel_row_actions(
                                 }
                             })
                     });
+                    // The tunnel authenticates with the agent the connection's
+                    // terminal uses, including one inherited from a group.
+                    let mut conn = conn.clone();
+                    let groups = with_state(&ctx_c.state, |s| s.list_groups_owned());
+                    let inherited =
+                        rustconn_core::connection::ssh_inheritance::resolve_ssh_agent_socket(
+                            &conn, &groups,
+                        );
+                    if let rustconn_core::ProtocolConfig::Ssh(cfg) = &mut conn.protocol_config {
+                        cfg.ssh_agent_socket = inherited;
+                    }
                     let start_result = ctx_c.tunnel_manager.borrow_mut().start(
                         &tunnel_c,
-                        conn,
+                        &conn,
                         cached_pw.as_ref(),
                         &[],
                     );

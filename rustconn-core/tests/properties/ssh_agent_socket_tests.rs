@@ -188,16 +188,19 @@ proptest! {
     /// **Feature: custom-ssh-agent-socket, Property 5: Socket path validation correctness**
     ///
     /// For any string, `validate_socket_path` returns `NotAbsolute`
-    /// if and only if the string is non-empty and does not start with `/`.
+    /// if and only if the trimmed string is non-empty and does not start
+    /// with `/`. A leading `~` is expanded first, so it is left out here.
     #[test]
     fn prop_validation_not_absolute_iff(
         path in "[a-zA-Z0-9 /._~-]{0,80}",
     ) {
+        let trimmed = path.trim();
+        prop_assume!(!trimmed.starts_with('~'));
         let result = validate_socket_path(&path);
-        let is_non_empty = !path.is_empty();
-        let starts_with_slash = path.starts_with('/');
 
-        if is_non_empty && !starts_with_slash {
+        if trimmed.is_empty() {
+            prop_assert_eq!(result, SocketPathValidation::Empty, "blank path '{}'", path);
+        } else if !trimmed.starts_with('/') {
             prop_assert_eq!(
                 result,
                 SocketPathValidation::NotAbsolute,
@@ -209,10 +212,8 @@ proptest! {
             prop_assert_ne!(
                 result,
                 SocketPathValidation::NotAbsolute,
-                "Path '{}' should NOT be NotAbsolute (empty={}, starts_with_slash={}), got {:?}",
+                "Path '{}' starts with '/' and must not be NotAbsolute, got {:?}",
                 path,
-                !is_non_empty,
-                starts_with_slash,
                 result
             );
         }

@@ -59,6 +59,8 @@ fn arb_spa_config() -> impl Strategy<Value = SpaConfig> {
             |(rij_key, hmac_key, access, dest_port, allow_ip)| SpaConfig {
                 rijndael_key_ref: rij_key,
                 hmac_key_ref: hmac_key,
+                rijndael_key_in_vault: false,
+                hmac_key_in_vault: false,
                 access,
                 dest_port,
                 allow_ip,

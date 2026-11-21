@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
+use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, WinRmConfig};
 
@@ -217,10 +217,6 @@ impl Protocol for WinRmProtocol {
             )));
         }
         Ok(())
-    }
-
-    fn capabilities(&self) -> ProtocolCapabilities {
-        ProtocolCapabilities::terminal()
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {

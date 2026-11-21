@@ -135,9 +135,32 @@ pub fn tab_title(name: &str, group: Option<&str>) -> String {
 /// The marker the cross-tab broadcast puts in front of a member's title.
 pub const BROADCAST_TITLE_MARKER: &str = "⇄ ";
 
+/// The marker a shared tab carries, so sharing is never hidden from the user.
+pub const SHARED_TITLE_MARKER: &str = "◉ ";
+
+/// The marker a tab carries while a script recording captures its input.
+pub const SCRIPT_TITLE_MARKER: &str = "⏺ ";
+/// Adds or removes `marker` in the run of markers at the front of `title`.
+///
+/// Unlike `strip_prefix`, it finds the marker wherever it sits among the
+/// other leading markers, so toggling one never leaves another behind. The
+/// marker goes first when added.
+#[must_use]
+pub fn with_title_marker(title: &str, marker: &str, on: bool, markers: &[&str]) -> String {
+    let mut rest = title;
+    let mut others = String::new();
+    while let Some(found) = markers.iter().find(|m| rest.starts_with(**m)) {
+        if *found != marker {
+            others.push_str(found);
+        }
+        rest = &rest[found.len()..];
+    }
+    let head = if on { marker } else { "" };
+    format!("{head}{others}{rest}")
+}
 /// Moves a tab title from group `old` to group `new`, keeping the markers.
 ///
-/// A title reads `<markers>[group] name`, where the markers (`⇄ `, `●REC `) are
+/// A title reads `<markers>[group] name`, where the markers (`⇄ `, `●REC `, `◉ `) are
 /// put there by other features in front of everything else. The old label is
 /// found by the group name the session is known to carry, so a user label that
 /// merely looks like `[x] y` is never eaten, and the new label goes behind the
@@ -198,11 +221,12 @@ pub fn local_shell_label(saved: &str) -> &str {
 mod tests {
     use super::{
         DEFAULT_LOCAL_SHELL_LABEL, group_still_in_use, local_shell_label, regroup_title, tab_title,
+        with_title_marker,
     };
 
     #[test]
     fn regrouping_keeps_markers_in_front_and_never_stacks_labels() {
-        let m = ["⇄ ", "●REC "];
+        let m = ["⇄ ", "●REC ", "◉ ", "⏺ "];
         assert_eq!(
             regroup_title("⇄ web1", None, Some("prod"), &m),
             "⇄ [prod] web1"
@@ -220,6 +244,14 @@ mod tests {
         assert_eq!(regroup_title("[x] y", Some("g"), None, &m), "[x] y");
     }
 
+    #[test]
+    fn a_marker_toggles_without_disturbing_the_others() {
+        let m = ["⇄ ", "◉ ", "⏺ "];
+        assert_eq!(with_title_marker("◉ ⇄ web", "⏺ ", true, &m), "⏺ ◉ ⇄ web");
+        assert_eq!(with_title_marker("⏺ ◉ ⇄ web", "◉ ", false, &m), "⏺ ⇄ web");
+        assert_eq!(with_title_marker("⏺ web", "⏺ ", true, &m), "⏺ web");
+        assert_eq!(with_title_marker("⏺ web", "⏺ ", false, &m), "web");
+    }
     /// The shape the creation paths produce.
     #[test]
     fn a_grouped_tab_is_titled_with_its_group() {

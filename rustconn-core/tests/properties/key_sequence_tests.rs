@@ -59,6 +59,36 @@ fn arb_safe_text() -> impl Strategy<Value = String> {
     })
 }
 
+/// Strategy for text carrying the characters the parser treats as syntax.
+///
+/// `arb_safe_text` filters out `{`, `}` and `$` because most generated strings
+/// containing them do not parse. That left escaping untested, and the
+/// `Display` impl shipped a real round-trip bug for years (a `write!(f, "{{")`
+/// emits ONE brace, since `{{` is the format-string escape). This strategy
+/// generates only strings that are genuinely balanced, so an escaping bug
+/// surfaces as a parse failure rather than as mostly-rejected input.
+fn arb_escapable_text() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("{".to_string()),
+        Just("}".to_string()),
+        Just("$".to_string()),
+        Just("{{".to_string()),
+        Just("}}".to_string()),
+        Just("$$".to_string()),
+        Just("{ENTER}".to_string()),
+        Just("${var}".to_string()),
+        Just("echo ${x} {{done}} $5".to_string()),
+        // A brace inside a dollar-escaped run, the case that broke Display.
+        Just("$ {x}".to_string()),
+        "[a-z0-9 ]{0,10}".prop_map(|s| format!("{{{s}}}")),
+        // `${name}` as literal text. It renders escaped to `$${name}`, which
+        // must re-parse as text rather than as a variable reference — the
+        // distinction a recorded script depends on.
+        "[a-z]{1,10}".prop_map(|s| format!("${{{s}}}")),
+        "[a-z0-9 ]{0,10}".prop_map(|s| format!("a{s}${{b}}c{s}d")),
+    ]
+}
+
 /// Strategy for generating wait durations
 fn arb_wait_duration() -> impl Strategy<Value = u32> {
     0u32..10000u32
@@ -478,6 +508,23 @@ proptest! {
         let reparsed = KeySequence::parse(&serialized).unwrap();
 
         prop_assert_eq!(seq, reparsed, "Text should round-trip");
+    }
+
+    /// Text containing the parser's own syntax characters must survive
+    /// `Display` → `parse`. This is the check that was missing when the
+    /// escaping bug shipped: every other round-trip test generated text with
+    /// `{`, `}` and `$` filtered out.
+    #[test]
+    fn key_sequence_round_trip_escaped_text(text in arb_escapable_text()) {
+        prop_assume!(!text.is_empty());
+
+        let seq = KeySequence::from_elements(vec![KeyElement::Text(text)]);
+
+        let serialized = seq.to_string();
+        let reparsed = KeySequence::parse(&serialized)
+            .unwrap_or_else(|e| panic!("rendered {serialized:?} must re-parse, got {e}"));
+
+        prop_assert_eq!(seq, reparsed, "Escaped text should round-trip");
     }
 
     #[test]

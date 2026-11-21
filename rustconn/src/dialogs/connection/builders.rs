@@ -56,6 +56,17 @@ pub(super) fn spice_unix_socket_path(switch_on: bool, path_text: &str) -> Option
     (switch_on && !path.is_empty()).then(|| PathBuf::from(path))
 }
 
+/// Widget name that marks an SPA key row whose key is in the vault (F-08). An
+/// empty marked row means "keep the stored key".
+// shortcut: a widget name instead of a dialog field keeps the change to this
+// file and `populate.rs`; replace with a field if more state is needed.
+pub(super) const SPA_KEY_IN_VAULT: &str = "spa-key-in-vault";
+
+/// True when the row has a typed key, or is marked as holding one in the vault.
+fn spa_key_present(entry: &adw::PasswordEntryRow) -> bool {
+    !entry.text().is_empty() || entry.widget_name() == SPA_KEY_IN_VAULT
+}
+
 pub(super) struct ConnectionDialogData<'a> {
     pub name_entry: &'a Entry,
     pub icon_entry: &'a Entry,
@@ -474,8 +485,8 @@ impl ConnectionDialogData<'_> {
         // The SPA packet is sent only when both keys are set; one key alone
         // would be skipped without a word at connect time.
         if self.spa_enabled_toggle.is_active()
-            && (self.spa_rij_key_entry.text().is_empty()
-                || self.spa_hmac_key_entry.text().is_empty())
+            && (!spa_key_present(self.spa_rij_key_entry)
+                || !spa_key_present(self.spa_hmac_key_entry))
         {
             return Err(i18n(
                 "Both the Rijndael key and the HMAC key are required for fwknop SPA",
@@ -828,6 +839,12 @@ impl ConnectionDialogData<'_> {
         conn.spa_config = if self.spa_enabled_toggle.is_active() {
             let rij_key = self.spa_rij_key_entry.text().to_string();
             let hmac_key = self.spa_hmac_key_entry.text().to_string();
+            // An empty row marked "in vault" keeps the stored key; typed text
+            // replaces it and is moved to the vault after the save.
+            let rij_in_vault =
+                rij_key.is_empty() && self.spa_rij_key_entry.widget_name() == SPA_KEY_IN_VAULT;
+            let hmac_in_vault =
+                hmac_key.is_empty() && self.spa_hmac_key_entry.widget_name() == SPA_KEY_IN_VAULT;
             let access = self.spa_access_entry.text().trim().to_string();
             #[expect(
                 clippy::cast_possible_truncation,
@@ -851,6 +868,8 @@ impl ConnectionDialogData<'_> {
                 } else {
                     Some(hmac_key)
                 },
+                rijndael_key_in_vault: rij_in_vault,
+                hmac_key_in_vault: hmac_in_vault,
                 access: if access.is_empty() {
                     "tcp/22".to_string()
                 } else {

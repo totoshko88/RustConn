@@ -6,4 +6,4 @@
 
 mod manager;
 
-pub use manager::{ScriptError, ScriptManager};
+pub use manager::{ScriptError, ScriptManager, scripts_dir};

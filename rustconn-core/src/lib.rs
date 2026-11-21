@@ -82,6 +82,7 @@ pub mod performance;
 pub mod proc;
 pub mod progress;
 pub mod protocol;
+pub mod remote_editor;
 pub mod remote_script;
 pub mod runtime_dir;
 pub mod script;
@@ -106,6 +107,7 @@ pub mod terminal_themes;
 pub mod testing;
 pub mod tmux_control;
 pub mod tracing;
+pub mod transfer;
 pub mod tunnel_manager;
 pub mod tunnel_preview;
 pub mod variables;
@@ -135,8 +137,9 @@ pub use automation::{
     AutomationTemplate, CompiledRule, ConnectionTask, ExpectEngine, ExpectError, ExpectResult,
     ExpectRule, FolderConnectionTracker, KeyElement, KeySequence, KeySequenceError,
     KeySequenceResult, PendingKind, ScriptEngine, ScriptHost, ScriptParseError, ScriptProgram,
-    ScriptStep, SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
-    builtin_templates, elevated_credentials_rules, templates_for_protocol,
+    ScriptStep, SpecialKey, StepRecorder, TaskCondition, TaskError, TaskExecutor, TaskResult,
+    TaskTiming, builtin_templates, elevated_credentials_rules, render_script,
+    templates_for_protocol,
 };
 pub use busy::{BusyGuard, BusyStack};
 pub use cli_download::{
@@ -146,10 +149,7 @@ pub use cli_download::{
     get_component, get_components_by_category, get_installation_status, get_pinned_versions,
     get_user_friendly_error, install_component, uninstall_component,
 };
-pub use cluster::{
-    Cluster, ClusterError, ClusterManager, ClusterMemberState, ClusterResult, ClusterSession,
-    ClusterSessionStatus, ClusterSessionSummary,
-};
+pub use cluster::{Cluster, ClusterError, ClusterManager, ClusterResult};
 pub use config::{
     AppSettings, ConfigManager, ConnectionSettings, KeybindingCategory, KeybindingDef,
     KeybindingSettings, NetworkSettings, SecretBackendType, StartupAction, default_keybindings,
@@ -220,13 +220,13 @@ pub use progress::{
 };
 pub use protocol::{
     ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, KubernetesProtocol,
-    MoshProtocol, PROTOCOL_TAB_CSS_CLASSES, Protocol, ProtocolCapabilities, ProtocolRegistry,
-    ProviderIconCache, RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol,
-    TelnetProtocol, VncProtocol, WinRmProtocol, build_freerdp_args, detect_aws_cli,
-    detect_azure_cli, detect_boundary, detect_cloudflared, detect_gcloud_cli, detect_hoop,
-    detect_kubectl, detect_mosh, detect_oci_cli, detect_picocom, detect_provider,
-    detect_rdp_client, detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client,
-    detect_vnc_client, extract_geometry_from_args, get_protocol_color_rgb, get_protocol_icon,
+    MoshProtocol, PROTOCOL_TAB_CSS_CLASSES, Protocol, ProtocolRegistry, ProviderIconCache,
+    RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol, TelnetProtocol,
+    VncProtocol, WinRmProtocol, build_freerdp_args, detect_aws_cli, detect_azure_cli,
+    detect_boundary, detect_cloudflared, detect_gcloud_cli, detect_hoop, detect_kubectl,
+    detect_mosh, detect_oci_cli, detect_picocom, detect_provider, detect_rdp_client,
+    detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
+    extract_geometry_from_args, get_protocol_color_rgb, get_protocol_icon,
     get_protocol_icon_by_name, get_protocol_tab_css_class, get_zero_trust_provider_icon,
     has_decorations_flag,
 };

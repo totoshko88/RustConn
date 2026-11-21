@@ -617,7 +617,8 @@ impl ImportDialog {
                                     snippets: native_export.snippets,
                                     smart_folders: native_export.smart_folders,
                                     warnings: Vec::new(),
-                                };
+                                }
+                                .with_validation_warnings();
 
                                 // Extract filename for display
                                 let filename = path.file_name().map_or_else(
@@ -672,7 +673,8 @@ impl ImportDialog {
                                             snippets: Vec::new(),
                                             smart_folders: Vec::new(),
                                             warnings: vec![ImportWarning::CloudSyncImportMode],
-                                        };
+                                        }
+                                        .with_validation_warnings();
 
                                         let filename = path.file_name().map_or_else(
                                             || i18n("Cloud Sync"),
@@ -1761,6 +1763,7 @@ impl ImportDialog {
                             smart_folders: native_export.smart_folders,
                             warnings,
                         }
+                        .with_validation_warnings()
                     }
                     Err(e) => {
                         let mut r = ImportResult::default();
