@@ -167,7 +167,9 @@ fn begin_script_recording(
     tracing::info!(%session_id, "Script recording started from terminal menu");
     crate::toast::show_toast_on_window(
         window,
-        &i18n("Recording — open the terminal menu to stop"),
+        &i18n(
+            "Recording — what you type is saved, including passwords. Stop it from the terminal menu",
+        ),
         crate::toast::ToastType::Info,
     );
 }

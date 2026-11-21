@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 14:48+0200\n"
+"POT-Creation-Date: 2026-11-21 17:09+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: French\n"
@@ -70,14 +70,14 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
 #: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:585
+#: rustconn/src/window/network_tools/share.rs:594
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
 #: rustconn/src/window/operations.rs:998 rustconn/src/window/operations.rs:1199
 #: rustconn/src/window/remote_script.rs:616
-#: rustconn/src/window/session_start.rs:1003
 #: rustconn/src/window/session_start.rs:1067
+#: rustconn/src/window/session_start.rs:1131
 #: rustconn/src/window/sessions.rs:335 rustconn/src/window/startup.rs:399
 #: rustconn/src/window/workspaces.rs:560
 msgid "Cancel"
@@ -190,7 +190,7 @@ msgstr "Journal de débogage"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:558
+#: rustconn/src/window/network_tools/share.rs:567
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Fermer"
@@ -337,7 +337,7 @@ msgstr "« {} » a besoin des éléments suivants avant de se connecter."
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:595
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Connexion"
@@ -649,10 +649,14 @@ msgid "Switch Tab"
 msgstr "Changer d’onglet"
 
 #: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
+#: rustconn/src/terminal/script_recorder.rs:186
+#: rustconn/src/terminal/tab_menu.rs:1466
 msgid "Share Session (read-only)"
 msgstr "Partager la session (lecture seule)"
 
 #: rustconn/src/dialogs/command_palette.rs:709
+#: rustconn/src/terminal/script_recorder.rs:190
+#: rustconn/src/terminal/tab_menu.rs:1481
 msgid "Start TFTP Server"
 msgstr "Démarrer le serveur TFTP"
 
@@ -12395,6 +12399,7 @@ msgstr "Session RDP dans une fenêtre externe"
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
+#: rustconn/src/window/session_start.rs:672
 msgid "Connection failed"
 msgstr "Connexion échouée"
 
@@ -13096,10 +13101,12 @@ msgid "Open SFTP"
 msgstr "Ouvrir SFTP"
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
+#: rustconn/src/terminal/tab_menu.rs:1474
 msgid "Edit Remote File…"
 msgstr "Modifier le fichier distant…"
 
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
+#: rustconn/src/terminal/tab_menu.rs:1456
 msgid "Record Script…"
 msgstr "Enregistrer un script…"
 
@@ -13484,6 +13491,7 @@ msgstr ""
 "qu’elle est collée — vérifiez-la avant de continuer."
 
 #: rustconn/src/terminal/script_recorder.rs:176
+#: rustconn/src/terminal/tab_menu.rs:1452
 msgid "Stop Script Recording"
 msgstr "Arrêter l’enregistrement du script"
 
@@ -13586,6 +13594,10 @@ msgstr ""
 #: rustconn/src/terminal/split_title.rs:138
 msgid "Panes:"
 msgstr "Panneaux :"
+
+#: rustconn/src/terminal/tab_labels.rs:130
+msgid "This session is shared read-only"
+msgstr "Cette session est partagée en lecture seule"
 
 #: rustconn/src/terminal/tab_menu.rs:99
 msgid "Close Tab…"
@@ -14001,8 +14013,8 @@ msgid "Jump Host Unavailable"
 msgstr "Hôte de rebond indisponible"
 
 #: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:788
-#: rustconn/src/window/session_start.rs:1004
-#: rustconn/src/window/session_start.rs:1070
+#: rustconn/src/window/session_start.rs:1068
+#: rustconn/src/window/session_start.rs:1134
 msgid "Connect Anyway"
 msgstr "Se connecter quand même"
 
@@ -15224,6 +15236,7 @@ msgid "Sharing stopped"
 msgstr "Partage arrêté"
 
 #: rustconn/src/window/network_tools.rs:103
+#: rustconn/src/window/script_actions.rs:99
 msgid "That connection has no open session"
 msgstr "Cette connexion n’a aucune session ouverte"
 
@@ -15350,6 +15363,7 @@ msgid "Start sharing"
 msgstr "Démarrer le partage"
 
 #: rustconn/src/window/network_tools/share.rs:153
+#: rustconn/src/window/network_tools/share.rs:382
 msgid "Could not start session sharing"
 msgstr "Impossible de démarrer le partage de la session"
 
@@ -15376,18 +15390,23 @@ msgstr ""
 "l’arrêt du partage. L’onglet est marqué ◉ tant qu’il est partagé. {}"
 
 #: rustconn/src/window/network_tools/share.rs:248
+#: rustconn/src/window/network_tools/share.rs:559
+#: rustconn/src/window/network_tools/share.rs:759
 msgid "Session shared"
 msgstr "Session partagée"
 
 #: rustconn/src/window/network_tools/share.rs:253
+#: rustconn/src/window/network_tools/share.rs:565
 msgid "Copy link"
 msgstr "Copier le lien"
 
 #: rustconn/src/window/network_tools/share.rs:254
+#: rustconn/src/window/network_tools/share.rs:566
 msgid "Stop sharing"
 msgstr "Arrêter le partage"
 
 #: rustconn/src/window/network_tools/share.rs:263
+#: rustconn/src/window/network_tools/share.rs:476
 msgid "Link copied to clipboard"
 msgstr "Lien copié dans le presse-papiers"
 
@@ -15418,15 +15437,15 @@ msgstr "Réseau local uniquement"
 msgid "Look Up Public Address"
 msgstr "Rechercher l’adresse publique"
 
-#: rustconn/src/window/network_tools/share.rs:414
+#: rustconn/src/window/network_tools/share.rs:423
 msgid "Public endpoint (STUN)"
 msgstr "Point d’accès public (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:416
+#: rustconn/src/window/network_tools/share.rs:425
 msgid "Endpoint (local network)"
 msgstr "Point d’accès (réseau local)"
 
-#: rustconn/src/window/network_tools/share.rs:422
+#: rustconn/src/window/network_tools/share.rs:431
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15435,7 +15454,7 @@ msgstr ""
 "UDP vers cet ordinateur sur le routeur. Un autre RustConn n’a besoin que "
 "d’UDP."
 
-#: rustconn/src/window/network_tools/share.rs:427
+#: rustconn/src/window/network_tools/share.rs:436
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15444,7 +15463,7 @@ msgstr ""
 "port UDP {} vers cet ordinateur sur le routeur. Un autre RustConn n’a besoin "
 "que d’UDP."
 
-#: rustconn/src/window/network_tools/share.rs:433
+#: rustconn/src/window/network_tools/share.rs:442
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15459,7 +15478,7 @@ msgstr ""
 "SHA-256 du certificat avec la partie fp= du lien. L’onglet est marqué ◉ tant "
 "qu’il est partagé."
 
-#: rustconn/src/window/network_tools/share.rs:437
+#: rustconn/src/window/network_tools/share.rs:446
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15474,23 +15493,23 @@ msgstr ""
 "SHA-256 du certificat avec la partie fp= du lien. L’onglet est marqué ◉ tant "
 "qu’il est partagé."
 
-#: rustconn/src/window/network_tools/share.rs:514
+#: rustconn/src/window/network_tools/share.rs:523
 msgid "Read-only link"
 msgstr "Lien en lecture seule"
 
-#: rustconn/src/window/network_tools/share.rs:572
+#: rustconn/src/window/network_tools/share.rs:581
 msgid "Paste an https:// share link"
 msgstr "Collez un lien de partage https://"
 
-#: rustconn/src/window/network_tools/share.rs:574
+#: rustconn/src/window/network_tools/share.rs:583
 msgid "Share link"
 msgstr "Lien de partage"
 
-#: rustconn/src/window/network_tools/share.rs:577
+#: rustconn/src/window/network_tools/share.rs:586
 msgid "Join a shared session"
 msgstr "Rejoindre une session partagée"
 
-#: rustconn/src/window/network_tools/share.rs:579
+#: rustconn/src/window/network_tools/share.rs:588
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15498,19 +15517,22 @@ msgstr ""
 "Collez le lien que l’hôte vous a envoyé. RustConn se connecte directement "
 "via QUIC (UDP) ; le port UDP de l’hôte doit être accessible."
 
-#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:608
+#: rustconn/src/window/network_tools/share.rs:637
 msgid "Could not join the shared session"
 msgstr "Impossible de rejoindre la session partagée"
 
-#: rustconn/src/window/network_tools/share.rs:668
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Read-only shared session from {}"
 msgstr "Session partagée en lecture seule depuis {}"
 
-#: rustconn/src/window/network_tools/share.rs:674
+#: rustconn/src/window/network_tools/share.rs:683
+#: rustconn/src/window/network_tools/share.rs:692
+#: rustconn/src/window/network_tools/share.rs:784
 msgid "Shared session"
 msgstr "Session partagée"
 
-#: rustconn/src/window/network_tools/share.rs:675
+#: rustconn/src/window/network_tools/share.rs:684
 msgid "Read-only from {}"
 msgstr "Lecture seule depuis {}"
 
@@ -15570,6 +15592,7 @@ msgid "Start server"
 msgstr "Démarrer le serveur"
 
 #: rustconn/src/window/network_tools/tftp.rs:148
+#: rustconn/src/window/network_tools/tftp.rs:152
 msgid "Could not start TFTP server"
 msgstr "Impossible de démarrer le serveur TFTP"
 
@@ -16192,23 +16215,27 @@ msgstr "session"
 msgid "Could not start recording"
 msgstr "Impossible de démarrer l’enregistrement"
 
-#: rustconn/src/window/script_actions.rs:170
-msgid "Recording — open the terminal menu to stop"
-msgstr "Enregistrement en cours — ouvrez le menu du terminal pour l’arrêter"
+#: rustconn/src/window/script_actions.rs:171
+msgid ""
+"Recording — what you type is saved, including passwords. Stop it from the "
+"terminal menu"
+msgstr ""
+"Enregistrement en cours : ce que vous tapez est conservé, mots de passe "
+"compris. Arrêtez-le depuis le menu du terminal"
 
-#: rustconn/src/window/script_actions.rs:183
+#: rustconn/src/window/script_actions.rs:185
 msgid "Recording saved with no steps to {}"
 msgstr "Enregistrement sans étape sauvegardé dans {}"
 
-#: rustconn/src/window/script_actions.rs:185
+#: rustconn/src/window/script_actions.rs:187
 msgid "Saved {} steps to {}"
 msgstr "{} étapes enregistrées dans {}"
 
-#: rustconn/src/window/script_actions.rs:200
+#: rustconn/src/window/script_actions.rs:202
 msgid "Could Not Save Script"
 msgstr "Impossible d’enregistrer le script"
 
-#: rustconn/src/window/script_actions.rs:202
+#: rustconn/src/window/script_actions.rs:204
 msgid "The recording was lost and the file was not written. {}"
 msgstr "L’enregistrement a été perdu et le fichier n’a pas été écrit. {}"
 
@@ -16273,25 +16300,25 @@ msgstr "Déjà en cours d'exécution dans une fenêtre externe"
 msgid "Connection to ‘{}’ failed"
 msgstr "Connexion à ‘{}’ échouée"
 
-#: rustconn/src/window/session_start.rs:691
-#: rustconn/src/window/session_start.rs:705
+#: rustconn/src/window/session_start.rs:914
+#: rustconn/src/window/session_start.rs:927
 msgid "Pre-connect task failed: {}"
 msgstr "La tâche de pré-connexion a échoué : {}"
 
-#: rustconn/src/window/session_start.rs:739
+#: rustconn/src/window/session_start.rs:958
 msgid "Port knock failed: {}"
 msgstr "Échec du port knocking : {}"
 
-#: rustconn/src/window/session_start.rs:762
-#: rustconn/src/window/session_start.rs:805
+#: rustconn/src/window/session_start.rs:976
+#: rustconn/src/window/session_start.rs:1013
 msgid "SPA failed: {}"
 msgstr "Échec du SPA : {}"
 
-#: rustconn/src/window/session_start.rs:989
+#: rustconn/src/window/session_start.rs:1053
 msgid "{} (via {})"
 msgstr "{} (via {})"
 
-#: rustconn/src/window/session_start.rs:995
+#: rustconn/src/window/session_start.rs:1059
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -16315,15 +16342,15 @@ msgstr ""
 "Si vous n’avez pas fait ce changement, annulez — se connecter pourrait "
 "envoyer les identifiants enregistrés vers une autre machine."
 
-#: rustconn/src/window/session_start.rs:1000
+#: rustconn/src/window/session_start.rs:1064
 msgid "Routing changed for “{}”"
 msgstr "Le routage a changé pour « {} »"
 
-#: rustconn/src/window/session_start.rs:1064
+#: rustconn/src/window/session_start.rs:1128
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Hôte de rebond indisponible pour « {} »"
 
-#: rustconn/src/window/session_start.rs:1069
+#: rustconn/src/window/session_start.rs:1133
 msgid "Connect Directly"
 msgstr "Se connecter directement"
 
@@ -16739,6 +16766,9 @@ msgstr "Gestionnaire de connexions"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connexion;terminal;distant;kubernetes;k8s;série;sftp;"
+
+#~ msgid "Recording — open the terminal menu to stop"
+#~ msgstr "Enregistrement en cours — ouvrez le menu du terminal pour l’arrêter"
 
 #~ msgid "Settings…"
 #~ msgstr "Paramètres…"

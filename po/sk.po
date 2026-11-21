@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 14:48+0200\n"
+"POT-Creation-Date: 2026-11-21 17:09+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -70,14 +70,14 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
 #: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:585
+#: rustconn/src/window/network_tools/share.rs:594
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
 #: rustconn/src/window/operations.rs:998 rustconn/src/window/operations.rs:1199
 #: rustconn/src/window/remote_script.rs:616
-#: rustconn/src/window/session_start.rs:1003
 #: rustconn/src/window/session_start.rs:1067
+#: rustconn/src/window/session_start.rs:1131
 #: rustconn/src/window/sessions.rs:335 rustconn/src/window/startup.rs:399
 #: rustconn/src/window/workspaces.rs:560
 msgid "Cancel"
@@ -187,7 +187,7 @@ msgstr "Ladiaci záznam"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:558
+#: rustconn/src/window/network_tools/share.rs:567
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Zavrieť"
@@ -334,7 +334,7 @@ msgstr "„{}“ pred pripojením vyžaduje nasledovné."
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:595
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Pripojiť"
@@ -627,6 +627,7 @@ msgstr "Odstrániť rozdelenie"
 msgid "Network Scan"
 msgstr "Prehľadanie siete"
 
+#: rustconn/src/dialogs/command_palette.rs:704 rustconn/src/window/ui.rs:313
 msgid "Join Shared Session…"
 msgstr "Pripojiť sa k zdieľanej relácii…"
 
@@ -641,12 +642,19 @@ msgstr "Prehľad kariet"
 msgid "Switch Tab"
 msgstr "Prepnúť kartu"
 
+#: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
+#: rustconn/src/terminal/script_recorder.rs:186
+#: rustconn/src/terminal/tab_menu.rs:1466
 msgid "Share Session (read-only)"
 msgstr "Zdieľať reláciu (iba na čítanie)"
 
+#: rustconn/src/dialogs/command_palette.rs:709
+#: rustconn/src/terminal/script_recorder.rs:190
+#: rustconn/src/terminal/tab_menu.rs:1481
 msgid "Start TFTP Server"
 msgstr "Spustiť server TFTP"
 
+#: rustconn/src/dialogs/command_palette.rs:710
 msgid "Edit Remote File"
 msgstr "Upraviť vzdialený súbor"
 
@@ -1938,9 +1946,11 @@ msgstr "Upraviť pripojenie"
 msgid "Tunnel WinRM through an SSH connection"
 msgstr "Tunelovať WinRM cez pripojenie SSH"
 
+#: rustconn/src/dialogs/connection/dialog/populate.rs:375
 msgid "Rijndael Key (in vault)"
 msgstr "Kľúč Rijndael (v trezore)"
 
+#: rustconn/src/dialogs/connection/dialog/populate.rs:381
 msgid "HMAC Key (in vault)"
 msgstr "Kľúč HMAC (v trezore)"
 
@@ -5768,10 +5778,12 @@ msgstr ""
 "klienta FTP. Pred pripojením skontrolujte port (SFTP používa 22), "
 "prihlasovacie údaje a či server podporuje SFTP."
 
+#: rustconn/src/dialogs/import/mod.rs:440
 msgid "Connection {} has no name. It was imported as it is; give it a name."
 msgstr ""
 "Pripojenie {} nemá názov. Bolo importované tak, ako je; dajte mu názov."
 
+#: rustconn/src/dialogs/import/mod.rs:444
 msgid ""
 "Connection '{}' has no host. It was imported as it is; set a host before "
 "connecting."
@@ -5779,6 +5791,7 @@ msgstr ""
 "Pripojenie '{}' nemá hostiteľa. Bolo importované tak, ako je; pred "
 "pripojením nastavte hostiteľa."
 
+#: rustconn/src/dialogs/import/mod.rs:448
 msgid ""
 "Connection '{}' has port 0. It was imported as it is; set a port before "
 "connecting."
@@ -5786,6 +5799,7 @@ msgstr ""
 "Pripojenie '{}' má port 0. Bolo importované tak, ako je; pred pripojením "
 "nastavte port."
 
+#: rustconn/src/dialogs/import/mod.rs:452
 msgid ""
 "Connection '{}' uses a jump host that is not part of this import. It was "
 "imported as it is; check its jump host before connecting."
@@ -5794,9 +5808,11 @@ msgstr ""
 "Bolo importované tak, ako je; pred pripojením skontrolujte jeho "
 "medzihostiteľa."
 
+#: rustconn/src/dialogs/import/mod.rs:456
 msgid "Group {} has no name. It was imported as it is; give it a name."
 msgstr "Skupina {} nemá názov. Bola importovaná tak, ako je; dajte jej názov."
 
+#: rustconn/src/dialogs/import/mod.rs:460
 msgid ""
 "Snippet {} has no name or no command. It was imported as it is; complete it "
 "before running."
@@ -9083,6 +9099,7 @@ msgstr "Pripojené"
 msgid "Database path required"
 msgstr "Vyžadovaná cesta k databáze"
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:21
 msgid ""
 "Used by every SSH, SFTP, tunnel and ssh-add launch. A connection's own "
 "socket takes precedence. Leave empty to use SSH_AUTH_SOCK."
@@ -9091,6 +9108,7 @@ msgstr ""
 "pripojenia má prednosť. Ak ho chcete nahradiť predvoleným, nechajte pole "
 "prázdne a použije sa SSH_AUTH_SOCK."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:32
 msgid ""
 "The path must be absolute (for example /run/user/1000/ssh-agent.sock) or "
 "start with ~/."
@@ -9098,6 +9116,7 @@ msgstr ""
 "Cesta musí byť absolútna (napríklad /run/user/1000/ssh-agent.sock) alebo "
 "začínať ~/."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:35
 msgid ""
 "Nothing exists at this path. In Flatpak the app only sees paths it has "
 "access to, such as the runtime directory."
@@ -9105,15 +9124,18 @@ msgstr ""
 "Na tejto ceste nič nie je. Vo Flatpaku aplikácia vidí iba cesty, ku ktorým "
 "má prístup, napríklad runtime adresár."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:38
 msgid ""
 "Nothing exists at this path. Check that the agent is running and the path is "
 "correct."
 msgstr ""
 "Na tejto ceste nič nie je. Skontrolujte, či agent beží a či je cesta správna."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:40
 msgid "This path exists but it is not a socket."
 msgstr "Táto cesta existuje, ale nie je to socket."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:41
 msgid "This socket belongs to another user."
 msgstr "Tento socket patrí inému používateľovi."
 
@@ -9141,6 +9163,7 @@ msgstr "Obnoviť stav SSH agenta"
 msgid "Controls"
 msgstr "Ovládanie"
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:119
 msgid "Custom Socket"
 msgstr "Vlastný socket"
 
@@ -12224,6 +12247,7 @@ msgstr "Relácia RDP beží v externom okne"
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
+#: rustconn/src/window/session_start.rs:672
 msgid "Connection failed"
 msgstr "Pripojenie zlyhalo"
 
@@ -12652,6 +12676,7 @@ msgstr "Zavrieť všetky relácie"
 msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr "Vysielanie je aktívne — klávesy sa zrkadlia do {} kariet v tomto okne"
 
+#: rustconn/src/sidebar/mod.rs:97
 msgid "Selected: {}"
 msgstr "Vybrané: {}"
 
@@ -12857,6 +12882,7 @@ msgstr "Nové pripojenie v skupine"
 msgid "New Subgroup"
 msgstr "Nová podskupina"
 
+#: rustconn/src/sidebar_ui.rs:443 rustconn/src/sidebar_ui.rs:506
 msgid "Rename…"
 msgstr "Premenovať…"
 
@@ -12922,9 +12948,13 @@ msgstr "Záznam sedenia…"
 msgid "Open SFTP"
 msgstr "Otvoriť SFTP"
 
+#: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
+#: rustconn/src/terminal/tab_menu.rs:1474
 msgid "Edit Remote File…"
 msgstr "Upraviť vzdialený súbor…"
 
+#: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
+#: rustconn/src/terminal/tab_menu.rs:1456
 msgid "Record Script…"
 msgstr "Nahrať skript…"
 
@@ -12973,6 +13003,7 @@ msgstr "Importovať…"
 msgid "Export…"
 msgstr "Exportovať…"
 
+#: rustconn/src/sidebar_ui.rs:1293
 msgid "Selected items"
 msgstr "Vybrané položky"
 
@@ -13305,6 +13336,8 @@ msgstr ""
 "Schránka obsahuje viac než jeden riadok. Každý riadok sa spustí ihneď po "
 "vložení — pred pokračovaním ho skontrolujte."
 
+#: rustconn/src/terminal/script_recorder.rs:176
+#: rustconn/src/terminal/tab_menu.rs:1452
 msgid "Stop Script Recording"
 msgstr "Zastaviť nahrávanie skriptu"
 
@@ -13408,6 +13441,10 @@ msgstr ""
 msgid "Panes:"
 msgstr "Panely:"
 
+#: rustconn/src/terminal/tab_labels.rs:130
+msgid "This session is shared read-only"
+msgstr "Táto relácia je zdieľaná len na čítanie"
+
 #: rustconn/src/terminal/tab_menu.rs:99
 msgid "Close Tab…"
 msgstr "Zavrieť kartu…"
@@ -13452,6 +13489,7 @@ msgstr ""
 msgid "Tab name"
 msgstr "Názov karty"
 
+#: rustconn/src/terminal/tab_menu.rs:795
 msgid "Close all tabs in group “{}”?"
 msgstr "Zavrieť všetky karty v skupine „{}“?"
 
@@ -13531,6 +13569,7 @@ msgstr "Upraviť pripojenie…"
 msgid "Save Output…"
 msgstr "Uložiť výstup…"
 
+#: rustconn/src/terminal/tab_menu.rs:1464
 msgid "Stop Sharing"
 msgstr "Zastaviť zdieľanie"
 
@@ -13700,14 +13739,17 @@ msgstr ""
 msgid "Save to This Computer"
 msgstr "Uložiť do tohto počítača"
 
+#: rustconn/src/vault_ops.rs:2244
 msgid ""
 "SPA keys could not be moved to the vault and stay in the connection file"
 msgstr ""
 "Kľúče SPA sa nepodarilo presunúť do trezora a zostali v súbore pripojenia"
 
+#: rustconn/src/vault_ops.rs:2299
 msgid "Unused SPA keys could not be removed from the vault"
 msgstr "Nepoužité kľúče SPA sa nepodarilo odstrániť z trezora"
 
+#: rustconn/src/vault_ops.rs:2364
 msgid ""
 "SPA keys were not copied to the new connection; open it and enter them again"
 msgstr ""
@@ -13819,8 +13861,8 @@ msgid "Jump Host Unavailable"
 msgstr "Medzihostiteľ nie je dostupný"
 
 #: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:788
-#: rustconn/src/window/session_start.rs:1004
-#: rustconn/src/window/session_start.rs:1070
+#: rustconn/src/window/session_start.rs:1068
+#: rustconn/src/window/session_start.rs:1134
 msgid "Connect Anyway"
 msgstr "Napriek tomu pripojiť"
 
@@ -14150,6 +14192,7 @@ msgstr "Reláciu sa nepodarilo presunúť späť do hlavného okna."
 msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Skupinové vysielanie vypnuté — klávesy idú len na zameranú kartu"
 
+#: rustconn/src/window/detach_actions.rs:647
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "Skupinové vysielanie vyžaduje aspoň dve karty terminálu"
 
@@ -14157,9 +14200,11 @@ msgstr "Skupinové vysielanie vyžaduje aspoň dve karty terminálu"
 msgid "Item restored"
 msgstr "Položka obnovená"
 
+#: rustconn/src/window/edit_actions.rs:453
 msgid "Restored {} item(s)"
 msgstr "Obnovené položky: {}"
 
+#: rustconn/src/window/edit_actions.rs:459
 msgid "Restored {} of {} item(s)"
 msgstr "Obnovené položky: {} z {}"
 
@@ -14704,6 +14749,7 @@ msgstr ""
 msgid "Enable Broadcast"
 msgstr "Povoliť vysielanie"
 
+#: rustconn/src/window/group_broadcast.rs:343
 msgid "Add one more tab to start Tab Broadcast"
 msgstr "Pridajte ešte jednu kartu na spustenie skupinového vysielania"
 
@@ -15005,9 +15051,12 @@ msgstr "Sieť obmedzená — plné pripojenie zatiaľ nie je dostupné"
 msgid "Network changed — reconnecting affected sessions…"
 msgstr "Sieť sa zmenila — opätovné pripájanie dotknutých relácií…"
 
+#: rustconn/src/window/network_tools.rs:83
 msgid "Sharing stopped"
 msgstr "Zdieľanie zastavené"
 
+#: rustconn/src/window/network_tools.rs:103
+#: rustconn/src/window/script_actions.rs:99
 msgid "That connection has no open session"
 msgstr "Toto pripojenie nemá otvorenú žiadnu reláciu"
 
@@ -15021,9 +15070,11 @@ msgstr "Editor vzdialených súborov"
 msgid "Connection not found"
 msgstr "Spojenie sa nenašlo"
 
+#: rustconn/src/window/network_tools.rs:198
 msgid "This computer only"
 msgstr "Iba tento počítač"
 
+#: rustconn/src/window/network_tools.rs:209
 msgid "Internet — WebTransport in a browser"
 msgstr "Internet — WebTransport v prehliadači"
 
@@ -15095,9 +15146,11 @@ msgstr "Kópia uložená do {}"
 msgid "Could not save the copy"
 msgstr "Kópiu sa nepodarilo uložiť"
 
+#: rustconn/src/window/network_tools/share.rs:74
 msgid "Select a terminal before sharing a session"
 msgstr "Pred zdieľaním relácie vyberte terminál"
 
+#: rustconn/src/window/network_tools/share.rs:82
 msgid ""
 "Choose this computer only, the interface whose address the link should use, "
 "or the internet over WebTransport."
@@ -15105,9 +15158,11 @@ msgstr ""
 "Vyberte iba tento počítač, rozhranie, ktorého adresu má odkaz použiť, alebo "
 "internet cez WebTransport."
 
+#: rustconn/src/window/network_tools/share.rs:88
 msgid "Share this session"
 msgstr "Zdieľať túto reláciu"
 
+#: rustconn/src/window/network_tools/share.rs:90
 msgid ""
 "The viewer gets the live terminal output read-only. Local and LAN links are "
 "unencrypted. The internet link opens in a browser over WebTransport (QUIC); "
@@ -15120,12 +15175,16 @@ msgstr ""
 "zistenie vašej verejnej adresy opýta. Karta zobrazuje ◉ a jej ponuka "
 "obsahuje Zastaviť zdieľanie."
 
+#: rustconn/src/window/network_tools/share.rs:97
 msgid "Start sharing"
 msgstr "Spustiť zdieľanie"
 
+#: rustconn/src/window/network_tools/share.rs:153
+#: rustconn/src/window/network_tools/share.rs:382
 msgid "Could not start session sharing"
 msgstr "Zdieľanie relácie sa nepodarilo spustiť"
 
+#: rustconn/src/window/network_tools/share.rs:238
 msgid ""
 "Anyone who has this link can watch the session read-only, any number of "
 "times, until you stop sharing. The link uses plain HTTP, so other computers "
@@ -15137,6 +15196,7 @@ msgstr ""
 "iné počítače vo vašej sieti môžu čítať, čo sa zobrazuje. Karta je počas "
 "zdieľania označená ◉. {}"
 
+#: rustconn/src/window/network_tools/share.rs:243
 msgid ""
 "Anyone on this computer who has this link can watch the session read-only, "
 "any number of times, until you stop sharing. The tab is marked ◉ while it is "
@@ -15146,21 +15206,32 @@ msgstr ""
 "čítanie, ľubovoľne veľakrát, kým zdieľanie nezastavíte. Karta je počas "
 "zdieľania označená ◉. {}"
 
+#: rustconn/src/window/network_tools/share.rs:248
+#: rustconn/src/window/network_tools/share.rs:559
+#: rustconn/src/window/network_tools/share.rs:759
 msgid "Session shared"
 msgstr "Relácia zdieľaná"
 
+#: rustconn/src/window/network_tools/share.rs:253
+#: rustconn/src/window/network_tools/share.rs:565
 msgid "Copy link"
 msgstr "Kopírovať odkaz"
 
+#: rustconn/src/window/network_tools/share.rs:254
+#: rustconn/src/window/network_tools/share.rs:566
 msgid "Stop sharing"
 msgstr "Zastaviť zdieľanie"
 
+#: rustconn/src/window/network_tools/share.rs:263
+#: rustconn/src/window/network_tools/share.rs:476
 msgid "Link copied to clipboard"
 msgstr "Odkaz skopírovaný do schránky"
 
+#: rustconn/src/window/network_tools/share.rs:316
 msgid "Look Up Your Public Address?"
 msgstr "Zistiť vašu verejnú adresu?"
 
+#: rustconn/src/window/network_tools/share.rs:318
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
 "servers run by Google (stun.l.google.com) and Cloudflare "
@@ -15175,18 +15246,23 @@ msgstr ""
 "údaje z terminálu. Bez zisťovania bude odkaz fungovať iba vo vašej miestnej "
 "sieti."
 
+#: rustconn/src/window/network_tools/share.rs:324
 msgid "Local Network Only"
 msgstr "Iba miestna sieť"
 
+#: rustconn/src/window/network_tools/share.rs:325
 msgid "Look Up Public Address"
 msgstr "Zistiť verejnú adresu"
 
+#: rustconn/src/window/network_tools/share.rs:423
 msgid "Public endpoint (STUN)"
 msgstr "Verejný koncový bod (STUN)"
 
+#: rustconn/src/window/network_tools/share.rs:425
 msgid "Endpoint (local network)"
 msgstr "Koncový bod (miestna sieť)"
 
+#: rustconn/src/window/network_tools/share.rs:431
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15194,6 +15270,7 @@ msgstr ""
 "Ak divákovi vyprší čas, presmerujte na smerovači porty TCP a UDP {} na tento "
 "počítač. Iný RustConn potrebuje iba UDP."
 
+#: rustconn/src/window/network_tools/share.rs:436
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15201,6 +15278,7 @@ msgstr ""
 "Ak divákovi vyprší čas, presmerujte na smerovači port TCP {} a port UDP {} "
 "na tento počítač. Iný RustConn potrebuje iba UDP."
 
+#: rustconn/src/window/network_tools/share.rs:442
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15214,6 +15292,7 @@ msgstr ""
 "budete pokračovať, porovnajte odtlačok SHA-256 certifikátu s časťou fp= v "
 "odkaze. Karta je počas zdieľania označená ◉."
 
+#: rustconn/src/window/network_tools/share.rs:446
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15227,18 +15306,23 @@ msgstr ""
 "budete pokračovať, porovnajte odtlačok SHA-256 certifikátu s časťou fp= v "
 "odkaze. Karta je počas zdieľania označená ◉."
 
+#: rustconn/src/window/network_tools/share.rs:523
 msgid "Read-only link"
 msgstr "Odkaz iba na čítanie"
 
+#: rustconn/src/window/network_tools/share.rs:581
 msgid "Paste an https:// share link"
 msgstr "Vložte zdieľaný odkaz https://"
 
+#: rustconn/src/window/network_tools/share.rs:583
 msgid "Share link"
 msgstr "Odkaz na zdieľanie"
 
+#: rustconn/src/window/network_tools/share.rs:586
 msgid "Join a shared session"
 msgstr "Pripojiť sa k zdieľanej relácii"
 
+#: rustconn/src/window/network_tools/share.rs:588
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15246,21 +15330,30 @@ msgstr ""
 "Vložte odkaz, ktorý vám poslal hostiteľ. RustConn sa pripojí priamo cez QUIC "
 "(UDP); UDP port hostiteľa musí byť dostupný."
 
+#: rustconn/src/window/network_tools/share.rs:608
+#: rustconn/src/window/network_tools/share.rs:637
 msgid "Could not join the shared session"
 msgstr "K zdieľanej relácii sa nepodarilo pripojiť"
 
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Read-only shared session from {}"
 msgstr "Zdieľaná relácia iba na čítanie od {}"
 
+#: rustconn/src/window/network_tools/share.rs:683
+#: rustconn/src/window/network_tools/share.rs:692
+#: rustconn/src/window/network_tools/share.rs:784
 msgid "Shared session"
 msgstr "Zdieľaná relácia"
 
+#: rustconn/src/window/network_tools/share.rs:684
 msgid "Read-only from {}"
 msgstr "Iba na čítanie od {}"
 
+#: rustconn/src/window/network_tools/tftp.rs:51
 msgid "Share this folder?"
 msgstr "Zdieľať tento priečinok?"
 
+#: rustconn/src/window/network_tools/tftp.rs:53
 msgid ""
 "{} is your home folder or holds your SSH keys. Anyone who can reach the "
 "server could read private files in it. Choose a folder that has only the "
@@ -15270,15 +15363,19 @@ msgstr ""
 "sa dostane k serveru, by v ňom mohol čítať súkromné súbory. Vyberte "
 "priečinok, ktorý obsahuje iba súbory, ktoré chcete zdieľať."
 
+#: rustconn/src/window/network_tools/tftp.rs:60
 msgid "Share anyway"
 msgstr "Napriek tomu zdieľať"
 
+#: rustconn/src/window/network_tools/tftp.rs:76
 msgid "6969 — unprivileged"
 msgstr "6969 — bez oprávnení"
 
+#: rustconn/src/window/network_tools/tftp.rs:77
 msgid "69 — standard TFTP (needs privileges)"
 msgstr "69 — štandardný TFTP (vyžaduje oprávnenia)"
 
+#: rustconn/src/window/network_tools/tftp.rs:91
 msgid ""
 "Port 69 is the standard; Linux, macOS and FreeBSD require elevated rights "
 "for it."
@@ -15286,37 +15383,48 @@ msgstr ""
 "Port 69 je štandardný; Linux, macOS a FreeBSD pre neho vyžadujú zvýšené "
 "oprávnenia."
 
+#: rustconn/src/window/network_tools/tftp.rs:102
 msgid "Bind loopback or the interface a device connects to."
 msgstr ""
 "Viažte na loopback alebo na rozhranie, ku ktorému sa zariadenie pripája."
 
+#: rustconn/src/window/network_tools/tftp.rs:110
 msgid "TFTP server"
 msgstr "Server TFTP"
 
+#: rustconn/src/window/network_tools/tftp.rs:112
 msgid ""
 "Serve {} read-only. Choose the port and the interface a device will reach."
 msgstr ""
 "Sprístupniť {} iba na čítanie. Vyberte port a rozhranie, ku ktorému "
 "zariadenie pristúpi."
 
+#: rustconn/src/window/network_tools/tftp.rs:120
 msgid "Start server"
 msgstr "Spustiť server"
 
+#: rustconn/src/window/network_tools/tftp.rs:148
+#: rustconn/src/window/network_tools/tftp.rs:152
 msgid "Could not start TFTP server"
 msgstr "Server TFTP sa nepodarilo spustiť"
 
+#: rustconn/src/window/network_tools/tftp.rs:163
 msgid "TFTP server running"
 msgstr "Server TFTP beží"
 
+#: rustconn/src/window/network_tools/tftp.rs:165
 msgid "Read-only TFTP is listening on {} for the chosen folder."
 msgstr "TFTP iba na čítanie počúva na {} pre vybraný priečinok."
 
+#: rustconn/src/window/network_tools/tftp.rs:171
 msgid "Copy address"
 msgstr "Kopírovať adresu"
 
+#: rustconn/src/window/network_tools/tftp.rs:172
 msgid "Stop server"
 msgstr "Zastaviť server"
 
+#: rustconn/src/window/network_tools/tftp.rs:200
 msgid ""
 "Port 69 needs elevated rights. Start RustConn as root/administrator, grant "
 "CAP_NET_BIND_SERVICE on Linux, or choose port 6969."
@@ -15501,6 +15609,7 @@ msgstr "Pripojenia v odstránených skupinách budú bez skupiny."
 msgid "Delete Selected Items?"
 msgstr "Odstrániť vybrané položky?"
 
+#: rustconn/src/window/operations.rs:1015
 msgid "Moved {} item(s) to Trash"
 msgstr "Položky presunuté do koša: {}"
 
@@ -15636,6 +15745,7 @@ msgstr "Nakonfigurujte pod a kontajner pre Kubernetes"
 msgid "Install mosh for MOSH connections"
 msgstr "Nainštalujte mosh pre pripojenia MOSH"
 
+#: rustconn/src/window/protocols_ssh.rs:159
 msgid "Warning: SSH agent socket {}: {}"
 msgstr "Upozornenie: socket agenta SSH {}: {}"
 
@@ -15899,30 +16009,43 @@ msgstr "Počítač sa prebudil zo spánku — kontrola vzdialených sedení"
 msgid "Reconnecting sessions after sleep"
 msgstr "Opätovné pripájanie sedení po prebudení zo spánku"
 
+#: rustconn/src/window/script_actions.rs:114
 msgid "A script recording is already running — stop it first"
 msgstr "Nahrávanie skriptu už beží — najprv ho zastavte"
 
+#: rustconn/src/window/script_actions.rs:147
 msgid "Select a terminal before recording a script"
 msgstr "Pred nahrávaním skriptu vyberte terminál"
 
+#: rustconn/src/window/script_actions.rs:155
 msgid "session"
 msgstr "relácia"
 
+#: rustconn/src/window/script_actions.rs:160
 msgid "Could not start recording"
 msgstr "Nahrávanie sa nepodarilo spustiť"
 
-msgid "Recording — open the terminal menu to stop"
-msgstr "Nahrávanie — zastavíte ho v ponuke terminálu"
+#: rustconn/src/window/script_actions.rs:171
+msgid ""
+"Recording — what you type is saved, including passwords. Stop it from the "
+"terminal menu"
+msgstr ""
+"Prebieha nahrávanie — všetko, čo napíšete, sa uloží, vrátane hesiel. "
+"Zastavíte ho v ponuke terminálu"
 
+#: rustconn/src/window/script_actions.rs:185
 msgid "Recording saved with no steps to {}"
 msgstr "Nahrávka bola uložená bez krokov do {}"
 
+#: rustconn/src/window/script_actions.rs:187
 msgid "Saved {} steps to {}"
 msgstr "Počet uložených krokov: {}, cieľ: {}"
 
+#: rustconn/src/window/script_actions.rs:202
 msgid "Could Not Save Script"
 msgstr "Skript sa nepodarilo uložiť"
 
+#: rustconn/src/window/script_actions.rs:204
 msgid "The recording was lost and the file was not written. {}"
 msgstr "Nahrávka sa stratila a súbor sa nezapísal. {}"
 
@@ -15991,25 +16114,25 @@ msgstr "Už beží v externom okne"
 msgid "Connection to ‘{}’ failed"
 msgstr "Pripojenie k ‘{}’ zlyhalo"
 
-#: rustconn/src/window/session_start.rs:691
-#: rustconn/src/window/session_start.rs:705
+#: rustconn/src/window/session_start.rs:914
+#: rustconn/src/window/session_start.rs:927
 msgid "Pre-connect task failed: {}"
 msgstr "Úloha pred pripojením zlyhala: {}"
 
-#: rustconn/src/window/session_start.rs:739
+#: rustconn/src/window/session_start.rs:958
 msgid "Port knock failed: {}"
 msgstr "Port knock zlyhal: {}"
 
-#: rustconn/src/window/session_start.rs:762
-#: rustconn/src/window/session_start.rs:805
+#: rustconn/src/window/session_start.rs:976
+#: rustconn/src/window/session_start.rs:1013
 msgid "SPA failed: {}"
 msgstr "SPA zlyhalo: {}"
 
-#: rustconn/src/window/session_start.rs:989
+#: rustconn/src/window/session_start.rs:1053
 msgid "{} (via {})"
 msgstr "{} (cez {})"
 
-#: rustconn/src/window/session_start.rs:995
+#: rustconn/src/window/session_start.rs:1059
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -16033,15 +16156,15 @@ msgstr ""
 "Ak ste túto zmenu nevykonali, zrušte ju — pripojenie by mohlo odoslať "
 "uložené prihlasovacie údaje na iný počítač."
 
-#: rustconn/src/window/session_start.rs:1000
+#: rustconn/src/window/session_start.rs:1064
 msgid "Routing changed for “{}”"
 msgstr "Zmenila sa trasa pre „{}“"
 
-#: rustconn/src/window/session_start.rs:1064
+#: rustconn/src/window/session_start.rs:1128
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Medzihostiteľ nie je dostupný pre „{}“"
 
-#: rustconn/src/window/session_start.rs:1069
+#: rustconn/src/window/session_start.rs:1133
 msgid "Connect Directly"
 msgstr "Pripojiť priamo"
 
@@ -16360,6 +16483,7 @@ msgstr "Prepnúť bočný panel (F9)"
 msgid "Open Local Shell"
 msgstr "Otvoriť lokálny shell"
 
+#: rustconn/src/window/ui.rs:151
 msgid "Split Broadcast"
 msgstr "Rozdelené vysielanie"
 
@@ -16454,6 +16578,9 @@ msgstr "Správca pripojení"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;pripojenie;terminál;vzdialený;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Recording — open the terminal menu to stop"
+#~ msgstr "Nahrávanie — zastavíte ho v ponuke terminálu"
 
 #~ msgid "Settings…"
 #~ msgstr "Nastavenia…"

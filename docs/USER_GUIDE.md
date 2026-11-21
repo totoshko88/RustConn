@@ -120,7 +120,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 RustConn uses a two-panel layout in the GNOME style (like Files or Settings): the
 sidebar and the session area each have their own header bar. The window controls
 follow your system's button layout and always sit at the window's edges, whether
-the sidebar is shown or hidden.
+the sidebar is shown or hidden. Add, New, Refresh and the primary button of single-button dialogs sit on the side opposite the close button, so with `button-layout` set to `close:` they move to the end. Dialogs with their own Cancel button keep the GNOME order (Cancel first, affirmative last).
 
 ```
 ┌────────────────────────┬────────────────────────────────────┐
@@ -430,7 +430,7 @@ quicssh is **not bundled**. You install it yourself and put it on your PATH; the
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
 **Advanced Tabs:**
-- **Advanced** — Terminal theme override, remote monitoring override, session recording, activity monitor, retry, port knocking and fwknop SPA (the SPA keys are stored in the secret store, not in the connection file; an empty key row marked "in vault" keeps the stored key), highlight rules, Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
+- **Advanced** — Terminal theme override, remote monitoring override, session recording, activity monitor, retry, port knocking and fwknop SPA (the SPA keys are stored in the secret store, not in the connection file; an empty key row marked "in vault" keeps the stored key, and typing a new key replaces it. On the first start after upgrading to 0.26.0, plaintext keys are copied to the vault, read back and then removed from `connections.toml`; before that the file is copied to `connections.toml.pre-spa-vault.bak` (owner-only, it still holds the keys, so delete it once you have connected). A locked or read-only backend leaves the keys in the file and the next start retries. Exports, Group Sync files and copies made on another machine carry no key, so enter it there. A RustConn older than 0.26.0 does not know the vault and skips the SPA packet silently after a downgrade. Moving to another backend needs **Credential Transfer**, which moves the SPA entries too), highlight rules, Wake-on-LAN configuration (MAC address, broadcast, port, wait time), monitoring override (enable/disable per connection, overrides global setting)
 - **Automation** — Automatic login (expected text of the device's username/password prompts), expect rules for auto-responding to terminal patterns, pattern tester with built-in templates (Sudo, SSH Host Key, Login, etc.), pre-connect task, post-disconnect task (with conditions: first/last connection only)
 - **Data** — Local variables (connection-scoped, override global variables), custom properties (Text/URL/Protected metadata)
 - **Logging** — Session logging (enable/disable, log path template with variables, timestamp format, max file size, retention days, granular content options: log activity, log input, log output, add timestamps)
@@ -2591,7 +2591,7 @@ Open with **Ctrl+Shift+F** in any terminal session.
 - **Text search** — Plain text matching (default)
 - **Regex** — Toggle "Regex" checkbox for regular expression patterns; invalid patterns show an error message
 - **Case sensitive** — Toggle case sensitivity
-- **Highlight All** — Highlights all matches in the terminal (enabled by default)
+- **Highlight All** — Tints every visible match in the terminal (enabled by default). The search bar is a bottom sheet; the terminal gives up its height while it is open, so a match on the last row stays visible
 - **Navigation** — Up/Down buttons or Enter to jump between matches; search wraps around
 - Highlights are cleared automatically when closing the dialog (Close button or Escape)
 
@@ -3636,7 +3636,7 @@ Notes on the automatic group:
 - You can override it per tab: **Remove from Group**, or **Set Group…** to move one member elsewhere. The tab stays part of the cluster for the Disconnect button either way.
 - Groups are visual and session-scoped; they are not written to disk.
 
-**Broadcast:** a cluster that opens in its own window has a **Broadcast** toggle in that window's header bar (Ctrl+Shift+A), described above. In the main window, typing into several hosts at once is a split-view feature (see [Broadcast Input](#broadcast-input)) or a [Tab Broadcast](#tab-broadcast) of tabs you add by hand.
+**Broadcast:** a cluster that opens in its own window has a **Tab Broadcast** toggle in that window's header bar (Ctrl+Shift+A), described above. In the main window, typing into several hosts at once is a split-view feature (see [Broadcast Input](#broadcast-input)) or a [Tab Broadcast](#tab-broadcast) of tabs you add by hand.
 
 **Use cases:**
 - Rolling out configuration changes across multiple servers
@@ -3722,7 +3722,7 @@ Runs a script from this computer on several hosts: a `.ps1` file in PowerShell o
 
 ### Read-only Network Tools
 
-Three tools for reading from a live session without giving anyone a way to write back. They are in the terminal's right-click menu, the tab's right-click menu (addressed to that tab's session), the connection's context menu, and the command palette (**Ctrl+Shift+P**). In the connection menu, **Edit Remote File…** is available for any SSH connection (no live session needed), while **Share Session** and **Record Script…** appear when exactly one session of that connection is running. None is in the application menu, because each acts on a terminal and the app menu cannot promise which one.
+Four tools for working with a live session or a remote host without giving anyone a way to write back: read-only sharing, a read-only TFTP server, a remote file editor and script recording. They are in the terminal's right-click menu, the tab's right-click menu (addressed to that tab's session), the connection's context menu, and the command palette (**Ctrl+Shift+P**). In the connection menu, **Edit Remote File…** is available for any SSH connection (no live session needed), while **Share Session** and **Record Script…** appear when exactly one session of that connection is running. None is in the application menu, because each acts on a terminal and the app menu cannot promise which one. **Record Script…** is only in the terminal, tab and connection menus, not in the command palette: a palette command that targets "the focused session" could record the wrong host's commands into a file.
 
 **Share Session (read-only).** Select a terminal tab, open the terminal or tab menu, and choose **Share Session (read-only)**. Before starting, the **Access** list offers **This computer only** (the default), one of the machine's IPv4 or IPv6 addresses, or **Internet — WebTransport in a browser**. A LAN link uses that interface's address and the relay binds only to it. The link is not one-time: it works for any number of viewers, as often as they like, until you stop sharing. A LAN link is plain HTTP, so other computers on the network can read what is shown, and the random token is its only protection. The token sits in the part of the link after `#`, which a browser does not send to the server, keep in a log or pass on in a `Referer` header; the page removes it from the address bar and sends it in a header. While a tab is shared its title starts with **◉** and its right-click menu offers **Stop Sharing**; closing the tab also stops the relay. Limits: 64 open connections, 8 live viewers (more get 503), 10 seconds to send a request. A viewer that falls behind gets a cleared screen and a short notice instead of a half-drawn one. **Copy link** puts it on the clipboard; **Stop sharing** ends the relay. The page is a real terminal (the vendored xterm.js), so colours, cursor addressing and full-screen programs such as `atop` render correctly instead of showing escape sequences. There is no input path and no upload; the token is compared in constant time, never logged and never written into the page. Asking for the stream without the token, or with a wrong one, returns 403; a token in the query string is not accepted. One relay runs at a time; starting another replaces the first.
 
@@ -4378,6 +4378,8 @@ gtk-enable-animations=false
 - Virt-Viewer (.vv files — SPICE/VNC from libvirt, Proxmox VE)
 - Libvirt / GNOME Boxes (domain XML — VNC, SPICE, RDP from QEMU/KVM VMs)
 - RustConn Native (.rcn)
+
+**Warnings.** An entry that fails validation (a connection with no name or host, port 0, or a jump host that is not part of the import; a group with no name; a snippet with no name or command) is still imported unchanged and listed in the result's **Warnings**. The warnings carry no host, user or password.
 
 Double-click source to start import immediately.
 

@@ -122,6 +122,17 @@ impl TerminalNotebook {
                 page.set_title(base);
             }
         }
+        // The ◉ prefix is a glyph; give assistive technology the meaning too.
+        let terminal = self.terminals.borrow().get(&session_id).cloned();
+        if let Some(terminal) = terminal {
+            if shared {
+                terminal.update_property(&[gtk4::accessible::Property::Description(
+                    &crate::i18n::i18n("This session is shared read-only"),
+                )]);
+            } else {
+                terminal.reset_property(gtk4::AccessibleProperty::Description);
+            }
+        }
     }
 
     /// Re-appends the lines a tooltip mutator lifted out, in their fixed order:

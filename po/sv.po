@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 14:48+0200\n"
+"POT-Creation-Date: 2026-11-21 17:09+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -70,14 +70,14 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
 #: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:585
+#: rustconn/src/window/network_tools/share.rs:594
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
 #: rustconn/src/window/operations.rs:998 rustconn/src/window/operations.rs:1199
 #: rustconn/src/window/remote_script.rs:616
-#: rustconn/src/window/session_start.rs:1003
 #: rustconn/src/window/session_start.rs:1067
+#: rustconn/src/window/session_start.rs:1131
 #: rustconn/src/window/sessions.rs:335 rustconn/src/window/startup.rs:399
 #: rustconn/src/window/workspaces.rs:560
 msgid "Cancel"
@@ -189,7 +189,7 @@ msgstr "Felsökningslogg"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:558
+#: rustconn/src/window/network_tools/share.rs:567
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Stäng"
@@ -336,7 +336,7 @@ msgstr "”{}” behöver följande innan anslutning kan ske."
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:595
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Anslut"
@@ -625,6 +625,7 @@ msgstr "Ta bort delning"
 msgid "Network Scan"
 msgstr "Nätverksskanning"
 
+#: rustconn/src/dialogs/command_palette.rs:704 rustconn/src/window/ui.rs:313
 msgid "Join Shared Session…"
 msgstr "Anslut till delad session…"
 
@@ -639,12 +640,19 @@ msgstr "Fliköversikt"
 msgid "Switch Tab"
 msgstr "Växla flik"
 
+#: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
+#: rustconn/src/terminal/script_recorder.rs:186
+#: rustconn/src/terminal/tab_menu.rs:1466
 msgid "Share Session (read-only)"
 msgstr "Dela session (skrivskyddad)"
 
+#: rustconn/src/dialogs/command_palette.rs:709
+#: rustconn/src/terminal/script_recorder.rs:190
+#: rustconn/src/terminal/tab_menu.rs:1481
 msgid "Start TFTP Server"
 msgstr "Starta TFTP-server"
 
+#: rustconn/src/dialogs/command_palette.rs:710
 msgid "Edit Remote File"
 msgstr "Redigera fjärrfil"
 
@@ -1936,9 +1944,11 @@ msgstr "Redigera anslutning"
 msgid "Tunnel WinRM through an SSH connection"
 msgstr "Tunnla WinRM genom en SSH-anslutning"
 
+#: rustconn/src/dialogs/connection/dialog/populate.rs:375
 msgid "Rijndael Key (in vault)"
 msgstr "Rijndael-nyckel (i valvet)"
 
+#: rustconn/src/dialogs/connection/dialog/populate.rs:381
 msgid "HMAC Key (in vault)"
 msgstr "HMAC-nyckel (i valvet)"
 
@@ -5755,10 +5765,12 @@ msgstr ""
 "ingen FTP-klient. Kontrollera porten (SFTP använder 22), "
 "inloggningsuppgifterna och om servern talar SFTP innan du ansluter."
 
+#: rustconn/src/dialogs/import/mod.rs:440
 msgid "Connection {} has no name. It was imported as it is; give it a name."
 msgstr ""
 "Anslutning {} saknar namn. Den importerades som den är; ge den ett namn."
 
+#: rustconn/src/dialogs/import/mod.rs:444
 msgid ""
 "Connection '{}' has no host. It was imported as it is; set a host before "
 "connecting."
@@ -5766,6 +5778,7 @@ msgstr ""
 "Anslutning '{}' saknar värd. Den importerades som den är; ange en värd innan "
 "du ansluter."
 
+#: rustconn/src/dialogs/import/mod.rs:448
 msgid ""
 "Connection '{}' has port 0. It was imported as it is; set a port before "
 "connecting."
@@ -5773,6 +5786,7 @@ msgstr ""
 "Anslutning '{}' har port 0. Den importerades som den är; ange en port innan "
 "du ansluter."
 
+#: rustconn/src/dialogs/import/mod.rs:452
 msgid ""
 "Connection '{}' uses a jump host that is not part of this import. It was "
 "imported as it is; check its jump host before connecting."
@@ -5780,9 +5794,11 @@ msgstr ""
 "Anslutning '{}' använder en hoppvärd som inte ingår i den här importen. Den "
 "importerades som den är; kontrollera hoppvärden innan du ansluter."
 
+#: rustconn/src/dialogs/import/mod.rs:456
 msgid "Group {} has no name. It was imported as it is; give it a name."
 msgstr "Grupp {} saknar namn. Den importerades som den är; ge den ett namn."
 
+#: rustconn/src/dialogs/import/mod.rs:460
 msgid ""
 "Snippet {} has no name or no command. It was imported as it is; complete it "
 "before running."
@@ -9068,6 +9084,7 @@ msgstr "Ansluten"
 msgid "Database path required"
 msgstr "Databassökväg krävs"
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:21
 msgid ""
 "Used by every SSH, SFTP, tunnel and ssh-add launch. A connection's own "
 "socket takes precedence. Leave empty to use SSH_AUTH_SOCK."
@@ -9075,6 +9092,7 @@ msgstr ""
 "Används vid varje start av SSH, SFTP, tunnel och ssh-add. En anslutnings "
 "egen socket har företräde. Lämna tomt för att använda SSH_AUTH_SOCK."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:32
 msgid ""
 "The path must be absolute (for example /run/user/1000/ssh-agent.sock) or "
 "start with ~/."
@@ -9082,6 +9100,7 @@ msgstr ""
 "Sökvägen måste vara absolut (till exempel /run/user/1000/ssh-agent.sock) "
 "eller börja med ~/."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:35
 msgid ""
 "Nothing exists at this path. In Flatpak the app only sees paths it has "
 "access to, such as the runtime directory."
@@ -9089,6 +9108,7 @@ msgstr ""
 "Det finns inget på den här sökvägen. I Flatpak ser appen bara sökvägar den "
 "har åtkomst till, som körtidskatalogen."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:38
 msgid ""
 "Nothing exists at this path. Check that the agent is running and the path is "
 "correct."
@@ -9096,9 +9116,11 @@ msgstr ""
 "Det finns inget på den här sökvägen. Kontrollera att agenten körs och att "
 "sökvägen stämmer."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:40
 msgid "This path exists but it is not a socket."
 msgstr "Sökvägen finns men är inte en socket."
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:41
 msgid "This socket belongs to another user."
 msgstr "Den här socketen tillhör en annan användare."
 
@@ -9126,6 +9148,7 @@ msgstr "Uppdatera SSH-agentstatus"
 msgid "Controls"
 msgstr "Kontroller"
 
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:119
 msgid "Custom Socket"
 msgstr "Egen socket"
 
@@ -12212,6 +12235,7 @@ msgstr "RDP-session körs i externt fönster"
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
+#: rustconn/src/window/session_start.rs:672
 msgid "Connection failed"
 msgstr "Anslutning misslyckades"
 
@@ -12639,6 +12663,7 @@ msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 "Sändning aktiv — tangenttryckningar speglas till {} flikar i det här fönstret"
 
+#: rustconn/src/sidebar/mod.rs:97
 msgid "Selected: {}"
 msgstr "Markerade: {}"
 
@@ -12844,6 +12869,7 @@ msgstr "Ny anslutning i grupp"
 msgid "New Subgroup"
 msgstr "Ny undergrupp"
 
+#: rustconn/src/sidebar_ui.rs:443 rustconn/src/sidebar_ui.rs:506
 msgid "Rename…"
 msgstr "Byt namn…"
 
@@ -12909,9 +12935,13 @@ msgstr "Sessionslogg…"
 msgid "Open SFTP"
 msgstr "Öppna SFTP"
 
+#: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
+#: rustconn/src/terminal/tab_menu.rs:1474
 msgid "Edit Remote File…"
 msgstr "Redigera fjärrfil…"
 
+#: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
+#: rustconn/src/terminal/tab_menu.rs:1456
 msgid "Record Script…"
 msgstr "Spela in skript…"
 
@@ -12960,6 +12990,7 @@ msgstr "Importera…"
 msgid "Export…"
 msgstr "Exportera…"
 
+#: rustconn/src/sidebar_ui.rs:1293
 msgid "Selected items"
 msgstr "Markerade objekt"
 
@@ -13292,6 +13323,8 @@ msgstr ""
 "Urklipp innehåller mer än en rad. Varje rad körs så snart den klistras in – "
 "kontrollera den innan du fortsätter."
 
+#: rustconn/src/terminal/script_recorder.rs:176
+#: rustconn/src/terminal/tab_menu.rs:1452
 msgid "Stop Script Recording"
 msgstr "Stoppa skriptinspelning"
 
@@ -13395,6 +13428,10 @@ msgstr ""
 msgid "Panes:"
 msgstr "Paneler:"
 
+#: rustconn/src/terminal/tab_labels.rs:130
+msgid "This session is shared read-only"
+msgstr "Den här sessionen delas skrivskyddat"
+
 #: rustconn/src/terminal/tab_menu.rs:99
 msgid "Close Tab…"
 msgstr "Stäng flik…"
@@ -13439,6 +13476,7 @@ msgstr ""
 msgid "Tab name"
 msgstr "Fliknamn"
 
+#: rustconn/src/terminal/tab_menu.rs:795
 msgid "Close all tabs in group “{}”?"
 msgstr "Stäng alla flikar i gruppen “{}”?"
 
@@ -13518,6 +13556,7 @@ msgstr "Redigera anslutning…"
 msgid "Save Output…"
 msgstr "Spara utdata…"
 
+#: rustconn/src/terminal/tab_menu.rs:1464
 msgid "Stop Sharing"
 msgstr "Sluta dela"
 
@@ -13687,15 +13726,18 @@ msgstr ""
 msgid "Save to This Computer"
 msgstr "Spara på den här datorn"
 
+#: rustconn/src/vault_ops.rs:2244
 msgid ""
 "SPA keys could not be moved to the vault and stay in the connection file"
 msgstr ""
 "SPA-nycklarna kunde inte flyttas till valvet och ligger kvar i "
 "anslutningsfilen"
 
+#: rustconn/src/vault_ops.rs:2299
 msgid "Unused SPA keys could not be removed from the vault"
 msgstr "Oanvända SPA-nycklar kunde inte tas bort från valvet"
 
+#: rustconn/src/vault_ops.rs:2364
 msgid ""
 "SPA keys were not copied to the new connection; open it and enter them again"
 msgstr ""
@@ -13803,8 +13845,8 @@ msgid "Jump Host Unavailable"
 msgstr "Hopvärd otillgänglig"
 
 #: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:788
-#: rustconn/src/window/session_start.rs:1004
-#: rustconn/src/window/session_start.rs:1070
+#: rustconn/src/window/session_start.rs:1068
+#: rustconn/src/window/session_start.rs:1134
 msgid "Connect Anyway"
 msgstr "Anslut ändå"
 
@@ -14132,6 +14174,7 @@ msgstr ""
 "Gruppsändning inaktiverad — tangenttryckningar går bara till den fokuserade "
 "fliken"
 
+#: rustconn/src/window/detach_actions.rs:647
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "Gruppsändning kräver två eller fler terminalflikar"
 
@@ -14139,9 +14182,11 @@ msgstr "Gruppsändning kräver två eller fler terminalflikar"
 msgid "Item restored"
 msgstr "Objekt återställt"
 
+#: rustconn/src/window/edit_actions.rs:453
 msgid "Restored {} item(s)"
 msgstr "{} objekt återställda"
 
+#: rustconn/src/window/edit_actions.rs:459
 msgid "Restored {} of {} item(s)"
 msgstr "{} av {} objekt återställda"
 
@@ -14686,6 +14731,7 @@ msgstr ""
 msgid "Enable Broadcast"
 msgstr "Aktivera sändning"
 
+#: rustconn/src/window/group_broadcast.rs:343
 msgid "Add one more tab to start Tab Broadcast"
 msgstr "Lägg till ytterligare en flik för att starta gruppsändning"
 
@@ -14990,9 +15036,12 @@ msgstr "Nätverk begränsat — full anslutning ännu inte tillgänglig"
 msgid "Network changed — reconnecting affected sessions…"
 msgstr "Nätverk ändrat — återansluter berörda sessioner…"
 
+#: rustconn/src/window/network_tools.rs:83
 msgid "Sharing stopped"
 msgstr "Delningen har stoppats"
 
+#: rustconn/src/window/network_tools.rs:103
+#: rustconn/src/window/script_actions.rs:99
 msgid "That connection has no open session"
 msgstr "Den anslutningen har ingen öppen session"
 
@@ -15006,9 +15055,11 @@ msgstr "Redigerare för fjärrfiler"
 msgid "Connection not found"
 msgstr "Anslutningen hittades inte"
 
+#: rustconn/src/window/network_tools.rs:198
 msgid "This computer only"
 msgstr "Endast den här datorn"
 
+#: rustconn/src/window/network_tools.rs:209
 msgid "Internet — WebTransport in a browser"
 msgstr "Internet — WebTransport i en webbläsare"
 
@@ -15082,9 +15133,11 @@ msgstr "Kopian sparades i {}"
 msgid "Could not save the copy"
 msgstr "Kopian kunde inte sparas"
 
+#: rustconn/src/window/network_tools/share.rs:74
 msgid "Select a terminal before sharing a session"
 msgstr "Välj en terminal innan du delar en session"
 
+#: rustconn/src/window/network_tools/share.rs:82
 msgid ""
 "Choose this computer only, the interface whose address the link should use, "
 "or the internet over WebTransport."
@@ -15092,9 +15145,11 @@ msgstr ""
 "Välj endast den här datorn, det gränssnitt vars adress länken ska använda, "
 "eller internet via WebTransport."
 
+#: rustconn/src/window/network_tools/share.rs:88
 msgid "Share this session"
 msgstr "Dela den här sessionen"
 
+#: rustconn/src/window/network_tools/share.rs:90
 msgid ""
 "The viewer gets the live terminal output read-only. Local and LAN links are "
 "unencrypted. The internet link opens in a browser over WebTransport (QUIC); "
@@ -15106,12 +15161,16 @@ msgstr ""
 "WebTransport (QUIC); RustConn frågar innan någon server kontaktas för att ta "
 "reda på din publika adress. Fliken visar ◉ och dess meny har Sluta dela."
 
+#: rustconn/src/window/network_tools/share.rs:97
 msgid "Start sharing"
 msgstr "Starta delning"
 
+#: rustconn/src/window/network_tools/share.rs:153
+#: rustconn/src/window/network_tools/share.rs:382
 msgid "Could not start session sharing"
 msgstr "Det gick inte att starta sessionsdelningen"
 
+#: rustconn/src/window/network_tools/share.rs:238
 msgid ""
 "Anyone who has this link can watch the session read-only, any number of "
 "times, until you stop sharing. The link uses plain HTTP, so other computers "
@@ -15123,6 +15182,7 @@ msgstr ""
 "andra datorer i ditt nätverk kan läsa det som visas. Fliken är markerad med "
 "◉ medan den delas. {}"
 
+#: rustconn/src/window/network_tools/share.rs:243
 msgid ""
 "Anyone on this computer who has this link can watch the session read-only, "
 "any number of times, until you stop sharing. The tab is marked ◉ while it is "
@@ -15132,21 +15192,32 @@ msgstr ""
 "skrivskyddat, hur många gånger som helst, tills du slutar dela. Fliken är "
 "markerad med ◉ medan den delas. {}"
 
+#: rustconn/src/window/network_tools/share.rs:248
+#: rustconn/src/window/network_tools/share.rs:559
+#: rustconn/src/window/network_tools/share.rs:759
 msgid "Session shared"
 msgstr "Session delad"
 
+#: rustconn/src/window/network_tools/share.rs:253
+#: rustconn/src/window/network_tools/share.rs:565
 msgid "Copy link"
 msgstr "Kopiera länk"
 
+#: rustconn/src/window/network_tools/share.rs:254
+#: rustconn/src/window/network_tools/share.rs:566
 msgid "Stop sharing"
 msgstr "Sluta dela"
 
+#: rustconn/src/window/network_tools/share.rs:263
+#: rustconn/src/window/network_tools/share.rs:476
 msgid "Link copied to clipboard"
 msgstr "Länken har kopierats till urklipp"
 
+#: rustconn/src/window/network_tools/share.rs:316
 msgid "Look Up Your Public Address?"
 msgstr "Slå upp din publika adress?"
 
+#: rustconn/src/window/network_tools/share.rs:318
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
 "servers run by Google (stun.l.google.com) and Cloudflare "
@@ -15160,18 +15231,23 @@ msgstr ""
 "företagen ser den här datorns IP-adress. Ingen terminaldata skickas till "
 "dem. Utan uppslagningen fungerar länken bara i ditt lokala nätverk."
 
+#: rustconn/src/window/network_tools/share.rs:324
 msgid "Local Network Only"
 msgstr "Endast lokalt nätverk"
 
+#: rustconn/src/window/network_tools/share.rs:325
 msgid "Look Up Public Address"
 msgstr "Slå upp publik adress"
 
+#: rustconn/src/window/network_tools/share.rs:423
 msgid "Public endpoint (STUN)"
 msgstr "Publik slutpunkt (STUN)"
 
+#: rustconn/src/window/network_tools/share.rs:425
 msgid "Endpoint (local network)"
 msgstr "Slutpunkt (lokalt nätverk)"
 
+#: rustconn/src/window/network_tools/share.rs:431
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15179,6 +15255,7 @@ msgstr ""
 "Om tittaren får timeout, vidarebefordra TCP- och UDP-port {} till den här "
 "datorn i routern. En annan RustConn behöver bara UDP."
 
+#: rustconn/src/window/network_tools/share.rs:436
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15186,6 +15263,7 @@ msgstr ""
 "Om tittaren får timeout, vidarebefordra TCP-port {} och UDP-port {} till den "
 "här datorn i routern. En annan RustConn behöver bara UDP."
 
+#: rustconn/src/window/network_tools/share.rs:442
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15199,6 +15277,7 @@ msgstr ""
 "fortsätter, jämför certifikatets SHA-256-fingeravtryck med fp=-delen av "
 "länken. Fliken är markerad med ◉ medan den delas."
 
+#: rustconn/src/window/network_tools/share.rs:446
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15212,18 +15291,23 @@ msgstr ""
 "fortsätter, jämför certifikatets SHA-256-fingeravtryck med fp=-delen av "
 "länken. Fliken är markerad med ◉ medan den delas."
 
+#: rustconn/src/window/network_tools/share.rs:523
 msgid "Read-only link"
 msgstr "Skrivskyddad länk"
 
+#: rustconn/src/window/network_tools/share.rs:581
 msgid "Paste an https:// share link"
 msgstr "Klistra in en delningslänk med https://"
 
+#: rustconn/src/window/network_tools/share.rs:583
 msgid "Share link"
 msgstr "Delningslänk"
 
+#: rustconn/src/window/network_tools/share.rs:586
 msgid "Join a shared session"
 msgstr "Anslut till en delad session"
 
+#: rustconn/src/window/network_tools/share.rs:588
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15231,21 +15315,30 @@ msgstr ""
 "Klistra in länken som värden skickade till dig. RustConn ansluter direkt via "
 "QUIC (UDP); värdens UDP-port måste vara nåbar."
 
+#: rustconn/src/window/network_tools/share.rs:608
+#: rustconn/src/window/network_tools/share.rs:637
 msgid "Could not join the shared session"
 msgstr "Det gick inte att ansluta till den delade sessionen"
 
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Read-only shared session from {}"
 msgstr "Skrivskyddad delad session från {}"
 
+#: rustconn/src/window/network_tools/share.rs:683
+#: rustconn/src/window/network_tools/share.rs:692
+#: rustconn/src/window/network_tools/share.rs:784
 msgid "Shared session"
 msgstr "Delad session"
 
+#: rustconn/src/window/network_tools/share.rs:684
 msgid "Read-only from {}"
 msgstr "Skrivskyddad från {}"
 
+#: rustconn/src/window/network_tools/tftp.rs:51
 msgid "Share this folder?"
 msgstr "Dela den här mappen?"
 
+#: rustconn/src/window/network_tools/tftp.rs:53
 msgid ""
 "{} is your home folder or holds your SSH keys. Anyone who can reach the "
 "server could read private files in it. Choose a folder that has only the "
@@ -15255,15 +15348,19 @@ msgstr ""
 "skulle kunna läsa privata filer i den. Välj en mapp som bara innehåller de "
 "filer du vill dela."
 
+#: rustconn/src/window/network_tools/tftp.rs:60
 msgid "Share anyway"
 msgstr "Dela ändå"
 
+#: rustconn/src/window/network_tools/tftp.rs:76
 msgid "6969 — unprivileged"
 msgstr "6969 — oprivilegierad"
 
+#: rustconn/src/window/network_tools/tftp.rs:77
 msgid "69 — standard TFTP (needs privileges)"
 msgstr "69 — standard-TFTP (kräver behörighet)"
 
+#: rustconn/src/window/network_tools/tftp.rs:91
 msgid ""
 "Port 69 is the standard; Linux, macOS and FreeBSD require elevated rights "
 "for it."
@@ -15271,35 +15368,46 @@ msgstr ""
 "Port 69 är standard; Linux, macOS och FreeBSD kräver förhöjda rättigheter "
 "för den."
 
+#: rustconn/src/window/network_tools/tftp.rs:102
 msgid "Bind loopback or the interface a device connects to."
 msgstr "Bind till loopback eller det gränssnitt som en enhet ansluter till."
 
+#: rustconn/src/window/network_tools/tftp.rs:110
 msgid "TFTP server"
 msgstr "TFTP-server"
 
+#: rustconn/src/window/network_tools/tftp.rs:112
 msgid ""
 "Serve {} read-only. Choose the port and the interface a device will reach."
 msgstr ""
 "Servera {} skrivskyddat. Välj port och det gränssnitt som en enhet ska nå."
 
+#: rustconn/src/window/network_tools/tftp.rs:120
 msgid "Start server"
 msgstr "Starta server"
 
+#: rustconn/src/window/network_tools/tftp.rs:148
+#: rustconn/src/window/network_tools/tftp.rs:152
 msgid "Could not start TFTP server"
 msgstr "Det gick inte att starta TFTP-servern"
 
+#: rustconn/src/window/network_tools/tftp.rs:163
 msgid "TFTP server running"
 msgstr "TFTP-servern körs"
 
+#: rustconn/src/window/network_tools/tftp.rs:165
 msgid "Read-only TFTP is listening on {} for the chosen folder."
 msgstr "Skrivskyddad TFTP lyssnar på {} för den valda mappen."
 
+#: rustconn/src/window/network_tools/tftp.rs:171
 msgid "Copy address"
 msgstr "Kopiera adress"
 
+#: rustconn/src/window/network_tools/tftp.rs:172
 msgid "Stop server"
 msgstr "Stoppa server"
 
+#: rustconn/src/window/network_tools/tftp.rs:200
 msgid ""
 "Port 69 needs elevated rights. Start RustConn as root/administrator, grant "
 "CAP_NET_BIND_SERVICE on Linux, or choose port 6969."
@@ -15485,6 +15593,7 @@ msgstr "Anslutningar i borttagna grupper blir ogrupperade."
 msgid "Delete Selected Items?"
 msgstr "Ta bort markerade objekt?"
 
+#: rustconn/src/window/operations.rs:1015
 msgid "Moved {} item(s) to Trash"
 msgstr "{} objekt flyttade till Papperskorg"
 
@@ -15619,6 +15728,7 @@ msgstr "Konfigurera pod och container för Kubernetes"
 msgid "Install mosh for MOSH connections"
 msgstr "Installera mosh för MOSH-anslutningar"
 
+#: rustconn/src/window/protocols_ssh.rs:159
 msgid "Warning: SSH agent socket {}: {}"
 msgstr "Varning: SSH-agentsocket {}: {}"
 
@@ -15882,30 +15992,43 @@ msgstr "Datorn har vaknat från vila — fjärrsessioner kontrolleras"
 msgid "Reconnecting sessions after sleep"
 msgstr "Återansluter sessioner efter vila"
 
+#: rustconn/src/window/script_actions.rs:114
 msgid "A script recording is already running — stop it first"
 msgstr "En skriptinspelning pågår redan — stoppa den först"
 
+#: rustconn/src/window/script_actions.rs:147
 msgid "Select a terminal before recording a script"
 msgstr "Välj en terminal innan du spelar in ett skript"
 
+#: rustconn/src/window/script_actions.rs:155
 msgid "session"
 msgstr "session"
 
+#: rustconn/src/window/script_actions.rs:160
 msgid "Could not start recording"
 msgstr "Det gick inte att starta inspelningen"
 
-msgid "Recording — open the terminal menu to stop"
-msgstr "Inspelning — öppna terminalmenyn för att stoppa"
+#: rustconn/src/window/script_actions.rs:171
+msgid ""
+"Recording — what you type is saved, including passwords. Stop it from the "
+"terminal menu"
+msgstr ""
+"Inspelning pågår — allt du skriver sparas, även lösenord. Stoppa den från "
+"terminalmenyn"
 
+#: rustconn/src/window/script_actions.rs:185
 msgid "Recording saved with no steps to {}"
 msgstr "Inspelningen sparades utan steg i {}"
 
+#: rustconn/src/window/script_actions.rs:187
 msgid "Saved {} steps to {}"
 msgstr "Sparade {} steg i {}"
 
+#: rustconn/src/window/script_actions.rs:202
 msgid "Could Not Save Script"
 msgstr "Det gick inte att spara skriptet"
 
+#: rustconn/src/window/script_actions.rs:204
 msgid "The recording was lost and the file was not written. {}"
 msgstr "Inspelningen gick förlorad och filen skrevs inte. {}"
 
@@ -15966,25 +16089,25 @@ msgstr "Körs redan i ett externt fönster"
 msgid "Connection to ‘{}’ failed"
 msgstr "Anslutning till ‘{}’ misslyckades"
 
-#: rustconn/src/window/session_start.rs:691
-#: rustconn/src/window/session_start.rs:705
+#: rustconn/src/window/session_start.rs:914
+#: rustconn/src/window/session_start.rs:927
 msgid "Pre-connect task failed: {}"
 msgstr "Uppgift före anslutning misslyckades: {}"
 
-#: rustconn/src/window/session_start.rs:739
+#: rustconn/src/window/session_start.rs:958
 msgid "Port knock failed: {}"
 msgstr "Port knock misslyckades: {}"
 
-#: rustconn/src/window/session_start.rs:762
-#: rustconn/src/window/session_start.rs:805
+#: rustconn/src/window/session_start.rs:976
+#: rustconn/src/window/session_start.rs:1013
 msgid "SPA failed: {}"
 msgstr "SPA misslyckades: {}"
 
-#: rustconn/src/window/session_start.rs:989
+#: rustconn/src/window/session_start.rs:1053
 msgid "{} (via {})"
 msgstr "{} (via {})"
 
-#: rustconn/src/window/session_start.rs:995
+#: rustconn/src/window/session_start.rs:1059
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -16008,15 +16131,15 @@ msgstr ""
 "Om du inte gjorde denna ändring, avbryt — en anslutning kan skicka sparade "
 "autentiseringsuppgifter till en annan maskin."
 
-#: rustconn/src/window/session_start.rs:1000
+#: rustconn/src/window/session_start.rs:1064
 msgid "Routing changed for “{}”"
 msgstr "Vägen har ändrats för ”{}”"
 
-#: rustconn/src/window/session_start.rs:1064
+#: rustconn/src/window/session_start.rs:1128
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Hopvärd otillgänglig för ”{}”"
 
-#: rustconn/src/window/session_start.rs:1069
+#: rustconn/src/window/session_start.rs:1133
 msgid "Connect Directly"
 msgstr "Anslut direkt"
 
@@ -16332,6 +16455,7 @@ msgstr "Växla sidopanel (F9)"
 msgid "Open Local Shell"
 msgstr "Öppna lokalt skal"
 
+#: rustconn/src/window/ui.rs:151
 msgid "Split Broadcast"
 msgstr "Delad sändning"
 
@@ -16426,6 +16550,9 @@ msgstr "Anslutningshanterare"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;anslutning;terminal;fjärr;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Recording — open the terminal menu to stop"
+#~ msgstr "Inspelning — öppna terminalmenyn för att stoppa"
 
 #~ msgid "Settings…"
 #~ msgstr "Inställningar…"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 14:48+0200\n"
+"POT-Creation-Date: 2026-11-21 17:09+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -70,14 +70,14 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
 #: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:585
+#: rustconn/src/window/network_tools/share.rs:594
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
 #: rustconn/src/window/operations.rs:998 rustconn/src/window/operations.rs:1199
 #: rustconn/src/window/remote_script.rs:616
-#: rustconn/src/window/session_start.rs:1003
 #: rustconn/src/window/session_start.rs:1067
+#: rustconn/src/window/session_start.rs:1131
 #: rustconn/src/window/sessions.rs:335 rustconn/src/window/startup.rs:399
 #: rustconn/src/window/workspaces.rs:560
 msgid "Cancel"
@@ -186,7 +186,7 @@ msgstr "Nhật ký gỡ lỗi"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:558
+#: rustconn/src/window/network_tools/share.rs:567
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Đóng"
@@ -333,7 +333,7 @@ msgstr "‘{}’ cần những thông tin sau trước khi có thể kết nối
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:595
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Kết nối"
@@ -633,10 +633,14 @@ msgid "Switch Tab"
 msgstr "Chuyển thẻ"
 
 #: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
+#: rustconn/src/terminal/script_recorder.rs:186
+#: rustconn/src/terminal/tab_menu.rs:1466
 msgid "Share Session (read-only)"
 msgstr "Chia sẻ phiên (chỉ xem)"
 
 #: rustconn/src/dialogs/command_palette.rs:709
+#: rustconn/src/terminal/script_recorder.rs:190
+#: rustconn/src/terminal/tab_menu.rs:1481
 msgid "Start TFTP Server"
 msgstr "Khởi động máy chủ TFTP"
 
@@ -12173,6 +12177,7 @@ msgstr "Phiên RDP đang chạy trong cửa sổ bên ngoài"
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
+#: rustconn/src/window/session_start.rs:672
 msgid "Connection failed"
 msgstr "Kết nối thất bại"
 
@@ -12873,10 +12878,12 @@ msgid "Open SFTP"
 msgstr "Mở SFTP"
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
+#: rustconn/src/terminal/tab_menu.rs:1474
 msgid "Edit Remote File…"
 msgstr "Sửa tệp từ xa…"
 
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
+#: rustconn/src/terminal/tab_menu.rs:1456
 msgid "Record Script…"
 msgstr "Ghi tập lệnh…"
 
@@ -13257,6 +13264,7 @@ msgstr ""
 "kiểm tra trước khi tiếp tục."
 
 #: rustconn/src/terminal/script_recorder.rs:176
+#: rustconn/src/terminal/tab_menu.rs:1452
 msgid "Stop Script Recording"
 msgstr "Dừng ghi tập lệnh"
 
@@ -13359,6 +13367,10 @@ msgstr ""
 #: rustconn/src/terminal/split_title.rs:138
 msgid "Panes:"
 msgstr "Các khung:"
+
+#: rustconn/src/terminal/tab_labels.rs:130
+msgid "This session is shared read-only"
+msgstr "Phiên này được chia sẻ ở chế độ chỉ đọc"
 
 #: rustconn/src/terminal/tab_menu.rs:99
 msgid "Close Tab…"
@@ -13766,8 +13778,8 @@ msgid "Jump Host Unavailable"
 msgstr "Máy chủ trung gian không khả dụng"
 
 #: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:788
-#: rustconn/src/window/session_start.rs:1004
-#: rustconn/src/window/session_start.rs:1070
+#: rustconn/src/window/session_start.rs:1068
+#: rustconn/src/window/session_start.rs:1134
 msgid "Connect Anyway"
 msgstr "Vẫn kết nối"
 
@@ -14954,6 +14966,7 @@ msgid "Sharing stopped"
 msgstr "Đã dừng chia sẻ"
 
 #: rustconn/src/window/network_tools.rs:103
+#: rustconn/src/window/script_actions.rs:99
 msgid "That connection has no open session"
 msgstr "Kết nối đó không có phiên nào đang mở"
 
@@ -15077,6 +15090,7 @@ msgid "Start sharing"
 msgstr "Bắt đầu chia sẻ"
 
 #: rustconn/src/window/network_tools/share.rs:153
+#: rustconn/src/window/network_tools/share.rs:382
 msgid "Could not start session sharing"
 msgstr "Không thể bắt đầu chia sẻ phiên"
 
@@ -15103,18 +15117,23 @@ msgstr ""
 "dấu ◉ khi đang chia sẻ. {}"
 
 #: rustconn/src/window/network_tools/share.rs:248
+#: rustconn/src/window/network_tools/share.rs:559
+#: rustconn/src/window/network_tools/share.rs:759
 msgid "Session shared"
 msgstr "Đã chia sẻ phiên"
 
 #: rustconn/src/window/network_tools/share.rs:253
+#: rustconn/src/window/network_tools/share.rs:565
 msgid "Copy link"
 msgstr "Sao chép liên kết"
 
 #: rustconn/src/window/network_tools/share.rs:254
+#: rustconn/src/window/network_tools/share.rs:566
 msgid "Stop sharing"
 msgstr "Dừng chia sẻ"
 
 #: rustconn/src/window/network_tools/share.rs:263
+#: rustconn/src/window/network_tools/share.rs:476
 msgid "Link copied to clipboard"
 msgstr "Đã sao chép liên kết vào bảng nhớ tạm"
 
@@ -15144,15 +15163,15 @@ msgstr "Chỉ mạng cục bộ"
 msgid "Look Up Public Address"
 msgstr "Tra cứu địa chỉ công khai"
 
-#: rustconn/src/window/network_tools/share.rs:414
+#: rustconn/src/window/network_tools/share.rs:423
 msgid "Public endpoint (STUN)"
 msgstr "Điểm cuối công khai (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:416
+#: rustconn/src/window/network_tools/share.rs:425
 msgid "Endpoint (local network)"
 msgstr "Điểm cuối (mạng cục bộ)"
 
-#: rustconn/src/window/network_tools/share.rs:422
+#: rustconn/src/window/network_tools/share.rs:431
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15160,7 +15179,7 @@ msgstr ""
 "Nếu người xem bị hết thời gian chờ, hãy chuyển tiếp cổng TCP và UDP {} tới "
 "máy tính này trên bộ định tuyến. RustConn khác chỉ cần UDP."
 
-#: rustconn/src/window/network_tools/share.rs:427
+#: rustconn/src/window/network_tools/share.rs:436
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15168,7 +15187,7 @@ msgstr ""
 "Nếu người xem bị hết thời gian chờ, hãy chuyển tiếp cổng TCP {} và cổng UDP "
 "{} tới máy tính này trên bộ định tuyến. RustConn khác chỉ cần UDP."
 
-#: rustconn/src/window/network_tools/share.rs:433
+#: rustconn/src/window/network_tools/share.rs:442
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15182,7 +15201,7 @@ msgstr ""
 "tục, hãy so sánh dấu vân tay SHA-256 của chứng chỉ với phần fp= trong liên "
 "kết. Thẻ được đánh dấu ◉ khi đang chia sẻ."
 
-#: rustconn/src/window/network_tools/share.rs:437
+#: rustconn/src/window/network_tools/share.rs:446
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15196,23 +15215,23 @@ msgstr ""
 "chỉ: trước khi tiếp tục, hãy so sánh dấu vân tay SHA-256 của chứng chỉ với "
 "phần fp= trong liên kết. Thẻ được đánh dấu ◉ khi đang chia sẻ."
 
-#: rustconn/src/window/network_tools/share.rs:514
+#: rustconn/src/window/network_tools/share.rs:523
 msgid "Read-only link"
 msgstr "Liên kết chỉ xem"
 
-#: rustconn/src/window/network_tools/share.rs:572
+#: rustconn/src/window/network_tools/share.rs:581
 msgid "Paste an https:// share link"
 msgstr "Dán liên kết chia sẻ https://"
 
-#: rustconn/src/window/network_tools/share.rs:574
+#: rustconn/src/window/network_tools/share.rs:583
 msgid "Share link"
 msgstr "Liên kết chia sẻ"
 
-#: rustconn/src/window/network_tools/share.rs:577
+#: rustconn/src/window/network_tools/share.rs:586
 msgid "Join a shared session"
 msgstr "Tham gia phiên được chia sẻ"
 
-#: rustconn/src/window/network_tools/share.rs:579
+#: rustconn/src/window/network_tools/share.rs:588
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15220,19 +15239,22 @@ msgstr ""
 "Dán liên kết mà người chủ phiên đã gửi cho bạn. RustConn kết nối trực tiếp "
 "qua QUIC (UDP); cổng UDP của máy chủ phải truy cập được."
 
-#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:608
+#: rustconn/src/window/network_tools/share.rs:637
 msgid "Could not join the shared session"
 msgstr "Không thể tham gia phiên được chia sẻ"
 
-#: rustconn/src/window/network_tools/share.rs:668
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Read-only shared session from {}"
 msgstr "Phiên được chia sẻ chỉ xem từ {}"
 
-#: rustconn/src/window/network_tools/share.rs:674
+#: rustconn/src/window/network_tools/share.rs:683
+#: rustconn/src/window/network_tools/share.rs:692
+#: rustconn/src/window/network_tools/share.rs:784
 msgid "Shared session"
 msgstr "Phiên được chia sẻ"
 
-#: rustconn/src/window/network_tools/share.rs:675
+#: rustconn/src/window/network_tools/share.rs:684
 msgid "Read-only from {}"
 msgstr "Chỉ xem từ {}"
 
@@ -15290,6 +15312,7 @@ msgid "Start server"
 msgstr "Khởi động máy chủ"
 
 #: rustconn/src/window/network_tools/tftp.rs:148
+#: rustconn/src/window/network_tools/tftp.rs:152
 msgid "Could not start TFTP server"
 msgstr "Không thể khởi động máy chủ TFTP"
 
@@ -15906,23 +15929,27 @@ msgstr "phiên"
 msgid "Could not start recording"
 msgstr "Không thể bắt đầu ghi"
 
-#: rustconn/src/window/script_actions.rs:170
-msgid "Recording — open the terminal menu to stop"
-msgstr "Đang ghi — mở menu terminal để dừng"
+#: rustconn/src/window/script_actions.rs:171
+msgid ""
+"Recording — what you type is saved, including passwords. Stop it from the "
+"terminal menu"
+msgstr ""
+"Đang ghi — mọi thứ bạn gõ đều được lưu, kể cả mật khẩu. Dừng ghi từ menu "
+"terminal"
 
-#: rustconn/src/window/script_actions.rs:183
+#: rustconn/src/window/script_actions.rs:185
 msgid "Recording saved with no steps to {}"
 msgstr "Đã lưu bản ghi không có bước nào vào {}"
 
-#: rustconn/src/window/script_actions.rs:185
+#: rustconn/src/window/script_actions.rs:187
 msgid "Saved {} steps to {}"
 msgstr "Đã lưu {} bước vào {}"
 
-#: rustconn/src/window/script_actions.rs:200
+#: rustconn/src/window/script_actions.rs:202
 msgid "Could Not Save Script"
 msgstr "Không thể lưu tập lệnh"
 
-#: rustconn/src/window/script_actions.rs:202
+#: rustconn/src/window/script_actions.rs:204
 msgid "The recording was lost and the file was not written. {}"
 msgstr "Bản ghi đã bị mất và tệp chưa được ghi. {}"
 
@@ -15980,25 +16007,25 @@ msgstr "Đang chạy trong một cửa sổ bên ngoài"
 msgid "Connection to ‘{}’ failed"
 msgstr "Kết nối tới ‘{}’ thất bại"
 
-#: rustconn/src/window/session_start.rs:691
-#: rustconn/src/window/session_start.rs:705
+#: rustconn/src/window/session_start.rs:914
+#: rustconn/src/window/session_start.rs:927
 msgid "Pre-connect task failed: {}"
 msgstr "Tác vụ trước khi kết nối thất bại: {}"
 
-#: rustconn/src/window/session_start.rs:739
+#: rustconn/src/window/session_start.rs:958
 msgid "Port knock failed: {}"
 msgstr "Gõ cổng thất bại: {}"
 
-#: rustconn/src/window/session_start.rs:762
-#: rustconn/src/window/session_start.rs:805
+#: rustconn/src/window/session_start.rs:976
+#: rustconn/src/window/session_start.rs:1013
 msgid "SPA failed: {}"
 msgstr "SPA thất bại: {}"
 
-#: rustconn/src/window/session_start.rs:989
+#: rustconn/src/window/session_start.rs:1053
 msgid "{} (via {})"
 msgstr "{} (qua {})"
 
-#: rustconn/src/window/session_start.rs:995
+#: rustconn/src/window/session_start.rs:1059
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -16022,15 +16049,15 @@ msgstr ""
 "Nếu bạn không thực hiện thay đổi này, hãy hủy — kết nối có thể gửi thông tin "
 "đăng nhập đã lưu tới một máy khác."
 
-#: rustconn/src/window/session_start.rs:1000
+#: rustconn/src/window/session_start.rs:1064
 msgid "Routing changed for “{}”"
 msgstr "Định tuyến đã thay đổi cho “{}”"
 
-#: rustconn/src/window/session_start.rs:1064
+#: rustconn/src/window/session_start.rs:1128
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Máy chủ trung gian không khả dụng cho “{}”"
 
-#: rustconn/src/window/session_start.rs:1069
+#: rustconn/src/window/session_start.rs:1133
 msgid "Connect Directly"
 msgstr "Kết nối trực tiếp"
 
@@ -16440,6 +16467,9 @@ msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubern
 msgstr ""
 "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;kết "
 "nối;terminal;remote;từ xa;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Recording — open the terminal menu to stop"
+#~ msgstr "Đang ghi — mở menu terminal để dừng"
 
 #~ msgid "Settings…"
 #~ msgstr "Cài đặt…"

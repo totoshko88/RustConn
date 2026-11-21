@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 14:48+0200\n"
+"POT-Creation-Date: 2026-11-21 17:09+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -71,14 +71,14 @@ msgstr "OK"
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
 #: rustconn/src/window/network_tools/share.rs:323
-#: rustconn/src/window/network_tools/share.rs:585
+#: rustconn/src/window/network_tools/share.rs:594
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
 #: rustconn/src/window/operations.rs:998 rustconn/src/window/operations.rs:1199
 #: rustconn/src/window/remote_script.rs:616
-#: rustconn/src/window/session_start.rs:1003
 #: rustconn/src/window/session_start.rs:1067
+#: rustconn/src/window/session_start.rs:1131
 #: rustconn/src/window/sessions.rs:335 rustconn/src/window/startup.rs:399
 #: rustconn/src/window/workspaces.rs:560
 msgid "Cancel"
@@ -189,7 +189,7 @@ msgstr "Журнал адладкі"
 #: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:576
 #: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:558
+#: rustconn/src/window/network_tools/share.rs:567
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Закрыць"
@@ -336,7 +336,7 @@ msgstr "«{}» перад злучэннем патрабуе наступнае
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:586
+#: rustconn/src/window/network_tools/share.rs:595
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Злучыцца"
@@ -641,10 +641,14 @@ msgid "Switch Tab"
 msgstr "Пераключыць укладку"
 
 #: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
+#: rustconn/src/terminal/script_recorder.rs:186
+#: rustconn/src/terminal/tab_menu.rs:1466
 msgid "Share Session (read-only)"
 msgstr "Падзяліцца сеансам (толькі чытанне)"
 
 #: rustconn/src/dialogs/command_palette.rs:709
+#: rustconn/src/terminal/script_recorder.rs:190
+#: rustconn/src/terminal/tab_menu.rs:1481
 msgid "Start TFTP Server"
 msgstr "Запусціць сервер TFTP"
 
@@ -12244,6 +12248,7 @@ msgstr "Сеанс RDP працуе ў знешнім акне"
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
+#: rustconn/src/window/session_start.rs:672
 msgid "Connection failed"
 msgstr "Злучэнне не ўдалося"
 
@@ -12944,10 +12949,12 @@ msgid "Open SFTP"
 msgstr "Адкрыць SFTP"
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
+#: rustconn/src/terminal/tab_menu.rs:1474
 msgid "Edit Remote File…"
 msgstr "Рэдагаваць аддалены файл…"
 
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
+#: rustconn/src/terminal/tab_menu.rs:1456
 msgid "Record Script…"
 msgstr "Запісаць скрыпт…"
 
@@ -13329,6 +13336,7 @@ msgstr ""
 "ўстаўкі — праверце перад працягам."
 
 #: rustconn/src/terminal/script_recorder.rs:176
+#: rustconn/src/terminal/tab_menu.rs:1452
 msgid "Stop Script Recording"
 msgstr "Спыніць запіс скрыпта"
 
@@ -13432,6 +13440,10 @@ msgstr ""
 #: rustconn/src/terminal/split_title.rs:138
 msgid "Panes:"
 msgstr "Панэлі:"
+
+#: rustconn/src/terminal/tab_labels.rs:130
+msgid "This session is shared read-only"
+msgstr "Гэты сеанс абагулены толькі для прагляду"
 
 #: rustconn/src/terminal/tab_menu.rs:99
 msgid "Close Tab…"
@@ -13849,8 +13861,8 @@ msgid "Jump Host Unavailable"
 msgstr "Прамежкавы вузел недаступны"
 
 #: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:788
-#: rustconn/src/window/session_start.rs:1004
-#: rustconn/src/window/session_start.rs:1070
+#: rustconn/src/window/session_start.rs:1068
+#: rustconn/src/window/session_start.rs:1134
 msgid "Connect Anyway"
 msgstr "Усё роўна злучыцца"
 
@@ -15041,6 +15053,7 @@ msgid "Sharing stopped"
 msgstr "Абмен спынены"
 
 #: rustconn/src/window/network_tools.rs:103
+#: rustconn/src/window/script_actions.rs:99
 msgid "That connection has no open session"
 msgstr "У гэтага злучэння няма адкрытага сеанса"
 
@@ -15166,6 +15179,7 @@ msgid "Start sharing"
 msgstr "Пачаць абмен"
 
 #: rustconn/src/window/network_tools/share.rs:153
+#: rustconn/src/window/network_tools/share.rs:382
 msgid "Could not start session sharing"
 msgstr "Не ўдалося пачаць абмен сеансам"
 
@@ -15192,18 +15206,23 @@ msgstr ""
 "агульны, укладка пазначана ◉. {}"
 
 #: rustconn/src/window/network_tools/share.rs:248
+#: rustconn/src/window/network_tools/share.rs:559
+#: rustconn/src/window/network_tools/share.rs:759
 msgid "Session shared"
 msgstr "Сеанс абагулены"
 
 #: rustconn/src/window/network_tools/share.rs:253
+#: rustconn/src/window/network_tools/share.rs:565
 msgid "Copy link"
 msgstr "Капіяваць спасылку"
 
 #: rustconn/src/window/network_tools/share.rs:254
+#: rustconn/src/window/network_tools/share.rs:566
 msgid "Stop sharing"
 msgstr "Спыніць абмен"
 
 #: rustconn/src/window/network_tools/share.rs:263
+#: rustconn/src/window/network_tools/share.rs:476
 msgid "Link copied to clipboard"
 msgstr "Спасылка скапіявана ў буфер абмену"
 
@@ -15233,15 +15252,15 @@ msgstr "Толькі лакальная сетка"
 msgid "Look Up Public Address"
 msgstr "Даведацца публічны адрас"
 
-#: rustconn/src/window/network_tools/share.rs:414
+#: rustconn/src/window/network_tools/share.rs:423
 msgid "Public endpoint (STUN)"
 msgstr "Публічная кропка доступу (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:416
+#: rustconn/src/window/network_tools/share.rs:425
 msgid "Endpoint (local network)"
 msgstr "Кропка доступу (лакальная сетка)"
 
-#: rustconn/src/window/network_tools/share.rs:422
+#: rustconn/src/window/network_tools/share.rs:431
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15249,7 +15268,7 @@ msgstr ""
 "Калі гледач не можа падключыцца па часе, перанакіруйце на маршрутызатары "
 "TCP- і UDP-порт {} на гэты камп’ютар. Іншаму RustConn патрэбен толькі UDP."
 
-#: rustconn/src/window/network_tools/share.rs:427
+#: rustconn/src/window/network_tools/share.rs:436
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15257,7 +15276,7 @@ msgstr ""
 "Калі гледач не можа падключыцца па часе, перанакіруйце на маршрутызатары TCP-"
 "порт {} і UDP-порт {} на гэты камп’ютар. Іншаму RustConn патрэбен толькі UDP."
 
-#: rustconn/src/window/network_tools/share.rs:433
+#: rustconn/src/window/network_tools/share.rs:442
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15271,7 +15290,7 @@ msgstr ""
 "чым працягнуць, параўнайце адбітак SHA-256 сертыфіката з часткай fp= у "
 "спасылцы. Пакуль сеанс агульны, укладка пазначана ◉."
 
-#: rustconn/src/window/network_tools/share.rs:437
+#: rustconn/src/window/network_tools/share.rs:446
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15285,23 +15304,23 @@ msgstr ""
 "сертыфікат: перш чым працягнуць, параўнайце адбітак SHA-256 сертыфіката з "
 "часткай fp= у спасылцы. Пакуль сеанс агульны, укладка пазначана ◉."
 
-#: rustconn/src/window/network_tools/share.rs:514
+#: rustconn/src/window/network_tools/share.rs:523
 msgid "Read-only link"
 msgstr "Спасылка толькі для чытання"
 
-#: rustconn/src/window/network_tools/share.rs:572
+#: rustconn/src/window/network_tools/share.rs:581
 msgid "Paste an https:// share link"
 msgstr "Устаўце спасылку https:// для абмену"
 
-#: rustconn/src/window/network_tools/share.rs:574
+#: rustconn/src/window/network_tools/share.rs:583
 msgid "Share link"
 msgstr "Спасылка для абмену"
 
-#: rustconn/src/window/network_tools/share.rs:577
+#: rustconn/src/window/network_tools/share.rs:586
 msgid "Join a shared session"
 msgstr "Далучыцца да агульнага сеанса"
 
-#: rustconn/src/window/network_tools/share.rs:579
+#: rustconn/src/window/network_tools/share.rs:588
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15309,19 +15328,22 @@ msgstr ""
 "Устаўце спасылку, якую даслаў вам вядучы. RustConn злучаецца наўпрост праз "
 "QUIC (UDP); UDP-порт вядучага павінен быць даступны."
 
-#: rustconn/src/window/network_tools/share.rs:599
+#: rustconn/src/window/network_tools/share.rs:608
+#: rustconn/src/window/network_tools/share.rs:637
 msgid "Could not join the shared session"
 msgstr "Не ўдалося далучыцца да агульнага сеанса"
 
-#: rustconn/src/window/network_tools/share.rs:668
+#: rustconn/src/window/network_tools/share.rs:677
 msgid "Read-only shared session from {}"
 msgstr "Агульны сеанс толькі для чытання ад {}"
 
-#: rustconn/src/window/network_tools/share.rs:674
+#: rustconn/src/window/network_tools/share.rs:683
+#: rustconn/src/window/network_tools/share.rs:692
+#: rustconn/src/window/network_tools/share.rs:784
 msgid "Shared session"
 msgstr "Агульны сеанс"
 
-#: rustconn/src/window/network_tools/share.rs:675
+#: rustconn/src/window/network_tools/share.rs:684
 msgid "Read-only from {}"
 msgstr "Толькі для чытання ад {}"
 
@@ -15380,6 +15402,7 @@ msgid "Start server"
 msgstr "Запусціць сервер"
 
 #: rustconn/src/window/network_tools/tftp.rs:148
+#: rustconn/src/window/network_tools/tftp.rs:152
 msgid "Could not start TFTP server"
 msgstr "Не ўдалося запусціць сервер TFTP"
 
@@ -15997,23 +16020,27 @@ msgstr "сеанс"
 msgid "Could not start recording"
 msgstr "Не ўдалося пачаць запіс"
 
-#: rustconn/src/window/script_actions.rs:170
-msgid "Recording — open the terminal menu to stop"
-msgstr "Ідзе запіс — адкрыйце меню тэрмінала, каб спыніць"
+#: rustconn/src/window/script_actions.rs:171
+msgid ""
+"Recording — what you type is saved, including passwords. Stop it from the "
+"terminal menu"
+msgstr ""
+"Ідзе запіс — усё, што вы набіраеце, захоўваецца, уключна з паролямі. Спыніце "
+"яго ў меню тэрмінала"
 
-#: rustconn/src/window/script_actions.rs:183
+#: rustconn/src/window/script_actions.rs:185
 msgid "Recording saved with no steps to {}"
 msgstr "Запіс без крокаў захаваны ў {}"
 
-#: rustconn/src/window/script_actions.rs:185
+#: rustconn/src/window/script_actions.rs:187
 msgid "Saved {} steps to {}"
 msgstr "Захавана крокаў: {} у {}"
 
-#: rustconn/src/window/script_actions.rs:200
+#: rustconn/src/window/script_actions.rs:202
 msgid "Could Not Save Script"
 msgstr "Не ўдалося захаваць скрыпт"
 
-#: rustconn/src/window/script_actions.rs:202
+#: rustconn/src/window/script_actions.rs:204
 msgid "The recording was lost and the file was not written. {}"
 msgstr "Запіс страчаны, файл не запісаны. {}"
 
@@ -16081,25 +16108,25 @@ msgstr "Ужо выконваецца ў вонкавым акне"
 msgid "Connection to ‘{}’ failed"
 msgstr "Злучэнне з ‘{}’ не ўдалося"
 
-#: rustconn/src/window/session_start.rs:691
-#: rustconn/src/window/session_start.rs:705
+#: rustconn/src/window/session_start.rs:914
+#: rustconn/src/window/session_start.rs:927
 msgid "Pre-connect task failed: {}"
 msgstr "Задача перад злучэннем не ўдалася: {}"
 
-#: rustconn/src/window/session_start.rs:739
+#: rustconn/src/window/session_start.rs:958
 msgid "Port knock failed: {}"
 msgstr "Памылка port knock: {}"
 
-#: rustconn/src/window/session_start.rs:762
-#: rustconn/src/window/session_start.rs:805
+#: rustconn/src/window/session_start.rs:976
+#: rustconn/src/window/session_start.rs:1013
 msgid "SPA failed: {}"
 msgstr "Памылка SPA: {}"
 
-#: rustconn/src/window/session_start.rs:989
+#: rustconn/src/window/session_start.rs:1053
 msgid "{} (via {})"
 msgstr "{} (праз {})"
 
-#: rustconn/src/window/session_start.rs:995
+#: rustconn/src/window/session_start.rs:1059
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -16123,15 +16150,15 @@ msgstr ""
 "Калі вы не рабілі гэтай змены, скасуйце — злучэнне можа адправіць захаваныя "
 "ўліковыя дадзеныя на іншую машыну."
 
-#: rustconn/src/window/session_start.rs:1000
+#: rustconn/src/window/session_start.rs:1064
 msgid "Routing changed for “{}”"
 msgstr "Змяніўся маршрут для «{}»"
 
-#: rustconn/src/window/session_start.rs:1064
+#: rustconn/src/window/session_start.rs:1128
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Прамежкавы вузел недаступны для «{}»"
 
-#: rustconn/src/window/session_start.rs:1069
+#: rustconn/src/window/session_start.rs:1133
 msgid "Connect Directly"
 msgstr "Злучыцца напрамую"
 
@@ -16541,6 +16568,9 @@ msgstr "Менеджар злучэнняў"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Recording — open the terminal menu to stop"
+#~ msgstr "Ідзе запіс — адкрыйце меню тэрмінала, каб спыніць"
 
 #~ msgid "Settings…"
 #~ msgstr "Налады…"
