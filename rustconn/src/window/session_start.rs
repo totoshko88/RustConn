@@ -609,230 +609,112 @@ impl MainWindow {
         rustconn_core::connection::apply_mdns_fallback(&mut conn_clone);
         let conn_clone = conn_clone;
 
-        // Execute pre-connect task if configured
-        if let Some(ref task) = conn_clone.pre_connect_task {
-            tracing::info!(
-                connection = %conn_clone.name,
-                command = %task.command,
-                "Executing pre-connect task"
-            );
-
-            // Build variable manager for substitution
-            let global_variables = state
-                .try_borrow()
-                .ok()
-                .map(|s| crate::state::resolve_global_variables(s.settings()))
-                .unwrap_or_default();
-            let mut var_manager = VariableManager::new();
-            for var in &global_variables {
-                var_manager.set_global(var.clone());
-            }
-            // Add connection-scoped synthetic variables (host, port, username, name)
-            let conn_id = conn_clone.id;
-            var_manager.set_connection(
-                conn_id,
-                rustconn_core::Variable::new("host", &conn_clone.host),
-            );
-            var_manager.set_connection(
-                conn_id,
-                rustconn_core::Variable::new("port", conn_clone.port.to_string()),
-            );
-            if let Some(ref user) = conn_clone.username {
-                var_manager.set_connection(conn_id, rustconn_core::Variable::new("username", user));
-            }
-            var_manager.set_connection(
-                conn_id,
-                rustconn_core::Variable::new("name", &conn_clone.name),
-            );
-
-            let folder_tracker = state
-                .try_borrow()
-                .ok()
-                .map(|s| Arc::clone(s.folder_tracker()))
-                .unwrap_or_default();
-            let executor = TaskExecutor::with_tracker(Arc::new(var_manager), folder_tracker);
-            let folder_id = conn_clone.group_id;
-
-            let result = crate::async_utils::with_runtime(|rt| {
-                rt.block_on(async {
-                    // ponytail: 60s ceiling protects the GTK main thread from
-                    // hanging forever when the user omits a timeout on the task.
-                    // The task's own timeout (if set) fires first; this is a safety net.
-                    let ceiling = std::time::Duration::from_mins(1);
-                    tokio::time::timeout(
-                        ceiling,
-                        executor.execute_pre_connect(
-                            task,
-                            VariableScope::Connection(conn_id),
-                            folder_id,
-                        ),
-                    )
-                    .await
-                    .unwrap_or(Err(rustconn_core::automation::TaskError::Timeout(60_000)))
-                })
-            });
-
-            match result {
-                Ok(Ok(_)) => {
-                    tracing::info!(
-                        connection = %conn_clone.name,
-                        "Pre-connect task completed successfully"
-                    );
-                }
-                Ok(Err(e)) => {
-                    tracing::error!(
-                        connection = %conn_clone.name,
-                        command = %task.command,
-                        error = %e,
-                        "Pre-connect task failed"
-                    );
-                    if task.abort_on_failure {
-                        crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
-                            "Pre-connect task failed: {}",
-                            &[&e.to_string()],
-                        ));
-                        return types::ConnectionStartResult::Failed;
-                    }
-                }
-                Err(runtime_err) => {
-                    tracing::error!(
-                        connection = %conn_clone.name,
-                        error = %runtime_err,
-                        "Failed to create async runtime for pre-connect task"
-                    );
-                    if task.abort_on_failure {
-                        crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
-                            "Pre-connect task failed: {}",
-                            &[&runtime_err],
-                        ));
-                        return types::ConnectionStartResult::Failed;
-                    }
-                }
-            }
-        }
-
-        // Execute port knock sequence if configured (after pre-connect task, before protocol connect)
-        if let Some(ref knock_seq) = conn_clone.knock_sequence {
-            tracing::info!(
-                connection = %conn_clone.name,
-                knocks = knock_seq.knocks.len(),
-                "Executing port knock sequence"
-            );
-            match rustconn_core::connection::knock::execute_knock_sequence(
-                &conn_clone.host,
-                knock_seq,
-            ) {
-                Ok(result) => {
-                    tracing::info!(
-                        connection = %conn_clone.name,
-                        total_ms = result.total_ms,
-                        "Port knock sequence completed"
-                    );
-                }
-                Err(e) => {
-                    tracing::error!(
-                        connection = %conn_clone.name,
-                        error = %e,
-                        "Port knock sequence failed"
-                    );
-                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
-                        "Port knock failed: {}",
-                        &[&e.to_string()],
-                    ));
-                    return types::ConnectionStartResult::Failed;
-                }
-            }
-        }
-
-        // Send fwknop SPA packet if configured (after knock, before port check)
-        // The keys come from the secret store (F-08); a key still in the file
-        // (pre-0.26.0 or not yet moved) is used as is.
-        // ponytail: the vault read runs on the GTK thread, like the pre-connect
-        // task, the knock and the SPA send around it. Ceiling: one vault op
-        // timeout per vaulted key (two keys, up to 45 s each on a CLI backend).
-        // Upgrade: make this pre-connect stage asynchronous as a whole, then
-        // read the keys with `spawn_blocking_with_callback`.
-        let spa_keys = match conn_clone.spa_config.as_ref() {
-            Some(cfg) => match rustconn_core::connection::spa_vault::resolve_spa_keys(
-                conn_clone.id,
-                cfg,
-                &crate::vault_ops::VaultSpaKeyStore(&spa_secret_settings),
-            ) {
-                Ok(keys) => keys,
-                Err(e) => {
-                    tracing::error!(connection = %conn_clone.name, error = %e, "SPA keys unavailable");
-                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
-                        "SPA failed: {}",
-                        &[&e.to_string()],
-                    ));
-                    return types::ConnectionStartResult::Failed;
-                }
-            },
-            None => None,
-        };
-        if let Some(ref spa_cfg) = conn_clone.spa_config
-            && let Some((rij_secret, hmac_secret)) = spa_keys
-        {
-            let username = conn_clone.username.as_deref().unwrap_or("root");
-
-            tracing::info!(
-                connection = %conn_clone.name,
-                dest_port = spa_cfg.dest_port,
-                access = %spa_cfg.access,
-                "Sending fwknop SPA packet"
-            );
-
-            match rustconn_core::connection::spa::send_spa(
-                &conn_clone.host,
-                spa_cfg.dest_port,
-                &rij_secret,
-                &hmac_secret,
-                &spa_cfg.access,
-                username,
-            ) {
-                Ok(result) => {
-                    tracing::info!(
-                        connection = %conn_clone.name,
-                        packet_size = result.packet_size,
-                        elapsed_ms = result.elapsed_ms,
-                        "SPA packet sent successfully"
-                    );
-                }
-                Err(e) => {
-                    tracing::error!(
-                        connection = %conn_clone.name,
-                        error = %e,
-                        "SPA packet send failed"
-                    );
-                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
-                        "SPA failed: {}",
-                        &[&e.to_string()],
-                    ));
-                    return types::ConnectionStartResult::Failed;
-                }
-            }
-        }
-
-        // Protocols that use async port check return None when the check is
-        // in progress — this is NOT a failure.  We track whether the protocol
-        // *may* be pending so we can distinguish Pending from Failed below.
-        let may_be_pending = matches!(
-            protocol.as_str(),
-            "ssh" | "vnc" | "spice" | "telnet" | "winrm" | "mosh"
-        );
-
-        // The key sequence goes out when the session exists, which for an
-        // asynchronous start (port check, key unlock) is after this returns.
-        let observer = Self::with_key_sequence(notebook, &conn_clone, observer);
-
-        let session_id = match protocol.as_str() {
-            "ssh" => protocols::start_ssh_connection_observed(
+        let needs_prep = conn_clone.pre_connect_task.is_some()
+            || conn_clone.knock_sequence.is_some()
+            || conn_clone.spa_config.is_some();
+        if !needs_prep {
+            return Self::launch_prepared(
                 state,
                 notebook,
                 sidebar,
                 monitoring,
                 connection_id,
                 &conn_clone,
+                &protocol,
+                logging_enabled,
+                observer,
+            );
+        }
+        // The pre-connect task, the port knock and the SPA packet (with its
+        // vault reads) can take tens of seconds, so they run on a worker
+        // thread; the session starts from the callback once they are done.
+        let global_variables = state
+            .try_borrow()
+            .ok()
+            .map(|s| crate::state::resolve_global_variables(s.settings()))
+            .unwrap_or_default();
+        let folder_tracker = state
+            .try_borrow()
+            .ok()
+            .map(|s| Arc::clone(s.folder_tracker()))
+            .unwrap_or_default();
+        let prep_conn = conn_clone.clone();
+        let state = state.clone();
+        let notebook = notebook.clone();
+        let sidebar = sidebar.clone();
+        let monitoring = Rc::clone(monitoring);
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                Self::run_pre_connect_stage(
+                    &prep_conn,
+                    global_variables,
+                    folder_tracker,
+                    &spa_secret_settings,
+                )
+            },
+            move |prepared| {
+                let failure = match prepared {
+                    Ok(()) => {
+                        let result = Self::launch_prepared(
+                            &state,
+                            &notebook,
+                            &sidebar,
+                            &monitoring,
+                            connection_id,
+                            &conn_clone,
+                            &protocol,
+                            logging_enabled,
+                            observer,
+                        );
+                        if !matches!(result, types::ConnectionStartResult::Failed) {
+                            return;
+                        }
+                        crate::i18n::i18n("Connection failed")
+                    }
+                    Err(message) => message,
+                };
+                sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                crate::toast::show_error_toast_on_active_window(&failure);
+            },
+        );
+        types::ConnectionStartResult::Pending
+    }
+    /// Starts the session once the pre-connect stage is done (or not needed).
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "mirrors the launch entry points it must call back into"
+    )]
+    fn launch_prepared(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
+        connection_id: Uuid,
+        conn_clone: &rustconn_core::models::Connection,
+        protocol: &str,
+        logging_enabled: bool,
+        observer: Option<types::SessionStartObserver>,
+    ) -> types::ConnectionStartResult {
+        // Protocols that use async port check return None when the check is
+        // in progress — this is NOT a failure.  We track whether the protocol
+        // *may* be pending so we can distinguish Pending from Failed below.
+        let may_be_pending = matches!(
+            protocol,
+            "ssh" | "vnc" | "spice" | "telnet" | "winrm" | "mosh"
+        );
+
+        // The key sequence goes out when the session exists, which for an
+        // asynchronous start (port check, key unlock) is after this returns.
+        let observer = Self::with_key_sequence(notebook, conn_clone, observer);
+
+        let session_id = match protocol {
+            "ssh" => protocols::start_ssh_connection_observed(
+                state,
+                notebook,
+                sidebar,
+                monitoring,
+                connection_id,
+                conn_clone,
                 logging_enabled,
                 observer.clone(),
             ),
@@ -841,7 +723,7 @@ impl MainWindow {
                 notebook,
                 sidebar,
                 connection_id,
-                &conn_clone,
+                conn_clone,
                 observer.clone(),
             ),
             "rdp" => {
@@ -858,14 +740,14 @@ impl MainWindow {
                 notebook,
                 sidebar,
                 connection_id,
-                &conn_clone,
+                conn_clone,
             ),
             "telnet" | "winrm" => protocols::start_telnet_connection_observed(
                 state,
                 notebook,
                 sidebar,
                 connection_id,
-                &conn_clone,
+                conn_clone,
                 logging_enabled,
                 observer.clone(),
             ),
@@ -874,7 +756,7 @@ impl MainWindow {
                 notebook,
                 sidebar,
                 connection_id,
-                &conn_clone,
+                conn_clone,
                 logging_enabled,
             ),
             "kubernetes" => protocols::start_kubernetes_connection(
@@ -882,7 +764,7 @@ impl MainWindow {
                 notebook,
                 sidebar,
                 connection_id,
-                &conn_clone,
+                conn_clone,
                 logging_enabled,
             ),
             "mosh" => protocols::start_mosh_connection_observed(
@@ -890,7 +772,7 @@ impl MainWindow {
                 notebook,
                 sidebar,
                 connection_id,
-                &conn_clone,
+                conn_clone,
                 logging_enabled,
                 observer.clone(),
             ),
@@ -900,7 +782,7 @@ impl MainWindow {
                     notebook,
                     sidebar,
                     connection_id,
-                    &conn_clone,
+                    conn_clone,
                     logging_enabled,
                 )
             }
@@ -954,6 +836,185 @@ impl MainWindow {
         }
 
         result
+    }
+    /// The blocking steps before a session starts: the pre-connect task, the
+    /// port knock and the fwknop SPA packet. Runs on a worker thread; an `Err`
+    /// is the message to show, already translated.
+    fn run_pre_connect_stage(
+        conn_clone: &rustconn_core::models::Connection,
+        global_variables: Vec<rustconn_core::Variable>,
+        folder_tracker: Arc<std::sync::Mutex<rustconn_core::automation::FolderConnectionTracker>>,
+        secrets: &rustconn_core::config::SecretSettings,
+    ) -> Result<(), String> {
+        if let Some(ref task) = conn_clone.pre_connect_task {
+            tracing::info!(
+                connection = %conn_clone.name,
+                command = %task.command,
+                "Executing pre-connect task"
+            );
+            let mut var_manager = VariableManager::new();
+            for var in &global_variables {
+                var_manager.set_global(var.clone());
+            }
+            let conn_id = conn_clone.id;
+            var_manager.set_connection(
+                conn_id,
+                rustconn_core::Variable::new("host", &conn_clone.host),
+            );
+            var_manager.set_connection(
+                conn_id,
+                rustconn_core::Variable::new("port", conn_clone.port.to_string()),
+            );
+            if let Some(ref user) = conn_clone.username {
+                var_manager.set_connection(conn_id, rustconn_core::Variable::new("username", user));
+            }
+            var_manager.set_connection(
+                conn_id,
+                rustconn_core::Variable::new("name", &conn_clone.name),
+            );
+            let executor = TaskExecutor::with_tracker(Arc::new(var_manager), folder_tracker);
+            let folder_id = conn_clone.group_id;
+            // ponytail: 60s ceiling so a task without a timeout cannot hold the
+            // connect attempt forever. The task's own timeout fires first.
+            let ceiling = std::time::Duration::from_mins(1);
+            let result = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|e| e.to_string())
+                .map(|rt| {
+                    rt.block_on(async {
+                        tokio::time::timeout(
+                            ceiling,
+                            executor.execute_pre_connect(
+                                task,
+                                VariableScope::Connection(conn_id),
+                                folder_id,
+                            ),
+                        )
+                        .await
+                        .unwrap_or(Err(rustconn_core::automation::TaskError::Timeout(60_000)))
+                    })
+                });
+            match result {
+                Ok(Ok(_)) => {
+                    tracing::info!(
+                        connection = %conn_clone.name,
+                        "Pre-connect task completed successfully"
+                    );
+                }
+                Ok(Err(e)) => {
+                    tracing::error!(
+                        connection = %conn_clone.name,
+                        command = %task.command,
+                        error = %e,
+                        "Pre-connect task failed"
+                    );
+                    if task.abort_on_failure {
+                        return Err(crate::i18n::i18n_f(
+                            "Pre-connect task failed: {}",
+                            &[&e.to_string()],
+                        ));
+                    }
+                }
+                Err(runtime_err) => {
+                    tracing::error!(
+                        connection = %conn_clone.name,
+                        error = %runtime_err,
+                        "Failed to create async runtime for pre-connect task"
+                    );
+                    if task.abort_on_failure {
+                        return Err(crate::i18n::i18n_f(
+                            "Pre-connect task failed: {}",
+                            &[&runtime_err],
+                        ));
+                    }
+                }
+            }
+        }
+        if let Some(ref knock_seq) = conn_clone.knock_sequence {
+            tracing::info!(
+                connection = %conn_clone.name,
+                knocks = knock_seq.knocks.len(),
+                "Executing port knock sequence"
+            );
+            match rustconn_core::connection::knock::execute_knock_sequence(
+                &conn_clone.host,
+                knock_seq,
+            ) {
+                Ok(result) => {
+                    tracing::info!(
+                        connection = %conn_clone.name,
+                        total_ms = result.total_ms,
+                        "Port knock sequence completed"
+                    );
+                }
+                Err(e) => {
+                    tracing::error!(
+                        connection = %conn_clone.name,
+                        error = %e,
+                        "Port knock sequence failed"
+                    );
+                    return Err(crate::i18n::i18n_f(
+                        "Port knock failed: {}",
+                        &[&e.to_string()],
+                    ));
+                }
+            }
+        }
+        // The fwknop SPA packet goes out after the knock, before the port
+        // check. The keys come from the secret store (F-08); a key still in
+        // the file (pre-0.26.0 or not yet moved) is used as is.
+        let spa_keys = match conn_clone.spa_config.as_ref() {
+            Some(cfg) => match rustconn_core::connection::spa_vault::resolve_spa_keys(
+                conn_clone.id,
+                cfg,
+                &crate::vault_ops::VaultSpaKeyStore(secrets),
+            ) {
+                Ok(keys) => keys,
+                Err(e) => {
+                    tracing::error!(connection = %conn_clone.name, error = %e, "SPA keys unavailable");
+                    return Err(crate::i18n::i18n_f("SPA failed: {}", &[&e.to_string()]));
+                }
+            },
+            None => None,
+        };
+        if let Some(ref spa_cfg) = conn_clone.spa_config
+            && let Some((rij_secret, hmac_secret)) = spa_keys
+        {
+            let username = conn_clone.username.as_deref().unwrap_or("root");
+            tracing::info!(
+                connection = %conn_clone.name,
+                dest_port = spa_cfg.dest_port,
+                access = %spa_cfg.access,
+                "Sending fwknop SPA packet"
+            );
+            match rustconn_core::connection::spa::send_spa(
+                &conn_clone.host,
+                spa_cfg.dest_port,
+                &rij_secret,
+                &hmac_secret,
+                &spa_cfg.access,
+                username,
+            ) {
+                Ok(result) => {
+                    tracing::info!(
+                        connection = %conn_clone.name,
+                        packet_size = result.packet_size,
+                        elapsed_ms = result.elapsed_ms,
+                        "SPA packet sent successfully"
+                    );
+                }
+                Err(e) => {
+                    tracing::error!(
+                        connection = %conn_clone.name,
+                        error = %e,
+                        "SPA packet send failed"
+                    );
+                    return Err(crate::i18n::i18n_f("SPA failed: {}", &[&e.to_string()]));
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Shows the "routing changed" warning and, on confirmation, retries the
