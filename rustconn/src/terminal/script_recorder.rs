@@ -282,6 +282,7 @@ impl TerminalNotebook {
             }
         });
 
+        self.set_script_marker(session_id, true);
         tracing::info!(%session_id, "Script recording started");
         true
     }
@@ -295,7 +296,32 @@ impl TerminalNotebook {
     /// failed save drops the steps rather than leaving them to be written by a
     /// second, later call.
     pub fn stop_script_recording(&self) -> Result<RecordedScript, ScriptSaveError> {
+        let session_id = self
+            .script_recording
+            .borrow()
+            .as_ref()
+            .map(|r| r.session_id);
+        if let Some(session_id) = session_id {
+            self.set_script_marker(session_id, false);
+        }
         stop_recording(&self.script_recording)
+    }
+    /// Shows or hides the recording marker in the tab title, so a recording
+    /// that captures keystrokes (passwords included) is never invisible.
+    fn set_script_marker(&self, session_id: Uuid, on: bool) {
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            let title = page.title().to_string();
+            page.set_title(&with_title_marker(
+                &title,
+                SCRIPT_TITLE_MARKER,
+                on,
+                &[
+                    BROADCAST_TITLE_MARKER,
+                    SHARED_TITLE_MARKER,
+                    SCRIPT_TITLE_MARKER,
+                ],
+            ));
+        }
     }
 
     /// Whether a recording is currently running.

@@ -2238,7 +2238,7 @@ pub fn schedule_spa_key_move(state: &crate::state::SharedAppState) {
                         Ok(n) => {
                             tracing::info!(connections = n, "SPA keys moved to the vault");
                             crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
-                                "SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still holds them: delete it once you have connected",
+                                "SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still holds them. It is deleted after the first successful SPA connection",
                             ));
                         }
                         Err(e) => tracing::error!(error = %e, "SPA keys stay in connections.toml"),

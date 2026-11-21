@@ -80,9 +80,9 @@ use libadwaita::prelude::*;
 use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends, RdpKeyboardHook};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
-    BROADCAST_TITLE_MARKER, ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SHARED_TITLE_MARKER,
-    SessionWidgetStorage, TerminalSession, group_still_in_use, local_shell_label, regroup_title,
-    tab_title,
+    BROADCAST_TITLE_MARKER, ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SCRIPT_TITLE_MARKER,
+    SHARED_TITLE_MARKER, SessionWidgetStorage, TerminalSession, group_still_in_use,
+    local_shell_label, regroup_title, tab_title, with_title_marker,
 };
 use uuid::Uuid;
 use vte4::Terminal;

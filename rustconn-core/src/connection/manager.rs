@@ -594,6 +594,12 @@ impl ConnectionManager {
         Ok(changed)
     }
 
+    /// Directory that holds `connections.toml` and its backups.
+    #[must_use]
+    pub fn config_dir(&self) -> std::path::PathBuf {
+        self.config_manager.config_dir().to_path_buf()
+    }
+
     /// Connections, live and trashed, that still hold a plaintext SPA key.
     #[must_use]
     pub fn connections_with_plaintext_spa_keys(&self) -> Vec<Connection> {

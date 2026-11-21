@@ -243,6 +243,18 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
         .with_icon("emblem-shared-symbolic")
         .with_priority(18),
         PaletteItem::new(
+            "Stop Sharing",
+            CommandPaletteAction::GtkAction("win.stop-sharing".into()),
+        )
+        .with_icon("process-stop-symbolic")
+        .with_priority(15),
+        PaletteItem::new(
+            "Stop Script Recording",
+            CommandPaletteAction::GtkAction("win.stop-record-script".into()),
+        )
+        .with_icon("media-playback-stop-symbolic")
+        .with_priority(14),
+        PaletteItem::new(
             "Start TFTP Server",
             CommandPaletteAction::GtkAction("win.start-tftp".into()),
         )
@@ -268,6 +280,8 @@ mod tests {
         "win.share-session",
         "win.start-tftp",
         "win.edit-remote-file",
+        "win.stop-sharing",
+        "win.stop-record-script",
     ];
 
     #[test]

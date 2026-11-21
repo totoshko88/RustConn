@@ -2376,6 +2376,12 @@ impl AppState {
         &self.settings.ui.expanded_groups
     }
 
+    /// Directory that holds the configuration files.
+    #[must_use]
+    pub fn config_dir(&self) -> std::path::PathBuf {
+        self.config_manager.config_dir().to_path_buf()
+    }
+
     /// Gets the connection manager
     pub fn connection_manager(&mut self) -> &mut ConnectionManager {
         &mut self.connection_manager

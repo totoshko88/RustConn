@@ -706,6 +706,8 @@ fn command_label_markers() -> Vec<String> {
         i18n("Tab Overview"),
         i18n("Switch Tab"),
         i18n("Share Session (read-only)"),
+        i18n("Stop Sharing"),
+        i18n("Stop Script Recording"),
         i18n("Start TFTP Server"),
         i18n("Edit Remote File"),
     ]

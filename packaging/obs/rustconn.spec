@@ -404,6 +404,8 @@ done
 - Changed: Header-bar actions follow the GNOME layout; menu wording, broadcast names, command palette labels and tooltips are unified and translated in all locales
 - Improved: import lists entries that fail validation; selection mode counts and ticks; deleting several items offers Undo
 - Dependencies: ashpd 0.14.2, clap 4.6.9, oo7 0.7.3, toml 1.2.2, url 2.5.9, zbus 6.5.0, zcheapstr 1.4.0, zip 9.8.1 and others
+- Fixed: a viewer who joins a shared session while a full-screen program (htop, vim) runs no longer keeps its leftovers after the program exits
+- Improved: Stop Sharing and Stop Script Recording in the command palette; a tab being recorded shows a marker; a share warns five minutes before it ends; the SPA key backup is deleted after the first SPA connection
 * Fri Nov 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.6-0
 - Version bump to 0.25.6
 - Added: Open SFTP in the tab menu of an SSH or SFTP tab (#240)

@@ -9,7 +9,7 @@ use std::fmt::Write as _;
 use std::io;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Duration;
 
 use secrecy::{ExposeSecret, SecretString};
@@ -79,11 +79,71 @@ impl Drop for ViewerSlot {
     }
 }
 
+/// Remembers whether the shared program is on the alternate screen.
+///
+/// A viewer that joins in the middle of `htop` or `vim` then starts there too. Without
+/// it the viewer draws the full-screen program into its normal buffer, and the
+/// program's exit sequence (`ESC [ ? 1049 l`) then has nothing to clear.
+#[derive(Debug, Default)]
+pub struct AltScreen {
+    active: AtomicBool,
+    tail: std::sync::Mutex<Vec<u8>>,
+}
+impl AltScreen {
+    /// Sequences that switch the alternate screen, longest first.
+    const MODES: [(&'static [u8], bool); 6] = [
+        (b"\x1b[?1049h", true),
+        (b"\x1b[?1049l", false),
+        (b"\x1b[?1047h", true),
+        (b"\x1b[?1047l", false),
+        (b"\x1b[?47h", true),
+        (b"\x1b[?47l", false),
+    ];
+    /// Scans one chunk of terminal output; the last switch in it wins. Call
+    /// this for every chunk, also while nobody watches.
+    pub fn observe(&self, bytes: &[u8]) {
+        if !bytes.contains(&0x1b) && self.tail.lock().map_or(true, |t| t.is_empty()) {
+            return;
+        }
+        let Ok(mut tail) = self.tail.lock() else {
+            return;
+        };
+        let mut window = std::mem::take(&mut *tail);
+        window.extend_from_slice(bytes);
+        let mut state = None;
+        for (at, _) in window.iter().enumerate().filter(|(_, b)| **b == 0x1b) {
+            if let Some((_, on)) = Self::MODES
+                .iter()
+                .find(|(seq, _)| window[at..].starts_with(seq))
+            {
+                state = Some(*on);
+            }
+        }
+        if let Some(on) = state {
+            self.active.store(on, Ordering::Release);
+        }
+        // Keep the end of the chunk: a sequence may be split across two reads.
+        let from = window.len().saturating_sub(7);
+        if let Some(esc) = window[from..].iter().position(|b| *b == 0x1b) {
+            tail.extend_from_slice(&window[from + esc..]);
+        }
+    }
+    /// True while the program is on the alternate screen.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.active.load(Ordering::Acquire)
+    }
+    /// What a joining viewer must receive first, if anything.
+    pub(crate) fn join_prefix(&self) -> Option<&'static [u8]> {
+        self.is_active().then_some(b"\x1b[?1049h".as_slice())
+    }
+}
 /// What every connection task needs.
 #[derive(Clone)]
 struct Shared {
     token: SecretString,
     publisher: broadcast::Sender<Vec<u8>>,
+    alt: Arc<AltScreen>,
     limits: ShareLimits,
     viewers: Arc<AtomicUsize>,
 }
@@ -149,6 +209,7 @@ pub struct ShareServer {
     bind: SocketAddr,
     token: SecretString,
     publisher: broadcast::Sender<Vec<u8>>,
+    alt: Arc<AltScreen>,
     shutdown_tx: watch::Sender<bool>,
     accept_task: JoinHandle<()>,
 }
@@ -185,10 +246,12 @@ impl ShareServer {
         let listener = TcpListener::bind(bind).await?;
         let bound = listener.local_addr()?;
         let (publisher, _) = broadcast::channel(limits.channel_capacity.max(1));
+        let alt = Arc::new(AltScreen::default());
         let (shutdown_tx, shutdown_rx) = watch::channel(false);
         let shared = Shared {
             token: token.clone(),
             publisher: publisher.clone(),
+            alt: Arc::clone(&alt),
             limits,
             viewers: Arc::new(AtomicUsize::new(0)),
         };
@@ -198,6 +261,7 @@ impl ShareServer {
             bind: bound,
             token,
             publisher,
+            alt,
             shutdown_tx,
             accept_task,
         })
@@ -209,6 +273,10 @@ impl ShareServer {
     /// can be skipped.
     pub fn publisher(&self) -> broadcast::Sender<Vec<u8>> {
         self.publisher.clone()
+    }
+    /// The alternate-screen tracker the GUI feeds with every output chunk.
+    pub fn alt_screen(&self) -> Arc<AltScreen> {
+        Arc::clone(&self.alt)
     }
 
     /// Returns the viewer URL, including the token. For the user only: never log it.
@@ -410,6 +478,9 @@ async fn serve_events(
     let limit = shared.limits.write_timeout;
     let head = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: keep-alive\r\n\r\n";
     write_timed(stream, head.as_bytes(), limit).await?;
+    if let Some(prefix) = shared.alt.join_prefix() {
+        write_timed(stream, sse_frame(prefix).as_bytes(), limit).await?;
+    }
     let mut sink = [0u8; 256];
     loop {
         tokio::select! {
@@ -521,6 +592,19 @@ fn hex(b: u8) -> Option<u8> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn alt_screen_follows_the_last_switch_even_when_split() {
+        let alt = AltScreen::default();
+        assert!(alt.join_prefix().is_none());
+        alt.observe(b"prompt\x1b[?10");
+        alt.observe(b"49h\x1b[Hhtop");
+        assert!(alt.is_active());
+        assert_eq!(alt.join_prefix(), Some(b"\x1b[?1049h".as_slice()));
+        alt.observe(b"\x1b[?1049l$ ");
+        assert!(!alt.is_active());
+        alt.observe(b"\x1b[?1049l\x1b[?1049h");
+        assert!(alt.is_active());
+    }
     #[test]
     fn sse_frames_carry_base64_payloads() {
         assert_eq!(sse_frame(b""), "data: \n\n");

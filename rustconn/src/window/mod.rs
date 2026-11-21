@@ -46,6 +46,8 @@ mod smart_folders;
 mod snippet_actions;
 // `pub(crate)` for `truncate_command`, which the embedded RDP script gate needs:
 // its confirmation shows the same command text and has to cap it the same way.
+#[cfg(test)]
+mod action_wiring_tests;
 mod network_tools;
 mod script_actions;
 pub(crate) mod snippets;

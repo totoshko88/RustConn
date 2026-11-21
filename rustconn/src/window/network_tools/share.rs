@@ -213,7 +213,9 @@ fn present_http_share(
     // slow viewer resync instead of blocking the terminal. With no viewer there
     // is nobody to copy the bytes for.
     let publisher = server.publisher();
+    let alt = server.alt_screen();
     notebook.add_output_observer(session_id, move |bytes| {
+        alt.observe(bytes);
         if publisher.receiver_count() > 0 {
             let _ = publisher.send(bytes.to_vec());
         }
@@ -274,6 +276,8 @@ fn present_http_share(
 /// A share that nobody stopped ends by itself after this long: the link has no
 /// expiry of its own, so a forgotten share would otherwise stay open.
 const SHARE_MAX_AGE: std::time::Duration = std::time::Duration::from_hours(1);
+/// How long before [`SHARE_MAX_AGE`] the user is told the share is ending.
+const SHARE_WARN_BEFORE: std::time::Duration = std::time::Duration::from_mins(5);
 
 /// Live viewers of the share that is running now, relay or WebTransport.
 fn viewer_count() -> usize {
@@ -299,6 +303,7 @@ fn viewer_count() -> usize {
 fn watch_shared_tab(serial: u64, session_id: Uuid, notebook: SharedNotebook) {
     let started = std::time::Instant::now();
     let mut viewers = 0;
+    let mut warned = false;
     glib::timeout_add_seconds_local(2, move || {
         if current_serial() != Some(serial) {
             return glib::ControlFlow::Break;
@@ -313,6 +318,12 @@ fn watch_shared_tab(serial: u64, session_id: Uuid, notebook: SharedNotebook) {
                 "Session sharing stopped after one hour. Share again to continue",
             ));
             return glib::ControlFlow::Break;
+        }
+        if !warned && started.elapsed() + SHARE_WARN_BEFORE >= SHARE_MAX_AGE {
+            warned = true;
+            crate::toast::show_warning_toast_on_active_window(&i18n(
+                "Session sharing stops in 5 minutes. Share again afterwards to continue",
+            ));
         }
         let now = viewer_count();
         if now != viewers {
@@ -434,7 +445,9 @@ fn present_quic_share(
 ) {
     // With no viewer there is nobody to copy the bytes for.
     let publisher = server.publisher();
+    let alt = server.alt_screen();
     notebook.add_output_observer(session_id, move |bytes| {
+        alt.observe(bytes);
         if publisher.receiver_count() > 0 {
             let _ = publisher.send(bytes.to_vec());
         }

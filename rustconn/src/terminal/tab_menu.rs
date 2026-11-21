@@ -462,7 +462,12 @@ impl TerminalNotebook {
                         page.title().as_str(),
                         old_group.as_deref(),
                         Some(&group_name),
-                        &[BROADCAST_TITLE_MARKER, SHARED_TITLE_MARKER, &rec],
+                        &[
+                            BROADCAST_TITLE_MARKER,
+                            SHARED_TITLE_MARKER,
+                            SCRIPT_TITLE_MARKER,
+                            &rec,
+                        ],
                     );
                     page.set_title(&title);
 
@@ -664,7 +669,12 @@ impl TerminalNotebook {
                     page.title().as_str(),
                     old_group.as_deref(),
                     None,
-                    &[BROADCAST_TITLE_MARKER, SHARED_TITLE_MARKER, &rec],
+                    &[
+                        BROADCAST_TITLE_MARKER,
+                        SHARED_TITLE_MARKER,
+                        SCRIPT_TITLE_MARKER,
+                        &rec,
+                    ],
                 );
                 page.set_title(&title);
             }

@@ -188,9 +188,14 @@ fn finish_script_recording(window: &adw::ApplicationWindow, notebook: &SharedNot
             };
             crate::toast::show_toast_on_window(window, &message, crate::toast::ToastType::Success);
         }
-        // Nothing was running: the menu item cannot be reached in this state,
-        // so there is nothing to tell the user.
-        Err(ScriptSaveError::NoRecording) => {}
+        // The command palette offers Stop at any time, so say so.
+        Err(ScriptSaveError::NoRecording) => {
+            crate::toast::show_toast_on_window(
+                window,
+                &i18n("No script recording is running"),
+                crate::toast::ToastType::Info,
+            );
+        }
         // The keystrokes only ever existed in memory. A save failure loses
         // them, so it gets a modal dialog rather than a log line.
         Err(e) => {

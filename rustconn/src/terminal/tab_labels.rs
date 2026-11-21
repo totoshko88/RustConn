@@ -115,12 +115,16 @@ impl TerminalNotebook {
         }
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let title = page.title().to_string();
-            let base = title.strip_prefix(SHARED_TITLE_MARKER).unwrap_or(&title);
-            if shared {
-                page.set_title(&format!("{SHARED_TITLE_MARKER}{base}"));
-            } else {
-                page.set_title(base);
-            }
+            page.set_title(&with_title_marker(
+                &title,
+                SHARED_TITLE_MARKER,
+                shared,
+                &[
+                    BROADCAST_TITLE_MARKER,
+                    SHARED_TITLE_MARKER,
+                    SCRIPT_TITLE_MARKER,
+                ],
+            ));
         }
         // The ◉ prefix is a glyph; give assistive technology the meaning too.
         let terminal = self.terminals.borrow().get(&session_id).cloned();

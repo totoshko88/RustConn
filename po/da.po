@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 17:29+0200\n"
+"POT-Creation-Date: 2026-11-21 17:56+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -56,8 +56,8 @@ msgstr "OK"
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
-#: rustconn/src/terminal/tab_menu.rs:416 rustconn/src/terminal/tab_menu.rs:569
-#: rustconn/src/terminal/tab_menu.rs:806 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:416 rustconn/src/terminal/tab_menu.rs:574
+#: rustconn/src/terminal/tab_menu.rs:816 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:379
 #: rustconn/src/window/clusters.rs:434
 #: rustconn/src/window/connection_dialogs.rs:993
@@ -65,19 +65,19 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2104
 #: rustconn/src/window/group_broadcast.rs:267
 #: rustconn/src/window/key_setup.rs:1022 rustconn/src/window/mc_launch.rs:457
-#: rustconn/src/window/mod.rs:575
+#: rustconn/src/window/mod.rs:577
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
-#: rustconn/src/window/network_tools/share.rs:363
-#: rustconn/src/window/network_tools/share.rs:634
+#: rustconn/src/window/network_tools/share.rs:374
+#: rustconn/src/window/network_tools/share.rs:647
 #: rustconn/src/window/network_tools/tftp.rs:59
 #: rustconn/src/window/network_tools/tftp.rs:119
 #: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:604
 #: rustconn/src/window/operations.rs:998 rustconn/src/window/operations.rs:1199
 #: rustconn/src/window/remote_script.rs:616
-#: rustconn/src/window/session_start.rs:1067
-#: rustconn/src/window/session_start.rs:1131
+#: rustconn/src/window/session_start.rs:1078
+#: rustconn/src/window/session_start.rs:1142
 #: rustconn/src/window/sessions.rs:335 rustconn/src/window/startup.rs:399
 #: rustconn/src/window/workspaces.rs:560
 msgid "Cancel"
@@ -186,10 +186,10 @@ msgstr "Fejlfindingslog"
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
-#: rustconn/src/terminal/tab_menu.rs:807 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:576
-#: rustconn/src/window/network_tools/share.rs:256
-#: rustconn/src/window/network_tools/share.rs:607
+#: rustconn/src/terminal/tab_menu.rs:817 rustconn/src/vault_ops.rs:65
+#: rustconn/src/window/mod.rs:578
+#: rustconn/src/window/network_tools/share.rs:258
+#: rustconn/src/window/network_tools/share.rs:620
 #: rustconn/src/window/network_tools/tftp.rs:173
 msgid "Close"
 msgstr "Luk"
@@ -335,7 +335,7 @@ msgstr "‚{}’ kræver følgende, før der kan oprettes forbindelse."
 #: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:448
 #: rustconn/src/window/edit_dialogs.rs:792
 #: rustconn/src/window/edit_dialogs.rs:793
-#: rustconn/src/window/network_tools/share.rs:635
+#: rustconn/src/window/network_tools/share.rs:648
 #: rustconn/src/window/startup.rs:400
 msgid "Connect"
 msgstr "Forbind"
@@ -614,7 +614,7 @@ msgstr "Opdel til højre"
 #: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/sidebar_ui.rs:580
 #: rustconn/src/split_view/adapter.rs:197
 #: rustconn/src/terminal/split_close.rs:321
-#: rustconn/src/terminal/tab_menu.rs:1354
+#: rustconn/src/terminal/tab_menu.rs:1364
 msgid "Remove Split"
 msgstr "Fjern opdeling"
 
@@ -640,17 +640,28 @@ msgstr "Skift fane"
 
 #: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
 #: rustconn/src/terminal/script_recorder.rs:186
-#: rustconn/src/terminal/tab_menu.rs:1466
+#: rustconn/src/terminal/tab_menu.rs:1476
 msgid "Share Session (read-only)"
 msgstr "Del session (skrivebeskyttet)"
 
 #: rustconn/src/dialogs/command_palette.rs:709
+#: rustconn/src/terminal/tab_menu.rs:1474
+msgid "Stop Sharing"
+msgstr "Stop deling"
+
+#: rustconn/src/dialogs/command_palette.rs:710
+#: rustconn/src/terminal/script_recorder.rs:176
+#: rustconn/src/terminal/tab_menu.rs:1462
+msgid "Stop Script Recording"
+msgstr "Stop scriptoptagelse"
+
+#: rustconn/src/dialogs/command_palette.rs:711
 #: rustconn/src/terminal/script_recorder.rs:190
-#: rustconn/src/terminal/tab_menu.rs:1481
+#: rustconn/src/terminal/tab_menu.rs:1491
 msgid "Start TFTP Server"
 msgstr "Start TFTP-server"
 
-#: rustconn/src/dialogs/command_palette.rs:710
+#: rustconn/src/dialogs/command_palette.rs:712
 msgid "Edit Remote File"
 msgstr "Rediger fjernfil"
 
@@ -759,7 +770,7 @@ msgstr "Gem terminaloutput til fil"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:344
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:170
-#: rustconn/src/terminal/tab_menu.rs:1338
+#: rustconn/src/terminal/tab_menu.rs:1348
 msgid "Activity Monitor"
 msgstr "Aktivitetsovervågning"
 
@@ -888,8 +899,8 @@ msgid "HMAC Key"
 msgstr "HMAC-nøgle"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:556
-#: rustconn/src/window/network_tools.rs:219
-#: rustconn/src/window/network_tools.rs:223
+#: rustconn/src/window/network_tools.rs:225
+#: rustconn/src/window/network_tools.rs:229
 msgid "Access"
 msgstr "Adgang"
 
@@ -12100,7 +12111,7 @@ msgstr "Gem filer fra fjernudklipsholder"
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:185 rustconn/src/terminal/config.rs:428
 #: rustconn/src/terminal/session_lifecycle.rs:795
-#: rustconn/src/terminal/spawn.rs:178 rustconn/src/terminal/tab_menu.rs:1268
+#: rustconn/src/terminal/spawn.rs:178 rustconn/src/terminal/tab_menu.rs:1278
 msgid "Reconnect"
 msgstr "Genopret forbindelse"
 
@@ -12229,7 +12240,7 @@ msgstr "RDP-session kører i eksternt vindue"
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
-#: rustconn/src/window/session_start.rs:672
+#: rustconn/src/window/session_start.rs:674
 msgid "Connection failed"
 msgstr "Forbindelse mislykkedes"
 
@@ -12903,7 +12914,7 @@ msgstr "Føj til favoritter"
 msgid "Duplicate as Range…"
 msgstr "Duplikér som interval…"
 
-#: rustconn/src/sidebar_ui.rs:516 rustconn/src/terminal/tab_menu.rs:1406
+#: rustconn/src/sidebar_ui.rs:516 rustconn/src/terminal/tab_menu.rs:1416
 msgid "Duplicate via Wizard…"
 msgstr "Duplikér via guide…"
 
@@ -12913,7 +12924,7 @@ msgstr "Åbn ny session"
 
 #: rustconn/src/sidebar_ui.rs:586 rustconn/src/split_view/adapter.rs:194
 #: rustconn/src/split_view/adapter.rs:1327
-#: rustconn/src/terminal/tab_menu.rs:1362
+#: rustconn/src/terminal/tab_menu.rs:1372
 msgid "Move to New Window"
 msgstr "Flyt til nyt vindue"
 
@@ -12925,17 +12936,17 @@ msgstr "Kør kodestump…"
 msgid "Session Log…"
 msgstr "Sessionslog…"
 
-#: rustconn/src/sidebar_ui.rs:620 rustconn/src/terminal/tab_menu.rs:1421
+#: rustconn/src/sidebar_ui.rs:620 rustconn/src/terminal/tab_menu.rs:1431
 msgid "Open SFTP"
 msgstr "Åbn SFTP"
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
-#: rustconn/src/terminal/tab_menu.rs:1474
+#: rustconn/src/terminal/tab_menu.rs:1484
 msgid "Edit Remote File…"
 msgstr "Rediger fjernfil…"
 
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
-#: rustconn/src/terminal/tab_menu.rs:1456
+#: rustconn/src/terminal/tab_menu.rs:1466
 msgid "Record Script…"
 msgstr "Optag script…"
 
@@ -13296,7 +13307,7 @@ msgid "Playback complete"
 msgstr "Afspilning fuldført"
 
 #: rustconn/src/terminal/recording.rs:365 rustconn/src/terminal/tab_menu.rs:460
-#: rustconn/src/terminal/tab_menu.rs:662
+#: rustconn/src/terminal/tab_menu.rs:667
 msgid "●REC"
 msgstr "●OPT"
 
@@ -13315,11 +13326,6 @@ msgid ""
 msgstr ""
 "Udklipsholderen indeholder mere end én linje. Hver linje køres, så snart den "
 "indsættes — kontrollér den, før du fortsætter."
-
-#: rustconn/src/terminal/script_recorder.rs:176
-#: rustconn/src/terminal/tab_menu.rs:1452
-msgid "Stop Script Recording"
-msgstr "Stop scriptoptagelse"
 
 #: rustconn/src/terminal/session_lifecycle.rs:317
 msgid "Press Enter again to log in"
@@ -13421,7 +13427,7 @@ msgstr ""
 msgid "Panes:"
 msgstr "Paneler:"
 
-#: rustconn/src/terminal/tab_labels.rs:130
+#: rustconn/src/terminal/tab_labels.rs:134
 msgid "This session is shared read-only"
 msgstr "Denne session deles skrivebeskyttet"
 
@@ -13449,127 +13455,123 @@ msgstr "Eksisterende grupper:"
 msgid "or enter a new name:"
 msgstr "eller indtast et nyt navn:"
 
-#: rustconn/src/terminal/tab_menu.rs:417 rustconn/src/terminal/tab_menu.rs:570
+#: rustconn/src/terminal/tab_menu.rs:417 rustconn/src/terminal/tab_menu.rs:575
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Anvend"
 
-#: rustconn/src/terminal/tab_menu.rs:557
+#: rustconn/src/terminal/tab_menu.rs:562
 msgid "Rename Tab"
 msgstr "Omdøb fane"
 
-#: rustconn/src/terminal/tab_menu.rs:559
+#: rustconn/src/terminal/tab_menu.rs:564
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "Etiketten navner kun denne fane. Lad den være tom for at gendanne "
 "standardnavnet."
 
-#: rustconn/src/terminal/tab_menu.rs:565
+#: rustconn/src/terminal/tab_menu.rs:570
 msgid "Tab name"
 msgstr "Fanenavn"
 
-#: rustconn/src/terminal/tab_menu.rs:795
+#: rustconn/src/terminal/tab_menu.rs:805
 msgid "Close all tabs in group “{}”?"
 msgstr "Luk alle faner i gruppen “{}”?"
 
-#: rustconn/src/terminal/tab_menu.rs:803 rustconn/src/terminal/tab_menu.rs:1302
+#: rustconn/src/terminal/tab_menu.rs:813 rustconn/src/terminal/tab_menu.rs:1312
 msgid "Close All in Group"
 msgstr "Luk alle i gruppe"
 
-#: rustconn/src/terminal/tab_menu.rs:1096
+#: rustconn/src/terminal/tab_menu.rs:1106
 msgid "Save Output"
 msgstr "Gem output"
 
-#: rustconn/src/terminal/tab_menu.rs:1102
+#: rustconn/src/terminal/tab_menu.rs:1112
 msgid "Text files"
 msgstr "Tekstfiler"
 
-#: rustconn/src/terminal/tab_menu.rs:1128
+#: rustconn/src/terminal/tab_menu.rs:1138
 msgid "Output saved"
 msgstr "Output gemt"
 
-#: rustconn/src/terminal/tab_menu.rs:1138
+#: rustconn/src/terminal/tab_menu.rs:1148
 msgid "Could not save output"
 msgstr "Kunne ikke gemme output"
 
-#: rustconn/src/terminal/tab_menu.rs:1200
+#: rustconn/src/terminal/tab_menu.rs:1210
 msgid "Move to New Window on {}"
 msgstr "Flyt til nyt vindue på {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1220
+#: rustconn/src/terminal/tab_menu.rs:1230
 msgid "Monitor {} ({})"
 msgstr "Skærm {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:1221
+#: rustconn/src/terminal/tab_menu.rs:1231
 msgid "Monitor {}"
 msgstr "Skærm {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1275
+#: rustconn/src/terminal/tab_menu.rs:1285
 msgid "Unpin Tab"
 msgstr "Frigør fane"
 
-#: rustconn/src/terminal/tab_menu.rs:1277
+#: rustconn/src/terminal/tab_menu.rs:1287
 msgid "Pin Tab"
 msgstr "Fastgør fane"
 
-#: rustconn/src/terminal/tab_menu.rs:1288
+#: rustconn/src/terminal/tab_menu.rs:1298
 msgid "Rename Tab…"
 msgstr "Omdøb fane…"
 
-#: rustconn/src/terminal/tab_menu.rs:1298
+#: rustconn/src/terminal/tab_menu.rs:1308
 msgid "Set Group…"
 msgstr "Angiv gruppe…"
 
-#: rustconn/src/terminal/tab_menu.rs:1300
+#: rustconn/src/terminal/tab_menu.rs:1310
 msgid "Remove from Group"
 msgstr "Fjern fra gruppe"
 
-#: rustconn/src/terminal/tab_menu.rs:1312
+#: rustconn/src/terminal/tab_menu.rs:1322
 msgid "Remove from Tab Broadcast"
 msgstr "Fjern fra udsendelse"
 
-#: rustconn/src/terminal/tab_menu.rs:1314
+#: rustconn/src/terminal/tab_menu.rs:1324
 msgid "Add to Tab Broadcast"
 msgstr "Føj til udsendelse"
 
-#: rustconn/src/terminal/tab_menu.rs:1349
+#: rustconn/src/terminal/tab_menu.rs:1359
 msgid "Split with Other Tabs…"
 msgstr "Opdel med andre faner…"
 
-#: rustconn/src/terminal/tab_menu.rs:1398
+#: rustconn/src/terminal/tab_menu.rs:1408
 msgid "Duplicate Tab"
 msgstr "Duplikér faneblad"
 
-#: rustconn/src/terminal/tab_menu.rs:1412
+#: rustconn/src/terminal/tab_menu.rs:1422
 msgid "Edit Connection…"
 msgstr "Redigér forbindelse…"
 
-#: rustconn/src/terminal/tab_menu.rs:1438
+#: rustconn/src/terminal/tab_menu.rs:1448
 msgid "Save Output…"
 msgstr "Gem output…"
 
-#: rustconn/src/terminal/tab_menu.rs:1464
-msgid "Stop Sharing"
-msgstr "Stop deling"
-
-#: rustconn/src/terminal/tab_menu.rs:1488
+#: rustconn/src/terminal/tab_menu.rs:1498
 msgid "Close Others"
 msgstr "Luk andre"
 
-#: rustconn/src/terminal/tab_menu.rs:1493
+#: rustconn/src/terminal/tab_menu.rs:1503
 msgid "Close to the Left"
 msgstr "Luk til venstre"
 
-#: rustconn/src/terminal/tab_menu.rs:1494
+#: rustconn/src/terminal/tab_menu.rs:1504
 msgid "Close to the Right"
 msgstr "Luk til højre"
 
-#: rustconn/src/terminal/tab_menu.rs:1498
+#: rustconn/src/terminal/tab_menu.rs:1508
 msgid "Close All Ungrouped"
 msgstr "Luk alle ugrupperede"
 
-#: rustconn/src/terminal/tab_menu.rs:1502
+#: rustconn/src/terminal/tab_menu.rs:1512
 msgid "Close All Tabs"
 msgstr "Luk alle faner"
 
@@ -13722,8 +13724,8 @@ msgstr "Gem på denne computer"
 #: rustconn/src/vault_ops.rs:2241
 msgid ""
 "SPA keys moved to the secret store. connections.toml.pre-spa-vault.bak still "
-"holds them: delete it once you have connected"
-msgstr "SPA-nøgler er flyttet til hemmelighedslageret. connections.toml.pre-spa-vault.bak indeholder dem stadig: slet den, når forbindelsen virker"
+"holds them. It is deleted after the first successful SPA connection"
+msgstr "SPA-nøglerne er flyttet til hemmelighedslageret. connections.toml.pre-spa-vault.bak indeholder dem stadig. Den slettes efter den første vellykkede SPA-forbindelse"
 
 #: rustconn/src/vault_ops.rs:2249
 msgid ""
@@ -13843,8 +13845,8 @@ msgid "Jump Host Unavailable"
 msgstr "Spring-vært utilgængelig"
 
 #: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:788
-#: rustconn/src/window/session_start.rs:1068
-#: rustconn/src/window/session_start.rs:1134
+#: rustconn/src/window/session_start.rs:1079
+#: rustconn/src/window/session_start.rs:1145
 msgid "Connect Anyway"
 msgstr "Forbind alligevel"
 
@@ -14939,28 +14941,28 @@ msgstr ""
 "Midnight Commander logger ind på denne server med den. RustConn gemmer den "
 "kun, mens denne mc-fane er åben."
 
-#: rustconn/src/window/mod.rs:422
+#: rustconn/src/window/mod.rs:424
 msgid "The jump host set for “{}” no longer exists."
 msgstr "Spring-værten, der er angivet for “{}”, findes ikke længere."
 
-#: rustconn/src/window/mod.rs:426
+#: rustconn/src/window/mod.rs:428
 msgid "“{}” is set to use itself as its jump host."
 msgstr "“{}” er indstillet til at bruge sig selv som spring-vært."
 
-#: rustconn/src/window/mod.rs:438
+#: rustconn/src/window/mod.rs:440
 msgid "The setting is inherited from the group “{}”."
 msgstr "Indstillingen nedarves fra gruppen “{}”."
 
-#: rustconn/src/window/mod.rs:443
+#: rustconn/src/window/mod.rs:445
 msgid "The setting is the Global Jump Host in Settings."
 msgstr "Dette er den globale spring-vært i indstillingerne."
 
-#: rustconn/src/window/mod.rs:448
+#: rustconn/src/window/mod.rs:450
 msgid ""
 "Connecting to “{}” now reaches the server directly, without a jump host."
 msgstr "Forbindelse til “{}” når nu serveren direkte, uden en spring-vært."
 
-#: rustconn/src/window/mod.rs:452
+#: rustconn/src/window/mod.rs:454
 msgid ""
 "Connecting to “{}” now skips that jump host and uses only the rest of its "
 "configured route."
@@ -14968,19 +14970,19 @@ msgstr ""
 "Forbindelse til “{}” springer nu den spring-vært over og bruger kun resten "
 "af den konfigurerede rute."
 
-#: rustconn/src/window/mod.rs:510
+#: rustconn/src/window/mod.rs:512
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:569
+#: rustconn/src/window/mod.rs:571
 msgid "Close RustConn?"
 msgstr "Luk RustConn?"
 
-#: rustconn/src/window/mod.rs:571
+#: rustconn/src/window/mod.rs:573
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "{} sessionsfaner er åbne. Aktive forbindelser vil blive afbrudt."
 
-#: rustconn/src/window/mod.rs:608
+#: rustconn/src/window/mod.rs:610
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14988,7 +14990,7 @@ msgstr ""
 "Indstillingerne kunne ikke læses, så standardværdierne bruges. Den ulæselige "
 "fil blev bevaret som {}."
 
-#: rustconn/src/window/mod.rs:613
+#: rustconn/src/window/mod.rs:615
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14996,7 +14998,7 @@ msgstr ""
 "Disse indstillinger blev gemt af en nyere RustConn ({}). Der bevares en "
 "sikkerhedskopi, før de ændres."
 
-#: rustconn/src/window/mod.rs:638
+#: rustconn/src/window/mod.rs:640
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Skysynkronisering mislykkedes for '{}': {}"
 
@@ -15028,30 +15030,34 @@ msgstr "Netværk begrænset — fuld forbindelse endnu ikke tilgængelig"
 msgid "Network changed — reconnecting affected sessions…"
 msgstr "Netværk ændret — genopretter berørte sessioner…"
 
-#: rustconn/src/window/network_tools.rs:83
+#: rustconn/src/window/network_tools.rs:85
 msgid "Sharing stopped"
 msgstr "Deling stoppet"
 
-#: rustconn/src/window/network_tools.rs:103
+#: rustconn/src/window/network_tools.rs:87
+msgid "Nothing is being shared"
+msgstr "Der deles ikke noget"
+
+#: rustconn/src/window/network_tools.rs:109
 #: rustconn/src/window/script_actions.rs:99
 msgid "That connection has no open session"
 msgstr "Den forbindelse har ingen åben session"
 
-#: rustconn/src/window/network_tools.rs:176
+#: rustconn/src/window/network_tools.rs:182
 #: rustconn/src/window/network_tools/remote_edit.rs:69
 msgid "Remote file editor"
 msgstr "Editor til filer på fjernvært"
 
-#: rustconn/src/window/network_tools.rs:177
+#: rustconn/src/window/network_tools.rs:183
 #: rustconn/src/window/network_tools/remote_edit.rs:70
 msgid "Connection not found"
 msgstr "Forbindelsen blev ikke fundet"
 
-#: rustconn/src/window/network_tools.rs:198
+#: rustconn/src/window/network_tools.rs:204
 msgid "This computer only"
 msgstr "Kun denne computer"
 
-#: rustconn/src/window/network_tools.rs:209
+#: rustconn/src/window/network_tools.rs:215
 msgid "Internet — WebTransport in a browser"
 msgstr "Internet — WebTransport i en browser"
 
@@ -15157,11 +15163,11 @@ msgid "Start sharing"
 msgstr "Start deling"
 
 #: rustconn/src/window/network_tools/share.rs:153
-#: rustconn/src/window/network_tools/share.rs:422
+#: rustconn/src/window/network_tools/share.rs:433
 msgid "Could not start session sharing"
 msgstr "Kunne ikke starte sessionsdeling"
 
-#: rustconn/src/window/network_tools/share.rs:238
+#: rustconn/src/window/network_tools/share.rs:240
 msgid ""
 "Anyone who has this link can watch the session read-only, any number of "
 "times, until you stop sharing. The link uses plain HTTP, so other computers "
@@ -15173,7 +15179,7 @@ msgstr ""
 "computere på dit netværk kan læse det, der vises. Fanen er markeret med ◉, "
 "mens den deles. {}"
 
-#: rustconn/src/window/network_tools/share.rs:243
+#: rustconn/src/window/network_tools/share.rs:245
 msgid ""
 "Anyone on this computer who has this link can watch the session read-only, "
 "any number of times, until you stop sharing. The tab is marked ◉ while it is "
@@ -15183,40 +15189,44 @@ msgstr ""
 "mange gange de vil, indtil du stopper delingen. Fanen er markeret med ◉, "
 "mens den deles. {}"
 
-#: rustconn/src/window/network_tools/share.rs:248
-#: rustconn/src/window/network_tools/share.rs:599
-#: rustconn/src/window/network_tools/share.rs:799
+#: rustconn/src/window/network_tools/share.rs:250
+#: rustconn/src/window/network_tools/share.rs:612
+#: rustconn/src/window/network_tools/share.rs:812
 msgid "Session shared"
 msgstr "Session delt"
 
-#: rustconn/src/window/network_tools/share.rs:253
-#: rustconn/src/window/network_tools/share.rs:605
+#: rustconn/src/window/network_tools/share.rs:255
+#: rustconn/src/window/network_tools/share.rs:618
 msgid "Copy link"
 msgstr "Kopiér link"
 
-#: rustconn/src/window/network_tools/share.rs:254
-#: rustconn/src/window/network_tools/share.rs:606
+#: rustconn/src/window/network_tools/share.rs:256
+#: rustconn/src/window/network_tools/share.rs:619
 msgid "Stop sharing"
 msgstr "Stop deling"
 
-#: rustconn/src/window/network_tools/share.rs:263
-#: rustconn/src/window/network_tools/share.rs:516
+#: rustconn/src/window/network_tools/share.rs:265
+#: rustconn/src/window/network_tools/share.rs:529
 msgid "Link copied to clipboard"
 msgstr "Link kopieret til udklipsholderen"
 
-#: rustconn/src/window/network_tools/share.rs:313
+#: rustconn/src/window/network_tools/share.rs:318
 msgid "Session sharing stopped after one hour. Share again to continue"
 msgstr "Deling af sessionen stoppede efter en time. Del igen for at fortsætte"
 
-#: rustconn/src/window/network_tools/share.rs:321
+#: rustconn/src/window/network_tools/share.rs:325
+msgid "Session sharing stops in 5 minutes. Share again afterwards to continue"
+msgstr "Sessionsdelingen stopper om 5 minutter. Del igen for at fortsætte"
+
+#: rustconn/src/window/network_tools/share.rs:332
 msgid "Viewers watching the shared session: {}"
 msgstr "Seere af den delte session: {}"
 
-#: rustconn/src/window/network_tools/share.rs:356
+#: rustconn/src/window/network_tools/share.rs:367
 msgid "Look Up Your Public Address?"
 msgstr "Slå din offentlige adresse op?"
 
-#: rustconn/src/window/network_tools/share.rs:358
+#: rustconn/src/window/network_tools/share.rs:369
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
 "servers run by Google (stun.l.google.com) and Cloudflare "
@@ -15230,23 +15240,23 @@ msgstr ""
 "virksomheder ser denne computers IP-adresse. Der sendes ingen terminaldata "
 "til dem. Uden opslaget virker linket kun på dit lokale netværk."
 
-#: rustconn/src/window/network_tools/share.rs:364
+#: rustconn/src/window/network_tools/share.rs:375
 msgid "Local Network Only"
 msgstr "Kun lokalt netværk"
 
-#: rustconn/src/window/network_tools/share.rs:365
+#: rustconn/src/window/network_tools/share.rs:376
 msgid "Look Up Public Address"
 msgstr "Slå offentlig adresse op"
 
-#: rustconn/src/window/network_tools/share.rs:463
+#: rustconn/src/window/network_tools/share.rs:476
 msgid "Public endpoint (STUN)"
 msgstr "Offentligt endepunkt (STUN)"
 
-#: rustconn/src/window/network_tools/share.rs:465
+#: rustconn/src/window/network_tools/share.rs:478
 msgid "Endpoint (local network)"
 msgstr "Endepunkt (lokalt netværk)"
 
-#: rustconn/src/window/network_tools/share.rs:471
+#: rustconn/src/window/network_tools/share.rs:484
 msgid ""
 "If the viewer times out, forward TCP and UDP port {} to this computer on the "
 "router. Another RustConn needs only UDP."
@@ -15254,7 +15264,7 @@ msgstr ""
 "Hvis seeren får timeout, skal du videresende TCP- og UDP-port {} til denne "
 "computer i routeren. En anden RustConn har kun brug for UDP."
 
-#: rustconn/src/window/network_tools/share.rs:476
+#: rustconn/src/window/network_tools/share.rs:489
 msgid ""
 "If the viewer times out, forward TCP port {} and UDP port {} to this "
 "computer on the router. Another RustConn needs only UDP."
@@ -15262,7 +15272,7 @@ msgstr ""
 "Hvis seeren får timeout, skal du videresende TCP-port {} og UDP-port {} til "
 "denne computer i routeren. En anden RustConn har kun brug for UDP."
 
-#: rustconn/src/window/network_tools/share.rs:482
+#: rustconn/src/window/network_tools/share.rs:495
 msgid ""
 "Anyone who has this link can watch read-only until you stop sharing. Send it "
 "only over a channel you trust. Another RustConn checks the certificate by "
@@ -15276,7 +15286,7 @@ msgstr ""
 "du fortsætter, skal du sammenligne certifikatets SHA-256-fingeraftryk med "
 "fp=-delen af linket. Fanen er markeret med ◉, mens den deles."
 
-#: rustconn/src/window/network_tools/share.rs:486
+#: rustconn/src/window/network_tools/share.rs:499
 msgid ""
 "This link only reaches viewers on the local network. Anyone who has it can "
 "watch read-only until you stop sharing. Another RustConn checks the "
@@ -15290,23 +15300,23 @@ msgstr ""
 "du fortsætter, skal du sammenligne certifikatets SHA-256-fingeraftryk med "
 "fp=-delen af linket. Fanen er markeret med ◉, mens den deles."
 
-#: rustconn/src/window/network_tools/share.rs:563
+#: rustconn/src/window/network_tools/share.rs:576
 msgid "Read-only link"
 msgstr "Skrivebeskyttet link"
 
-#: rustconn/src/window/network_tools/share.rs:621
+#: rustconn/src/window/network_tools/share.rs:634
 msgid "Paste an https:// share link"
 msgstr "Indsæt et https://-delingslink"
 
-#: rustconn/src/window/network_tools/share.rs:623
+#: rustconn/src/window/network_tools/share.rs:636
 msgid "Share link"
 msgstr "Delingslink"
 
-#: rustconn/src/window/network_tools/share.rs:626
+#: rustconn/src/window/network_tools/share.rs:639
 msgid "Join a shared session"
 msgstr "Deltag i en delt session"
 
-#: rustconn/src/window/network_tools/share.rs:628
+#: rustconn/src/window/network_tools/share.rs:641
 msgid ""
 "Paste the link the host sent you. RustConn connects directly over QUIC "
 "(UDP); the host's UDP port must be reachable."
@@ -15314,22 +15324,22 @@ msgstr ""
 "Indsæt det link, værten har sendt dig. RustConn forbinder direkte via QUIC "
 "(UDP); værtens UDP-port skal kunne nås."
 
-#: rustconn/src/window/network_tools/share.rs:648
-#: rustconn/src/window/network_tools/share.rs:677
+#: rustconn/src/window/network_tools/share.rs:661
+#: rustconn/src/window/network_tools/share.rs:690
 msgid "Could not join the shared session"
 msgstr "Kunne ikke deltage i den delte session"
 
-#: rustconn/src/window/network_tools/share.rs:717
+#: rustconn/src/window/network_tools/share.rs:730
 msgid "Read-only shared session from {}"
 msgstr "Skrivebeskyttet delt session fra {}"
 
-#: rustconn/src/window/network_tools/share.rs:723
-#: rustconn/src/window/network_tools/share.rs:732
-#: rustconn/src/window/network_tools/share.rs:824
+#: rustconn/src/window/network_tools/share.rs:736
+#: rustconn/src/window/network_tools/share.rs:745
+#: rustconn/src/window/network_tools/share.rs:837
 msgid "Shared session"
 msgstr "Delt session"
 
-#: rustconn/src/window/network_tools/share.rs:724
+#: rustconn/src/window/network_tools/share.rs:737
 msgid "Read-only from {}"
 msgstr "Skrivebeskyttet fra {}"
 
@@ -16022,11 +16032,15 @@ msgstr "Optagelse uden trin gemt i {}"
 msgid "Saved {} steps to {}"
 msgstr "{} trin gemt i {}"
 
-#: rustconn/src/window/script_actions.rs:202
+#: rustconn/src/window/script_actions.rs:195
+msgid "No script recording is running"
+msgstr "Ingen scriptoptagelse kører"
+
+#: rustconn/src/window/script_actions.rs:207
 msgid "Could Not Save Script"
 msgstr "Scriptet kunne ikke gemmes"
 
-#: rustconn/src/window/script_actions.rs:204
+#: rustconn/src/window/script_actions.rs:209
 msgid "The recording was lost and the file was not written. {}"
 msgstr "Optagelsen gik tabt, og filen blev ikke skrevet. {}"
 
@@ -16089,25 +16103,25 @@ msgstr "Kører allerede i et eksternt vindue"
 msgid "Connection to ‘{}’ failed"
 msgstr "Forbindelse til ‘{}’ mislykkedes"
 
-#: rustconn/src/window/session_start.rs:914
-#: rustconn/src/window/session_start.rs:927
+#: rustconn/src/window/session_start.rs:917
+#: rustconn/src/window/session_start.rs:930
 msgid "Pre-connect task failed: {}"
 msgstr "Opgave før forbindelse mislykkedes: {}"
 
-#: rustconn/src/window/session_start.rs:958
+#: rustconn/src/window/session_start.rs:961
 msgid "Port knock failed: {}"
 msgstr "Port knock mislykkedes: {}"
 
-#: rustconn/src/window/session_start.rs:976
-#: rustconn/src/window/session_start.rs:1013
+#: rustconn/src/window/session_start.rs:979
+#: rustconn/src/window/session_start.rs:1024
 msgid "SPA failed: {}"
 msgstr "SPA mislykkedes: {}"
 
-#: rustconn/src/window/session_start.rs:1053
+#: rustconn/src/window/session_start.rs:1064
 msgid "{} (via {})"
 msgstr "{} (via {})"
 
-#: rustconn/src/window/session_start.rs:1059
+#: rustconn/src/window/session_start.rs:1070
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -16131,15 +16145,15 @@ msgstr ""
 "Hvis du ikke foretog denne ændring, så annullér — en forbindelse kan sende "
 "gemte legitimationsoplysninger til en anden maskine."
 
-#: rustconn/src/window/session_start.rs:1064
+#: rustconn/src/window/session_start.rs:1075
 msgid "Routing changed for “{}”"
 msgstr "Ruten er ændret for “{}”"
 
-#: rustconn/src/window/session_start.rs:1128
+#: rustconn/src/window/session_start.rs:1139
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Spring-vært utilgængelig for “{}”"
 
-#: rustconn/src/window/session_start.rs:1133
+#: rustconn/src/window/session_start.rs:1144
 msgid "Connect Directly"
 msgstr "Forbind direkte"
 

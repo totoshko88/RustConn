@@ -128,6 +128,8 @@
           <li>fwknop SPA keys are kept in the secret store, and the custom SSH agent socket now works.</li>
           <li>The pre-connect task, port knock and SPA no longer freeze the window.</li>
           <li>Menu wording, broadcast names and shortcut labels are unified and translated.</li>
+          <li>A viewer who joins a shared full-screen program no longer keeps its leftovers when it exits.</li>
+          <li>Stop Sharing and Stop Script Recording in the command palette, a marker on recorded tabs and a warning before a share ends.</li>
           <li>Updated dependencies.</li>
         </ul>
       </description>

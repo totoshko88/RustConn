@@ -83,7 +83,7 @@ use wtransport::endpoint::endpoint_side;
 use wtransport::{Identity, ServerConfig};
 
 use super::share::{
-    ShareLimits, ViewerSlot, XTERM_CSS, XTERM_JS, constant_time_eq, percent_decode,
+    AltScreen, ShareLimits, ViewerSlot, XTERM_CSS, XTERM_JS, constant_time_eq, percent_decode,
 };
 
 /// STUN binding requests, tried in order until one answers. Google and
@@ -338,6 +338,7 @@ pub struct QuicShareServer {
     fingerprint: [u8; 32],
     token: SecretString,
     publisher: broadcast::Sender<Vec<u8>>,
+    alt: Arc<AltScreen>,
     accept: JoinHandle<()>,
     page: JoinHandle<()>,
     _keepalive: Option<Keepalive>,
@@ -407,6 +408,10 @@ impl QuicShareServer {
     /// Sender the GUI uses to publish raw terminal output bytes.
     pub fn publisher(&self) -> broadcast::Sender<Vec<u8>> {
         self.publisher.clone()
+    }
+    /// The alternate-screen tracker the GUI feeds with every output chunk.
+    pub fn alt_screen(&self) -> Arc<AltScreen> {
+        Arc::clone(&self.alt)
     }
 
     /// Link that opens `target`'s page and streams over its WebTransport port.
@@ -539,10 +544,12 @@ async fn start_on_socket(
     let page_addr = page_listener.local_addr()?;
 
     let (publisher, _) = broadcast::channel(limits.channel_capacity.max(1));
+    let alt = Arc::new(AltScreen::default());
     let accept = tokio::spawn(accept_loop(
         Arc::clone(&endpoint),
         token.clone(),
         publisher.clone(),
+        Arc::clone(&alt),
         limits,
     ));
     let page = tokio::spawn(page_loop(
@@ -562,6 +569,7 @@ async fn start_on_socket(
         fingerprint,
         token,
         publisher,
+        alt,
         accept,
         page,
         _keepalive: keepalive,
@@ -634,6 +642,7 @@ async fn accept_loop(
     endpoint: Arc<wtransport::Endpoint<endpoint_side::Server>>,
     token: SecretString,
     publisher: broadcast::Sender<Vec<u8>>,
+    alt: Arc<AltScreen>,
     limits: ShareLimits,
 ) {
     let slots = Arc::new(Semaphore::new(limits.max_connections));
@@ -649,6 +658,7 @@ async fn accept_loop(
         };
         let token = token.clone();
         let publisher = publisher.clone();
+        let alt = Arc::clone(&alt);
         let viewers = Arc::clone(&viewers);
         tokio::spawn(async move {
             let _permit = permit;
@@ -676,7 +686,7 @@ async fn accept_loop(
                 debug!("share quic: session rejected or timed out");
                 return;
             };
-            serve_viewer(connection, publisher, limits.write_timeout).await;
+            serve_viewer(connection, publisher, alt, limits.write_timeout).await;
             drop(slot);
         });
     }
@@ -698,6 +708,7 @@ async fn next_chunk(receiver: &mut broadcast::Receiver<Vec<u8>>) -> Option<Vec<u
 async fn serve_viewer(
     connection: wtransport::Connection,
     publisher: broadcast::Sender<Vec<u8>>,
+    alt: Arc<AltScreen>,
     write_timeout: Duration,
 ) {
     // Subscribe first so nothing published while the stream opens is lost.
@@ -710,6 +721,14 @@ async fn serve_viewer(
         debug!("share quic: viewer stream did not open");
         return;
     };
+    if let Some(prefix) = alt.join_prefix()
+        && !matches!(
+            tokio::time::timeout(write_timeout, send.write_all(prefix)).await,
+            Ok(Ok(()))
+        )
+    {
+        return;
+    }
     loop {
         tokio::select! {
             () = async { let _ = connection.closed().await; } => break,

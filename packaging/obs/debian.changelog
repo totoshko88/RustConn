@@ -23,6 +23,11 @@ rustconn (0.26.0-1) unstable; urgency=medium
   * Dependencies: ashpd 0.14.2, clap 4.6.9, oo7 0.7.3, toml 1.2.2, url 2.5.9,
     zbus 6.5.0, zcheapstr 1.4.0, zip 9.8.1 and others
 
+  * Fixed: a viewer who joins a shared session while a full-screen program
+    (htop, vim) runs no longer keeps its leftovers after the program exits
+  * Improved: Stop Sharing and Stop Script Recording in the command palette;
+    a tab being recorded shows a marker; a share warns five minutes before it
+    ends; the SPA key backup is deleted after the first SPA connection
  -- Anton Isaiev <totoshko88@gmail.com>  Sat, 21 Nov 2026 12:00:00 +0200
 
 rustconn (0.25.6-1) unstable; urgency=medium

@@ -22,6 +22,18 @@ use zeroize::Zeroizing;
 use super::knock::SpaConfig;
 use crate::models::Connection;
 
+/// Name of the copy of `connections.toml` made before the first SPA move.
+pub const PRE_VAULT_BACKUP: &str = "connections.toml.pre-spa-vault.bak";
+
+/// Deletes the pre-move copy of `connections.toml` in `config_dir`.
+///
+/// It still holds the plaintext keys. Call it once a key has been read from
+/// the vault and used: that proves the vault copy works, so the backup has
+/// served its purpose. Returns whether a file was removed.
+pub fn remove_pre_vault_backup(config_dir: &std::path::Path) -> bool {
+    std::fs::remove_file(config_dir.join(PRE_VAULT_BACKUP)).is_ok()
+}
+
 /// Which of the two SPA keys an entry holds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SpaKeyKind {

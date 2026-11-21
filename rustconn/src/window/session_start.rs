@@ -601,6 +601,7 @@ impl MainWindow {
             }
         }
         let spa_secret_settings = state_ref.settings().secrets.clone();
+        let config_dir = state_ref.config_dir();
         drop(state_ref);
 
         // Issue #241: a `.local` host that only the Flatpak *host* can resolve is
@@ -650,6 +651,7 @@ impl MainWindow {
                     global_variables,
                     folder_tracker,
                     &spa_secret_settings,
+                    &config_dir,
                 )
             },
             move |prepared| {
@@ -845,6 +847,7 @@ impl MainWindow {
         global_variables: Vec<rustconn_core::Variable>,
         folder_tracker: Arc<std::sync::Mutex<rustconn_core::automation::FolderConnectionTracker>>,
         secrets: &rustconn_core::config::SecretSettings,
+        config_dir: &std::path::Path,
     ) -> Result<(), String> {
         if let Some(ref task) = conn_clone.pre_connect_task {
             tracing::info!(
@@ -1003,6 +1006,14 @@ impl MainWindow {
                         elapsed_ms = result.elapsed_ms,
                         "SPA packet sent successfully"
                     );
+                    // The keys came out of the vault and worked, so the
+                    // pre-move copy of connections.toml (it still holds them
+                    // in clear text) has done its job.
+                    if (spa_cfg.rijndael_key_in_vault || spa_cfg.hmac_key_in_vault)
+                        && rustconn_core::connection::spa_vault::remove_pre_vault_backup(config_dir)
+                    {
+                        tracing::info!("Removed connections.toml.pre-spa-vault.bak");
+                    }
                 }
                 Err(e) => {
                     tracing::error!(

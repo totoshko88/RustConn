@@ -77,10 +77,16 @@ pub(crate) fn setup_network_tools(
     let stop_share = gio::SimpleAction::new("stop-sharing", None);
     let win = window.downgrade();
     stop_share.connect_activate(move |_, _| {
-        if stop_all_sharing()
-            && let Some(win) = win.upgrade()
-        {
-            show_toast_on_window(&win, &i18n("Sharing stopped"), ToastType::Success);
+        let stopped = stop_all_sharing();
+        if let Some(win) = win.upgrade() {
+            // Reachable from the command palette at any time, so "nothing to
+            // stop" gets an answer instead of silence.
+            let (message, kind) = if stopped {
+                (i18n("Sharing stopped"), ToastType::Success)
+            } else {
+                (i18n("Nothing is being shared"), ToastType::Info)
+            };
+            show_toast_on_window(&win, &message, kind);
         }
     });
     window.add_action(&stop_share);
