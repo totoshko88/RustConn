@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Drag tabs between windows, or out into a new one** — a tab dropped outside every RustConn window opens a new tabbed window holding that session, and a tab dropped on another window's tab bar moves there, at the drop position: from the main window to a tabbed or cluster window, back, or between two tabbed windows. The session moves through the same paths as **Move to New Window** and **Move Tab to Main Window**, so nothing reconnects, and a tab that cannot leave the main window stays and says why. The guard that hands a dragged tab back to its own window before the move now watches the receiving view's `page-attached`: the change of parent it watched before does not happen when libadwaita drops a tab into a newly opened window. (`rustconn/src/terminal/tab_transfer.rs`, `rustconn/src/window/detach_actions.rs`)
+
 ## [0.25.6] - 2026-11-20
 
 ### Added
