@@ -4291,6 +4291,21 @@ impl MainWindow {
             let groups: Vec<_> = state_ref.list_groups().into_iter().cloned().collect();
             palette.set_connections(connections);
             palette.set_groups(groups);
+            // Keys shown beside commands: the user's own, not the defaults.
+            let keybindings = state_ref.settings().keybindings.clone();
+            palette.set_shortcuts(
+                rustconn_core::config::keybindings::default_keybindings()
+                    .iter()
+                    .filter_map(|def| {
+                        let accel = keybindings.registered_accels(def).first().copied()?;
+                        let (key, mods) = gtk4::accelerator_parse(accel)?;
+                        Some((
+                            def.action.clone(),
+                            gtk4::accelerator_get_label(key, mods).to_string(),
+                        ))
+                    })
+                    .collect(),
+            );
         }
 
         // Populate open tabs for % mode

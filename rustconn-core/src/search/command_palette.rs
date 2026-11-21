@@ -40,6 +40,27 @@ pub enum CommandPaletteAction {
     GtkAction(String),
 }
 
+impl CommandPaletteAction {
+    /// The GTK action whose key binding the palette shows beside this command.
+    ///
+    /// The GUI looks the binding up in the user's keybinding settings, so a
+    /// rebinding reaches the palette. `None` for actions that are not commands.
+    #[must_use]
+    pub fn keybinding_action(&self) -> Option<&str> {
+        match self {
+            Self::OpenSettings => Some("win.settings"),
+            Self::NewConnection => Some("win.new-connection"),
+            Self::NewGroup => Some("win.new-group"),
+            Self::Import => Some("win.import"),
+            Self::Export => Some("win.export"),
+            Self::LocalShell => Some("win.local-shell"),
+            Self::QuickConnect => Some("win.quick-connect"),
+            Self::GtkAction(name) => Some(name),
+            Self::Connect(_) | Self::SwitchTab(_) | Self::RunSnippet(_) => None,
+        }
+    }
+}
+
 /// A single item displayed in the Command Palette results list
 #[derive(Debug, Clone)]
 pub struct PaletteItem {
@@ -136,66 +157,54 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
     vec![
         PaletteItem::new("New Connection", CommandPaletteAction::NewConnection)
             .with_icon("list-add-symbolic")
-            .with_description("Ctrl+N")
             .with_priority(90),
         PaletteItem::new("New Group", CommandPaletteAction::NewGroup)
             .with_icon("folder-new-symbolic")
-            .with_description("Ctrl+Shift+G")
             .with_priority(85),
         PaletteItem::new("Local Shell", CommandPaletteAction::LocalShell)
             .with_icon("utilities-terminal-symbolic")
-            .with_description("Ctrl+Shift+T")
             .with_priority(80),
         PaletteItem::new("Quick Connect", CommandPaletteAction::QuickConnect)
             .with_icon("network-server-symbolic")
-            .with_description("Ctrl+Shift+Q")
             .with_priority(75),
         PaletteItem::new("Import", CommandPaletteAction::Import)
             .with_icon("document-open-symbolic")
-            .with_description("Ctrl+I")
             .with_priority(60),
         PaletteItem::new("Export", CommandPaletteAction::Export)
             .with_icon("media-floppy-symbolic")
-            .with_description("Ctrl+Shift+E")
             .with_priority(55),
         PaletteItem::new("Settings", CommandPaletteAction::OpenSettings)
             .with_icon("preferences-system-symbolic")
-            .with_description("Ctrl+,")
             .with_priority(50),
         PaletteItem::new(
             "Toggle Fullscreen",
             CommandPaletteAction::GtkAction("win.toggle-fullscreen".into()),
         )
         .with_icon("view-fullscreen-symbolic")
-        .with_description("F11")
         .with_priority(40),
         PaletteItem::new(
             "Toggle Keyboard Passthrough",
             CommandPaletteAction::GtkAction("win.toggle-passthrough".into()),
         )
         .with_icon("input-keyboard-symbolic")
-        .with_description("Ctrl+Shift+Backspace")
         .with_priority(38),
         PaletteItem::new(
             "Split Horizontal",
             CommandPaletteAction::GtkAction("win.split-horizontal".into()),
         )
         .with_icon("view-dual-symbolic")
-        .with_description("Ctrl+Shift+H")
         .with_priority(35),
         PaletteItem::new(
             "Split Vertical",
             CommandPaletteAction::GtkAction("win.split-vertical".into()),
         )
         .with_icon("view-dual-symbolic")
-        .with_description("Ctrl+Shift+S")
         .with_priority(30),
         PaletteItem::new(
             "Remove Split",
             CommandPaletteAction::GtkAction("win.unsplit".into()),
         )
         .with_icon("view-restore-symbolic")
-        .with_description("Ctrl+Shift+J")
         .with_priority(28),
         PaletteItem::new(
             "Network Scan",
@@ -214,21 +223,18 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
             CommandPaletteAction::GtkAction("app.shortcuts".into()),
         )
         .with_icon("preferences-desktop-keyboard-shortcuts-symbolic")
-        .with_description("Ctrl+?")
         .with_priority(20),
         PaletteItem::new(
             "Tab Overview",
             CommandPaletteAction::GtkAction("win.tab-overview".into()),
         )
         .with_icon("view-grid-symbolic")
-        .with_description("Ctrl+Shift+O")
         .with_priority(25),
         PaletteItem::new(
             "Switch Tab",
             CommandPaletteAction::GtkAction("win.switch-tab-palette".into()),
         )
         .with_icon("tab-new-symbolic")
-        .with_description("Ctrl+%")
         .with_priority(22),
         PaletteItem::new(
             "Share Session (read-only)",
@@ -255,16 +261,55 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
 mod tests {
     use super::*;
 
+    /// Palette actions with no entry in the keybinding registry (no default key).
+    const UNBOUND_BY_DEFAULT: &[&str] = &[
+        "win.network-scan",
+        "win.join-shared-session",
+        "win.share-session",
+        "win.start-tftp",
+        "win.edit-remote-file",
+    ];
+
     #[test]
-    fn shortcuts_hint_is_ctrl_question_not_f1() {
-        // F1 opens Help; Keyboard Shortcuts is Ctrl+? (config::keybindings).
+    fn builtin_commands_hold_no_typed_shortcut_text() {
+        // The key shown beside a command comes from the user's keybindings at
+        // display time; a string typed here would show the default after a
+        // rebinding, and F1 where Ctrl+? is bound.
+        for item in builtin_commands() {
+            assert!(
+                item.description.is_none(),
+                "{} carries a typed description",
+                item.label
+            );
+        }
+    }
+
+    #[test]
+    fn keybinding_actions_exist_in_the_registry() {
+        let registry = crate::config::keybindings::default_keybindings();
+        let mut bound = 0;
+        for item in builtin_commands() {
+            if let Some(action) = item.action.keybinding_action() {
+                bound += 1;
+                // `win.network-scan` and the like have no default key; the ones
+                // listed here must still be real actions of the window.
+                let known = registry.iter().any(|d| d.action == action)
+                    || UNBOUND_BY_DEFAULT.contains(&action);
+                assert!(known, "{} maps to unknown action {action}", item.label);
+            }
+        }
+        assert!(bound >= 10, "only {bound} commands map to an action");
+    }
+
+    #[test]
+    fn shortcuts_command_maps_to_the_shortcuts_action() {
         let item = builtin_commands()
             .into_iter()
             .find(
                 |i| matches!(&i.action, CommandPaletteAction::GtkAction(a) if a == "app.shortcuts"),
             )
             .expect("shortcuts command");
-        assert_eq!(item.description.as_deref(), Some("Ctrl+?"));
+        assert_eq!(item.action.keybinding_action(), Some("app.shortcuts"));
     }
 
     #[test]
