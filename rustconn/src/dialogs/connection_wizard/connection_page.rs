@@ -4,6 +4,7 @@
 //! Includes Jump Host dropdown for protocols that support SSH tunneling.
 
 use std::cell::RefCell;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use adw::prelude::*;
@@ -31,6 +32,8 @@ pub struct ConnectionPage {
     /// protocol on this row, the dropdown carries the model and selection.
     jump_host_row: adw::ActionRow,
     jump_host_dropdown: DropDown,
+    /// SPICE unix socket path; empty means a network connection.
+    spice_socket_row: adw::EntryRow,
     // Serial-specific
     device_row: adw::EntryRow,
     baud_row: adw::ComboRow,
@@ -153,6 +156,15 @@ impl ConnectionPage {
             .build();
         jump_host_row.add_suffix(&jump_host_dropdown);
         connection_group.add(&jump_host_row);
+
+        // SPICE only. Same wording as the Advanced dialog's socket field; the
+        // row stays empty for a network connection.
+        let spice_socket_row = adw::EntryRow::builder()
+            .title(i18n("Socket Path"))
+            .tooltip_text(i18n("Path to SPICE unix socket file"))
+            .visible(false)
+            .build();
+        connection_group.add(&spice_socket_row);
 
         content_box.append(&connection_group);
 
@@ -517,6 +529,7 @@ impl ConnectionPage {
             domain_row,
             jump_host_row,
             jump_host_dropdown,
+            spice_socket_row,
             device_row,
             baud_row,
             k8s_context_row,
@@ -560,6 +573,7 @@ impl ConnectionPage {
         self.username_row.set_visible(false);
         self.domain_row.set_visible(false);
         self.jump_host_row.set_visible(false);
+        self.spice_socket_row.set_visible(false);
 
         match protocol {
             ProtocolType::Ssh | ProtocolType::Mosh | ProtocolType::Sftp => {
@@ -589,6 +603,8 @@ impl ConnectionPage {
             ProtocolType::Vnc | ProtocolType::Spice => {
                 self.connection_group.set_visible(true);
                 self.jump_host_row.set_visible(true);
+                self.spice_socket_row
+                    .set_visible(protocol == ProtocolType::Spice);
                 self.port_row.set_value(5900.0);
                 self.populate_jump_hosts();
             }
@@ -806,6 +822,10 @@ impl ConnectionPage {
         if let Some(ref device) = partial.serial_device {
             self.device_row.set_text(device);
         }
+        if let Some(ref socket) = partial.spice_unix_socket_path {
+            self.spice_socket_row
+                .set_text(&socket.display().to_string());
+        }
         if let Some(baud) = partial.serial_baud
             && let Some(index) = BAUD_RATES.iter().position(|b| *b == baud)
         {
@@ -883,6 +903,12 @@ impl ConnectionPage {
     pub fn domain(&self) -> Option<String> {
         let t = self.domain_row.text().trim().to_string();
         if t.is_empty() { None } else { Some(t) }
+    }
+
+    /// SPICE unix socket path typed in the wizard, `None` when the row is blank.
+    #[must_use]
+    pub fn spice_socket_path(&self) -> Option<PathBuf> {
+        super::socket_path_from_text(&self.spice_socket_row.text())
     }
 
     #[must_use]
