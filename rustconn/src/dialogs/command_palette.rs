@@ -710,6 +710,7 @@ fn command_label_markers() -> Vec<String> {
         i18n("Stop Script Recording"),
         i18n("Start TFTP Server"),
         i18n("Edit Remote File"),
+        i18n("Terminal Theme…"),
     ]
 }
 
