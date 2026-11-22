@@ -1310,8 +1310,14 @@ impl AppState {
         // Captured before the context moves into the final attempt.
         let conn_username = ctx.connection.username.clone();
         let conn_domain = ctx.connection.domain.clone();
+        let conn_source = ctx.connection.password_source.clone();
         let with_identity = |outcome| {
-            Self::apply_vault_identity(conn_username.as_deref(), conn_domain.as_deref(), outcome)
+            Self::apply_vault_identity(
+                conn_username.as_deref(),
+                conn_domain.as_deref(),
+                &conn_source,
+                outcome,
+            )
         };
 
         let mut attempt = 0;
@@ -1343,24 +1349,42 @@ impl AppState {
     /// keeps it, and `DOMAIN\user` is split
     /// ([`rustconn_core::secret::merge_vault_identity`]).
     ///
+    /// One exception: for a `Vault` password the connection's own non-empty
+    /// user name wins. The vault entry keeps the name it was saved with, so an
+    /// edit of the name on the connection would otherwise never take effect.
+    /// A vault name for a different user is ignored together with its domain
+    /// prefix; a `DOMAIN\same-user` entry still supplies the domain. `Inherit`
+    /// is left alone: the group's override is applied by the resolver.
+    ///
     /// Every resolution path ends here, so every backend and protocol sees the
     /// same answer. Before, a Bitwarden user name reached RDP but not SSH, and a
     /// KeePass one reached nothing.
     fn apply_vault_identity(
         conn_username: Option<&str>,
         conn_domain: Option<&str>,
+        source: &PasswordSource,
         outcome: Result<rustconn_core::sync::CredentialResolutionResult, String>,
     ) -> Result<rustconn_core::sync::CredentialResolutionResult, String> {
         use rustconn_core::sync::CredentialResolutionResult;
         match outcome {
             Ok(CredentialResolutionResult::Resolved(mut creds)) => {
+                let own = conn_username
+                    .map(str::trim)
+                    .filter(|u| !u.is_empty() && *source == PasswordSource::Vault);
+                let vault_user = creds.username.as_deref().filter(|v| {
+                    own.is_none_or(|own| {
+                        let user = rustconn_core::secret::split_down_level(v)
+                            .map_or_else(|| v.trim().to_string(), |(_, user)| user);
+                        user.eq_ignore_ascii_case(own)
+                    })
+                });
                 let identity = rustconn_core::secret::merge_vault_identity(
                     conn_username,
                     conn_domain,
-                    creds.username.as_deref(),
+                    vault_user,
                     creds.domain.as_deref(),
                 );
-                creds.username = identity.username;
+                creds.username = own.map(str::to_string).or(identity.username);
                 creds.domain = identity.domain;
                 Ok(CredentialResolutionResult::Resolved(creds))
             }
@@ -2807,5 +2831,83 @@ mod tests {
     fn keyless_and_prompt_sources_skip_resolution() {
         assert!(!password_source_needs_resolution(&PasswordSource::None));
         assert!(!password_source_needs_resolution(&PasswordSource::Prompt));
+    }
+
+    // Forum bug: the connection was edited from user-01 to user-00 with the
+    // vault password kept, yet RDP still logged in as user-01, the name stored
+    // in the vault entry. The connection's own non-empty user name must win.
+    fn resolved(
+        user: Option<&str>,
+        domain: Option<&str>,
+    ) -> Result<rustconn_core::sync::CredentialResolutionResult, String> {
+        Ok(rustconn_core::sync::CredentialResolutionResult::Resolved(
+            rustconn_core::Credentials {
+                username: user.map(str::to_string),
+                password: Some(secrecy::SecretString::from("pw".to_string())),
+                domain: domain.map(str::to_string),
+            },
+        ))
+    }
+
+    fn identity_of(
+        outcome: Result<rustconn_core::sync::CredentialResolutionResult, String>,
+    ) -> (Option<String>, Option<String>) {
+        match outcome {
+            Ok(rustconn_core::sync::CredentialResolutionResult::Resolved(c)) => {
+                (c.username, c.domain)
+            }
+            other => panic!("expected Resolved, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_edited_connection_user_name_beats_the_vault_entry() {
+        let out = super::AppState::apply_vault_identity(
+            Some("user-00"),
+            None,
+            &PasswordSource::Vault,
+            resolved(Some("user-01"), None),
+        );
+        assert_eq!(identity_of(out).0.as_deref(), Some("user-00"));
+    }
+
+    #[test]
+    fn an_empty_connection_user_name_falls_back_to_the_vault_entry() {
+        for empty in [None, Some(""), Some("  ")] {
+            let out = super::AppState::apply_vault_identity(
+                empty,
+                None,
+                &PasswordSource::Vault,
+                resolved(Some("user-01"), None),
+            );
+            assert_eq!(identity_of(out).0.as_deref(), Some("user-01"), "{empty:?}");
+        }
+    }
+
+    #[test]
+    fn a_down_level_vault_name_for_the_same_user_still_supplies_the_domain() {
+        let out = super::AppState::apply_vault_identity(
+            Some("alice"),
+            None,
+            &PasswordSource::Vault,
+            resolved(Some(r"CORP\alice"), None),
+        );
+        assert_eq!(
+            identity_of(out),
+            (Some("alice".to_string()), Some("CORP".to_string()))
+        );
+    }
+
+    // The group-level override on an Inherit connection is applied inside the
+    // resolver and must keep winning over the connection's own name.
+    #[test]
+    fn an_inherited_group_user_name_still_wins() {
+        let out = super::AppState::apply_vault_identity(
+            Some("user-00"),
+            None,
+            &PasswordSource::Inherit,
+            resolved(Some("group-user"), None),
+        );
+        assert_eq!(identity_of(out).0.as_deref(), Some("group-user"));
     }
 }

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Save & Connect in the wizard no longer asks for the password you just typed** — the password was written to the vault on a worker thread while the connect started at once and read the vault, so a slow backend (KeePassXC took about 3 s) answered "not found" and a password prompt opened. The wizard now hands the typed password to the session cache for that first connect. (`rustconn/src/window/wizard.rs`)
+- **Changing the user name of a connection now takes effect** — a connection with a saved password kept logging in as the name stored in the vault entry, so after you edited the name (for example `user-01` to `user-00`) every protocol still used the old one. The connection's own user name now wins over the vault entry's; an empty user name still uses the vault's, and a group's user name on an inherited password still wins. A vault entry saved as `DOMAIN\same-user` still supplies the domain. The vault entry itself is not rewritten. (`rustconn/src/state/mod.rs`)
 
 ### Added
 
