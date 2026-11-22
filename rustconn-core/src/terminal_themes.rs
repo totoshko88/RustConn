@@ -225,7 +225,7 @@ fn get_custom_themes() -> Vec<TerminalTheme> {
 impl TerminalTheme {
     /// Returns built-in themes only.
     #[must_use]
-    pub fn builtin_themes() -> Vec<Self> {
+    pub(crate) fn builtin_themes() -> Vec<Self> {
         vec![
             Self::dark_theme(),
             Self::light_theme(),

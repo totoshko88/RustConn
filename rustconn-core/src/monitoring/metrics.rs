@@ -144,13 +144,13 @@ impl CpuSnapshot {
 
     /// Total idle jiffies (idle + iowait)
     #[must_use]
-    pub fn idle_total(&self) -> u64 {
+    pub(crate) fn idle_total(&self) -> u64 {
         self.idle + self.iowait
     }
 
     /// Calculates CPU usage percentage between two snapshots
     #[must_use]
-    pub fn cpu_percent_since(&self, prev: &Self) -> f32 {
+    pub(crate) fn cpu_percent_since(&self, prev: &Self) -> f32 {
         let total_delta = self.total().saturating_sub(prev.total());
         if total_delta == 0 {
             return 0.0;

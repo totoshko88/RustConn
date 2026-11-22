@@ -17,8 +17,8 @@ to this tree.
 - `display_name()` returns the untranslated form. Wrapping it in `i18n()` is the
   *call site's* job, in `rustconn/` — do not translate here, there is no GUI
   locale context in a headless crate.
-- New types: prefer a concrete noun over `…Manager`. `ConnectionManager`,
-  `SessionManager` and `SecretManager` keep their names for compatibility; new
+- New types: prefer a concrete noun over `…Manager`. `ConnectionManager` and
+  `SecretManager` keep their names for compatibility; new
   code gets `ConnectionStore`, `CredentialResolver`, `SnippetCatalog`
   (M-CONCISE-NAMES).
 - A type holding a `SecretString` needs a test proving its `Debug` does not leak.

@@ -24,8 +24,7 @@ pub use metrics::{
     RemoteMetrics, RemoteOsType, SystemInfo,
 };
 pub use parser::{
-    METRICS_COMMAND, MetricsParser, MonitoringError, MonitoringResult, ROUTEROS_METRICS_COMMAND,
-    ROUTEROS_SYSINFO_COMMAND, SYSTEM_INFO_COMMAND, looks_like_routeros,
+    METRICS_COMMAND, MetricsParser, MonitoringError, MonitoringResult, SYSTEM_INFO_COMMAND,
 };
 pub use settings::{
     MonitoringConfig, MonitoringOverride, MonitoringSettings, effective_monitoring,

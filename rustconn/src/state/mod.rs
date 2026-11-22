@@ -21,7 +21,6 @@ use rustconn_core::models::{
     Connection, ConnectionGroup, ConnectionHistoryEntry, Credentials, PasswordSource,
 };
 use rustconn_core::secret::{CredentialResolver, SecretManager};
-use rustconn_core::session::SessionManager;
 use rustconn_core::snippet::SnippetManager;
 use rustconn_core::startup_gate::StartupGate;
 use rustconn_core::sync::SyncManager;
@@ -214,8 +213,6 @@ struct GatewayChoice {
 pub struct AppState {
     /// Connection manager for CRUD operations
     connection_manager: ConnectionManager,
-    /// Session manager for active connections
-    session_manager: SessionManager,
     /// Snippet manager for command snippets
     snippet_manager: SnippetManager,
     /// Template manager for connection templates
@@ -501,8 +498,8 @@ impl AppState {
                 .map(|(_, version)| version);
         }
 
-        // Initialize session manager with logging if enabled
-        let session_manager = if settings.logging.enabled {
+        // Create the log directory up front when logging is enabled
+        if settings.logging.enabled {
             let log_dir = if settings.logging.log_directory.is_absolute() {
                 settings.logging.log_directory.clone()
             } else {
@@ -510,10 +507,10 @@ impl AppState {
                     .config_dir()
                     .join(&settings.logging.log_directory)
             };
-            SessionManager::with_logging(&log_dir).unwrap_or_else(|_| SessionManager::new())
-        } else {
-            SessionManager::new()
-        };
+            if let Err(e) = std::fs::create_dir_all(&log_dir) {
+                tracing::warn!(dir = %log_dir.display(), error = %e, "Failed to create log directory");
+            }
+        }
 
         // Initialize snippet manager
         let snippet_manager = SnippetManager::new(config_manager.clone())
@@ -584,7 +581,6 @@ impl AppState {
 
         Ok(Self {
             connection_manager,
-            session_manager,
             snippet_manager,
             template_manager,
             secret_manager,
@@ -2205,12 +2201,6 @@ impl AppState {
         self.config_manager
             .save_settings(&settings)
             .map_err(|e| format!("Failed to save settings: {e}"))?;
-
-        // Update session manager logging
-        if settings.logging.enabled != self.settings.logging.enabled {
-            self.session_manager
-                .set_logging_enabled(settings.logging.enabled);
-        }
 
         // Preserve runtime-only secret fields (#[serde(skip)]) that the
         // Settings dialog does not collect (password entries are intentionally

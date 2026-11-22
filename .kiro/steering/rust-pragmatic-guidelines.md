@@ -151,7 +151,7 @@ fn debug_does_not_leak_secret() {
 ## Naming — compromise M-CONCISE-NAMES
 
 MS guideline recommends avoiding `Manager` / `Service` / `Factory`. We historically have
-`ConnectionManager`, `SessionManager`, `SecretManager` — these names stay for compatibility.
+`ConnectionManager`, `SecretManager` — these names stay for compatibility.
 For **new** code — choose more specific names: `ConnectionStore`, `SessionRouter`,
 `CredentialResolver`, `SnippetCatalog`.
 

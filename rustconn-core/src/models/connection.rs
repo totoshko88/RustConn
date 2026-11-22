@@ -328,17 +328,6 @@ impl WindowGeometry {
         }
     }
 
-    /// Creates a default window geometry
-    #[must_use]
-    pub const fn default_geometry() -> Self {
-        Self {
-            x: 100,
-            y: 100,
-            width: 800,
-            height: 600,
-        }
-    }
-
     /// Returns true if the geometry has valid dimensions
     #[must_use]
     pub const fn is_valid(&self) -> bool {
@@ -1039,39 +1028,6 @@ impl Connection {
         self
     }
 
-    /// Sets the pre-connect task for this connection
-    #[must_use]
-    pub fn with_pre_connect_task(mut self, task: ConnectionTask) -> Self {
-        self.pre_connect_task = Some(task);
-        self
-    }
-
-    /// Sets the post-disconnect task for this connection
-    #[must_use]
-    pub fn with_post_disconnect_task(mut self, task: ConnectionTask) -> Self {
-        self.post_disconnect_task = Some(task);
-        self
-    }
-
-    /// Returns true if this connection has a pre-connect task
-    #[must_use]
-    pub const fn has_pre_connect_task(&self) -> bool {
-        self.pre_connect_task.is_some()
-    }
-
-    /// Returns true if this connection has a post-disconnect task
-    #[must_use]
-    pub const fn has_post_disconnect_task(&self) -> bool {
-        self.post_disconnect_task.is_some()
-    }
-
-    /// Sets the Wake On LAN configuration for this connection
-    #[must_use]
-    pub fn with_wol_config(mut self, config: WolConfig) -> Self {
-        self.wol_config = Some(config);
-        self
-    }
-
     /// Returns true if this connection has Wake On LAN configured
     #[must_use]
     pub const fn has_wol_config(&self) -> bool {
@@ -1090,84 +1046,10 @@ impl Connection {
         self.touch();
     }
 
-    /// Gets a local variable by name
-    ///
-    /// # Arguments
-    /// * `name` - The name of the variable to retrieve
-    ///
-    /// # Returns
-    /// A reference to the variable if found, `None` otherwise
-    #[must_use]
-    pub fn get_local_variable(&self, name: &str) -> Option<&Variable> {
-        self.local_variables.get(name)
-    }
-
-    /// Sets a local variable, replacing any existing variable with the same name
-    ///
-    /// # Arguments
-    /// * `variable` - The variable to set
-    pub fn set_local_variable(&mut self, variable: Variable) {
-        self.local_variables.insert(variable.name.clone(), variable);
-        self.touch();
-    }
-
-    /// Removes a local variable by name
-    ///
-    /// # Arguments
-    /// * `name` - The name of the variable to remove
-    ///
-    /// # Returns
-    /// The removed variable if it existed, `None` otherwise
-    pub fn remove_local_variable(&mut self, name: &str) -> Option<Variable> {
-        let removed = self.local_variables.remove(name);
-        if removed.is_some() {
-            self.touch();
-        }
-        removed
-    }
-
-    /// Returns true if this connection has local variables
-    #[must_use]
-    pub fn has_local_variables(&self) -> bool {
-        !self.local_variables.is_empty()
-    }
-
-    /// Sets local variables for this connection (builder pattern)
-    #[must_use]
-    pub fn with_local_variables(mut self, variables: HashMap<String, Variable>) -> Self {
-        self.local_variables = variables;
-        self
-    }
-
-    /// Sets the session logging configuration for this connection
-    #[must_use]
-    pub fn with_log_config(mut self, config: LogConfig) -> Self {
-        self.log_config = Some(config);
-        self
-    }
-
-    /// Returns true if this connection has session logging configured
-    #[must_use]
-    pub const fn has_log_config(&self) -> bool {
-        self.log_config.is_some()
-    }
-
-    /// Gets a reference to the log configuration if present
-    #[must_use]
-    pub const fn get_log_config(&self) -> Option<&LogConfig> {
-        self.log_config.as_ref()
-    }
-
     /// Sets the log configuration, updating the timestamp
     pub fn set_log_config(&mut self, config: Option<LogConfig>) {
         self.log_config = config;
         self.touch();
-    }
-
-    /// Returns true if session logging is enabled for this connection
-    #[must_use]
-    pub fn is_logging_enabled(&self) -> bool {
-        self.log_config.as_ref().is_some_and(|c| c.enabled)
     }
 
     /// Sets the key sequence for this connection
@@ -1177,74 +1059,16 @@ impl Connection {
         self
     }
 
-    /// Returns true if this connection has a key sequence configured
-    #[must_use]
-    pub const fn has_key_sequence(&self) -> bool {
-        self.key_sequence.is_some()
-    }
-
-    /// Gets a reference to the key sequence if present
-    #[must_use]
-    pub const fn get_key_sequence(&self) -> Option<&KeySequence> {
-        self.key_sequence.as_ref()
-    }
-
-    /// Sets the key sequence, updating the timestamp
-    pub fn set_key_sequence(&mut self, sequence: Option<KeySequence>) {
-        self.key_sequence = sequence;
-        self.touch();
-    }
-
-    /// Sets the expect rules for this connection
-    #[must_use]
-    pub fn with_expect_rules(mut self, rules: Vec<ExpectRule>) -> Self {
-        self.automation.expect_rules = rules;
-        self
-    }
-
-    /// Returns true if this connection has expect rules configured
-    #[must_use]
-    pub fn has_expect_rules(&self) -> bool {
-        !self.automation.expect_rules.is_empty()
-    }
-
-    /// Gets a reference to the expect rules
-    #[must_use]
-    pub fn get_expect_rules(&self) -> &[ExpectRule] {
-        &self.automation.expect_rules
-    }
-
     /// Adds an expect rule to this connection
     pub fn add_expect_rule(&mut self, rule: ExpectRule) {
         self.automation.expect_rules.push(rule);
         self.touch();
     }
 
-    /// Removes an expect rule by ID
-    ///
-    /// # Returns
-    /// `true` if a rule was removed, `false` otherwise
-    pub fn remove_expect_rule(&mut self, id: uuid::Uuid) -> bool {
-        let len_before = self.automation.expect_rules.len();
-        self.automation.expect_rules.retain(|r| r.id != id);
-        let removed = self.automation.expect_rules.len() < len_before;
-        if removed {
-            self.touch();
-        }
-        removed
-    }
-
     /// Sets the expect rules, updating the timestamp
     pub fn set_expect_rules(&mut self, rules: Vec<ExpectRule>) {
         self.automation.expect_rules = rules;
         self.touch();
-    }
-
-    /// Sets the window mode for this connection
-    #[must_use]
-    pub const fn with_window_mode(mut self, mode: WindowMode) -> Self {
-        self.window_mode = mode;
-        self
     }
 
     /// Gets the window mode for this connection
@@ -1313,29 +1137,11 @@ impl Connection {
         self
     }
 
-    /// Gets whether to remember window position
-    #[must_use]
-    pub const fn should_remember_window_position(&self) -> bool {
-        self.remember_window_position
-    }
-
-    /// Sets remember window position, updating the timestamp
-    pub fn set_remember_window_position(&mut self, remember: bool) {
-        self.remember_window_position = remember;
-        self.touch();
-    }
-
     /// Sets the window geometry for this connection
     #[must_use]
     pub const fn with_window_geometry(mut self, geometry: WindowGeometry) -> Self {
         self.window_geometry = Some(geometry);
         self
-    }
-
-    /// Gets the window geometry if set
-    #[must_use]
-    pub const fn get_window_geometry(&self) -> Option<&WindowGeometry> {
-        self.window_geometry.as_ref()
     }
 
     /// Sets the window geometry, updating the timestamp

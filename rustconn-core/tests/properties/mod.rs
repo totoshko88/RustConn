@@ -29,7 +29,6 @@ mod freerdp_tests;
 mod full_merge_tests;
 mod group_delete_tests;
 mod group_merge_tests;
-mod health_check_tests;
 mod highlight_tests;
 mod history_tests;
 mod import_normalize_tests;

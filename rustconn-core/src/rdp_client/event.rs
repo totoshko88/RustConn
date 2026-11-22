@@ -92,12 +92,6 @@ impl AudioFormatInfo {
     pub const fn is_pcm(&self) -> bool {
         self.format_tag == Self::FORMAT_PCM
     }
-
-    /// Returns the number of bytes per sample (all channels)
-    #[must_use]
-    pub const fn bytes_per_sample(&self) -> u16 {
-        self.block_align
-    }
 }
 
 /// File information for clipboard file transfers (`FileGroupDescriptorW`)

@@ -164,12 +164,6 @@ impl MonitorLayout {
         self.monitors.push(monitor);
     }
 
-    /// Returns the primary monitor
-    #[must_use]
-    pub fn primary_monitor(&self) -> Option<&MonitorDefinition> {
-        self.monitors.iter().find(|m| m.is_primary)
-    }
-
     /// Returns the total virtual desktop bounds
     #[must_use]
     pub fn virtual_desktop_bounds(&self) -> (i32, i32, i32, i32) {

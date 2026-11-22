@@ -291,10 +291,7 @@ pub use secret::{
     PassBackend, PendingCredentialResolution, SecretBackend, SecretManager, VerifiedCredentials,
     parse_keepassxc_version, resolve_with_callback, spawn_credential_resolution,
 };
-pub use session::{
-    LogConfig, LogContext, LogError, LogResult, Session, SessionLogger, SessionManager,
-    SessionState, SessionType,
-};
+pub use session::{LogConfig, LogContext, LogError, LogResult, SessionLogger, SessionType};
 // Session placement (tab / split / detached window) decisions
 pub use session_placement::{DetachContext, DetachVerdict, detach_verdict, may_place_in_split};
 pub use sftp::{
