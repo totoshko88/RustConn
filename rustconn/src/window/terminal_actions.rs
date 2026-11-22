@@ -152,11 +152,8 @@ impl MainWindow {
         // Terminal search action
         let terminal_search_action = gio::SimpleAction::new("terminal-search", None);
         let notebook_clone = terminal_notebook.clone();
-        let window_weak = window.downgrade();
         terminal_search_action.connect_activate(move |_, _| {
-            if let Some(win) = window_weak.upgrade() {
-                Self::show_terminal_search_dialog(win.upcast_ref(), &notebook_clone);
-            }
+            Self::show_terminal_search_dialog(&notebook_clone);
         });
         window.add_action(&terminal_search_action);
 
