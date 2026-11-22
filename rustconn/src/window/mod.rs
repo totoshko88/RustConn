@@ -56,6 +56,7 @@ mod split_view_actions;
 mod startup;
 mod templates;
 mod terminal_actions;
+mod theme_actions;
 pub mod types;
 mod ui;
 mod wizard;

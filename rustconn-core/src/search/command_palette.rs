@@ -266,6 +266,12 @@ pub fn builtin_commands() -> Vec<PaletteItem> {
         )
         .with_icon("document-edit-symbolic")
         .with_priority(16),
+        PaletteItem::new(
+            "Terminal Theme…",
+            CommandPaletteAction::GtkAction("win.pick-terminal-theme".into()),
+        )
+        .with_icon("preferences-desktop-theme-symbolic")
+        .with_priority(19),
     ]
 }
 
@@ -282,6 +288,7 @@ mod tests {
         "win.edit-remote-file",
         "win.stop-sharing",
         "win.stop-record-script",
+        "win.pick-terminal-theme",
     ];
 
     #[test]

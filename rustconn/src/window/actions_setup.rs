@@ -37,6 +37,7 @@ impl MainWindow {
             &terminal_notebook,
             &self.session_split_bridges,
         );
+        theme_actions::setup_theme_actions(window, &terminal_notebook, &self.session_split_bridges);
         network_tools::setup_network_tools(window, &state, &terminal_notebook);
         self.setup_cluster_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_template_actions(window, &state, &sidebar);

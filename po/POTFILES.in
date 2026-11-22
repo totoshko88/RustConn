@@ -58,6 +58,7 @@ rustconn/src/window/operations.rs
 rustconn/src/window/resume_monitor.rs
 rustconn/src/window/sorting.rs
 rustconn/src/window/templates.rs
+rustconn/src/window/theme_actions.rs
 rustconn/src/window/terminal_actions.rs
 rustconn/src/window/split_view_actions.rs
 rustconn/src/window/ui.rs

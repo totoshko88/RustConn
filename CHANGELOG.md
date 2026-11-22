@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.26.1] - 2026-11-22
 
+### Added
+
+- **Quick terminal theme picker** — right-click a terminal tab and choose **Terminal Theme…**, or run **Terminal Theme…** from the command palette, then click a theme: the terminal repaints at once. It changes only that session (the focused pane in a split) and is not saved: reconnecting or saving Settings > Terminal brings back the configured theme. (`rustconn/src/window/theme_actions.rs`, `rustconn/src/terminal/tab_menu.rs`)
+
 ### Changed
 
 - **Settings > Interface > System Tray: the on/off switch is on the row itself** — it used to sit inside the collapsed row under **Show icon**, so it was hard to find. Expanding the row now shows only **Minimize to tray**, which is greyed out while the tray is off. Stored values are unchanged. (`rustconn/src/dialogs/settings/ui_tab.rs`)

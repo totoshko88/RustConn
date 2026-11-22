@@ -358,6 +358,16 @@ impl TerminalNotebook {
         }
     }
 
+    /// Repaints one session with the named theme, as Settings does.
+    ///
+    /// Not saved, and not layered with the connection's colour override: the
+    /// user just chose this theme for this session.
+    pub fn set_session_theme(&self, session_id: Uuid, theme_name: &str) {
+        if let Some(terminal) = self.terminals.borrow().get(&session_id) {
+            config::setup_colors_with_theme(terminal, theme_name);
+        }
+    }
+
     /// Sets up highlight rules for a terminal session.
     ///
     /// Compiles global and per-connection [`HighlightRule`]s using
