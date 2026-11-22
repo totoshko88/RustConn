@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 22:04+0200\n"
+"POT-Creation-Date: 2026-11-22 23:10+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:55 rustconn/src/alert.rs:66
-#: rustconn/src/app.rs:2393 rustconn/src/script_runner.rs:824
+#: rustconn/src/app.rs:2415 rustconn/src/script_runner.rs:824
 #: rustconn/src/script_runner.rs:860 rustconn/src/toast.rs:266
 msgid "OK"
 msgstr "OK"
@@ -52,7 +52,7 @@ msgstr "OK"
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:823
 #: rustconn/src/session_group_window.rs:720
 #: rustconn/src/sidebar/saved_searches.rs:179
-#: rustconn/src/split_view/adapter.rs:1376
+#: rustconn/src/split_view/adapter.rs:1424
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
@@ -65,7 +65,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2104
 #: rustconn/src/window/group_broadcast.rs:267
 #: rustconn/src/window/key_setup.rs:1022 rustconn/src/window/mc_launch.rs:457
-#: rustconn/src/window/mod.rs:577
+#: rustconn/src/window/mod.rs:578
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
@@ -112,13 +112,13 @@ msgstr "Gem"
 msgid "Initialization Error"
 msgstr "Initialiseringsfejl"
 
-#: rustconn/src/app.rs:942
+#: rustconn/src/app.rs:962
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "KeePass-adgangskoden blev ikke indlæst fra nøgleringen — indtast den igen i "
 "Indstillinger"
 
-#: rustconn/src/app.rs:947 rustconn/src/detached_window.rs:492
+#: rustconn/src/app.rs:967 rustconn/src/detached_window.rs:492
 #: rustconn/src/dialogs/command_palette.rs:697
 #: rustconn/src/dialogs/settings/mod.rs:245
 #: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:410
@@ -127,7 +127,7 @@ msgstr ""
 msgid "Settings"
 msgstr "Indstillinger"
 
-#: rustconn/src/app.rs:1781
+#: rustconn/src/app.rs:1803
 msgid ""
 "{} is selected, but the system keyring is not accessible. Run: sudo snap "
 "connect rustconn:password-manager-service — or open Settings, then Secrets, "
@@ -137,7 +137,7 @@ msgstr ""
 "connect rustconn:password-manager-service — eller åbn Indstillinger og "
 "derefter Hemmeligheder for at vælge en anden backend."
 
-#: rustconn/src/app.rs:1786
+#: rustconn/src/app.rs:1808
 msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
@@ -145,13 +145,13 @@ msgstr ""
 "{} er valgt, men kan endnu ikke gemme adgangskoder: {}. Åbn Indstillinger og "
 "derefter Hemmeligheder."
 
-#: rustconn/src/app.rs:2186 rustconn/src/window/edit_actions.rs:1913
+#: rustconn/src/app.rs:2208 rustconn/src/window/edit_actions.rs:1913
 #: rustconn/src/window/edit_actions.rs:2052
 #: rustconn/src/window/edit_actions.rs:2080
 msgid "Failed to open URL: {}"
 msgstr "Kunne ikke åbne URL: {}"
 
-#: rustconn/src/app.rs:2211
+#: rustconn/src/app.rs:2233
 msgid ""
 "Quit RustConn, then run this in a terminal and reproduce the problem:\n"
 "\n"
@@ -170,12 +170,12 @@ msgstr ""
 "aldrig, men loggen indeholder værtsnavne, brugernavne og filstier. Gennemgå "
 "den, før du deler den."
 
-#: rustconn/src/app.rs:2214 rustconn/src/detached_window.rs:496
+#: rustconn/src/app.rs:2236 rustconn/src/detached_window.rs:496
 #: rustconn/src/window/ui.rs:359
 msgid "Debug Logging"
 msgstr "Fejlfindingslog"
 
-#: rustconn/src/app.rs:2215 rustconn/src/dialogs/credential_transfer.rs:643
+#: rustconn/src/app.rs:2237 rustconn/src/dialogs/credential_transfer.rs:643
 #: rustconn/src/dialogs/credential_transfer.rs:652
 #: rustconn/src/dialogs/credential_transfer.rs:719
 #: rustconn/src/dialogs/export.rs:1164 rustconn/src/dialogs/history.rs:340
@@ -187,20 +187,21 @@ msgstr "Fejlfindingslog"
 #: rustconn/src/dialogs/terminal_search.rs:149
 #: rustconn/src/dialogs/terminal_search.rs:151
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
+#: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1425
 #: rustconn/src/terminal/tab_menu.rs:817 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:578
+#: rustconn/src/window/mod.rs:579
 #: rustconn/src/window/network_tools/share.rs:258
 #: rustconn/src/window/network_tools/share.rs:620
 #: rustconn/src/window/network_tools/tftp.rs:173
+#: rustconn/src/window/theme_actions.rs:111
 msgid "Close"
 msgstr "Luk"
 
-#: rustconn/src/app.rs:2216 rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
+#: rustconn/src/app.rs:2238 rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
 msgid "Copy Command"
 msgstr "Kopiér kommando"
 
-#: rustconn/src/app.rs:2232
+#: rustconn/src/app.rs:2254
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -210,31 +211,31 @@ msgstr ""
 "Administrér SSH-, RDP-, VNC-, SPICE-, Telnet-, Seriel-, Kubernetes- og Zero "
 "Trust-forbindelser fra én applikation."
 
-#: rustconn/src/app.rs:2311
+#: rustconn/src/app.rs:2333
 msgid "User Guide"
 msgstr "Brugervejledning"
 
-#: rustconn/src/app.rs:2313
+#: rustconn/src/app.rs:2335
 msgid "Installation"
 msgstr "Installation"
 
-#: rustconn/src/app.rs:2317
+#: rustconn/src/app.rs:2339
 msgid "Releases"
 msgstr "Udgivelser"
 
-#: rustconn/src/app.rs:2321
+#: rustconn/src/app.rs:2343
 msgid "Changelog"
 msgstr "Ændringslog"
 
-#: rustconn/src/app.rs:2331
+#: rustconn/src/app.rs:2353
 msgid "Special Thanks"
 msgstr "Særlig tak"
 
-#: rustconn/src/app.rs:2347
+#: rustconn/src/app.rs:2369
 msgid "Made in Ukraine"
 msgstr "Lavet i Ukraine"
 
-#: rustconn/src/app.rs:2348
+#: rustconn/src/app.rs:2370
 msgid "All contributors and supporters"
 msgstr "Alle bidragydere og støtter"
 
@@ -377,7 +378,7 @@ msgstr "Indtast adgangskode manuelt"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/construct.rs:798
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/construct.rs:806
 msgid "Open Settings"
 msgstr "Åbn indstillinger"
 
@@ -562,7 +563,7 @@ msgstr "Ny gruppe"
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:927
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/adapter.rs:2082
 #: rustconn/src/split_view/bridge.rs:2297 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:139
 #: rustconn/src/window/ui.rs:274
@@ -615,7 +616,7 @@ msgstr "Opdel til højre"
 
 #: rustconn/src/dialogs/command_palette.rs:702
 #: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/sidebar_ui.rs:580
-#: rustconn/src/split_view/adapter.rs:197
+#: rustconn/src/split_view/adapter.rs:205
 #: rustconn/src/terminal/split_close.rs:321
 #: rustconn/src/terminal/tab_menu.rs:1364
 msgid "Remove Split"
@@ -643,24 +644,24 @@ msgstr "Skift fane"
 
 #: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
 #: rustconn/src/terminal/script_recorder.rs:186
-#: rustconn/src/terminal/tab_menu.rs:1476
+#: rustconn/src/terminal/tab_menu.rs:1484
 msgid "Share Session (read-only)"
 msgstr "Del session (skrivebeskyttet)"
 
 #: rustconn/src/dialogs/command_palette.rs:709
-#: rustconn/src/terminal/tab_menu.rs:1474
+#: rustconn/src/terminal/tab_menu.rs:1482
 msgid "Stop Sharing"
 msgstr "Stop deling"
 
 #: rustconn/src/dialogs/command_palette.rs:710
 #: rustconn/src/terminal/script_recorder.rs:176
-#: rustconn/src/terminal/tab_menu.rs:1462
+#: rustconn/src/terminal/tab_menu.rs:1470
 msgid "Stop Script Recording"
 msgstr "Stop scriptoptagelse"
 
 #: rustconn/src/dialogs/command_palette.rs:711
 #: rustconn/src/terminal/script_recorder.rs:190
-#: rustconn/src/terminal/tab_menu.rs:1491
+#: rustconn/src/terminal/tab_menu.rs:1499
 msgid "Start TFTP Server"
 msgstr "Start TFTP-server"
 
@@ -668,8 +669,14 @@ msgstr "Start TFTP-server"
 msgid "Edit Remote File"
 msgstr "Rediger fjernfil"
 
+#: rustconn/src/dialogs/command_palette.rs:713
+#: rustconn/src/terminal/tab_menu.rs:1450
+msgid "Terminal Theme…"
+msgstr "Terminal-tema…"
+
 #: rustconn/src/dialogs/connection/advanced_tab.rs:84
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:144
+#: rustconn/src/window/theme_actions.rs:107
 msgid "Terminal Theme"
 msgstr "Terminal-tema"
 
@@ -751,7 +758,9 @@ msgstr "Fjernovervågning"
 msgid ""
 "Override global monitoring settings for this connection. Works for SSH only; "
 "not available for RDP, VNC, Telnet and other protocols"
-msgstr "Tilsidesæt globale overvågningsindstillinger for denne forbindelse. Virker kun for SSH; ikke tilgængeligt for RDP, VNC, Telnet og andre protokoller"
+msgstr ""
+"Tilsidesæt globale overvågningsindstillinger for denne forbindelse. Virker "
+"kun for SSH; ikke tilgængeligt for RDP, VNC, Telnet og andre protokoller"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:319
 msgid "Enable Monitoring"
@@ -5066,7 +5075,7 @@ msgstr "Kopiér"
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:265
 #: rustconn/src/session_group_window.rs:482
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:910
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:918
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "Stop"
@@ -6787,7 +6796,7 @@ msgid "Log Content"
 msgstr "Logindhold"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:2102
+#: rustconn/src/split_view/adapter.rs:2150
 msgid "Loading…"
 msgstr "Indlæser…"
 
@@ -8166,7 +8175,9 @@ msgstr "Overvågning"
 msgid ""
 "Remote host metrics collection. Works for SSH sessions only; not available "
 "for RDP, VNC, Telnet and other protocols"
-msgstr "Indsamling af fjernværtsmetrikker. Virker kun for SSH-sessioner; ikke tilgængeligt for RDP, VNC, Telnet og andre protokoller"
+msgstr ""
+"Indsamling af fjernværtsmetrikker. Virker kun for SSH-sessioner; ikke "
+"tilgængeligt for RDP, VNC, Telnet og andre protokoller"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:65
 msgid "Enable monitoring"
@@ -10140,17 +10151,17 @@ msgstr "Forrige prompt"
 msgid "Next Prompt"
 msgstr "Næste prompt"
 
-#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:198
-#: rustconn/src/split_view/adapter.rs:1339
-#: rustconn/src/split_view/adapter.rs:1344
-#: rustconn/src/split_view/adapter.rs:2062
-#: rustconn/src/split_view/adapter.rs:2072
+#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:206
+#: rustconn/src/split_view/adapter.rs:1387
+#: rustconn/src/split_view/adapter.rs:1392
+#: rustconn/src/split_view/adapter.rs:2110
+#: rustconn/src/split_view/adapter.rs:2120
 msgid "Close Pane"
 msgstr "Luk panelet"
 
 #: rustconn/src/dialogs/shortcuts.rs:221 rustconn/src/sidebar_ui.rs:576
-#: rustconn/src/split_view/adapter.rs:191
-#: rustconn/src/split_view/adapter.rs:1308
+#: rustconn/src/split_view/adapter.rs:199
+#: rustconn/src/split_view/adapter.rs:1356
 msgid "Move to Own Tab"
 msgstr "Flyt til egen fane"
 
@@ -12114,7 +12125,7 @@ msgid "Save files from remote clipboard"
 msgstr "Gem filer fra fjernudklipsholder"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
-#: rustconn/src/split_view/adapter.rs:185 rustconn/src/terminal/config.rs:428
+#: rustconn/src/split_view/adapter.rs:193 rustconn/src/terminal/config.rs:428
 #: rustconn/src/terminal/session_lifecycle.rs:795
 #: rustconn/src/terminal/spawn.rs:178 rustconn/src/terminal/tab_menu.rs:1278
 msgid "Reconnect"
@@ -12636,13 +12647,13 @@ msgid "Show all tabs of this window side by side"
 msgstr "Vis alle faner i dette vindue side om side"
 
 #: rustconn/src/session_group_window.rs:310
-#: rustconn/src/split_view/adapter.rs:188
-#: rustconn/src/split_view/adapter.rs:1009
+#: rustconn/src/split_view/adapter.rs:196
+#: rustconn/src/split_view/adapter.rs:1057
 msgid "Broadcast"
 msgstr "Udsendelse"
 
 #: rustconn/src/session_group_window.rs:315
-#: rustconn/src/split_view/adapter.rs:1018
+#: rustconn/src/split_view/adapter.rs:1066
 msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "Fjern markeringen for at holde dette panel ude af tastaturudsendelsen"
 
@@ -12927,8 +12938,8 @@ msgstr "Duplikér via guide…"
 msgid "Open New Session"
 msgstr "Åbn ny session"
 
-#: rustconn/src/sidebar_ui.rs:586 rustconn/src/split_view/adapter.rs:194
-#: rustconn/src/split_view/adapter.rs:1327
+#: rustconn/src/sidebar_ui.rs:586 rustconn/src/split_view/adapter.rs:202
+#: rustconn/src/split_view/adapter.rs:1375
 #: rustconn/src/terminal/tab_menu.rs:1372
 msgid "Move to New Window"
 msgstr "Flyt til nyt vindue"
@@ -12946,12 +12957,12 @@ msgid "Open SFTP"
 msgstr "Åbn SFTP"
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
-#: rustconn/src/terminal/tab_menu.rs:1484
+#: rustconn/src/terminal/tab_menu.rs:1492
 msgid "Edit Remote File…"
 msgstr "Rediger fjernfil…"
 
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
-#: rustconn/src/terminal/tab_menu.rs:1466
+#: rustconn/src/terminal/tab_menu.rs:1474
 msgid "Record Script…"
 msgstr "Optag script…"
 
@@ -13108,56 +13119,56 @@ msgstr "Opret ny smart mappe"
 msgid "No smart folders"
 msgstr "Ingen smarte mapper"
 
-#: rustconn/src/split_view/adapter.rs:48
+#: rustconn/src/split_view/adapter.rs:51
 msgid "Drag to move this session to another pane or tab"
 msgstr "Træk for at flytte denne session til et andet panel eller fane"
 
-#: rustconn/src/split_view/adapter.rs:1116
+#: rustconn/src/split_view/adapter.rs:1164
 msgid "Broadcast: {}"
 msgstr "Udsendelse: {}"
 
-#: rustconn/src/split_view/adapter.rs:1211
-#: rustconn/src/split_view/adapter.rs:1213
+#: rustconn/src/split_view/adapter.rs:1259
+#: rustconn/src/split_view/adapter.rs:1261
 msgid "Show pane actions"
 msgstr "Vis panelhandlinger"
 
-#: rustconn/src/split_view/adapter.rs:1302
+#: rustconn/src/split_view/adapter.rs:1350
 msgid "Remove this session from the split and show it in its own tab"
 msgstr "Fjern denne session fra den delte visning og vis den i sin egen fane"
 
-#: rustconn/src/split_view/adapter.rs:1320
+#: rustconn/src/split_view/adapter.rs:1368
 msgid "Move this session out of the split into its own window"
 msgstr "Flyt denne session ud af den opdelte visning til sit eget vindue"
 
-#: rustconn/src/split_view/adapter.rs:1371
+#: rustconn/src/split_view/adapter.rs:1419
 msgid "Close this pane?"
 msgstr "Luk denne rude?"
 
-#: rustconn/src/split_view/adapter.rs:1373
+#: rustconn/src/split_view/adapter.rs:1421
 msgid "The session in this pane will be disconnected and closed."
 msgstr "Sessionen i denne rude afbrydes og lukkes."
 
-#: rustconn/src/split_view/adapter.rs:1597
+#: rustconn/src/split_view/adapter.rs:1645
 msgid "Terminal pane"
 msgstr "Terminalpanel"
 
-#: rustconn/src/split_view/adapter.rs:1993
+#: rustconn/src/split_view/adapter.rs:2041
 msgid "Empty Pane"
 msgstr "Tomt panel"
 
-#: rustconn/src/split_view/adapter.rs:1994
+#: rustconn/src/split_view/adapter.rs:2042
 msgid "Select an existing tab to display in this pane"
 msgstr "Vælg en eksisterende fane til visning i dette panel"
 
-#: rustconn/src/split_view/adapter.rs:2004
+#: rustconn/src/split_view/adapter.rs:2052
 msgid "Select Tab…"
 msgstr "Vælg fane…"
 
-#: rustconn/src/split_view/adapter.rs:2005
+#: rustconn/src/split_view/adapter.rs:2053
 msgid "Choose an open tab to display in this pane"
 msgstr "Vælg en åben fane til visning i dette panel"
 
-#: rustconn/src/split_view/adapter.rs:2035
+#: rustconn/src/split_view/adapter.rs:2083
 msgid "Open a new local shell in this pane"
 msgstr "Åbn en ny lokal shell i dette panel"
 
@@ -13250,11 +13261,11 @@ msgstr "Faneoversigtsvisning"
 msgid "Import Formats"
 msgstr "Importformater"
 
-#: rustconn/src/split_view/bridge.rs:2586
+#: rustconn/src/split_view/bridge.rs:2604
 msgid "All tabs are already displayed in this split view"
 msgstr "Alle faner vises allerede i denne opdelte visning"
 
-#: rustconn/src/split_view/bridge.rs:2633
+#: rustconn/src/split_view/bridge.rs:2651
 msgid "Select a tab to display"
 msgstr "Vælg en fane til visning"
 
@@ -13556,23 +13567,23 @@ msgstr "Redigér forbindelse…"
 msgid "Save Output…"
 msgstr "Gem output…"
 
-#: rustconn/src/terminal/tab_menu.rs:1498
+#: rustconn/src/terminal/tab_menu.rs:1506
 msgid "Close Others"
 msgstr "Luk andre"
 
-#: rustconn/src/terminal/tab_menu.rs:1503
+#: rustconn/src/terminal/tab_menu.rs:1511
 msgid "Close to the Left"
 msgstr "Luk til venstre"
 
-#: rustconn/src/terminal/tab_menu.rs:1504
+#: rustconn/src/terminal/tab_menu.rs:1512
 msgid "Close to the Right"
 msgstr "Luk til højre"
 
-#: rustconn/src/terminal/tab_menu.rs:1508
+#: rustconn/src/terminal/tab_menu.rs:1516
 msgid "Close All Ungrouped"
 msgstr "Luk alle ugrupperede"
 
-#: rustconn/src/terminal/tab_menu.rs:1512
+#: rustconn/src/terminal/tab_menu.rs:1520
 msgid "Close All Tabs"
 msgstr "Luk alle faner"
 
@@ -14061,15 +14072,15 @@ msgid "Could not store imported credentials in the secret backend"
 msgstr ""
 "Kunne ikke gemme importerede legitimationsoplysninger i hemmelighedsbackenden"
 
-#: rustconn/src/window/construct.rs:774 rustconn/src/window/construct.rs:785
+#: rustconn/src/window/construct.rs:782 rustconn/src/window/construct.rs:793
 msgid "Dismiss"
 msgstr "Afvis"
 
-#: rustconn/src/window/construct.rs:817
+#: rustconn/src/window/construct.rs:825
 msgid "Open Log"
 msgstr "Åbn log"
 
-#: rustconn/src/window/construct.rs:820
+#: rustconn/src/window/construct.rs:828
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
@@ -14077,11 +14088,11 @@ msgstr ""
 "RustConn lukkede uventet sidste gang, det kørte. En nedbrudslog blev gemt "
 "lokalt."
 
-#: rustconn/src/window/construct.rs:845
+#: rustconn/src/window/construct.rs:853
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Kunne ikke åbne nedbrudsloggen. Den er gemt i {}"
 
-#: rustconn/src/window/construct.rs:874
+#: rustconn/src/window/construct.rs:882
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Berør din hardwarenøgle for at låse adgangskodedatabasen op"
 
@@ -14946,28 +14957,28 @@ msgstr ""
 "Midnight Commander logger ind på denne server med den. RustConn gemmer den "
 "kun, mens denne mc-fane er åben."
 
-#: rustconn/src/window/mod.rs:424
+#: rustconn/src/window/mod.rs:425
 msgid "The jump host set for “{}” no longer exists."
 msgstr "Spring-værten, der er angivet for “{}”, findes ikke længere."
 
-#: rustconn/src/window/mod.rs:428
+#: rustconn/src/window/mod.rs:429
 msgid "“{}” is set to use itself as its jump host."
 msgstr "“{}” er indstillet til at bruge sig selv som spring-vært."
 
-#: rustconn/src/window/mod.rs:440
+#: rustconn/src/window/mod.rs:441
 msgid "The setting is inherited from the group “{}”."
 msgstr "Indstillingen nedarves fra gruppen “{}”."
 
-#: rustconn/src/window/mod.rs:445
+#: rustconn/src/window/mod.rs:446
 msgid "The setting is the Global Jump Host in Settings."
 msgstr "Dette er den globale spring-vært i indstillingerne."
 
-#: rustconn/src/window/mod.rs:450
+#: rustconn/src/window/mod.rs:451
 msgid ""
 "Connecting to “{}” now reaches the server directly, without a jump host."
 msgstr "Forbindelse til “{}” når nu serveren direkte, uden en spring-vært."
 
-#: rustconn/src/window/mod.rs:454
+#: rustconn/src/window/mod.rs:455
 msgid ""
 "Connecting to “{}” now skips that jump host and uses only the rest of its "
 "configured route."
@@ -14975,19 +14986,19 @@ msgstr ""
 "Forbindelse til “{}” springer nu den spring-vært over og bruger kun resten "
 "af den konfigurerede rute."
 
-#: rustconn/src/window/mod.rs:512
+#: rustconn/src/window/mod.rs:513
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:571
+#: rustconn/src/window/mod.rs:572
 msgid "Close RustConn?"
 msgstr "Luk RustConn?"
 
-#: rustconn/src/window/mod.rs:573
+#: rustconn/src/window/mod.rs:574
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "{} sessionsfaner er åbne. Aktive forbindelser vil blive afbrudt."
 
-#: rustconn/src/window/mod.rs:610
+#: rustconn/src/window/mod.rs:611
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14995,7 +15006,7 @@ msgstr ""
 "Indstillingerne kunne ikke læses, så standardværdierne bruges. Den ulæselige "
 "fil blev bevaret som {}."
 
-#: rustconn/src/window/mod.rs:615
+#: rustconn/src/window/mod.rs:616
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -15003,7 +15014,7 @@ msgstr ""
 "Disse indstillinger blev gemt af en nyere RustConn ({}). Der bevares en "
 "sikkerhedskopi, før de ændres."
 
-#: rustconn/src/window/mod.rs:640
+#: rustconn/src/window/mod.rs:641
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Skysynkronisering mislykkedes for '{}': {}"
 
@@ -16371,7 +16382,12 @@ msgstr ""
 msgid "Cannot move a folder into one of its own subfolders"
 msgstr "Mappen kan ikke flyttes til en af sine egne undermapper"
 
-#: rustconn/src/window/split_view_actions.rs:585
+#: rustconn/src/window/split_view_actions.rs:160
+#: rustconn/src/window/split_view_actions.rs:1523
+msgid "Some tabs could not be added to the split."
+msgstr "Nogle faner kunne ikke føjes til opdelingen."
+
+#: rustconn/src/window/split_view_actions.rs:618
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
 "across split panes"
@@ -16379,9 +16395,9 @@ msgstr ""
 "Tip: tryk Ctrl+Shift+B eller brug knappen „Udsend“ for at spejle tastetryk "
 "til alle opdelte paneler"
 
-#: rustconn/src/window/split_view_actions.rs:627
-#: rustconn/src/window/split_view_actions.rs:848
-#: rustconn/src/window/split_view_actions.rs:1368
+#: rustconn/src/window/split_view_actions.rs:660
+#: rustconn/src/window/split_view_actions.rs:882
+#: rustconn/src/window/split_view_actions.rs:1403
 msgid ""
 "Split view is not available for external-viewer sessions. Switch this "
 "connection to embedded mode to use split."
@@ -16389,20 +16405,16 @@ msgstr ""
 "Delt visning er ikke tilgængelig for sessioner med ekstern fremviser. Skift "
 "denne forbindelse til indlejret tilstand for at bruge deling."
 
-#: rustconn/src/window/split_view_actions.rs:1362
+#: rustconn/src/window/split_view_actions.rs:1397
 msgid ""
 "This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr ""
 "Denne fane er allerede opdelt. Fjern først opdelingen, eller brug “Vælg "
 "fane” i et panel."
 
-#: rustconn/src/window/split_view_actions.rs:1389
+#: rustconn/src/window/split_view_actions.rs:1424
 msgid "There are no other tabs that can be shown in a split."
 msgstr "Der er ingen andre faner, der kan vises i en opdeling."
-
-#: rustconn/src/window/split_view_actions.rs:1488
-msgid "Some tabs could not be added to the split."
-msgstr "Nogle faner kunne ikke føjes til opdelingen."
 
 #: rustconn/src/window/startup.rs:65
 msgid "Startup connection not found"
@@ -16461,6 +16473,10 @@ msgstr ""
 #: rustconn/src/window/terminal_actions.rs:502
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr "Denne fremviser kører uafhængigt og kan ikke lukkes fra RustConn"
+
+#: rustconn/src/window/theme_actions.rs:78
+msgid "Select a terminal first"
+msgstr "Vælg først en terminal"
 
 #: rustconn/src/window/ui.rs:56 rustconn/src/window/ui.rs:57
 msgid "Operation in progress"

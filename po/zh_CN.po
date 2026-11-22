@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 22:04+0200\n"
+"POT-Creation-Date: 2026-11-22 23:10+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:55 rustconn/src/alert.rs:66
-#: rustconn/src/app.rs:2393 rustconn/src/script_runner.rs:824
+#: rustconn/src/app.rs:2415 rustconn/src/script_runner.rs:824
 #: rustconn/src/script_runner.rs:860 rustconn/src/toast.rs:266
 msgid "OK"
 msgstr "确定"
@@ -53,7 +53,7 @@ msgstr "确定"
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:823
 #: rustconn/src/session_group_window.rs:720
 #: rustconn/src/sidebar/saved_searches.rs:179
-#: rustconn/src/split_view/adapter.rs:1376
+#: rustconn/src/split_view/adapter.rs:1424
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
@@ -66,7 +66,7 @@ msgstr "确定"
 #: rustconn/src/window/edit_group.rs:2104
 #: rustconn/src/window/group_broadcast.rs:267
 #: rustconn/src/window/key_setup.rs:1022 rustconn/src/window/mc_launch.rs:457
-#: rustconn/src/window/mod.rs:577
+#: rustconn/src/window/mod.rs:578
 #: rustconn/src/window/network_tools/remote_edit.rs:96
 #: rustconn/src/window/network_tools/remote_edit.rs:195
 #: rustconn/src/window/network_tools/share.rs:96
@@ -113,11 +113,11 @@ msgstr "保存"
 msgid "Initialization Error"
 msgstr "初始化错误"
 
-#: rustconn/src/app.rs:942
+#: rustconn/src/app.rs:962
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr "未从密钥环加载 KeePass 密码 — 请在设置中重新输入"
 
-#: rustconn/src/app.rs:947 rustconn/src/detached_window.rs:492
+#: rustconn/src/app.rs:967 rustconn/src/detached_window.rs:492
 #: rustconn/src/dialogs/command_palette.rs:697
 #: rustconn/src/dialogs/settings/mod.rs:245
 #: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:410
@@ -126,7 +126,7 @@ msgstr "未从密钥环加载 KeePass 密码 — 请在设置中重新输入"
 msgid "Settings"
 msgstr "设置"
 
-#: rustconn/src/app.rs:1781
+#: rustconn/src/app.rs:1803
 msgid ""
 "{} is selected, but the system keyring is not accessible. Run: sudo snap "
 "connect rustconn:password-manager-service — or open Settings, then Secrets, "
@@ -135,19 +135,19 @@ msgstr ""
 "已选择 {}，但系统密钥环不可访问。请执行：sudo snap connect rustconn:password-"
 "manager-service — 或打开\"设置\"，然后打开\"密钥\"，选择其他后端。"
 
-#: rustconn/src/app.rs:1786
+#: rustconn/src/app.rs:1808
 msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
 msgstr "已选择 {}，但它还无法存储密码：{}。请打开“设置”，然后打开“机密”。"
 
-#: rustconn/src/app.rs:2186 rustconn/src/window/edit_actions.rs:1913
+#: rustconn/src/app.rs:2208 rustconn/src/window/edit_actions.rs:1913
 #: rustconn/src/window/edit_actions.rs:2052
 #: rustconn/src/window/edit_actions.rs:2080
 msgid "Failed to open URL: {}"
 msgstr "打开 URL 失败：{}"
 
-#: rustconn/src/app.rs:2211
+#: rustconn/src/app.rs:2233
 msgid ""
 "Quit RustConn, then run this in a terminal and reproduce the problem:\n"
 "\n"
@@ -164,12 +164,12 @@ msgstr ""
 "日志会写入当前目录下的 rustconn.log。密码不会被记录，但日志包含主机名、用户名"
 "和文件路径。分享前请先检查。"
 
-#: rustconn/src/app.rs:2214 rustconn/src/detached_window.rs:496
+#: rustconn/src/app.rs:2236 rustconn/src/detached_window.rs:496
 #: rustconn/src/window/ui.rs:359
 msgid "Debug Logging"
 msgstr "调试日志"
 
-#: rustconn/src/app.rs:2215 rustconn/src/dialogs/credential_transfer.rs:643
+#: rustconn/src/app.rs:2237 rustconn/src/dialogs/credential_transfer.rs:643
 #: rustconn/src/dialogs/credential_transfer.rs:652
 #: rustconn/src/dialogs/credential_transfer.rs:719
 #: rustconn/src/dialogs/export.rs:1164 rustconn/src/dialogs/history.rs:340
@@ -181,20 +181,21 @@ msgstr "调试日志"
 #: rustconn/src/dialogs/terminal_search.rs:149
 #: rustconn/src/dialogs/terminal_search.rs:151
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
+#: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1425
 #: rustconn/src/terminal/tab_menu.rs:817 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:578
+#: rustconn/src/window/mod.rs:579
 #: rustconn/src/window/network_tools/share.rs:258
 #: rustconn/src/window/network_tools/share.rs:620
 #: rustconn/src/window/network_tools/tftp.rs:173
+#: rustconn/src/window/theme_actions.rs:111
 msgid "Close"
 msgstr "关闭"
 
-#: rustconn/src/app.rs:2216 rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
+#: rustconn/src/app.rs:2238 rustconn/src/dialogs/settings/cloud_sync_tab.rs:243
 msgid "Copy Command"
 msgstr "复制命令"
 
-#: rustconn/src/app.rs:2232
+#: rustconn/src/app.rs:2254
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -203,31 +204,31 @@ msgstr ""
 "适用于 Linux 的现代化连接管理器，采用 GTK4/Wayland 原生界面。可通过单一应用程"
 "序管理 SSH、RDP、VNC、SPICE、Telnet、串口、Kubernetes 和零信任连接。"
 
-#: rustconn/src/app.rs:2311
+#: rustconn/src/app.rs:2333
 msgid "User Guide"
 msgstr "用户指南"
 
-#: rustconn/src/app.rs:2313
+#: rustconn/src/app.rs:2335
 msgid "Installation"
 msgstr "安装"
 
-#: rustconn/src/app.rs:2317
+#: rustconn/src/app.rs:2339
 msgid "Releases"
 msgstr "发布"
 
-#: rustconn/src/app.rs:2321
+#: rustconn/src/app.rs:2343
 msgid "Changelog"
 msgstr "更新日志"
 
-#: rustconn/src/app.rs:2331
+#: rustconn/src/app.rs:2353
 msgid "Special Thanks"
 msgstr "特别感谢"
 
-#: rustconn/src/app.rs:2347
+#: rustconn/src/app.rs:2369
 msgid "Made in Ukraine"
 msgstr "乌克兰制造"
 
-#: rustconn/src/app.rs:2348
+#: rustconn/src/app.rs:2370
 msgid "All contributors and supporters"
 msgstr "所有贡献者和支持者"
 
@@ -366,7 +367,7 @@ msgstr "手动输入密码"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/construct.rs:798
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/construct.rs:806
 msgid "Open Settings"
 msgstr "打开设置"
 
@@ -547,7 +548,7 @@ msgstr "新建组"
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
 #: rustconn/src/dialogs/settings/ui_tab.rs:927
 #: rustconn/src/dialogs/shortcuts.rs:196
-#: rustconn/src/split_view/adapter.rs:2034
+#: rustconn/src/split_view/adapter.rs:2082
 #: rustconn/src/split_view/bridge.rs:2297 rustconn/src/tray.rs:309
 #: rustconn/src/tray.rs:699 rustconn/src/window/ui.rs:139
 #: rustconn/src/window/ui.rs:274
@@ -600,7 +601,7 @@ msgstr "向右拆分"
 
 #: rustconn/src/dialogs/command_palette.rs:702
 #: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/sidebar_ui.rs:580
-#: rustconn/src/split_view/adapter.rs:197
+#: rustconn/src/split_view/adapter.rs:205
 #: rustconn/src/terminal/split_close.rs:321
 #: rustconn/src/terminal/tab_menu.rs:1364
 msgid "Remove Split"
@@ -628,24 +629,24 @@ msgstr "切换标签页"
 
 #: rustconn/src/dialogs/command_palette.rs:708 rustconn/src/sidebar_ui.rs:632
 #: rustconn/src/terminal/script_recorder.rs:186
-#: rustconn/src/terminal/tab_menu.rs:1476
+#: rustconn/src/terminal/tab_menu.rs:1484
 msgid "Share Session (read-only)"
 msgstr "共享会话（只读）"
 
 #: rustconn/src/dialogs/command_palette.rs:709
-#: rustconn/src/terminal/tab_menu.rs:1474
+#: rustconn/src/terminal/tab_menu.rs:1482
 msgid "Stop Sharing"
 msgstr "停止共享"
 
 #: rustconn/src/dialogs/command_palette.rs:710
 #: rustconn/src/terminal/script_recorder.rs:176
-#: rustconn/src/terminal/tab_menu.rs:1462
+#: rustconn/src/terminal/tab_menu.rs:1470
 msgid "Stop Script Recording"
 msgstr "停止录制脚本"
 
 #: rustconn/src/dialogs/command_palette.rs:711
 #: rustconn/src/terminal/script_recorder.rs:190
-#: rustconn/src/terminal/tab_menu.rs:1491
+#: rustconn/src/terminal/tab_menu.rs:1499
 msgid "Start TFTP Server"
 msgstr "启动 TFTP 服务器"
 
@@ -653,8 +654,14 @@ msgstr "启动 TFTP 服务器"
 msgid "Edit Remote File"
 msgstr "编辑远程文件"
 
+#: rustconn/src/dialogs/command_palette.rs:713
+#: rustconn/src/terminal/tab_menu.rs:1450
+msgid "Terminal Theme…"
+msgstr "终端主题…"
+
 #: rustconn/src/dialogs/connection/advanced_tab.rs:84
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:144
+#: rustconn/src/window/theme_actions.rs:107
 msgid "Terminal Theme"
 msgstr "终端主题"
 
@@ -736,7 +743,8 @@ msgstr "远程监控"
 msgid ""
 "Override global monitoring settings for this connection. Works for SSH only; "
 "not available for RDP, VNC, Telnet and other protocols"
-msgstr "覆盖此连接的全局监控设置。仅适用于 SSH；不适用于 RDP、VNC、Telnet 和其他协议"
+msgstr ""
+"覆盖此连接的全局监控设置。仅适用于 SSH；不适用于 RDP、VNC、Telnet 和其他协议"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:319
 msgid "Enable Monitoring"
@@ -4945,7 +4953,7 @@ msgstr "复制"
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:265
 #: rustconn/src/session_group_window.rs:482
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:910
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:918
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "停止"
@@ -6604,7 +6612,7 @@ msgid "Log Content"
 msgstr "日志内容"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:2102
+#: rustconn/src/split_view/adapter.rs:2150
 msgid "Loading…"
 msgstr "加载中…"
 
@@ -7947,7 +7955,8 @@ msgstr "监控"
 msgid ""
 "Remote host metrics collection. Works for SSH sessions only; not available "
 "for RDP, VNC, Telnet and other protocols"
-msgstr "远程主机指标收集。仅适用于 SSH 会话；不适用于 RDP、VNC、Telnet 和其他协议"
+msgstr ""
+"远程主机指标收集。仅适用于 SSH 会话；不适用于 RDP、VNC、Telnet 和其他协议"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:65
 msgid "Enable monitoring"
@@ -9857,17 +9866,17 @@ msgstr "上一个提示符"
 msgid "Next Prompt"
 msgstr "下一个提示符"
 
-#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:198
-#: rustconn/src/split_view/adapter.rs:1339
-#: rustconn/src/split_view/adapter.rs:1344
-#: rustconn/src/split_view/adapter.rs:2062
-#: rustconn/src/split_view/adapter.rs:2072
+#: rustconn/src/dialogs/shortcuts.rs:220 rustconn/src/split_view/adapter.rs:206
+#: rustconn/src/split_view/adapter.rs:1387
+#: rustconn/src/split_view/adapter.rs:1392
+#: rustconn/src/split_view/adapter.rs:2110
+#: rustconn/src/split_view/adapter.rs:2120
 msgid "Close Pane"
 msgstr "关闭窗格"
 
 #: rustconn/src/dialogs/shortcuts.rs:221 rustconn/src/sidebar_ui.rs:576
-#: rustconn/src/split_view/adapter.rs:191
-#: rustconn/src/split_view/adapter.rs:1308
+#: rustconn/src/split_view/adapter.rs:199
+#: rustconn/src/split_view/adapter.rs:1356
 msgid "Move to Own Tab"
 msgstr "移到独立标签页"
 
@@ -11767,7 +11776,7 @@ msgid "Save files from remote clipboard"
 msgstr "从远程剪贴板保存文件"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
-#: rustconn/src/split_view/adapter.rs:185 rustconn/src/terminal/config.rs:428
+#: rustconn/src/split_view/adapter.rs:193 rustconn/src/terminal/config.rs:428
 #: rustconn/src/terminal/session_lifecycle.rs:795
 #: rustconn/src/terminal/spawn.rs:178 rustconn/src/terminal/tab_menu.rs:1278
 msgid "Reconnect"
@@ -12282,13 +12291,13 @@ msgid "Show all tabs of this window side by side"
 msgstr "并排显示此窗口的所有标签页"
 
 #: rustconn/src/session_group_window.rs:310
-#: rustconn/src/split_view/adapter.rs:188
-#: rustconn/src/split_view/adapter.rs:1009
+#: rustconn/src/split_view/adapter.rs:196
+#: rustconn/src/split_view/adapter.rs:1057
 msgid "Broadcast"
 msgstr "广播"
 
 #: rustconn/src/session_group_window.rs:315
-#: rustconn/src/split_view/adapter.rs:1018
+#: rustconn/src/split_view/adapter.rs:1066
 msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "取消勾选可将此窗格排除在按键广播之外"
 
@@ -12572,8 +12581,8 @@ msgstr "通过向导复制…"
 msgid "Open New Session"
 msgstr "打开新会话"
 
-#: rustconn/src/sidebar_ui.rs:586 rustconn/src/split_view/adapter.rs:194
-#: rustconn/src/split_view/adapter.rs:1327
+#: rustconn/src/sidebar_ui.rs:586 rustconn/src/split_view/adapter.rs:202
+#: rustconn/src/split_view/adapter.rs:1375
 #: rustconn/src/terminal/tab_menu.rs:1372
 msgid "Move to New Window"
 msgstr "移动到新窗口"
@@ -12591,12 +12600,12 @@ msgid "Open SFTP"
 msgstr "打开 SFTP"
 
 #: rustconn/src/sidebar_ui.rs:622 rustconn/src/terminal/script_recorder.rs:194
-#: rustconn/src/terminal/tab_menu.rs:1484
+#: rustconn/src/terminal/tab_menu.rs:1492
 msgid "Edit Remote File…"
 msgstr "编辑远程文件…"
 
 #: rustconn/src/sidebar_ui.rs:637 rustconn/src/terminal/script_recorder.rs:181
-#: rustconn/src/terminal/tab_menu.rs:1466
+#: rustconn/src/terminal/tab_menu.rs:1474
 msgid "Record Script…"
 msgstr "录制脚本…"
 
@@ -12753,56 +12762,56 @@ msgstr "创建新智能文件夹"
 msgid "No smart folders"
 msgstr "无智能文件夹"
 
-#: rustconn/src/split_view/adapter.rs:48
+#: rustconn/src/split_view/adapter.rs:51
 msgid "Drag to move this session to another pane or tab"
 msgstr "拖动以将会话移动到其他面板或标签页"
 
-#: rustconn/src/split_view/adapter.rs:1116
+#: rustconn/src/split_view/adapter.rs:1164
 msgid "Broadcast: {}"
 msgstr "广播：{}"
 
-#: rustconn/src/split_view/adapter.rs:1211
-#: rustconn/src/split_view/adapter.rs:1213
+#: rustconn/src/split_view/adapter.rs:1259
+#: rustconn/src/split_view/adapter.rs:1261
 msgid "Show pane actions"
 msgstr "显示面板操作"
 
-#: rustconn/src/split_view/adapter.rs:1302
+#: rustconn/src/split_view/adapter.rs:1350
 msgid "Remove this session from the split and show it in its own tab"
 msgstr "将此会话从拆分视图中移除，并在其独立标签页中显示"
 
-#: rustconn/src/split_view/adapter.rs:1320
+#: rustconn/src/split_view/adapter.rs:1368
 msgid "Move this session out of the split into its own window"
 msgstr "将此会话移出拆分视图至独立窗口"
 
-#: rustconn/src/split_view/adapter.rs:1371
+#: rustconn/src/split_view/adapter.rs:1419
 msgid "Close this pane?"
 msgstr "关闭此窗格？"
 
-#: rustconn/src/split_view/adapter.rs:1373
+#: rustconn/src/split_view/adapter.rs:1421
 msgid "The session in this pane will be disconnected and closed."
 msgstr "此窗格中的会话将断开连接并关闭。"
 
-#: rustconn/src/split_view/adapter.rs:1597
+#: rustconn/src/split_view/adapter.rs:1645
 msgid "Terminal pane"
 msgstr "终端面板"
 
-#: rustconn/src/split_view/adapter.rs:1993
+#: rustconn/src/split_view/adapter.rs:2041
 msgid "Empty Pane"
 msgstr "空面板"
 
-#: rustconn/src/split_view/adapter.rs:1994
+#: rustconn/src/split_view/adapter.rs:2042
 msgid "Select an existing tab to display in this pane"
 msgstr "选择一个现有标签页在此面板中显示"
 
-#: rustconn/src/split_view/adapter.rs:2004
+#: rustconn/src/split_view/adapter.rs:2052
 msgid "Select Tab…"
 msgstr "选择标签页…"
 
-#: rustconn/src/split_view/adapter.rs:2005
+#: rustconn/src/split_view/adapter.rs:2053
 msgid "Choose an open tab to display in this pane"
 msgstr "选择一个打开的标签页在此面板中显示"
 
-#: rustconn/src/split_view/adapter.rs:2035
+#: rustconn/src/split_view/adapter.rs:2083
 msgid "Open a new local shell in this pane"
 msgstr "在此面板中打开新的本地 Shell"
 
@@ -12895,11 +12904,11 @@ msgstr "标签页概览网格"
 msgid "Import Formats"
 msgstr "导入格式"
 
-#: rustconn/src/split_view/bridge.rs:2586
+#: rustconn/src/split_view/bridge.rs:2604
 msgid "All tabs are already displayed in this split view"
 msgstr "所有标签页已在此分屏视图中显示"
 
-#: rustconn/src/split_view/bridge.rs:2633
+#: rustconn/src/split_view/bridge.rs:2651
 msgid "Select a tab to display"
 msgstr "选择要显示的标签页"
 
@@ -13191,23 +13200,23 @@ msgstr "编辑连接…"
 msgid "Save Output…"
 msgstr "保存输出…"
 
-#: rustconn/src/terminal/tab_menu.rs:1498
+#: rustconn/src/terminal/tab_menu.rs:1506
 msgid "Close Others"
 msgstr "关闭其他"
 
-#: rustconn/src/terminal/tab_menu.rs:1503
+#: rustconn/src/terminal/tab_menu.rs:1511
 msgid "Close to the Left"
 msgstr "关闭左侧"
 
-#: rustconn/src/terminal/tab_menu.rs:1504
+#: rustconn/src/terminal/tab_menu.rs:1512
 msgid "Close to the Right"
 msgstr "关闭右侧"
 
-#: rustconn/src/terminal/tab_menu.rs:1508
+#: rustconn/src/terminal/tab_menu.rs:1516
 msgid "Close All Ungrouped"
 msgstr "关闭所有未分组"
 
-#: rustconn/src/terminal/tab_menu.rs:1512
+#: rustconn/src/terminal/tab_menu.rs:1520
 msgid "Close All Tabs"
 msgstr "关闭所有标签页"
 
@@ -13674,25 +13683,25 @@ msgstr "已保存 {} 个导入的凭据（共 {} 个）— 请检查密钥后端
 msgid "Could not store imported credentials in the secret backend"
 msgstr "无法将导入的凭据保存到密钥后端"
 
-#: rustconn/src/window/construct.rs:774 rustconn/src/window/construct.rs:785
+#: rustconn/src/window/construct.rs:782 rustconn/src/window/construct.rs:793
 msgid "Dismiss"
 msgstr "忽略"
 
-#: rustconn/src/window/construct.rs:817
+#: rustconn/src/window/construct.rs:825
 msgid "Open Log"
 msgstr "打开日志"
 
-#: rustconn/src/window/construct.rs:820
+#: rustconn/src/window/construct.rs:828
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
 msgstr "RustConn 上次运行时意外关闭。崩溃日志已保存在本地。"
 
-#: rustconn/src/window/construct.rs:845
+#: rustconn/src/window/construct.rs:853
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "无法打开崩溃日志。它保存在 {}"
 
-#: rustconn/src/window/construct.rs:874
+#: rustconn/src/window/construct.rs:882
 msgid "Touch your hardware key to unlock the password database"
 msgstr "轻触您的硬件密钥以解锁密码数据库"
 
@@ -14513,58 +14522,58 @@ msgstr ""
 "Midnight Commander 用它登录此服务器。RustConn 仅在此 mc 标签页打开期间保留"
 "它。"
 
-#: rustconn/src/window/mod.rs:424
+#: rustconn/src/window/mod.rs:425
 msgid "The jump host set for “{}” no longer exists."
 msgstr "为“{}”设置的跳板主机已不存在。"
 
-#: rustconn/src/window/mod.rs:428
+#: rustconn/src/window/mod.rs:429
 msgid "“{}” is set to use itself as its jump host."
 msgstr "“{}”被设置为将自身用作跳板主机。"
 
-#: rustconn/src/window/mod.rs:440
+#: rustconn/src/window/mod.rs:441
 msgid "The setting is inherited from the group “{}”."
 msgstr "该设置继承自组“{}”。"
 
-#: rustconn/src/window/mod.rs:445
+#: rustconn/src/window/mod.rs:446
 msgid "The setting is the Global Jump Host in Settings."
 msgstr "这是设置中的全局跳板主机。"
 
-#: rustconn/src/window/mod.rs:450
+#: rustconn/src/window/mod.rs:451
 msgid ""
 "Connecting to “{}” now reaches the server directly, without a jump host."
 msgstr "现在连接“{}”将直接到达服务器，不经过跳板主机。"
 
-#: rustconn/src/window/mod.rs:454
+#: rustconn/src/window/mod.rs:455
 msgid ""
 "Connecting to “{}” now skips that jump host and uses only the rest of its "
 "configured route."
 msgstr "现在连接“{}”将跳过该跳板主机，仅使用其配置路由的其余部分。"
 
-#: rustconn/src/window/mod.rs:512
+#: rustconn/src/window/mod.rs:513
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:571
+#: rustconn/src/window/mod.rs:572
 msgid "Close RustConn?"
 msgstr "关闭 RustConn？"
 
-#: rustconn/src/window/mod.rs:573
+#: rustconn/src/window/mod.rs:574
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "有 {} 个会话标签页处于打开状态。活动连接将被断开。"
 
-#: rustconn/src/window/mod.rs:610
+#: rustconn/src/window/mod.rs:611
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
 msgstr "无法读取设置，因此正在使用默认值。无法读取的文件已保留为 {}。"
 
-#: rustconn/src/window/mod.rs:615
+#: rustconn/src/window/mod.rs:616
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
 msgstr "这些设置由较新版本的 RustConn（{}）保存。更改前会保留备份。"
 
-#: rustconn/src/window/mod.rs:640
+#: rustconn/src/window/mod.rs:641
 msgid "Cloud sync failed for '{}': {}"
 msgstr "'{}' 的云同步失败：{}"
 
@@ -15890,32 +15899,33 @@ msgstr "导入的文件夹由同步管理，无法更改其结构"
 msgid "Cannot move a folder into one of its own subfolders"
 msgstr "无法将文件夹移动到它自己的子文件夹中"
 
-#: rustconn/src/window/split_view_actions.rs:585
+#: rustconn/src/window/split_view_actions.rs:160
+#: rustconn/src/window/split_view_actions.rs:1523
+msgid "Some tabs could not be added to the split."
+msgstr "部分标签页无法添加到拆分视图。"
+
+#: rustconn/src/window/split_view_actions.rs:618
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
 "across split panes"
 msgstr "提示：按 Ctrl+Shift+B 或使用“广播”按钮将按键镜像到所有分割面板"
 
-#: rustconn/src/window/split_view_actions.rs:627
-#: rustconn/src/window/split_view_actions.rs:848
-#: rustconn/src/window/split_view_actions.rs:1368
+#: rustconn/src/window/split_view_actions.rs:660
+#: rustconn/src/window/split_view_actions.rs:882
+#: rustconn/src/window/split_view_actions.rs:1403
 msgid ""
 "Split view is not available for external-viewer sessions. Switch this "
 "connection to embedded mode to use split."
 msgstr "拆分视图不适用于外部查看器会话。请将此连接切换为嵌入模式以使用拆分。"
 
-#: rustconn/src/window/split_view_actions.rs:1362
+#: rustconn/src/window/split_view_actions.rs:1397
 msgid ""
 "This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr "此标签页已经拆分。请先移除拆分，或在面板中使用“选择标签页”。"
 
-#: rustconn/src/window/split_view_actions.rs:1389
+#: rustconn/src/window/split_view_actions.rs:1424
 msgid "There are no other tabs that can be shown in a split."
 msgstr "没有其他可在拆分视图中显示的标签页。"
-
-#: rustconn/src/window/split_view_actions.rs:1488
-msgid "Some tabs could not be added to the split."
-msgstr "部分标签页无法添加到拆分视图。"
 
 #: rustconn/src/window/startup.rs:65
 msgid "Startup connection not found"
@@ -15972,6 +15982,10 @@ msgstr "无法开始录制“{}”——录制文件夹缺失或不可写入"
 #: rustconn/src/window/terminal_actions.rs:502
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr "此查看器独立运行，无法从 RustConn 关闭"
+
+#: rustconn/src/window/theme_actions.rs:78
+msgid "Select a terminal first"
+msgstr "请先选择一个终端"
 
 #: rustconn/src/window/ui.rs:56 rustconn/src/window/ui.rs:57
 msgid "Operation in progress"
