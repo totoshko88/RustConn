@@ -403,6 +403,11 @@ impl TileView {
     }
 }
 
+/// Sessions a window would end: each tab counts its own weight, at least one.
+fn live_sessions(tabs: impl Iterator<Item = Uuid>, weight: impl Fn(Uuid) -> usize) -> usize {
+    tabs.map(|id| weight(id).max(1)).sum()
+}
+
 /// A top-level window with a tab per hosted session.
 pub struct SessionGroupWindow {
     window: adw::ApplicationWindow,
@@ -426,6 +431,8 @@ pub struct SessionGroupWindow {
     /// on screen. Its **Stop** button turns the broadcast off.
     broadcast_banner: adw::Banner,
     on_close: SessionCallback,
+    /// How many sessions a tab holds: 1, or the panes of a moved split.
+    session_weight: Rc<RefCell<Option<Box<dyn Fn(Uuid) -> usize>>>>,
     on_attach: SessionCallback,
     on_members_changed: PlainCallback,
     on_broadcast_toggled: ToggleCallback,
@@ -547,6 +554,7 @@ impl SessionGroupWindow {
             broadcast_toggle,
             broadcast_banner,
             on_close: Rc::new(RefCell::new(None)),
+            session_weight: Rc::new(RefCell::new(None)),
             on_attach: Rc::new(RefCell::new(None)),
             on_members_changed: Rc::new(RefCell::new(None)),
             on_broadcast_toggled: Rc::new(RefCell::new(None)),
@@ -707,8 +715,11 @@ impl SessionGroupWindow {
         let members = Rc::clone(&self.members);
         let closing = Rc::clone(&self.closing);
         let on_close = Rc::clone(&self.on_close);
+        let weight = Rc::clone(&self.session_weight);
         self.window.connect_close_request(move |window| {
-            let live = members.borrow().len();
+            let live = live_sessions(members.borrow().keys().copied(), |id| {
+                weight.borrow().as_ref().map_or(1, |weigh| weigh(id))
+            });
             if !closing.get() && live >= 2 {
                 let dialog = adw::AlertDialog::new(
                     Some(&i18n("Close this window?")),
@@ -1109,6 +1120,28 @@ impl SessionGroupWindow {
         *self.on_close.borrow_mut() = Some(Box::new(callback));
     }
 
+    /// Sets how many sessions a tab holds, so a moved split counts its panes.
+    pub fn set_session_weight<F>(&self, weight: F)
+    where
+        F: Fn(Uuid) -> usize + 'static,
+    {
+        *self.session_weight.borrow_mut() = Some(Box::new(weight));
+    }
+
+    /// Retitles one session's tab, as the main window's tab follows a split's
+    /// focused pane. Returns whether the session is hosted here.
+    pub fn set_session_title(&self, session_id: Uuid, title: &str) -> bool {
+        let page = self
+            .members
+            .borrow()
+            .get(&session_id)
+            .map(|member| member.page.clone());
+        page.is_some_and(|page| {
+            page.set_title(title);
+            true
+        })
+    }
+
     /// Sets the callback that moves a session back to the main window.
     pub fn set_on_attach<F>(&self, callback: F)
     where
@@ -1144,6 +1177,15 @@ mod tests {
         let mut leaves = Vec::new();
         tile_tree(&plan).leaves(&mut leaves);
         leaves
+    }
+
+    #[test]
+    fn a_split_tab_counts_every_pane() {
+        let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
+        let weight = |id| if id == a { 3 } else { 0 };
+        assert_eq!(live_sessions([a].into_iter(), weight), 3);
+        assert_eq!(live_sessions([a, b].into_iter(), weight), 4);
+        assert_eq!(live_sessions(std::iter::empty(), weight), 0);
     }
 
     #[test]

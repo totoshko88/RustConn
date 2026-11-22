@@ -576,6 +576,7 @@ impl MainWindow {
                 let notebook_for_title = notebook.clone();
                 new_bridge.set_title_listener(Rc::new(move |source| {
                     notebook_for_title.update_split_tab_title(source);
+                    super::detach_actions::retitle_split_window(&notebook_for_title, source);
                 }));
                 bridges.insert(session_id, new_bridge.clone());
                 new_bridge

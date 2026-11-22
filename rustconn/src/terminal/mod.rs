@@ -30,6 +30,7 @@ mod config;
 mod detach;
 pub use detach::{DetachMonitor, DetachPresentation};
 pub use output_start::ConnectionOutput;
+pub use split_title::title_session;
 mod failed_marker;
 pub mod file_drop;
 pub mod highlight_overlay;

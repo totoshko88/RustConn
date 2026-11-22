@@ -219,6 +219,27 @@ pub fn rename_open_sessions(notebook: &SharedNotebook, connection_id: Uuid, new_
     }
 }
 
+/// Keeps the tab of a split that moved to its own window named after the
+/// focused pane, as the main window's tab is. A split still in the main window
+/// is retitled by the notebook, so only a hosted owner is handled here.
+pub fn retitle_split_window(
+    notebook: &SharedNotebook,
+    source: &crate::split_view::SplitTitleSource,
+) {
+    if !source.is_split {
+        return;
+    }
+    let Some(group) = crate::window::detached_window_registry()
+        .and_then(|registry| registry.group_of(source.owner))
+    else {
+        return;
+    };
+    let target = crate::terminal::title_session(source.owner, source.focused, &source.displayed);
+    if let Some(info) = notebook.get_session_info(target) {
+        group.set_session_title(source.owner, &info.name);
+    }
+}
+
 /// Shows a high-priority error toast inside a detached window.
 fn show_error_in_window(window: &DetachedSessionWindow, message: &str) {
     let toast = crate::toast::plain_toast(message);
@@ -662,6 +683,13 @@ fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &D
                 notebook.close_session(guest);
             }
         }
+    });
+
+    let notebook_weight = handles.notebook.clone();
+    group.set_session_weight(move |session_id| {
+        notebook_weight
+            .upgrade()
+            .map_or(1, |notebook| notebook.split_members(session_id).len())
     });
 
     wire_group_window_broadcast(group, &handles.notebook);
