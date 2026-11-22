@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.26.1] - 2026-11-22
 
+### Fixed
+
+- **Save & Connect in the wizard no longer asks for the password you just typed** — the password was written to the vault on a worker thread while the connect started at once and read the vault, so a slow backend (KeePassXC took about 3 s) answered "not found" and a password prompt opened. The wizard now hands the typed password to the session cache for that first connect. (`rustconn/src/window/wizard.rs`)
+
 ### Added
 
 - **Drag tabs between windows, or out into a new one — [PR #443](https://github.com/totoshko88/RustConn/pull/443), contributed by @roms2000** — a tab dropped where no RustConn window is opens a new tabbed window holding that session, and a tab dropped anywhere on another RustConn window — its tab bar, its title, or its content — moves there: at the drop position on a tab bar, last otherwise. It works from the main window to a tabbed or cluster window, back, and between two tabbed windows, and the only tab of a window can be dragged too: the window it leaves closes. The session moves through the same paths as **Move to New Window** and **Move Tab to Main Window**, so nothing reconnects, and a tab that cannot leave the main window (a split tab, an external viewer) stays and says why. A tab dropped into a window with **Tab Broadcast** on turns that broadcast off, so keystrokes never reach a session the user did not pick; cluster membership is kept wherever the tab goes. A tab let go by mistake outside every window also opens a window: drag it back onto the window it came from. On Wayland GTK reports every drop nothing accepted as an error rather than as a drop outside every window, so libadwaita never opened the window there; RustConn now tracks which of its windows the drag is over and opens the window itself. The tab bar of a tabbed window no longer sits in the window's drag handle, so dragging a tab no longer moves the window with it. (`rustconn/src/terminal/tab_transfer.rs`, `rustconn/src/window/detach_actions.rs`, `rustconn/src/session_group_window.rs`)
