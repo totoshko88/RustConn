@@ -2086,6 +2086,20 @@ impl AppState {
         }));
     }
 
+    /// True when a connect to `connection` must first wait for the startup
+    /// keyring reads: they are still running and the launch will look up a
+    /// jump host's password. That lookup runs on the GTK thread and cannot
+    /// wait itself, so the connect goes through the gated worker path first.
+    #[must_use]
+    pub fn connect_waits_for_startup_keyring(&self, connection: &Connection) -> bool {
+        needs_startup_keyring_wait(
+            self.keyring_gate.get().is_none(),
+            connection,
+            &self.list_groups_owned(),
+            &self.settings.network,
+        )
+    }
+
     /// Takes what startup found wrong with the config files, once.
     ///
     /// The main window shows it in a banner; a second call returns `None`, as
@@ -2446,6 +2460,53 @@ where
         }
         callback(result);
     });
+}
+
+/// The decision behind [`AppState::connect_waits_for_startup_keyring`]: the
+/// keyring reads are `pending` and the launch reaches a jump host saved as a
+/// connection (only those carry a vault password; free-text hops do not).
+fn needs_startup_keyring_wait(
+    pending: bool,
+    connection: &Connection,
+    groups: &[ConnectionGroup],
+    network: &rustconn_core::config::NetworkSettings,
+) -> bool {
+    pending
+        && rustconn_core::connection::jump_chain::routes_through_jump_host(connection)
+        && rustconn_core::connection::ssh_inheritance::resolve_ssh_jump_host_id(
+            connection, groups, network,
+        )
+        .is_some()
+}
+
+/// Runs `proceed` on the main loop once the startup keyring reads are done,
+/// when `wait` is set and they are still running; otherwise runs it now.
+///
+/// The wait happens on a worker thread (bounded by `KEYRING_WAIT`), so the GTK
+/// thread is never blocked. After a timeout `proceed` runs anyway, as the
+/// credential path does.
+pub fn run_after_startup_keyring<F>(state: &SharedAppState, wait: bool, proceed: F)
+where
+    F: FnOnce() + 'static,
+{
+    let gate = wait
+        .then(|| state.try_borrow().ok().map(|s| Arc::clone(&s.keyring_gate)))
+        .flatten()
+        .filter(|g| g.get().is_none());
+    let Some(gate) = gate else {
+        proceed();
+        return;
+    };
+    crate::utils::spawn_blocking_with_callback(
+        move || {
+            if gate.wait(KEYRING_WAIT).is_none() {
+                tracing::warn!(
+                    "startup keyring reads did not finish in time; connecting without them"
+                );
+            }
+        },
+        move |()| proceed(),
+    );
 }
 
 /// Stores a resolved credential in the session cache when
@@ -2861,5 +2922,31 @@ mod tests {
         let mut ctx = early_context(Arc::new(super::KeyringGate::ready(None)));
         ctx.keyring_gate = None;
         assert!(ctx.after_startup_keyring().kdbx_password.is_none());
+    }
+
+    fn ssh_via(jump: Option<uuid::Uuid>) -> rustconn_core::models::Connection {
+        let mut c = rustconn_core::models::Connection::new_ssh("c".into(), "h".into(), 22);
+        if let rustconn_core::ProtocolConfig::Ssh(cfg) = &mut c.protocol_config {
+            cfg.jump_host_id = jump;
+        }
+        c
+    }
+
+    // Only a launch that looks up a saved jump host's password waits, and only
+    // while the keyring reads are running.
+    #[test]
+    fn only_a_pending_gate_and_a_saved_jump_host_wait() {
+        let net = rustconn_core::config::NetworkSettings::default();
+        let via = ssh_via(Some(uuid::Uuid::new_v4()));
+        assert!(super::needs_startup_keyring_wait(true, &via, &[], &net));
+        assert!(!super::needs_startup_keyring_wait(false, &via, &[], &net));
+        assert!(!super::needs_startup_keyring_wait(
+            true,
+            &ssh_via(None),
+            &[],
+            &net
+        ));
+        let telnet = rustconn_core::models::Connection::new_telnet("t".into(), "h".into(), 23);
+        assert!(!super::needs_startup_keyring_wait(true, &telnet, &[], &net));
     }
 }
