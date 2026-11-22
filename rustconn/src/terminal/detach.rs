@@ -114,6 +114,14 @@ pub(super) enum ParkMark {
     Detached,
 }
 
+/// Reports whether a detach may take a session's whole split along (pure).
+///
+/// The session must own a split (verdict `SplitOwner`) that shows two or more
+/// sessions; a single pane is an ordinary tab and goes the single-session way.
+pub(super) const fn may_take_split(verdict: DetachVerdict, members: usize) -> bool {
+    matches!(verdict, DetachVerdict::SplitOwner) && members >= 2
+}
+
 /// Removes a session from both park sets, reporting the mark it held (pure).
 ///
 /// A session is parked for exactly one reason at a time, so clearing both sets
@@ -465,6 +473,68 @@ impl TerminalNotebook {
         }
         tracing::info!(session = %session_id, "session content handed to detached window");
         Some(content)
+    }
+
+    /// Hands a whole split over to a detached window: the owner's session,
+    /// its split layout and every guest in it.
+    ///
+    /// Only the GTK container holding the layout changes. The layout widget
+    /// is lifted out of the owner's tab and returned inside a fresh box, so no
+    /// terminal is touched and no PTY restarts. The owner is marked detached and
+    /// its page parked; the guests stay parked in the split, as they were.
+    /// Returns `None` and changes nothing when the session does not own a split
+    /// of two or more sessions.
+    #[must_use]
+    pub fn take_split_content(&self, session_id: Uuid) -> Option<GtkBox> {
+        if !may_take_split(
+            self.detach_verdict(session_id),
+            self.split_members(session_id).len(),
+        ) {
+            return None;
+        }
+        // The layout is the only child of the page's container in split mode.
+        let layout = self.get_session_container(session_id)?;
+        self.detached.borrow_mut().insert(session_id);
+        if !self.park_tab_page(session_id) {
+            self.detached.borrow_mut().remove(&session_id);
+            return None;
+        }
+        if layout.parent().is_some() {
+            layout.unparent();
+        }
+        let content = GtkBox::new(Orientation::Vertical, 0);
+        content.set_hexpand(true);
+        content.set_vexpand(true);
+        content.append(&layout);
+        tracing::info!(session = %session_id, "split handed to detached window");
+        Some(content)
+    }
+
+    /// Moves a detached split back into a tab of the main window.
+    ///
+    /// `content` is the box [`Self::take_split_content`] returned. The owner's
+    /// tab is recreated and the same layout widget put back in it.
+    pub fn attach_split(&self, session_id: Uuid, content: &GtkBox) -> bool {
+        let Some(layout) = content.first_child().and_downcast::<GtkBox>() else {
+            tracing::warn!(session = %session_id, "attach declined: no split layout");
+            return false;
+        };
+        if !self.is_detached(session_id) || !self.restore_session_tab(session_id) {
+            tracing::warn!(session = %session_id, "attach declined: no tab for the split");
+            return false;
+        }
+        content.remove(&layout);
+        self.switch_tab_to_split(session_id, &layout);
+        // The new page has a plain title and no colour mark: put the split's back.
+        let color = self.split_session_colors.borrow().get(&session_id).copied();
+        if let Some(color) = color {
+            self.set_tab_split_color(session_id, color);
+        }
+        Self::apply_split_tab_title(&self.tab_chrome(), session_id);
+        self.switch_to_tab(session_id);
+        self.remove_welcome_page();
+        tracing::info!(session = %session_id, "split attached back to main window");
+        true
     }
 
     /// Moves a detached session's content back into a tab of the main window.
@@ -1240,5 +1310,22 @@ mod notebook_park_tests {
             2,
             "both live sessions are counted exactly once"
         );
+    }
+}
+
+#[cfg(test)]
+mod take_split_tests {
+    use super::{DetachVerdict, may_take_split};
+
+    #[test]
+    fn only_a_split_owner_with_two_or_more_sessions_takes_its_split() {
+        assert!(may_take_split(DetachVerdict::SplitOwner, 2));
+        assert!(may_take_split(DetachVerdict::SplitOwner, 4));
+        assert!(!may_take_split(DetachVerdict::SplitOwner, 1));
+        assert!(!may_take_split(DetachVerdict::SplitOwner, 0));
+        assert!(!may_take_split(DetachVerdict::Allowed, 3));
+        assert!(!may_take_split(DetachVerdict::SplitGuest, 3));
+        assert!(!may_take_split(DetachVerdict::AlreadyDetached, 3));
+        assert!(!may_take_split(DetachVerdict::ExternalViewer, 3));
     }
 }
