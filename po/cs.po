@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 23:10+0200\n"
+"POT-Creation-Date: 2026-11-23 00:55+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: p-bo <https://github.com/p-bo>\n"
 "Language-Team: Czech\n"
@@ -47,7 +47,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:303
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:823
-#: rustconn/src/session_group_window.rs:720
+#: rustconn/src/session_group_window.rs:429
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1424
 #: rustconn/src/terminal/safe_paste.rs:166
@@ -270,7 +270,7 @@ msgstr "Tuto zkratku už používá jiné makro"
 msgid "Command macro “{}”: {}"
 msgstr "Příkazové makro „{}“: {}"
 
-#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:453
+#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:493
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
@@ -280,7 +280,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
-#: rustconn/src/session_group_window.rs:1047
+#: rustconn/src/session_group_window.rs:1135
 #: rustconn/src/terminal/session_lifecycle.rs:615
 #: rustconn/src/terminal/session_lifecycle.rs:760
 #: rustconn/src/terminal/spawn.rs:150
@@ -291,7 +291,7 @@ msgstr "Relace odpojena"
 msgid "Press F11 to leave fullscreen"
 msgstr "Stisknutím F11 ukončíte celou obrazovku"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/session_group_window.rs:476
+#: rustconn/src/detached_window.rs:477 rustconn/src/session_group_window.rs:516
 msgid "Move to Main Window"
 msgstr "Přesunout do hlavního okna"
 
@@ -634,8 +634,8 @@ msgid "Join Shared Session…"
 msgstr "Připojit ke sdílené relaci…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:644
-#: rustconn/src/terminal/mod.rs:650
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:645
+#: rustconn/src/terminal/mod.rs:651
 msgid "Tab Overview"
 msgstr "Přehled karet"
 
@@ -5069,7 +5069,7 @@ msgstr "Zkopírovat"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:265
-#: rustconn/src/session_group_window.rs:482
+#: rustconn/src/session_group_window.rs:522
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:918
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -8456,7 +8456,7 @@ msgid "The pass password store, encrypted with your GPG key"
 msgstr "Úložiště hesel pass, zašifrované tvým klíčem GPG"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:517
-#: rustconn/src/window/credentials.rs:395
+#: rustconn/src/window/credentials.rs:408
 msgid "Encrypted file"
 msgstr "Šifrovaný soubor"
 
@@ -8465,7 +8465,7 @@ msgid "A file on this computer, encrypted with a key tied to this machine"
 msgstr "Soubor v tomto počítači, zašifrovaný klíčem vázaným na tento stroj"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:522
-#: rustconn/src/window/credentials.rs:399
+#: rustconn/src/window/credentials.rs:412
 msgid "Portable encrypted file"
 msgstr "Přenosný zašifrovaný soubor"
 
@@ -10189,7 +10189,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Přepnout vysílání v rozděleném zobrazení"
 
 #: rustconn/src/dialogs/shortcuts.rs:232
-#: rustconn/src/session_group_window.rs:616 rustconn/src/window/ui.rs:186
+#: rustconn/src/session_group_window.rs:659 rustconn/src/window/ui.rs:186
 msgid "Toggle Tab Broadcast"
 msgstr "Přepnout skupinové vysílání"
 
@@ -12629,13 +12629,13 @@ msgid "Go back to one tab at a time"
 msgstr "Zpět na jednu kartu najednou"
 
 #: rustconn/src/session_group_window.rs:189
-#: rustconn/src/session_group_window.rs:574
-#: rustconn/src/session_group_window.rs:580
+#: rustconn/src/session_group_window.rs:617
+#: rustconn/src/session_group_window.rs:623
 msgid "Tile Tabs"
 msgstr "Dlaždicové karty"
 
 #: rustconn/src/session_group_window.rs:190
-#: rustconn/src/session_group_window.rs:579
+#: rustconn/src/session_group_window.rs:622
 msgid "Show all tabs of this window side by side"
 msgstr "Zobrazit všechny karty tohoto okna vedle sebe"
 
@@ -12650,29 +12650,40 @@ msgstr "Vysílání"
 msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "Zrušte zaškrtnutí, aby tento panel nedostával vysílané stisky kláves"
 
-#: rustconn/src/session_group_window.rs:606 rustconn/src/window/ui.rs:176
-msgid "Tab Broadcast"
-msgstr "Skupinové vysílání"
-
-#: rustconn/src/session_group_window.rs:612
-msgid "Mirror keystrokes to all tabs in this window"
-msgstr "Zrcadlit stisky kláves do všech karet v tomto okně"
-
-#: rustconn/src/session_group_window.rs:714
-msgid "Close this window?"
-msgstr "Zavřít toto okno?"
-
-#: rustconn/src/session_group_window.rs:716
-msgid "This ends all {} sessions in this window."
-msgstr "Tím se ukončí všech {} relací v tomto okně."
-
-#: rustconn/src/session_group_window.rs:721
+#: rustconn/src/session_group_window.rs:430
 #: rustconn/src/terminal/split_close.rs:273
 #: rustconn/src/terminal/split_close.rs:322
 msgid "Close All Sessions"
 msgstr "Zavřít všechny relace"
 
-#: rustconn/src/session_group_window.rs:916
+#: rustconn/src/session_group_window.rs:649 rustconn/src/window/ui.rs:176
+msgid "Tab Broadcast"
+msgstr "Skupinové vysílání"
+
+#: rustconn/src/session_group_window.rs:655
+msgid "Mirror keystrokes to all tabs in this window"
+msgstr "Zrcadlit stisky kláves do všech karet v tomto okně"
+
+#: rustconn/src/session_group_window.rs:732
+#: rustconn/src/session_group_window.rs:812
+msgid "Close this window?"
+msgstr "Zavřít toto okno?"
+
+#: rustconn/src/session_group_window.rs:734
+#: rustconn/src/session_group_window.rs:814
+msgid "This ends all {} sessions in this window."
+msgstr "Tím se ukončí všech {} relací v tomto okně."
+
+#: rustconn/src/session_group_window.rs:740
+#: rustconn/src/terminal/split_close.rs:314
+msgid "Close Split Tab?"
+msgstr "Zavřít rozdělenou kartu?"
+
+#: rustconn/src/session_group_window.rs:742
+msgid "This ends all {} sessions in this split."
+msgstr "Tím se ukončí všech {} relací v tomto rozděleném zobrazení."
+
+#: rustconn/src/session_group_window.rs:1004
 msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 "Vysílání je aktivní — stisky kláves se zrcadlí do {} karet v tomto okně"
@@ -13267,7 +13278,7 @@ msgstr "Vybrat záložku k zobrazení"
 msgid "Save Selection as Snippet…"
 msgstr "Uložit výběr jako úryvek…"
 
-#: rustconn/src/terminal/mod.rs:663 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:664 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Vítejte"
 
@@ -13409,10 +13420,6 @@ msgstr ""
 #: rustconn/src/terminal/split_close.rs:269
 msgid "Close Tabs With Split Views?"
 msgstr "Zavřít karty s rozděleným zobrazením?"
-
-#: rustconn/src/terminal/split_close.rs:314
-msgid "Close Split Tab?"
-msgstr "Zavřít rozdělenou kartu?"
 
 #: rustconn/src/terminal/split_close.rs:316
 msgid ""
@@ -13628,7 +13635,7 @@ msgstr "Rychlé připojení…"
 msgid "{} Active Session(s)"
 msgstr "{} aktivních relací"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/settings_glue.rs:388
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/settings_glue.rs:395
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Heslo přenosný soubor neotevře"
 
@@ -14125,26 +14132,26 @@ msgstr "Pro toto připojení není nakonfigurováno heslo"
 msgid "Could not retrieve password from secret backend"
 msgstr "Nepodařilo se získat heslo z backendu tajemství"
 
-#: rustconn/src/window/credentials.rs:469
+#: rustconn/src/window/credentials.rs:482
 msgid "Failed to save variable to vault: {}"
 msgstr "Nepodařilo se uložit proměnnou do trezoru: {}"
 
-#: rustconn/src/window/credentials.rs:593
+#: rustconn/src/window/credentials.rs:606
 msgid "Vault entry not found for '{}'. You will be prompted for a password."
 msgstr ""
 "Záznam v trezoru nebyl nalezen pro '{}'. Budete vyzváni k zadání hesla."
 
-#: rustconn/src/window/credentials.rs:1050
-#: rustconn/src/window/credentials.rs:1286
+#: rustconn/src/window/credentials.rs:1063
+#: rustconn/src/window/credentials.rs:1299
 #: rustconn/src/window/edit_actions.rs:2514
 msgid "Connection failed. Host unreachable."
 msgstr "Připojení selhalo. Hostitel nedostupný."
 
-#: rustconn/src/window/detach_actions.rs:82
+#: rustconn/src/window/detach_actions.rs:86
 msgid "This session already has its own window."
 msgstr "Tato relace už má vlastní okno."
 
-#: rustconn/src/window/detach_actions.rs:84
+#: rustconn/src/window/detach_actions.rs:88
 msgid ""
 "This session is displayed by a separate viewer, which already runs in its "
 "own window."
@@ -14152,7 +14159,7 @@ msgstr ""
 "Tato relace se zobrazuje v externím prohlížeči, který už běží ve vlastním "
 "okně."
 
-#: rustconn/src/window/detach_actions.rs:87
+#: rustconn/src/window/detach_actions.rs:91
 msgid ""
 "Remove the split layout from this tab before moving the session to its own "
 "window."
@@ -14160,31 +14167,31 @@ msgstr ""
 "Než relaci přesunete do vlastního okna, odeberte z této karty rozdělené "
 "zobrazení."
 
-#: rustconn/src/window/detach_actions.rs:90
+#: rustconn/src/window/detach_actions.rs:94
 msgid ""
 "This session is displayed in a split layout. Return it to its own tab first."
 msgstr ""
 "Tato relace se zobrazuje v rozděleném zobrazení. Nejprve ji vraťte do "
 "vlastní karty."
 
-#: rustconn/src/window/detach_actions.rs:228
-#: rustconn/src/window/detach_actions.rs:239
-#: rustconn/src/window/detach_actions.rs:246
-#: rustconn/src/window/detach_actions.rs:521
+#: rustconn/src/window/detach_actions.rs:281
+#: rustconn/src/window/detach_actions.rs:292
+#: rustconn/src/window/detach_actions.rs:299
+#: rustconn/src/window/detach_actions.rs:604
 msgid "Could not move the session to its own window."
 msgstr "Relaci se nepodařilo přesunout do vlastního okna."
 
-#: rustconn/src/window/detach_actions.rs:294
+#: rustconn/src/window/detach_actions.rs:360
 msgid "Could not move the session back to the main window."
 msgstr "Relaci se nepodařilo přesunout zpět do hlavního okna."
 
-#: rustconn/src/window/detach_actions.rs:779
-#: rustconn/src/window/detach_actions.rs:803
+#: rustconn/src/window/detach_actions.rs:882
+#: rustconn/src/window/detach_actions.rs:906
 #: rustconn/src/window/group_broadcast.rs:464
 msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Skupinové vysílání vypnuto — stisky kláves jdou jen do zaměřené karty"
 
-#: rustconn/src/window/detach_actions.rs:828
+#: rustconn/src/window/detach_actions.rs:931
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "Skupinové vysílání vyžaduje dvě nebo více karet terminálu"
 
@@ -16235,15 +16242,15 @@ msgstr "Text k odeslání…"
 msgid "Append newline (press Enter)"
 msgstr "Přidat nový řádek (Enter)"
 
-#: rustconn/src/window/settings_glue.rs:173
+#: rustconn/src/window/settings_glue.rs:180
 msgid "Settings saved"
 msgstr "Nastavení uloženo"
 
-#: rustconn/src/window/settings_glue.rs:210
+#: rustconn/src/window/settings_glue.rs:217
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Heslo nebylo na tomto počítači uloženo"
 
-#: rustconn/src/window/settings_glue.rs:212
+#: rustconn/src/window/settings_glue.rs:219
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -16255,11 +16262,11 @@ msgstr ""
 "klíčenka“ nebo zkontrolujte, zda může RustConn zapisovat do svého datového "
 "adresáře."
 
-#: rustconn/src/window/settings_glue.rs:258
+#: rustconn/src/window/settings_glue.rs:265
 msgid "Credentials Not Saved to Keyring"
 msgstr "Přihlašovací údaje nebyly uloženy do klíčenky"
 
-#: rustconn/src/window/settings_glue.rs:260
+#: rustconn/src/window/settings_glue.rs:267
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -16269,7 +16276,7 @@ msgstr ""
 "pro tuto relaci a po restartu zmizí. Zkontrolujte, že služba klíčenky běží a "
 "je odemčená, a poté nastavení uložte znovu."
 
-#: rustconn/src/window/settings_glue.rs:390
+#: rustconn/src/window/settings_glue.rs:397
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -16384,11 +16391,11 @@ msgid "Cannot move a folder into one of its own subfolders"
 msgstr "Složku nelze přesunout do jedné z jejích vlastních podsložek"
 
 #: rustconn/src/window/split_view_actions.rs:160
-#: rustconn/src/window/split_view_actions.rs:1523
+#: rustconn/src/window/split_view_actions.rs:1524
 msgid "Some tabs could not be added to the split."
 msgstr "Některé záložky se nepodařilo přidat do rozdělení."
 
-#: rustconn/src/window/split_view_actions.rs:618
+#: rustconn/src/window/split_view_actions.rs:619
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
 "across split panes"
@@ -16396,9 +16403,9 @@ msgstr ""
 "Tip: stiskněte Ctrl+Shift+B nebo použijte tlačítko „Vysílání“, abyste "
 "duplikovali stisky kláves do všech rozdělených panelů"
 
-#: rustconn/src/window/split_view_actions.rs:660
-#: rustconn/src/window/split_view_actions.rs:882
-#: rustconn/src/window/split_view_actions.rs:1403
+#: rustconn/src/window/split_view_actions.rs:661
+#: rustconn/src/window/split_view_actions.rs:883
+#: rustconn/src/window/split_view_actions.rs:1404
 msgid ""
 "Split view is not available for external-viewer sessions. Switch this "
 "connection to embedded mode to use split."
@@ -16406,14 +16413,14 @@ msgstr ""
 "Rozdělené zobrazení není k dispozici pro relace s externím prohlížečem. "
 "Přepněte toto připojení do vestavěného režimu, abyste mohli použít rozdělení."
 
-#: rustconn/src/window/split_view_actions.rs:1397
+#: rustconn/src/window/split_view_actions.rs:1398
 msgid ""
 "This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr ""
 "Tato záložka už je rozdělená. Nejdřív rozdělení odeberte, nebo v panelu "
 "použijte „Vybrat záložku“."
 
-#: rustconn/src/window/split_view_actions.rs:1424
+#: rustconn/src/window/split_view_actions.rs:1425
 msgid "There are no other tabs that can be shown in a split."
 msgstr "Nejsou žádné další záložky, které by šlo zobrazit v rozdělení."
 

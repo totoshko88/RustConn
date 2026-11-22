@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 23:10+0200\n"
+"POT-Creation-Date: 2026-11-23 00:55+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Spanish\n"
@@ -50,7 +50,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:303
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:823
-#: rustconn/src/session_group_window.rs:720
+#: rustconn/src/session_group_window.rs:429
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1424
 #: rustconn/src/terminal/safe_paste.rs:166
@@ -274,7 +274,7 @@ msgstr "Otra macro ya usa este atajo"
 msgid "Command macro “{}”: {}"
 msgstr "Macro de comando «{}»: {}"
 
-#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:453
+#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:493
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
@@ -284,7 +284,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
-#: rustconn/src/session_group_window.rs:1047
+#: rustconn/src/session_group_window.rs:1135
 #: rustconn/src/terminal/session_lifecycle.rs:615
 #: rustconn/src/terminal/session_lifecycle.rs:760
 #: rustconn/src/terminal/spawn.rs:150
@@ -295,7 +295,7 @@ msgstr "Sesión desconectada"
 msgid "Press F11 to leave fullscreen"
 msgstr "Pulsa F11 para salir de pantalla completa"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/session_group_window.rs:476
+#: rustconn/src/detached_window.rs:477 rustconn/src/session_group_window.rs:516
 msgid "Move to Main Window"
 msgstr "Mover a la ventana principal"
 
@@ -639,8 +639,8 @@ msgid "Join Shared Session…"
 msgstr "Unirse a una sesión compartida…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:644
-#: rustconn/src/terminal/mod.rs:650
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:645
+#: rustconn/src/terminal/mod.rs:651
 msgid "Tab Overview"
 msgstr "Vista general de pestañas"
 
@@ -5105,7 +5105,7 @@ msgstr "Copiar"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:265
-#: rustconn/src/session_group_window.rs:482
+#: rustconn/src/session_group_window.rs:522
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:918
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -8527,7 +8527,7 @@ msgid "The pass password store, encrypted with your GPG key"
 msgstr "El almacén de contraseñas pass, cifrado con tu clave GPG"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:517
-#: rustconn/src/window/credentials.rs:395
+#: rustconn/src/window/credentials.rs:408
 msgid "Encrypted file"
 msgstr "Archivo cifrado"
 
@@ -8536,7 +8536,7 @@ msgid "A file on this computer, encrypted with a key tied to this machine"
 msgstr "Un archivo en este equipo, cifrado con una clave ligada a esta máquina"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:522
-#: rustconn/src/window/credentials.rs:399
+#: rustconn/src/window/credentials.rs:412
 msgid "Portable encrypted file"
 msgstr "Archivo cifrado portátil"
 
@@ -10272,7 +10272,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Alternar la difusión en vista dividida"
 
 #: rustconn/src/dialogs/shortcuts.rs:232
-#: rustconn/src/session_group_window.rs:616 rustconn/src/window/ui.rs:186
+#: rustconn/src/session_group_window.rs:659 rustconn/src/window/ui.rs:186
 msgid "Toggle Tab Broadcast"
 msgstr "Alternar difusión de grupo"
 
@@ -12745,13 +12745,13 @@ msgid "Go back to one tab at a time"
 msgstr "Volver a una pestaña cada vez"
 
 #: rustconn/src/session_group_window.rs:189
-#: rustconn/src/session_group_window.rs:574
-#: rustconn/src/session_group_window.rs:580
+#: rustconn/src/session_group_window.rs:617
+#: rustconn/src/session_group_window.rs:623
 msgid "Tile Tabs"
 msgstr "Mosaico de pestañas"
 
 #: rustconn/src/session_group_window.rs:190
-#: rustconn/src/session_group_window.rs:579
+#: rustconn/src/session_group_window.rs:622
 msgid "Show all tabs of this window side by side"
 msgstr "Mostrar todas las pestañas de esta ventana una junto a otra"
 
@@ -12766,29 +12766,40 @@ msgstr "Difusión"
 msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "Desmarque para excluir este panel de la difusión de pulsaciones"
 
-#: rustconn/src/session_group_window.rs:606 rustconn/src/window/ui.rs:176
-msgid "Tab Broadcast"
-msgstr "Difusión de grupo"
-
-#: rustconn/src/session_group_window.rs:612
-msgid "Mirror keystrokes to all tabs in this window"
-msgstr "Reflejar las pulsaciones en todas las pestañas de esta ventana"
-
-#: rustconn/src/session_group_window.rs:714
-msgid "Close this window?"
-msgstr "¿Cerrar esta ventana?"
-
-#: rustconn/src/session_group_window.rs:716
-msgid "This ends all {} sessions in this window."
-msgstr "Esto finaliza las {} sesiones de esta ventana."
-
-#: rustconn/src/session_group_window.rs:721
+#: rustconn/src/session_group_window.rs:430
 #: rustconn/src/terminal/split_close.rs:273
 #: rustconn/src/terminal/split_close.rs:322
 msgid "Close All Sessions"
 msgstr "Cerrar todas las sesiones"
 
-#: rustconn/src/session_group_window.rs:916
+#: rustconn/src/session_group_window.rs:649 rustconn/src/window/ui.rs:176
+msgid "Tab Broadcast"
+msgstr "Difusión de grupo"
+
+#: rustconn/src/session_group_window.rs:655
+msgid "Mirror keystrokes to all tabs in this window"
+msgstr "Reflejar las pulsaciones en todas las pestañas de esta ventana"
+
+#: rustconn/src/session_group_window.rs:732
+#: rustconn/src/session_group_window.rs:812
+msgid "Close this window?"
+msgstr "¿Cerrar esta ventana?"
+
+#: rustconn/src/session_group_window.rs:734
+#: rustconn/src/session_group_window.rs:814
+msgid "This ends all {} sessions in this window."
+msgstr "Esto finaliza las {} sesiones de esta ventana."
+
+#: rustconn/src/session_group_window.rs:740
+#: rustconn/src/terminal/split_close.rs:314
+msgid "Close Split Tab?"
+msgstr "¿Cerrar la pestaña dividida?"
+
+#: rustconn/src/session_group_window.rs:742
+msgid "This ends all {} sessions in this split."
+msgstr "Esto finaliza las {} sesiones de esta vista dividida."
+
+#: rustconn/src/session_group_window.rs:1004
 msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr ""
 "Difusión activa — pulsaciones reflejadas en {} pestañas de esta ventana"
@@ -13383,7 +13394,7 @@ msgstr "Seleccionar una pestaña para mostrar"
 msgid "Save Selection as Snippet…"
 msgstr "Guardar selección como fragmento…"
 
-#: rustconn/src/terminal/mod.rs:663 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:664 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Bienvenido"
 
@@ -13527,10 +13538,6 @@ msgstr ""
 #: rustconn/src/terminal/split_close.rs:269
 msgid "Close Tabs With Split Views?"
 msgstr "¿Cerrar las pestañas con vista dividida?"
-
-#: rustconn/src/terminal/split_close.rs:314
-msgid "Close Split Tab?"
-msgstr "¿Cerrar la pestaña dividida?"
 
 #: rustconn/src/terminal/split_close.rs:316
 msgid ""
@@ -13746,7 +13753,7 @@ msgstr "Conexión rápida…"
 msgid "{} Active Session(s)"
 msgstr "{} sesión(es) activa(s)"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/settings_glue.rs:388
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/settings_glue.rs:395
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "La frase de contraseña no abre el archivo portátil"
 
@@ -14244,26 +14251,26 @@ msgstr "No hay contraseña configurada para esta conexión"
 msgid "Could not retrieve password from secret backend"
 msgstr "No se pudo obtener la contraseña del backend de secretos"
 
-#: rustconn/src/window/credentials.rs:469
+#: rustconn/src/window/credentials.rs:482
 msgid "Failed to save variable to vault: {}"
 msgstr "No se pudo guardar la variable en la bóveda: {}"
 
-#: rustconn/src/window/credentials.rs:593
+#: rustconn/src/window/credentials.rs:606
 msgid "Vault entry not found for '{}'. You will be prompted for a password."
 msgstr ""
 "Entrada de bóveda no encontrada para '{}'. Se le solicitará una contraseña."
 
-#: rustconn/src/window/credentials.rs:1050
-#: rustconn/src/window/credentials.rs:1286
+#: rustconn/src/window/credentials.rs:1063
+#: rustconn/src/window/credentials.rs:1299
 #: rustconn/src/window/edit_actions.rs:2514
 msgid "Connection failed. Host unreachable."
 msgstr "Conexión fallida. Host inaccesible."
 
-#: rustconn/src/window/detach_actions.rs:82
+#: rustconn/src/window/detach_actions.rs:86
 msgid "This session already has its own window."
 msgstr "Esta sesión ya tiene su propia ventana."
 
-#: rustconn/src/window/detach_actions.rs:84
+#: rustconn/src/window/detach_actions.rs:88
 msgid ""
 "This session is displayed by a separate viewer, which already runs in its "
 "own window."
@@ -14271,7 +14278,7 @@ msgstr ""
 "Esta sesión se muestra en un visor externo, que ya se ejecuta en su propia "
 "ventana."
 
-#: rustconn/src/window/detach_actions.rs:87
+#: rustconn/src/window/detach_actions.rs:91
 msgid ""
 "Remove the split layout from this tab before moving the session to its own "
 "window."
@@ -14279,33 +14286,33 @@ msgstr ""
 "Quite la vista dividida de esta pestaña antes de mover la sesión a su propia "
 "ventana."
 
-#: rustconn/src/window/detach_actions.rs:90
+#: rustconn/src/window/detach_actions.rs:94
 msgid ""
 "This session is displayed in a split layout. Return it to its own tab first."
 msgstr ""
 "Esta sesión se muestra en una vista dividida. Devuélvala primero a su propia "
 "pestaña."
 
-#: rustconn/src/window/detach_actions.rs:228
-#: rustconn/src/window/detach_actions.rs:239
-#: rustconn/src/window/detach_actions.rs:246
-#: rustconn/src/window/detach_actions.rs:521
+#: rustconn/src/window/detach_actions.rs:281
+#: rustconn/src/window/detach_actions.rs:292
+#: rustconn/src/window/detach_actions.rs:299
+#: rustconn/src/window/detach_actions.rs:604
 msgid "Could not move the session to its own window."
 msgstr "No se pudo mover la sesión a su propia ventana."
 
-#: rustconn/src/window/detach_actions.rs:294
+#: rustconn/src/window/detach_actions.rs:360
 msgid "Could not move the session back to the main window."
 msgstr "No se pudo devolver la sesión a la ventana principal."
 
-#: rustconn/src/window/detach_actions.rs:779
-#: rustconn/src/window/detach_actions.rs:803
+#: rustconn/src/window/detach_actions.rs:882
+#: rustconn/src/window/detach_actions.rs:906
 #: rustconn/src/window/group_broadcast.rs:464
 msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Difusión de grupo desactivada — las pulsaciones van solo a la pestaña "
 "enfocada"
 
-#: rustconn/src/window/detach_actions.rs:828
+#: rustconn/src/window/detach_actions.rs:931
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "La difusión de grupo necesita dos o más pestañas de terminal"
 
@@ -16380,15 +16387,15 @@ msgstr "Texto a enviar…"
 msgid "Append newline (press Enter)"
 msgstr "Añadir salto de línea (Enter)"
 
-#: rustconn/src/window/settings_glue.rs:173
+#: rustconn/src/window/settings_glue.rs:180
 msgid "Settings saved"
 msgstr "Configuración guardada"
 
-#: rustconn/src/window/settings_glue.rs:210
+#: rustconn/src/window/settings_glue.rs:217
 msgid "Passphrase Not Saved on This Computer"
 msgstr "La frase de contraseña no se guardó en este equipo"
 
-#: rustconn/src/window/settings_glue.rs:212
+#: rustconn/src/window/settings_glue.rs:219
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -16400,11 +16407,11 @@ msgstr ""
 "reiniciar. Elija «Llavero del sistema» o compruebe que RustConn puede "
 "escribir en su directorio de datos."
 
-#: rustconn/src/window/settings_glue.rs:258
+#: rustconn/src/window/settings_glue.rs:265
 msgid "Credentials Not Saved to Keyring"
 msgstr "Credenciales no guardadas en el llavero"
 
-#: rustconn/src/window/settings_glue.rs:260
+#: rustconn/src/window/settings_glue.rs:267
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -16415,7 +16422,7 @@ msgstr ""
 "servicio del llavero está en marcha y desbloqueado, y vuelve a guardar la "
 "configuración."
 
-#: rustconn/src/window/settings_glue.rs:390
+#: rustconn/src/window/settings_glue.rs:397
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -16532,11 +16539,11 @@ msgid "Cannot move a folder into one of its own subfolders"
 msgstr "No se puede mover una carpeta a una de sus propias subcarpetas"
 
 #: rustconn/src/window/split_view_actions.rs:160
-#: rustconn/src/window/split_view_actions.rs:1523
+#: rustconn/src/window/split_view_actions.rs:1524
 msgid "Some tabs could not be added to the split."
 msgstr "No se pudieron añadir algunas pestañas a la división."
 
-#: rustconn/src/window/split_view_actions.rs:618
+#: rustconn/src/window/split_view_actions.rs:619
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
 "across split panes"
@@ -16544,9 +16551,9 @@ msgstr ""
 "Sugerencia: pulse Ctrl+Mayús+B o use el botón «Difusión» para replicar "
 "pulsaciones en todos los paneles divididos"
 
-#: rustconn/src/window/split_view_actions.rs:660
-#: rustconn/src/window/split_view_actions.rs:882
-#: rustconn/src/window/split_view_actions.rs:1403
+#: rustconn/src/window/split_view_actions.rs:661
+#: rustconn/src/window/split_view_actions.rs:883
+#: rustconn/src/window/split_view_actions.rs:1404
 msgid ""
 "Split view is not available for external-viewer sessions. Switch this "
 "connection to embedded mode to use split."
@@ -16554,14 +16561,14 @@ msgstr ""
 "La vista dividida no está disponible para sesiones con visor externo. Cambie "
 "esta conexión al modo integrado para usar la división."
 
-#: rustconn/src/window/split_view_actions.rs:1397
+#: rustconn/src/window/split_view_actions.rs:1398
 msgid ""
 "This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr ""
 "Esta pestaña ya está dividida. Quita primero la división o usa «Seleccionar "
 "pestaña» en un panel."
 
-#: rustconn/src/window/split_view_actions.rs:1424
+#: rustconn/src/window/split_view_actions.rs:1425
 msgid "There are no other tabs that can be shown in a split."
 msgstr "No hay otras pestañas que se puedan mostrar en una división."
 

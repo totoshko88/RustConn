@@ -408,6 +408,35 @@ fn live_sessions(tabs: impl Iterator<Item = Uuid>, weight: impl Fn(Uuid) -> usiz
     tabs.map(|id| weight(id).max(1)).sum()
 }
 
+/// Whether closing a tab must be confirmed first (pure).
+///
+/// Only the user's close of a tab that holds a split of two or more sessions
+/// asks, as in the main window. A tab dropped without teardown (`leaving`) and
+/// one the user already confirmed close at once; a one-session tab closes as
+/// before.
+const fn split_tab_needs_confirm(sessions_in_tab: usize, leaving: bool, confirmed: bool) -> bool {
+    sessions_in_tab >= 2 && !leaving && !confirmed
+}
+
+/// Asks before ending sessions: **Cancel** (default) or **Close All Sessions**.
+fn ask_end_sessions(
+    window: &adw::ApplicationWindow,
+    heading: &str,
+    body: &str,
+    on_answer: impl Fn(bool) + 'static,
+) {
+    let dialog = adw::AlertDialog::new(Some(heading), Some(body));
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("close", &i18n("Close All Sessions"));
+    dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
+    dialog.set_default_response(Some("cancel"));
+    dialog.set_close_response("cancel");
+    dialog.connect_response(None, move |_, response| {
+        on_answer(response == "close");
+    });
+    dialog.present(Some(window));
+}
+
 /// A top-level window with a tab per hosted session.
 pub struct SessionGroupWindow {
     window: adw::ApplicationWindow,
@@ -419,6 +448,10 @@ pub struct SessionGroupWindow {
     /// Sessions whose page is being dropped because the session moved away or
     /// already ended, so the `close-page` handler must not end it (again).
     leaving: Rc<RefCell<Vec<Uuid>>>,
+    /// Split tabs whose close the user confirmed; consumed by `close-page`.
+    confirmed: Rc<RefCell<HashSet<Uuid>>>,
+    /// Split tabs with a close question open, so a second click asks nothing.
+    asking: Rc<RefCell<HashSet<Uuid>>>,
     /// Set once the window itself is closing, so emptying it does not ask it to
     /// close a second time.
     closing: Rc<Cell<bool>>,
@@ -549,6 +582,8 @@ impl SessionGroupWindow {
             members,
             tiling,
             leaving: Rc::new(RefCell::new(Vec::new())),
+            confirmed: Rc::new(RefCell::new(HashSet::new())),
+            asking: Rc::new(RefCell::new(HashSet::new())),
             closing: Rc::new(Cell::new(false)),
             attach_button,
             broadcast_toggle,
@@ -669,9 +704,58 @@ impl SessionGroupWindow {
         let on_members_changed = Rc::clone(&self.on_members_changed);
         let tiling = Rc::downgrade(&self.tiling);
         let window = self.window.downgrade();
+        let weight = Rc::clone(&self.session_weight);
+        let confirmed = Rc::clone(&self.confirmed);
+        let asking = Rc::clone(&self.asking);
         self.tab_view.connect_close_page(move |tab_view, page| {
             let session = Self::session_of(&members.borrow(), page);
             if let Some(session_id) = session {
+                // A moved split ends with every session it shows, so the user
+                // is asked first. The window closing for good asks on its own.
+                let sessions_in_tab = weight.borrow().as_ref().map_or(1, |weigh| weigh(session_id));
+                let was_confirmed = confirmed.borrow_mut().remove(&session_id);
+                if !closing.get()
+                    && split_tab_needs_confirm(
+                        sessions_in_tab,
+                        leaving.borrow().contains(&session_id),
+                        was_confirmed,
+                    )
+                    && let Some(window) = window.upgrade()
+                {
+                    // Cancel and every answer leave the tab as it was; a
+                    // confirmed close comes back through this handler.
+                    tab_view.close_page_finish(page, false);
+                    if asking.borrow_mut().insert(session_id) {
+                        let only_tab = members.borrow().len() == 1;
+                        let (heading, body) = if only_tab {
+                            (
+                                i18n("Close this window?"),
+                                i18n_f(
+                                    "This ends all {} sessions in this window.",
+                                    &[&sessions_in_tab.to_string()],
+                                ),
+                            )
+                        } else {
+                            (
+                                i18n("Close Split Tab?"),
+                                i18n_f(
+                                    "This ends all {} sessions in this split.",
+                                    &[&sessions_in_tab.to_string()],
+                                ),
+                            )
+                        };
+                        let (tab_view, page) = (tab_view.clone(), page.clone());
+                        let (confirmed, asking) = (Rc::clone(&confirmed), Rc::clone(&asking));
+                        ask_end_sessions(&window, &heading, &body, move |close| {
+                            asking.borrow_mut().remove(&session_id);
+                            if close {
+                                confirmed.borrow_mut().insert(session_id);
+                                tab_view.close_page(&page);
+                            }
+                        });
+                    }
+                    return glib::Propagation::Stop;
+                }
                 members.borrow_mut().remove(&session_id);
                 let was_leaving = {
                     let mut leaving = leaving.borrow_mut();
@@ -721,30 +805,23 @@ impl SessionGroupWindow {
                 weight.borrow().as_ref().map_or(1, |weigh| weigh(id))
             });
             if !closing.get() && live >= 2 {
-                let dialog = adw::AlertDialog::new(
-                    Some(&i18n("Close this window?")),
-                    Some(&i18n_f(
-                        "This ends all {} sessions in this window.",
-                        &[&live.to_string()],
-                    )),
-                );
-                dialog.add_response("cancel", &i18n("Cancel"));
-                dialog.add_response("close", &i18n("Close All Sessions"));
-                dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
-                dialog.set_default_response(Some("cancel"));
-                dialog.set_close_response("cancel");
                 let window_weak = window.downgrade();
                 let closing = Rc::clone(&closing);
-                dialog.connect_response(None, move |_, response| {
-                    if response == "close"
-                        && let Some(window) = window_weak.upgrade()
-                    {
-                        // Set before closing, so the request goes through.
-                        closing.set(true);
-                        window.close();
-                    }
-                });
-                dialog.present(Some(window));
+                ask_end_sessions(
+                    window,
+                    &i18n("Close this window?"),
+                    &i18n_f(
+                        "This ends all {} sessions in this window.",
+                        &[&live.to_string()],
+                    ),
+                    move |close| {
+                        if close && let Some(window) = window_weak.upgrade() {
+                            // Set before closing, so the request goes through.
+                            closing.set(true);
+                            window.close();
+                        }
+                    },
+                );
                 return glib::Propagation::Stop;
             }
             closing.set(true);
@@ -1177,6 +1254,16 @@ mod tests {
         let mut leaves = Vec::new();
         tile_tree(&plan).leaves(&mut leaves);
         leaves
+    }
+
+    #[test]
+    fn only_a_users_close_of_a_split_tab_asks() {
+        assert!(split_tab_needs_confirm(2, false, false));
+        assert!(split_tab_needs_confirm(5, false, false));
+        assert!(!split_tab_needs_confirm(1, false, false));
+        assert!(!split_tab_needs_confirm(0, false, false));
+        assert!(!split_tab_needs_confirm(3, true, false));
+        assert!(!split_tab_needs_confirm(3, false, true));
     }
 
     #[test]

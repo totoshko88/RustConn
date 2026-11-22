@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 23:10+0200\n"
+"POT-Creation-Date: 2026-11-23 00:55+0200\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -51,7 +51,7 @@ msgstr "დიახ"
 #: rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:303
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:823
-#: rustconn/src/session_group_window.rs:720
+#: rustconn/src/session_group_window.rs:429
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1424
 #: rustconn/src/terminal/safe_paste.rs:166
@@ -275,7 +275,7 @@ msgstr "ამ მალსახმობს უკვე იყენებს
 msgid "Command macro “{}”: {}"
 msgstr "ბრძანების მაკრო „{}“: {}"
 
-#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:453
+#: rustconn/src/detached_window.rs:62 rustconn/src/session_group_window.rs:493
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
@@ -285,7 +285,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
-#: rustconn/src/session_group_window.rs:1047
+#: rustconn/src/session_group_window.rs:1135
 #: rustconn/src/terminal/session_lifecycle.rs:615
 #: rustconn/src/terminal/session_lifecycle.rs:760
 #: rustconn/src/terminal/spawn.rs:150
@@ -296,7 +296,7 @@ msgstr "სესია გათიშულია"
 msgid "Press F11 to leave fullscreen"
 msgstr "სრული ეკრანიდან გასასვლელად დააჭირეთ F11-ს"
 
-#: rustconn/src/detached_window.rs:477 rustconn/src/session_group_window.rs:476
+#: rustconn/src/detached_window.rs:477 rustconn/src/session_group_window.rs:516
 msgid "Move to Main Window"
 msgstr "მთავარ ფანჯარაში გადატანა"
 
@@ -636,8 +636,8 @@ msgid "Join Shared Session…"
 msgstr "გაზიარებულ სესიასთან მიერთება…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:644
-#: rustconn/src/terminal/mod.rs:650
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:645
+#: rustconn/src/terminal/mod.rs:651
 msgid "Tab Overview"
 msgstr "ჩანართის მიმოხილვა"
 
@@ -5099,7 +5099,7 @@ msgstr "კოპირება"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:265
-#: rustconn/src/session_group_window.rs:482
+#: rustconn/src/session_group_window.rs:522
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:918
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
@@ -8491,7 +8491,7 @@ msgid "The pass password store, encrypted with your GPG key"
 msgstr "პაროლის შენახვა, დაშიფრული თქვენი GPG გასაღებით"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:517
-#: rustconn/src/window/credentials.rs:395
+#: rustconn/src/window/credentials.rs:408
 msgid "Encrypted file"
 msgstr "დაშიფრული ფაილი"
 
@@ -8500,7 +8500,7 @@ msgid "A file on this computer, encrypted with a key tied to this machine"
 msgstr "ფაილი ამ კომპიუტერზე, დაშიფრულია ამ მოწყობილობაზე მიბმული გასაღებით"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:522
-#: rustconn/src/window/credentials.rs:399
+#: rustconn/src/window/credentials.rs:412
 msgid "Portable encrypted file"
 msgstr "პორტატული დაშიფრული ფაილი"
 
@@ -10226,7 +10226,7 @@ msgid "Toggle Split Broadcast"
 msgstr "Split Broadcast-ის გადართვა"
 
 #: rustconn/src/dialogs/shortcuts.rs:232
-#: rustconn/src/session_group_window.rs:616 rustconn/src/window/ui.rs:186
+#: rustconn/src/session_group_window.rs:659 rustconn/src/window/ui.rs:186
 msgid "Toggle Tab Broadcast"
 msgstr "ჯგუფური მაუწყებლობის გადართვა"
 
@@ -12671,13 +12671,13 @@ msgid "Go back to one tab at a time"
 msgstr "დაბრუნება ერთი ჩანართის ჩვენებაზე"
 
 #: rustconn/src/session_group_window.rs:189
-#: rustconn/src/session_group_window.rs:574
-#: rustconn/src/session_group_window.rs:580
+#: rustconn/src/session_group_window.rs:617
+#: rustconn/src/session_group_window.rs:623
 msgid "Tile Tabs"
 msgstr "ჩანართების განლაგება ფილებად"
 
 #: rustconn/src/session_group_window.rs:190
-#: rustconn/src/session_group_window.rs:579
+#: rustconn/src/session_group_window.rs:622
 msgid "Show all tabs of this window side by side"
 msgstr "ამ ფანჯრის ყველა ჩანართის ერთმანეთის გვერდით ჩვენება"
 
@@ -12692,29 +12692,40 @@ msgstr "ტრანსლაცია"
 msgid "Untick to keep this pane out of the keystroke broadcast"
 msgstr "მოხსენით მონიშვნა, რომ ეს პანელი კლავიშების მაუწყებლობიდან გამოირიცხოს"
 
-#: rustconn/src/session_group_window.rs:606 rustconn/src/window/ui.rs:176
-msgid "Tab Broadcast"
-msgstr "ჯგუფური მაუწყებლობა"
-
-#: rustconn/src/session_group_window.rs:612
-msgid "Mirror keystrokes to all tabs in this window"
-msgstr "კლავიშთა დაჭერების ასახვა ამ ფანჯრის ყველა ჩანართზე"
-
-#: rustconn/src/session_group_window.rs:714
-msgid "Close this window?"
-msgstr "დაიხუროს ეს ფანჯარა?"
-
-#: rustconn/src/session_group_window.rs:716
-msgid "This ends all {} sessions in this window."
-msgstr "ეს დაასრულებს ამ ფანჯრის ყველა {} სესიას."
-
-#: rustconn/src/session_group_window.rs:721
+#: rustconn/src/session_group_window.rs:430
 #: rustconn/src/terminal/split_close.rs:273
 #: rustconn/src/terminal/split_close.rs:322
 msgid "Close All Sessions"
 msgstr "ყველა სესიის დახურვა"
 
-#: rustconn/src/session_group_window.rs:916
+#: rustconn/src/session_group_window.rs:649 rustconn/src/window/ui.rs:176
+msgid "Tab Broadcast"
+msgstr "ჯგუფური მაუწყებლობა"
+
+#: rustconn/src/session_group_window.rs:655
+msgid "Mirror keystrokes to all tabs in this window"
+msgstr "კლავიშთა დაჭერების ასახვა ამ ფანჯრის ყველა ჩანართზე"
+
+#: rustconn/src/session_group_window.rs:732
+#: rustconn/src/session_group_window.rs:812
+msgid "Close this window?"
+msgstr "დაიხუროს ეს ფანჯარა?"
+
+#: rustconn/src/session_group_window.rs:734
+#: rustconn/src/session_group_window.rs:814
+msgid "This ends all {} sessions in this window."
+msgstr "ეს დაასრულებს ამ ფანჯრის ყველა {} სესიას."
+
+#: rustconn/src/session_group_window.rs:740
+#: rustconn/src/terminal/split_close.rs:314
+msgid "Close Split Tab?"
+msgstr "დაიხუროს გაყოფილი ჩანართი?"
+
+#: rustconn/src/session_group_window.rs:742
+msgid "This ends all {} sessions in this split."
+msgstr "ეს დაასრულებს ამ გაყოფილი ხედის ყველა {} სესიას."
+
+#: rustconn/src/session_group_window.rs:1004
 msgid "Tab Broadcast active — keystrokes mirrored to {} tabs in this window"
 msgstr "მაუწყებლობა აქტიურია — კლავიშები აისახება ამ ფანჯრის {} ჩანართზე"
 
@@ -13307,7 +13318,7 @@ msgstr "აირჩიეთ საჩვენებელი ჩანარ�
 msgid "Save Selection as Snippet…"
 msgstr "მონიშნულის შენახვა ფრაგმენტად…"
 
-#: rustconn/src/terminal/mod.rs:663 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:664 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "მოგესალმებით"
 
@@ -13450,10 +13461,6 @@ msgstr ""
 #: rustconn/src/terminal/split_close.rs:269
 msgid "Close Tabs With Split Views?"
 msgstr "დაიხუროს გაყოფილი ხედის მქონე ჩანართები?"
-
-#: rustconn/src/terminal/split_close.rs:314
-msgid "Close Split Tab?"
-msgstr "დაიხუროს გაყოფილი ჩანართი?"
 
 #: rustconn/src/terminal/split_close.rs:316
 msgid ""
@@ -13669,7 +13676,7 @@ msgstr "სწრაფი დაკავშირება…"
 msgid "{} Active Session(s)"
 msgstr "{} აქტიური სესია"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/settings_glue.rs:388
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/settings_glue.rs:395
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "პაროლი არ ხსნის პორტატულ ფაილს"
 
@@ -14167,25 +14174,25 @@ msgstr "ამ კავშირისთვის პაროლი მორ
 msgid "Could not retrieve password from secret backend"
 msgstr "საიდუმლო უკანაბოლოდან პაროლის მიღება შეუძლებელია"
 
-#: rustconn/src/window/credentials.rs:469
+#: rustconn/src/window/credentials.rs:482
 msgid "Failed to save variable to vault: {}"
 msgstr "ცვლადის საცავში შენახვის შეცდომა: {}"
 
-#: rustconn/src/window/credentials.rs:593
+#: rustconn/src/window/credentials.rs:606
 msgid "Vault entry not found for '{}'. You will be prompted for a password."
 msgstr "'{}'-ისთვის საცავის ჩანაწერი აღმოჩენილი არაა. პაროლს შეგეკითხებით."
 
-#: rustconn/src/window/credentials.rs:1050
-#: rustconn/src/window/credentials.rs:1286
+#: rustconn/src/window/credentials.rs:1063
+#: rustconn/src/window/credentials.rs:1299
 #: rustconn/src/window/edit_actions.rs:2514
 msgid "Connection failed. Host unreachable."
 msgstr "კავშირი ჩავარდა. ჰოსტი ხელმიუწვდომელია."
 
-#: rustconn/src/window/detach_actions.rs:82
+#: rustconn/src/window/detach_actions.rs:86
 msgid "This session already has its own window."
 msgstr "ამ სესიას უკვე აქვს საკუთარი ფანჯარა."
 
-#: rustconn/src/window/detach_actions.rs:84
+#: rustconn/src/window/detach_actions.rs:88
 msgid ""
 "This session is displayed by a separate viewer, which already runs in its "
 "own window."
@@ -14193,7 +14200,7 @@ msgstr ""
 "ეს სესია ნაჩვენებია ცალკე მაყურებლის მიერ, რომელიც უკვე მუშაობს საკუთარ "
 "ფანჯარაში."
 
-#: rustconn/src/window/detach_actions.rs:87
+#: rustconn/src/window/detach_actions.rs:91
 msgid ""
 "Remove the split layout from this tab before moving the session to its own "
 "window."
@@ -14201,31 +14208,31 @@ msgstr ""
 "წაშალეთ გაყოფილი განლაგება ამ ჩანართიდან სესიის საკუთარ ფანჯარაში "
 "გადატანამდე."
 
-#: rustconn/src/window/detach_actions.rs:90
+#: rustconn/src/window/detach_actions.rs:94
 msgid ""
 "This session is displayed in a split layout. Return it to its own tab first."
 msgstr ""
 "ეს სესია ნაჩვენებია გაყოფილი განლაგებით. ჯერ დააბრუნეთ იგი საკუთარ ჩანართზე."
 
-#: rustconn/src/window/detach_actions.rs:228
-#: rustconn/src/window/detach_actions.rs:239
-#: rustconn/src/window/detach_actions.rs:246
-#: rustconn/src/window/detach_actions.rs:521
+#: rustconn/src/window/detach_actions.rs:281
+#: rustconn/src/window/detach_actions.rs:292
+#: rustconn/src/window/detach_actions.rs:299
+#: rustconn/src/window/detach_actions.rs:604
 msgid "Could not move the session to its own window."
 msgstr "სესიას საკუთარ ფანჯარაში ვერ გადაიტანთ."
 
-#: rustconn/src/window/detach_actions.rs:294
+#: rustconn/src/window/detach_actions.rs:360
 msgid "Could not move the session back to the main window."
 msgstr "სესიას მთავარ ფანჯარაში ვერ დააბრუნებთ."
 
-#: rustconn/src/window/detach_actions.rs:779
-#: rustconn/src/window/detach_actions.rs:803
+#: rustconn/src/window/detach_actions.rs:882
+#: rustconn/src/window/detach_actions.rs:906
 #: rustconn/src/window/group_broadcast.rs:464
 msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "ჯგუფური მაუწყებლობა გამორთულია — კლავიშები მხოლოდ ფოკუსირებულ ჩანართზე მიდის"
 
-#: rustconn/src/window/detach_actions.rs:828
+#: rustconn/src/window/detach_actions.rs:931
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "ჯგუფური მაუწყებლობისთვის საჭიროა მინიმუმ ორი ტერმინალის ჩანართი"
 
@@ -16289,15 +16296,15 @@ msgstr "გასაგზავნი ტექსტი…"
 msgid "Append newline (press Enter)"
 msgstr "ახალი ხაზის მიწერა (ღილაკი Enter)"
 
-#: rustconn/src/window/settings_glue.rs:173
+#: rustconn/src/window/settings_glue.rs:180
 msgid "Settings saved"
 msgstr "პარამეტრები შენახულია"
 
-#: rustconn/src/window/settings_glue.rs:210
+#: rustconn/src/window/settings_glue.rs:217
 msgid "Passphrase Not Saved on This Computer"
 msgstr "პაროლი არ არის შენახული ამ კომპიუტერზე"
 
-#: rustconn/src/window/settings_glue.rs:212
+#: rustconn/src/window/settings_glue.rs:219
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -16309,11 +16316,11 @@ msgstr ""
 "ამის ნაცვლად, აირჩიეთ \"System keyring\" ან შეამოწმეთ, რომ RustConn-ს "
 "შეუძლია ჩაწეროს მონაცემთა დირექტორიაში."
 
-#: rustconn/src/window/settings_glue.rs:258
+#: rustconn/src/window/settings_glue.rs:265
 msgid "Credentials Not Saved to Keyring"
 msgstr "ავტორიზაციის დეტალები ბრელოკში შენახული არაა"
 
-#: rustconn/src/window/settings_glue.rs:260
+#: rustconn/src/window/settings_glue.rs:267
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -16323,7 +16330,7 @@ msgstr ""
 "ამ სესიისთვის და გაქრება გადატვირთვის შემდეგ. შეამოწმეთ, რომ თქვენი "
 "გასაღებების სერვისი მუშაობს და განბლოკილია, შემდეგ ისევ შეინახეთ პარამეტრები."
 
-#: rustconn/src/window/settings_glue.rs:390
+#: rustconn/src/window/settings_glue.rs:397
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -16439,11 +16446,11 @@ msgid "Cannot move a folder into one of its own subfolders"
 msgstr "საქაღალდის ერთ-ერთ ქვესაქაღალდეში გადატანა შეუძლებელია"
 
 #: rustconn/src/window/split_view_actions.rs:160
-#: rustconn/src/window/split_view_actions.rs:1523
+#: rustconn/src/window/split_view_actions.rs:1524
 msgid "Some tabs could not be added to the split."
 msgstr "ზოგი ჩანართი გაყოფაში ვერ დაემატა."
 
-#: rustconn/src/window/split_view_actions.rs:618
+#: rustconn/src/window/split_view_actions.rs:619
 msgid ""
 "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes "
 "across split panes"
@@ -16451,9 +16458,9 @@ msgstr ""
 "რჩევა: დააჭირეთ Ctrl+Shift+B ან გამოიყენეთ Broadcast ღილაკი გაყოფილ "
 "პანელებზე კლავიშების დაჭერის ასახვისთვის"
 
-#: rustconn/src/window/split_view_actions.rs:660
-#: rustconn/src/window/split_view_actions.rs:882
-#: rustconn/src/window/split_view_actions.rs:1403
+#: rustconn/src/window/split_view_actions.rs:661
+#: rustconn/src/window/split_view_actions.rs:883
+#: rustconn/src/window/split_view_actions.rs:1404
 msgid ""
 "Split view is not available for external-viewer sessions. Switch this "
 "connection to embedded mode to use split."
@@ -16461,14 +16468,14 @@ msgstr ""
 "გაყოფილი ხედი მიუწვდომელია გარე მნახველების სესიებისთვის. გადართეთ ეს "
 "კავშირი ჩაშენებულ რეჟიმზე გაყოფის გამოსაყენებლად."
 
-#: rustconn/src/window/split_view_actions.rs:1397
+#: rustconn/src/window/split_view_actions.rs:1398
 msgid ""
 "This tab already has a split. Remove it first, or use Select Tab in a pane."
 msgstr ""
 "ეს ჩანართი უკვე გაყოფილია. ჯერ წაშალეთ გაყოფა ან პანელში გამოიყენეთ „აირჩიეთ "
 "ჩანართი“."
 
-#: rustconn/src/window/split_view_actions.rs:1424
+#: rustconn/src/window/split_view_actions.rs:1425
 msgid "There are no other tabs that can be shown in a split."
 msgstr "სხვა ჩანართები, რომელთა გაყოფაში ჩვენებაც შეიძლება, არ არის."
 
