@@ -1319,6 +1319,35 @@ impl MainWindow {
                 drop_group_tab_later(&registry_ended, session_id);
             });
 
+        // A split hosted in a group window can fall apart there (a pane's session
+        // ends and the layout collapses), which gives its owner a tab in the main
+        // window again. The group window's tab is then an empty shell: drop it.
+        let registry_back = handles.registry.clone();
+        let notebook_back = handles.notebook.clone();
+        self.terminal_notebook
+            .tab_view()
+            .connect_page_attached(move |_, page, _| {
+                let (registry, notebook) = (registry_back.clone(), notebook_back.clone());
+                let page = page.clone();
+                glib::idle_add_local_once(move || {
+                    let (Some(registry), Some(notebook)) = (registry.upgrade(), notebook.upgrade())
+                    else {
+                        return;
+                    };
+                    let owner = notebook
+                        .sessions_map()
+                        .borrow()
+                        .iter()
+                        .find_map(|(sid, p)| (*p == page).then_some(*sid));
+                    if let Some(owner) = owner
+                        && !notebook.is_detached(owner)
+                        && let Some(group) = registry.group_of(owner)
+                    {
+                        group.remove_session(owner);
+                    }
+                });
+            });
+
         // A cluster opened "in a new window": each member's tab is moved into
         // the cluster's own window as it appears. On idle, because the tab is
         // announced from inside its own creation, which is not finished yet.
