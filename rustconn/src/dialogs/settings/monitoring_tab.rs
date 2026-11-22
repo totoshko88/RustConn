@@ -56,7 +56,9 @@ impl MonitoringPageWidgets {
         // === General Group ===
         let general_group = adw::PreferencesGroup::builder()
             .title(i18n("General"))
-            .description(i18n("Remote host metrics collection"))
+            .description(i18n(
+                "Remote host metrics collection. Works for SSH sessions only; not available for RDP, VNC, Telnet and other protocols",
+            ))
             .build();
 
         let enabled_row = adw::SwitchRow::builder()

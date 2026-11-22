@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.26.1] - 2026-11-22
 
+### Changed
+
+- **Settings > Interface > System Tray: the on/off switch is on the row itself** — it used to sit inside the collapsed row under **Show icon**, so it was hard to find. Expanding the row now shows only **Minimize to tray**, which is greyed out while the tray is off. Stored values are unchanged. (`rustconn/src/dialogs/settings/ui_tab.rs`)
+- **Monitoring says which protocols it supports** — the hint in **Settings > Monitoring** and in the connection editor's **Remote Monitoring** group now states that metrics work for SSH sessions only, not for RDP, VNC, Telnet or other protocols. (`rustconn/src/dialogs/settings/monitoring_tab.rs`, `rustconn/src/dialogs/connection/advanced_tab.rs`)
+- **Connection list menu has no "Tools" heading** — the three management entries no longer carry a title the other sections lack. (`rustconn/src/sidebar_ui.rs`)
+
 ### Fixed
 
 - **Save & Connect in the wizard no longer asks for the password you just typed** — the password was written to the vault on a worker thread while the connect started at once and read the vault, so a slow backend (KeePassXC took about 3 s) answered "not found" and a password prompt opened. The wizard now hands the typed password to the session cache for that first connect. (`rustconn/src/window/wizard.rs`)
