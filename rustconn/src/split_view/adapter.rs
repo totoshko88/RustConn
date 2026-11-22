@@ -37,6 +37,9 @@ pub type SelectTabCallback = Rc<dyn Fn(PanelId, &Button)>;
 /// "Select Tab" button also needs the clicked widget for popover parenting.
 pub type PanelActionCallback = Rc<dyn Fn(PanelId)>;
 
+/// Callback for a tab bar tab dropped on a panel.
+pub type TabDropCallback = Rc<dyn Fn(PanelId, &adw::TabPage)>;
+
 /// CSS class marking a pane header that carries the pane's drag source.
 const DRAG_HANDLE_CSS_CLASS: &str = "split-pane-drag-handle";
 
@@ -91,6 +94,11 @@ pub struct SplitViewAdapter {
     /// Lets the bridge start a fresh local shell session and place it in the
     /// panel, for when there is no open tab worth moving there.
     new_shell_callback: Rc<RefCell<Option<PanelActionCallback>>>,
+    /// Callback for a tab dragged from the tab bar onto a panel.
+    ///
+    /// The drop itself is refused, so libadwaita puts the tab back home; the
+    /// callback only registers the wish (see `terminal::claim_tab_drop`).
+    tab_drop_callback: Rc<RefCell<Option<TabDropCallback>>>,
     /// Callback for close button clicks in empty panels.
     ///
     /// This allows the bridge to focus the panel and trigger the close action
@@ -210,6 +218,7 @@ impl std::fmt::Debug for SplitViewAdapter {
             .field("last_drop_outcome", &self.last_drop_outcome)
             .field("select_tab_callback", &"<callback>")
             .field("new_shell_callback", &"<callback>")
+            .field("tab_drop_callback", &"<callback>")
             .field("close_panel_callback", &"<callback>")
             .field("pop_panel_callback", &"<callback>")
             .field("reconnect_panel_callback", &"<callback>")
@@ -244,6 +253,7 @@ impl SplitViewAdapter {
             last_drop_outcome: Rc::new(RefCell::new(None)),
             select_tab_callback: Rc::new(RefCell::new(None)),
             new_shell_callback: Rc::new(RefCell::new(None)),
+            tab_drop_callback: Rc::new(RefCell::new(None)),
             close_panel_callback: Rc::new(RefCell::new(None)),
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
@@ -279,6 +289,7 @@ impl SplitViewAdapter {
             last_drop_outcome: Rc::new(RefCell::new(None)),
             select_tab_callback: Rc::new(RefCell::new(None)),
             new_shell_callback: Rc::new(RefCell::new(None)),
+            tab_drop_callback: Rc::new(RefCell::new(None)),
             close_panel_callback: Rc::new(RefCell::new(None)),
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
@@ -376,6 +387,14 @@ impl SplitViewAdapter {
         F: Fn(PanelId) + 'static,
     {
         *self.new_shell_callback.borrow_mut() = Some(Rc::new(callback));
+    }
+
+    /// Sets a callback for a tab dragged from the tab bar onto a panel.
+    pub fn set_tab_drop_callback<F>(&self, callback: F)
+    where
+        F: Fn(PanelId, &adw::TabPage) + 'static,
+    {
+        *self.tab_drop_callback.borrow_mut() = Some(Rc::new(callback));
     }
 
     /// Sets a callback for close button clicks in empty panels.
@@ -894,6 +913,35 @@ impl SplitViewAdapter {
 
         // Add the drop target controller to the widget
         widget.add_controller(drop_target);
+
+        // A tab dragged from the tab bar carries its `AdwTabPage`. The panel
+        // takes the drag (so the compositor delivers the drop) and refuses it:
+        // libadwaita then puts the tab back, and the callback places it.
+        let tab_target = DropTarget::new(adw::TabPage::static_type(), gdk::DragAction::MOVE);
+        let model_for_tab = Rc::clone(&self.model);
+        let widget_for_tab_enter = widget.clone();
+        tab_target.connect_enter(move |_, _, _| {
+            if model_for_tab.borrow().get_panel_session(panel_id).is_none() {
+                widget_for_tab_enter.add_css_class("drop-target-highlight");
+            }
+            gdk::DragAction::MOVE
+        });
+        let widget_for_tab_leave = widget.clone();
+        tab_target.connect_leave(move |_| {
+            widget_for_tab_leave.remove_css_class("drop-target-highlight");
+        });
+        let callback = Rc::clone(&self.tab_drop_callback);
+        let widget_for_tab_drop = widget.clone();
+        tab_target.connect_drop(move |_, value, _, _| {
+            widget_for_tab_drop.remove_css_class("drop-target-highlight");
+            if let Ok(page) = value.get::<adw::TabPage>()
+                && let Some(callback) = callback.borrow().clone()
+            {
+                callback(panel_id, &page);
+            }
+            false
+        });
+        widget.add_controller(tab_target);
     }
 
     /// Removes a panel from the layout.

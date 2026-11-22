@@ -61,7 +61,7 @@ mod types;
 mod vte_contract_tests;
 
 pub(crate) use tab_transfer::{
-    accept_tab_drops, clamp_drop_position, drag_single_tab, new_window_view,
+    accept_tab_drops, claim_tab_drop, clamp_drop_position, drag_single_tab, new_window_view,
     return_transferred_tabs, set_drop_handler, set_new_window_handler,
 };
 
