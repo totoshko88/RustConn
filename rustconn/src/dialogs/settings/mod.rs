@@ -127,7 +127,7 @@ pub struct SettingsDialog {
     color_scheme_box: GtkBox,
     language_dropdown: adw::ComboRow,
     remember_geometry: adw::SwitchRow,
-    enable_tray_icon: adw::SwitchRow,
+    enable_tray_icon: adw::ExpanderRow,
     minimize_to_tray: adw::SwitchRow,
     // Session restore settings
     session_restore_enabled: adw::SwitchRow,
