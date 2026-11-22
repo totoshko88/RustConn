@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 21:27+0200\n"
+"POT-Creation-Date: 2026-11-22 22:04+0200\n"
 "PO-Revision-Date: 2026-06-14 09:46+0000\n"
 "Last-Translator: Albano Battistella\n"
 "Language-Team: Italian\n"
@@ -184,6 +184,8 @@ msgstr "Log di debug"
 #: rustconn/src/dialogs/portable_passphrase_change.rs:376
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
+#: rustconn/src/dialogs/terminal_search.rs:149
+#: rustconn/src/dialogs/terminal_search.rs:151
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
 #: rustconn/src/terminal/tab_menu.rs:817 rustconn/src/vault_ops.rs:65
@@ -446,7 +448,7 @@ msgstr[0] "{} connessione corrisponde a questo criterio"
 msgstr[1] "{} connessioni corrispondono a questo criterio"
 
 #: rustconn/src/dialogs/cluster.rs:185 rustconn/src/dialogs/cluster.rs:237
-#: rustconn/src/dialogs/terminal_search.rs:389
+#: rustconn/src/dialogs/terminal_search.rs:368
 msgid "Invalid regex pattern"
 msgstr "Espressione regolare non valida"
 
@@ -560,7 +562,7 @@ msgstr "Nuovo gruppo"
 #: rustconn/src/dialogs/command_palette.rs:693
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/settings/ui_tab.rs:927
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:2034
 #: rustconn/src/split_view/bridge.rs:2297 rustconn/src/tray.rs:309
@@ -748,9 +750,10 @@ msgid "Remote Monitoring"
 msgstr "Monitoraggio remoto"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:305
-msgid "Override global monitoring settings for this connection"
-msgstr ""
-"Sovrascrivere le impostazioni globali di monitoraggio per questa connessione"
+msgid ""
+"Override global monitoring settings for this connection. Works for SSH only; "
+"not available for RDP, VNC, Telnet and other protocols"
+msgstr "Sovrascrivi le impostazioni globali di monitoraggio per questa connessione. Funziona solo con SSH; non disponibile per RDP, VNC, Telnet e altri protocolli"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:319
 msgid "Enable Monitoring"
@@ -773,7 +776,7 @@ msgid "Save terminal output to file"
 msgstr "Salva output del terminale su file"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:344
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:170
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:172
 #: rustconn/src/terminal/tab_menu.rs:1348
 msgid "Activity Monitor"
 msgstr "Monitor attività"
@@ -792,7 +795,7 @@ msgid "Quiet Period"
 msgstr "Periodo di quiete"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:362
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:190
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:192
 msgid "Seconds of silence before activity notification"
 msgstr "Secondi di silenzio prima della notifica di attività"
 
@@ -801,7 +804,7 @@ msgid "Silence Timeout"
 msgstr "Timeout silenzio"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:371
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:198
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:200
 msgid "Seconds of no output before silence notification"
 msgstr "Secondi senza output prima della notifica di silenzio"
 
@@ -1021,7 +1024,7 @@ msgstr "Usa l'impostazione globale"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:827
 #: rustconn/src/dialogs/connection/dialog/rows.rs:450
-#: rustconn/src/dialogs/settings/ui_tab.rs:665
+#: rustconn/src/dialogs/settings/ui_tab.rs:664
 #: rustconn/src/window/edit_group.rs:2386
 msgid "Enabled"
 msgstr "Abilitato"
@@ -8226,15 +8229,17 @@ msgstr ""
 msgid "Monitoring"
 msgstr "Monitoraggio"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:59
-msgid "Remote host metrics collection"
-msgstr "Raccolta metriche dell'host remoto"
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:60
+msgid ""
+"Remote host metrics collection. Works for SSH sessions only; not available "
+"for RDP, VNC, Telnet and other protocols"
+msgstr "Raccolta metriche dell'host remoto. Funziona solo per le sessioni SSH; non disponibile per RDP, VNC, Telnet e altri protocolli"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:63
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:65
 msgid "Enable monitoring"
 msgstr "Attiva monitoraggio"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:65
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:67
 msgid ""
 "Global switch for all connections (per-connection: Advanced tab in "
 "connection settings)"
@@ -8242,19 +8247,19 @@ msgstr ""
 "Interruttore globale per tutte le connessioni (per connessione: scheda "
 "Avanzate nelle impostazioni di connessione)"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:71
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:73
 msgid "Polling interval"
 msgstr "Intervallo di polling"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:72
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:74
 msgid "Seconds between metric updates"
 msgstr "Secondi tra aggiornamenti metriche"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:83
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:85
 msgid "Reset Per-Connection Overrides"
 msgstr "Reimposta le sostituzioni per connessione"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:85
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:87
 msgid ""
 "Make every connection follow the global switch. Polling intervals set per "
 "connection are kept."
@@ -8262,65 +8267,65 @@ msgstr ""
 "Fai seguire a ogni connessione l'interruttore globale. Gli intervalli di "
 "polling impostati per connessione vengono mantenuti."
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:89
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:91
 msgid "Reset…"
 msgstr "Reimposta…"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:100
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:102
 msgid "Visible Metrics"
 msgstr "Metriche visibili"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:101
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:103
 msgid "Select which metrics to display"
 msgstr "Seleziona quali metriche visualizzare"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:105
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:107
 msgid "CPU usage"
 msgstr "Utilizzo CPU"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:112
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:114
 msgid "Memory usage"
 msgstr "Utilizzo memoria"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:119
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:121
 msgid "Disk usage"
 msgstr "Utilizzo disco"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:126
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:128
 msgid "Network throughput"
 msgstr "Throughput di rete"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:133
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:135
 msgid "Load average"
 msgstr "Carico medio"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:140
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:142
 msgid "System information"
 msgstr "Informazioni di sistema"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:141
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:143
 msgid "Distribution, kernel version, uptime"
 msgstr "Distribuzione, versione del kernel, tempo di attività"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:172
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:174
 msgid "Default settings for terminal activity and silence detection"
 msgstr ""
 "Impostazioni predefinite per il rilevamento di attività e silenzio del "
 "terminale"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:180
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:182
 msgid "Default Mode"
 msgstr "Modalità predefinita"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:181
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:183
 msgid "Monitoring mode applied to new connections"
 msgstr "Modalità di monitoraggio applicata alle nuove connessioni"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:189
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:191
 msgid "Default Quiet Period"
 msgstr "Periodo di quiete predefinito"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:197
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:199
 msgid "Default Silence Timeout"
 msgstr "Timeout silenzio predefinito"
 
@@ -9725,7 +9730,7 @@ msgstr "Lingua"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:218
 #: rustconn/src/dialogs/settings/ui_tab.rs:234
-#: rustconn/src/dialogs/settings/ui_tab.rs:636
+#: rustconn/src/dialogs/settings/ui_tab.rs:634
 msgid "Restart required to apply"
 msgstr "Riavvio necessario per applicare"
 
@@ -10017,7 +10022,7 @@ msgid "Open session automatically"
 msgstr "Aprire la sessione automaticamente"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:605
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/settings/ui_tab.rs:927
 msgid "Do Nothing"
 msgstr "Non fare nulla"
 
@@ -10030,51 +10035,47 @@ msgid "Display Welcome tab when no session opens at startup"
 msgstr ""
 "Mostra la scheda Benvenuto quando all'avvio non si apre nessuna sessione"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:629
-msgid "System Tray"
-msgstr "Area di notifica"
-
-#: rustconn/src/dialogs/settings/ui_tab.rs:630
+#: rustconn/src/dialogs/settings/ui_tab.rs:627
 msgid "Requires desktop environment with tray support"
 msgstr "Richiede un ambiente desktop con supporto all'area di notifica"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:635
-msgid "Show icon"
-msgstr "Mostra icona"
+#: rustconn/src/dialogs/settings/ui_tab.rs:633
+msgid "System Tray"
+msgstr "Area di notifica"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:641
+#: rustconn/src/dialogs/settings/ui_tab.rs:640
 msgid "Minimize to tray"
 msgstr "Minimizza nell'area di notifica"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:642
+#: rustconn/src/dialogs/settings/ui_tab.rs:641
 msgid "Hide window instead of closing"
 msgstr "Nascondi la finestra invece di chiuderla"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:659
+#: rustconn/src/dialogs/settings/ui_tab.rs:658
 msgid "Session Restore"
 msgstr "Ripristino sessione"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:660
+#: rustconn/src/dialogs/settings/ui_tab.rs:659
 msgid "Restore previous connections on startup"
 msgstr "Ripristina connessioni precedenti all'avvio"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:666
+#: rustconn/src/dialogs/settings/ui_tab.rs:665
 msgid "Reconnect to previous sessions on startup"
 msgstr "Riconnetti alle sessioni precedenti all'avvio"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:671
+#: rustconn/src/dialogs/settings/ui_tab.rs:670
 msgid "Ask first"
 msgstr "Chiedi prima"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:672
+#: rustconn/src/dialogs/settings/ui_tab.rs:671
 msgid "Prompt before restoring sessions"
 msgstr "Chiedi conferma prima di ripristinare le sessioni"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:677
+#: rustconn/src/dialogs/settings/ui_tab.rs:676
 msgid "Max age"
 msgstr "Età massima"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:678
+#: rustconn/src/dialogs/settings/ui_tab.rs:677
 msgid "Hours before sessions expire"
 msgstr "Ore prima della scadenza delle sessioni"
 
@@ -10865,58 +10866,54 @@ msgstr "Porta: {}"
 msgid "User: {}"
 msgstr "Utente: {}"
 
-#: rustconn/src/dialogs/terminal_search.rs:122
-msgid "Search in Terminal"
-msgstr "Cerca nel terminale"
-
-#: rustconn/src/dialogs/terminal_search.rs:148
+#: rustconn/src/dialogs/terminal_search.rs:123
 msgid "Search text…"
 msgstr "Testo di ricerca…"
 
-#: rustconn/src/dialogs/terminal_search.rs:156
+#: rustconn/src/dialogs/terminal_search.rs:126
 msgid "Case sensitive"
 msgstr "Maiuscole/minuscole"
 
-#: rustconn/src/dialogs/terminal_search.rs:160
+#: rustconn/src/dialogs/terminal_search.rs:128
 msgid "Regex"
 msgstr "Regex"
 
-#: rustconn/src/dialogs/terminal_search.rs:161
+#: rustconn/src/dialogs/terminal_search.rs:129
 msgid "Use regular expression pattern"
 msgstr "Usa espressione regolare"
 
-#: rustconn/src/dialogs/terminal_search.rs:166
+#: rustconn/src/dialogs/terminal_search.rs:132
 msgid "Highlight All"
 msgstr "Evidenzia tutto"
 
-#: rustconn/src/dialogs/terminal_search.rs:167
+#: rustconn/src/dialogs/terminal_search.rs:133
 msgid "Highlight all matches in terminal"
 msgstr "Evidenzia tutte le corrispondenze nel terminale"
 
-#: rustconn/src/dialogs/terminal_search.rs:179
-#: rustconn/src/dialogs/terminal_search.rs:181
+#: rustconn/src/dialogs/terminal_search.rs:138
+#: rustconn/src/dialogs/terminal_search.rs:140
 msgid "Previous match"
 msgstr "Corrispondenza precedente"
 
-#: rustconn/src/dialogs/terminal_search.rs:186
-#: rustconn/src/dialogs/terminal_search.rs:188
+#: rustconn/src/dialogs/terminal_search.rs:143
+#: rustconn/src/dialogs/terminal_search.rs:145
 msgid "Next match"
 msgstr "Corrispondenza successiva"
 
-#: rustconn/src/dialogs/terminal_search.rs:192
-#: rustconn/src/dialogs/terminal_search.rs:249
+#: rustconn/src/dialogs/terminal_search.rs:153
+#: rustconn/src/dialogs/terminal_search.rs:310
 msgid "Enter text to search"
 msgstr "Inserisci testo da cercare"
 
-#: rustconn/src/dialogs/terminal_search.rs:382
+#: rustconn/src/dialogs/terminal_search.rs:361
 msgid "Found matches"
 msgstr "Corrispondenze trovate"
 
-#: rustconn/src/dialogs/terminal_search.rs:384
+#: rustconn/src/dialogs/terminal_search.rs:363
 msgid "No matches found"
 msgstr "Nessuna corrispondenza trovata"
 
-#: rustconn/src/dialogs/terminal_search.rs:391
+#: rustconn/src/dialogs/terminal_search.rs:370
 msgid "Search error"
 msgstr "Errore di ricerca"
 
@@ -13188,10 +13185,6 @@ msgstr "Gestisci spazi di lavoro"
 msgid "Manage Snippets"
 msgstr "Gestisci frammenti"
 
-#: rustconn/src/sidebar_ui.rs:1522 rustconn/src/window/ui.rs:307
-msgid "Tools"
-msgstr "Strumenti"
-
 #: rustconn/src/sidebar_ui.rs:1543
 msgid "Sort by Recent Use"
 msgstr "Ordina per utilizzo recente"
@@ -14279,14 +14272,14 @@ msgstr "Non è stato possibile spostare la sessione in una finestra propria."
 msgid "Could not move the session back to the main window."
 msgstr "Non è stato possibile riportare la sessione nella finestra principale."
 
-#: rustconn/src/window/detach_actions.rs:780
-#: rustconn/src/window/detach_actions.rs:804
+#: rustconn/src/window/detach_actions.rs:779
+#: rustconn/src/window/detach_actions.rs:803
 #: rustconn/src/window/group_broadcast.rs:464
 msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Trasmissione di gruppo disabilitata — i tasti vanno solo alla scheda attiva"
 
-#: rustconn/src/window/detach_actions.rs:829
+#: rustconn/src/window/detach_actions.rs:828
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "La trasmissione di gruppo richiede almeno due schede di terminale"
 
@@ -14939,8 +14932,8 @@ msgid "'{}' now signs in with a key"
 msgstr "«{}» ora accede con una chiave"
 
 #: rustconn/src/window/key_setup.rs:907 rustconn/src/window/wizard.rs:42
-#: rustconn/src/window/wizard.rs:78 rustconn/src/window/wizard.rs:244
-#: rustconn/src/window/wizard.rs:280
+#: rustconn/src/window/wizard.rs:86 rustconn/src/window/wizard.rs:270
+#: rustconn/src/window/wizard.rs:314
 msgid "the application is busy"
 msgstr "l’applicazione è occupata"
 
@@ -16592,7 +16585,7 @@ msgstr "Errore nel salvataggio del modello"
 msgid "Are you sure you want to delete this template?"
 msgstr "Sei sicuro di voler eliminare questo modello?"
 
-#: rustconn/src/window/terminal_actions.rs:441
+#: rustconn/src/window/terminal_actions.rs:438
 msgid ""
 "Could not start recording for '{}' — the recordings folder is missing or not "
 "writable"
@@ -16600,7 +16593,7 @@ msgstr ""
 "Impossibile avviare la registrazione di «{}»: la cartella delle "
 "registrazioni è mancante o non scrivibile"
 
-#: rustconn/src/window/terminal_actions.rs:505
+#: rustconn/src/window/terminal_actions.rs:502
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr ""
 "Questo visualizzatore funziona in modo indipendente e non può essere chiuso "
@@ -16655,6 +16648,10 @@ msgstr "Spazi di lavoro"
 msgid "Wake-on-LAN…"
 msgstr "Wake-on-LAN…"
 
+#: rustconn/src/window/ui.rs:307
+msgid "Tools"
+msgstr "Strumenti"
+
 #: rustconn/src/window/ui.rs:323
 msgid "Sessions"
 msgstr "Sessioni"
@@ -16675,7 +16672,7 @@ msgstr "Interfaccia compatta"
 msgid "Keyboard Passthrough"
 msgstr "Passthrough tastiera"
 
-#: rustconn/src/window/wizard.rs:52 rustconn/src/window/wizard.rs:253
+#: rustconn/src/window/wizard.rs:52 rustconn/src/window/wizard.rs:279
 msgid "Connection “{}” created"
 msgstr "Connessione “{}” creata"
 
@@ -16714,6 +16711,20 @@ msgstr "Gestore connessioni"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connessione;terminal;remote;kubernetes;k8s;seriale;sftp;"
+
+#~ msgid "Override global monitoring settings for this connection"
+#~ msgstr ""
+#~ "Sovrascrivere le impostazioni globali di monitoraggio per questa "
+#~ "connessione"
+
+#~ msgid "Remote host metrics collection"
+#~ msgstr "Raccolta metriche dell'host remoto"
+
+#~ msgid "Show icon"
+#~ msgstr "Mostra icona"
+
+#~ msgid "Search in Terminal"
+#~ msgstr "Cerca nel terminale"
 
 #~ msgid "Recording — open the terminal menu to stop"
 #~ msgstr "Registrazione in corso — apri il menu del terminale per fermarla"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 21:27+0200\n"
+"POT-Creation-Date: 2026-11-22 22:04+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -181,6 +181,8 @@ msgstr "Nhật ký gỡ lỗi"
 #: rustconn/src/dialogs/portable_passphrase_change.rs:376
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
+#: rustconn/src/dialogs/terminal_search.rs:149
+#: rustconn/src/dialogs/terminal_search.rs:151
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
 #: rustconn/src/terminal/tab_menu.rs:817 rustconn/src/vault_ops.rs:65
@@ -441,7 +443,7 @@ msgid_plural "{} connections match this pattern"
 msgstr[0] "{} kết nối khớp với mẫu này"
 
 #: rustconn/src/dialogs/cluster.rs:185 rustconn/src/dialogs/cluster.rs:237
-#: rustconn/src/dialogs/terminal_search.rs:389
+#: rustconn/src/dialogs/terminal_search.rs:368
 msgid "Invalid regex pattern"
 msgstr "Mẫu regex không hợp lệ"
 
@@ -552,7 +554,7 @@ msgstr "Nhóm mới"
 #: rustconn/src/dialogs/command_palette.rs:693
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/settings/ui_tab.rs:927
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:2034
 #: rustconn/src/split_view/bridge.rs:2297 rustconn/src/tray.rs:309
@@ -740,8 +742,10 @@ msgid "Remote Monitoring"
 msgstr "Giám sát từ xa"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:305
-msgid "Override global monitoring settings for this connection"
-msgstr "Ghi đè cài đặt giám sát chung cho kết nối này"
+msgid ""
+"Override global monitoring settings for this connection. Works for SSH only; "
+"not available for RDP, VNC, Telnet and other protocols"
+msgstr "Ghi đè cài đặt giám sát chung cho kết nối này. Chỉ hoạt động với SSH; không khả dụng cho RDP, VNC, Telnet và các giao thức khác"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:319
 msgid "Enable Monitoring"
@@ -764,7 +768,7 @@ msgid "Save terminal output to file"
 msgstr "Lưu đầu ra terminal vào tệp"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:344
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:170
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:172
 #: rustconn/src/terminal/tab_menu.rs:1348
 msgid "Activity Monitor"
 msgstr "Theo dõi hoạt động"
@@ -783,7 +787,7 @@ msgid "Quiet Period"
 msgstr "Khoảng yên lặng"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:362
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:190
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:192
 msgid "Seconds of silence before activity notification"
 msgstr "Số giây im lặng trước khi thông báo có hoạt động"
 
@@ -792,7 +796,7 @@ msgid "Silence Timeout"
 msgstr "Thời gian chờ im lặng"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:371
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:198
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:200
 msgid "Seconds of no output before silence notification"
 msgstr "Số giây không có đầu ra trước khi thông báo im lặng"
 
@@ -1011,7 +1015,7 @@ msgstr "Dùng cài đặt chung"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:827
 #: rustconn/src/dialogs/connection/dialog/rows.rs:450
-#: rustconn/src/dialogs/settings/ui_tab.rs:665
+#: rustconn/src/dialogs/settings/ui_tab.rs:664
 #: rustconn/src/window/edit_group.rs:2386
 msgid "Enabled"
 msgstr "Đã bật"
@@ -8130,15 +8134,17 @@ msgstr ""
 msgid "Monitoring"
 msgstr "Giám sát"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:59
-msgid "Remote host metrics collection"
-msgstr "Thu thập số liệu của máy chủ từ xa"
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:60
+msgid ""
+"Remote host metrics collection. Works for SSH sessions only; not available "
+"for RDP, VNC, Telnet and other protocols"
+msgstr "Thu thập số liệu của máy chủ từ xa. Chỉ hoạt động với phiên SSH; không khả dụng cho RDP, VNC, Telnet và các giao thức khác"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:63
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:65
 msgid "Enable monitoring"
 msgstr "Bật giám sát"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:65
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:67
 msgid ""
 "Global switch for all connections (per-connection: Advanced tab in "
 "connection settings)"
@@ -8146,19 +8152,19 @@ msgstr ""
 "Công tắc chung cho mọi kết nối (theo từng kết nối: thẻ Nâng cao trong cài "
 "đặt kết nối)"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:71
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:73
 msgid "Polling interval"
 msgstr "Chu kỳ thăm dò"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:72
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:74
 msgid "Seconds between metric updates"
 msgstr "Số giây giữa các lần cập nhật số liệu"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:83
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:85
 msgid "Reset Per-Connection Overrides"
 msgstr "Đặt lại giá trị ghi đè theo từng kết nối"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:85
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:87
 msgid ""
 "Make every connection follow the global switch. Polling intervals set per "
 "connection are kept."
@@ -8166,63 +8172,63 @@ msgstr ""
 "Cho mọi kết nối theo công tắc chung. Chu kỳ thăm dò được đặt riêng cho từng "
 "kết nối vẫn được giữ."
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:89
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:91
 msgid "Reset…"
 msgstr "Đặt lại…"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:100
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:102
 msgid "Visible Metrics"
 msgstr "Số liệu hiển thị"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:101
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:103
 msgid "Select which metrics to display"
 msgstr "Chọn các số liệu cần hiển thị"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:105
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:107
 msgid "CPU usage"
 msgstr "Mức dùng CPU"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:112
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:114
 msgid "Memory usage"
 msgstr "Mức dùng bộ nhớ"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:119
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:121
 msgid "Disk usage"
 msgstr "Mức dùng ổ đĩa"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:126
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:128
 msgid "Network throughput"
 msgstr "Thông lượng mạng"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:133
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:135
 msgid "Load average"
 msgstr "Tải trung bình"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:140
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:142
 msgid "System information"
 msgstr "Thông tin hệ thống"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:141
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:143
 msgid "Distribution, kernel version, uptime"
 msgstr "Bản phân phối, phiên bản nhân, thời gian hoạt động"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:172
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:174
 msgid "Default settings for terminal activity and silence detection"
 msgstr "Cài đặt mặc định cho việc phát hiện hoạt động và im lặng của terminal"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:180
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:182
 msgid "Default Mode"
 msgstr "Chế độ mặc định"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:181
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:183
 msgid "Monitoring mode applied to new connections"
 msgstr "Chế độ theo dõi áp dụng cho kết nối mới"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:189
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:191
 msgid "Default Quiet Period"
 msgstr "Khoảng yên lặng mặc định"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:197
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:199
 msgid "Default Silence Timeout"
 msgstr "Thời gian chờ im lặng mặc định"
 
@@ -9621,7 +9627,7 @@ msgstr "Ngôn ngữ"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:218
 #: rustconn/src/dialogs/settings/ui_tab.rs:234
-#: rustconn/src/dialogs/settings/ui_tab.rs:636
+#: rustconn/src/dialogs/settings/ui_tab.rs:634
 msgid "Restart required to apply"
 msgstr "Cần khởi động lại để áp dụng"
 
@@ -9902,7 +9908,7 @@ msgid "Open session automatically"
 msgstr "Tự động mở phiên"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:605
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/settings/ui_tab.rs:927
 msgid "Do Nothing"
 msgstr "Không làm gì"
 
@@ -9914,51 +9920,47 @@ msgstr "Hiện thẻ Chào mừng"
 msgid "Display Welcome tab when no session opens at startup"
 msgstr "Hiển thị thẻ Chào mừng khi không có phiên nào mở lúc khởi động"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:629
-msgid "System Tray"
-msgstr "Khay hệ thống"
-
-#: rustconn/src/dialogs/settings/ui_tab.rs:630
+#: rustconn/src/dialogs/settings/ui_tab.rs:627
 msgid "Requires desktop environment with tray support"
 msgstr "Cần môi trường màn hình nền hỗ trợ khay hệ thống"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:635
-msgid "Show icon"
-msgstr "Hiện biểu tượng"
+#: rustconn/src/dialogs/settings/ui_tab.rs:633
+msgid "System Tray"
+msgstr "Khay hệ thống"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:641
+#: rustconn/src/dialogs/settings/ui_tab.rs:640
 msgid "Minimize to tray"
 msgstr "Thu nhỏ xuống khay"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:642
+#: rustconn/src/dialogs/settings/ui_tab.rs:641
 msgid "Hide window instead of closing"
 msgstr "Ẩn cửa sổ thay vì đóng"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:659
+#: rustconn/src/dialogs/settings/ui_tab.rs:658
 msgid "Session Restore"
 msgstr "Khôi phục phiên"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:660
+#: rustconn/src/dialogs/settings/ui_tab.rs:659
 msgid "Restore previous connections on startup"
 msgstr "Khôi phục các kết nối trước đó khi khởi động"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:666
+#: rustconn/src/dialogs/settings/ui_tab.rs:665
 msgid "Reconnect to previous sessions on startup"
 msgstr "Kết nối lại các phiên trước đó khi khởi động"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:671
+#: rustconn/src/dialogs/settings/ui_tab.rs:670
 msgid "Ask first"
 msgstr "Hỏi trước"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:672
+#: rustconn/src/dialogs/settings/ui_tab.rs:671
 msgid "Prompt before restoring sessions"
 msgstr "Hỏi trước khi khôi phục phiên"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:677
+#: rustconn/src/dialogs/settings/ui_tab.rs:676
 msgid "Max age"
 msgstr "Thời gian tối đa"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:678
+#: rustconn/src/dialogs/settings/ui_tab.rs:677
 msgid "Hours before sessions expire"
 msgstr "Số giờ trước khi phiên hết hạn"
 
@@ -10742,58 +10744,54 @@ msgstr "Cổng: {}"
 msgid "User: {}"
 msgstr "Người dùng: {}"
 
-#: rustconn/src/dialogs/terminal_search.rs:122
-msgid "Search in Terminal"
-msgstr "Tìm trong terminal"
-
-#: rustconn/src/dialogs/terminal_search.rs:148
+#: rustconn/src/dialogs/terminal_search.rs:123
 msgid "Search text…"
 msgstr "Tìm văn bản…"
 
-#: rustconn/src/dialogs/terminal_search.rs:156
+#: rustconn/src/dialogs/terminal_search.rs:126
 msgid "Case sensitive"
 msgstr "Phân biệt chữ hoa/thường"
 
-#: rustconn/src/dialogs/terminal_search.rs:160
+#: rustconn/src/dialogs/terminal_search.rs:128
 msgid "Regex"
 msgstr "Regex"
 
-#: rustconn/src/dialogs/terminal_search.rs:161
+#: rustconn/src/dialogs/terminal_search.rs:129
 msgid "Use regular expression pattern"
 msgstr "Dùng mẫu biểu thức chính quy"
 
-#: rustconn/src/dialogs/terminal_search.rs:166
+#: rustconn/src/dialogs/terminal_search.rs:132
 msgid "Highlight All"
 msgstr "Tô sáng tất cả"
 
-#: rustconn/src/dialogs/terminal_search.rs:167
+#: rustconn/src/dialogs/terminal_search.rs:133
 msgid "Highlight all matches in terminal"
 msgstr "Tô sáng mọi kết quả khớp trong terminal"
 
-#: rustconn/src/dialogs/terminal_search.rs:179
-#: rustconn/src/dialogs/terminal_search.rs:181
+#: rustconn/src/dialogs/terminal_search.rs:138
+#: rustconn/src/dialogs/terminal_search.rs:140
 msgid "Previous match"
 msgstr "Kết quả trước"
 
-#: rustconn/src/dialogs/terminal_search.rs:186
-#: rustconn/src/dialogs/terminal_search.rs:188
+#: rustconn/src/dialogs/terminal_search.rs:143
+#: rustconn/src/dialogs/terminal_search.rs:145
 msgid "Next match"
 msgstr "Kết quả tiếp theo"
 
-#: rustconn/src/dialogs/terminal_search.rs:192
-#: rustconn/src/dialogs/terminal_search.rs:249
+#: rustconn/src/dialogs/terminal_search.rs:153
+#: rustconn/src/dialogs/terminal_search.rs:310
 msgid "Enter text to search"
 msgstr "Nhập văn bản để tìm"
 
-#: rustconn/src/dialogs/terminal_search.rs:382
+#: rustconn/src/dialogs/terminal_search.rs:361
 msgid "Found matches"
 msgstr "Đã tìm thấy kết quả"
 
-#: rustconn/src/dialogs/terminal_search.rs:384
+#: rustconn/src/dialogs/terminal_search.rs:363
 msgid "No matches found"
 msgstr "Không tìm thấy kết quả nào"
 
-#: rustconn/src/dialogs/terminal_search.rs:391
+#: rustconn/src/dialogs/terminal_search.rs:370
 msgid "Search error"
 msgstr "Lỗi tìm kiếm"
 
@@ -13038,10 +13036,6 @@ msgstr "Quản lý không gian làm việc"
 msgid "Manage Snippets"
 msgstr "Quản lý đoạn lệnh"
 
-#: rustconn/src/sidebar_ui.rs:1522 rustconn/src/window/ui.rs:307
-msgid "Tools"
-msgstr "Công cụ"
-
 #: rustconn/src/sidebar_ui.rs:1543
 msgid "Sort by Recent Use"
 msgstr "Sắp xếp theo lần dùng gần đây"
@@ -14115,14 +14109,14 @@ msgstr "Không thể chuyển phiên sang cửa sổ riêng."
 msgid "Could not move the session back to the main window."
 msgstr "Không thể chuyển phiên về cửa sổ chính."
 
-#: rustconn/src/window/detach_actions.rs:780
-#: rustconn/src/window/detach_actions.rs:804
+#: rustconn/src/window/detach_actions.rs:779
+#: rustconn/src/window/detach_actions.rs:803
 #: rustconn/src/window/group_broadcast.rs:464
 msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr ""
 "Đã tắt phát đồng loạt theo nhóm — thao tác gõ phím chỉ tới thẻ đang được chọn"
 
-#: rustconn/src/window/detach_actions.rs:829
+#: rustconn/src/window/detach_actions.rs:828
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "Phát đồng loạt theo nhóm cần ít nhất hai thẻ terminal"
 
@@ -14761,8 +14755,8 @@ msgid "'{}' now signs in with a key"
 msgstr "“{}” giờ đăng nhập bằng khóa"
 
 #: rustconn/src/window/key_setup.rs:907 rustconn/src/window/wizard.rs:42
-#: rustconn/src/window/wizard.rs:78 rustconn/src/window/wizard.rs:244
-#: rustconn/src/window/wizard.rs:280
+#: rustconn/src/window/wizard.rs:86 rustconn/src/window/wizard.rs:270
+#: rustconn/src/window/wizard.rs:314
 msgid "the application is busy"
 msgstr "ứng dụng đang bận"
 
@@ -16387,14 +16381,14 @@ msgstr "Lỗi khi lưu mẫu"
 msgid "Are you sure you want to delete this template?"
 msgstr "Bạn có chắc muốn xóa mẫu này?"
 
-#: rustconn/src/window/terminal_actions.rs:441
+#: rustconn/src/window/terminal_actions.rs:438
 msgid ""
 "Could not start recording for '{}' — the recordings folder is missing or not "
 "writable"
 msgstr ""
 "Không thể bắt đầu ghi cho “{}” — thư mục bản ghi bị thiếu hoặc không ghi được"
 
-#: rustconn/src/window/terminal_actions.rs:505
+#: rustconn/src/window/terminal_actions.rs:502
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr "Trình xem này chạy độc lập và không thể đóng từ RustConn"
 
@@ -16446,6 +16440,10 @@ msgstr "Không gian làm việc"
 msgid "Wake-on-LAN…"
 msgstr "Wake-on-LAN…"
 
+#: rustconn/src/window/ui.rs:307
+msgid "Tools"
+msgstr "Công cụ"
+
 #: rustconn/src/window/ui.rs:323
 msgid "Sessions"
 msgstr "Phiên"
@@ -16466,7 +16464,7 @@ msgstr "Giao diện thu gọn"
 msgid "Keyboard Passthrough"
 msgstr "Chuyển thẳng bàn phím"
 
-#: rustconn/src/window/wizard.rs:52 rustconn/src/window/wizard.rs:253
+#: rustconn/src/window/wizard.rs:52 rustconn/src/window/wizard.rs:279
 msgid "Connection “{}” created"
 msgstr "Đã tạo kết nối “{}”"
 
@@ -16507,6 +16505,18 @@ msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubern
 msgstr ""
 "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;kết "
 "nối;terminal;remote;từ xa;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Override global monitoring settings for this connection"
+#~ msgstr "Ghi đè cài đặt giám sát chung cho kết nối này"
+
+#~ msgid "Remote host metrics collection"
+#~ msgstr "Thu thập số liệu của máy chủ từ xa"
+
+#~ msgid "Show icon"
+#~ msgstr "Hiện biểu tượng"
+
+#~ msgid "Search in Terminal"
+#~ msgstr "Tìm trong terminal"
 
 #~ msgid "Recording — open the terminal menu to stop"
 #~ msgstr "Đang ghi — mở menu terminal để dừng"

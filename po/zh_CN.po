@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 21:27+0200\n"
+"POT-Creation-Date: 2026-11-22 22:04+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -178,6 +178,8 @@ msgstr "调试日志"
 #: rustconn/src/dialogs/portable_passphrase_change.rs:376
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
+#: rustconn/src/dialogs/terminal_search.rs:149
+#: rustconn/src/dialogs/terminal_search.rs:151
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
 #: rustconn/src/terminal/tab_menu.rs:817 rustconn/src/vault_ops.rs:65
@@ -432,7 +434,7 @@ msgid_plural "{} connections match this pattern"
 msgstr[0] "{} 个连接匹配该模式"
 
 #: rustconn/src/dialogs/cluster.rs:185 rustconn/src/dialogs/cluster.rs:237
-#: rustconn/src/dialogs/terminal_search.rs:389
+#: rustconn/src/dialogs/terminal_search.rs:368
 msgid "Invalid regex pattern"
 msgstr "无效的正则表达式模式"
 
@@ -543,7 +545,7 @@ msgstr "新建组"
 #: rustconn/src/dialogs/command_palette.rs:693
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/settings/ui_tab.rs:927
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:2034
 #: rustconn/src/split_view/bridge.rs:2297 rustconn/src/tray.rs:309
@@ -731,8 +733,10 @@ msgid "Remote Monitoring"
 msgstr "远程监控"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:305
-msgid "Override global monitoring settings for this connection"
-msgstr "覆盖此连接的全局监控设置"
+msgid ""
+"Override global monitoring settings for this connection. Works for SSH only; "
+"not available for RDP, VNC, Telnet and other protocols"
+msgstr "覆盖此连接的全局监控设置。仅适用于 SSH；不适用于 RDP、VNC、Telnet 和其他协议"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:319
 msgid "Enable Monitoring"
@@ -755,7 +759,7 @@ msgid "Save terminal output to file"
 msgstr "保存终端输出到文件"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:344
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:170
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:172
 #: rustconn/src/terminal/tab_menu.rs:1348
 msgid "Activity Monitor"
 msgstr "活动监视器"
@@ -774,7 +778,7 @@ msgid "Quiet Period"
 msgstr "静默期"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:362
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:190
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:192
 msgid "Seconds of silence before activity notification"
 msgstr "活动通知前的静默秒数"
 
@@ -783,7 +787,7 @@ msgid "Silence Timeout"
 msgstr "静默超时"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:371
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:198
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:200
 msgid "Seconds of no output before silence notification"
 msgstr "静默通知前的无输出秒数"
 
@@ -1000,7 +1004,7 @@ msgstr "使用全局设置"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:827
 #: rustconn/src/dialogs/connection/dialog/rows.rs:450
-#: rustconn/src/dialogs/settings/ui_tab.rs:665
+#: rustconn/src/dialogs/settings/ui_tab.rs:664
 #: rustconn/src/window/edit_group.rs:2386
 msgid "Enabled"
 msgstr "已启用"
@@ -7939,95 +7943,97 @@ msgstr "正则表达式，例如 (?i)\\bINFO\\b。在下方的字段中设置颜
 msgid "Monitoring"
 msgstr "监控"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:59
-msgid "Remote host metrics collection"
-msgstr "远程主机指标收集"
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:60
+msgid ""
+"Remote host metrics collection. Works for SSH sessions only; not available "
+"for RDP, VNC, Telnet and other protocols"
+msgstr "远程主机指标收集。仅适用于 SSH 会话；不适用于 RDP、VNC、Telnet 和其他协议"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:63
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:65
 msgid "Enable monitoring"
 msgstr "启用监控"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:65
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:67
 msgid ""
 "Global switch for all connections (per-connection: Advanced tab in "
 "connection settings)"
 msgstr "所有连接的全局开关（单个连接：在连接设置的「高级」选项卡中配置）"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:71
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:73
 msgid "Polling interval"
 msgstr "轮询间隔"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:72
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:74
 msgid "Seconds between metric updates"
 msgstr "指标更新之间的秒数"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:83
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:85
 msgid "Reset Per-Connection Overrides"
 msgstr "重置各连接的覆盖项"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:85
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:87
 msgid ""
 "Make every connection follow the global switch. Polling intervals set per "
 "connection are kept."
 msgstr "使每个连接都遵循全局开关。各连接单独设置的轮询间隔将予以保留。"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:89
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:91
 msgid "Reset…"
 msgstr "重置…"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:100
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:102
 msgid "Visible Metrics"
 msgstr "可见指标"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:101
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:103
 msgid "Select which metrics to display"
 msgstr "选择显示哪些指标"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:105
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:107
 msgid "CPU usage"
 msgstr "CPU 使用率"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:112
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:114
 msgid "Memory usage"
 msgstr "内存使用率"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:119
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:121
 msgid "Disk usage"
 msgstr "磁盘使用率"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:126
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:128
 msgid "Network throughput"
 msgstr "网络吞吐量"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:133
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:135
 msgid "Load average"
 msgstr "平均负载"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:140
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:142
 msgid "System information"
 msgstr "系统信息"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:141
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:143
 msgid "Distribution, kernel version, uptime"
 msgstr "发行版、内核版本、运行时间"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:172
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:174
 msgid "Default settings for terminal activity and silence detection"
 msgstr "终端活动和静默检测的默认设置"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:180
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:182
 msgid "Default Mode"
 msgstr "默认模式"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:181
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:183
 msgid "Monitoring mode applied to new connections"
 msgstr "应用于新连接的视频监控模式"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:189
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:191
 msgid "Default Quiet Period"
 msgstr "默认静默周期"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:197
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:199
 msgid "Default Silence Timeout"
 msgstr "默认静默超时"
 
@@ -9392,7 +9398,7 @@ msgstr "语言"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:218
 #: rustconn/src/dialogs/settings/ui_tab.rs:234
-#: rustconn/src/dialogs/settings/ui_tab.rs:636
+#: rustconn/src/dialogs/settings/ui_tab.rs:634
 msgid "Restart required to apply"
 msgstr "需要重启才能应用"
 
@@ -9654,7 +9660,7 @@ msgid "Open session automatically"
 msgstr "自动打开会话"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:605
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/settings/ui_tab.rs:927
 msgid "Do Nothing"
 msgstr "不执行任何操作"
 
@@ -9666,51 +9672,47 @@ msgstr "显示欢迎标签页"
 msgid "Display Welcome tab when no session opens at startup"
 msgstr "启动时没有会话打开时显示欢迎标签页"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:629
-msgid "System Tray"
-msgstr "系统托盘"
-
-#: rustconn/src/dialogs/settings/ui_tab.rs:630
+#: rustconn/src/dialogs/settings/ui_tab.rs:627
 msgid "Requires desktop environment with tray support"
 msgstr "需要支持托盘的桌面环境"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:635
-msgid "Show icon"
-msgstr "显示图标"
+#: rustconn/src/dialogs/settings/ui_tab.rs:633
+msgid "System Tray"
+msgstr "系统托盘"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:641
+#: rustconn/src/dialogs/settings/ui_tab.rs:640
 msgid "Minimize to tray"
 msgstr "最小化到托盘"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:642
+#: rustconn/src/dialogs/settings/ui_tab.rs:641
 msgid "Hide window instead of closing"
 msgstr "关闭窗口时隐藏窗口"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:659
+#: rustconn/src/dialogs/settings/ui_tab.rs:658
 msgid "Session Restore"
 msgstr "会话恢复"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:660
+#: rustconn/src/dialogs/settings/ui_tab.rs:659
 msgid "Restore previous connections on startup"
 msgstr "启动时恢复之前的连接"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:666
+#: rustconn/src/dialogs/settings/ui_tab.rs:665
 msgid "Reconnect to previous sessions on startup"
 msgstr "启动时重新连接到之前的会话"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:671
+#: rustconn/src/dialogs/settings/ui_tab.rs:670
 msgid "Ask first"
 msgstr "先询问"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:672
+#: rustconn/src/dialogs/settings/ui_tab.rs:671
 msgid "Prompt before restoring sessions"
 msgstr "恢复会话前提示"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:677
+#: rustconn/src/dialogs/settings/ui_tab.rs:676
 msgid "Max age"
 msgstr "最大期限"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:678
+#: rustconn/src/dialogs/settings/ui_tab.rs:677
 msgid "Hours before sessions expire"
 msgstr "会话过期前的小时数"
 
@@ -10492,58 +10494,54 @@ msgstr "端口：{}"
 msgid "User: {}"
 msgstr "用户：{}"
 
-#: rustconn/src/dialogs/terminal_search.rs:122
-msgid "Search in Terminal"
-msgstr "在终端中搜索"
-
-#: rustconn/src/dialogs/terminal_search.rs:148
+#: rustconn/src/dialogs/terminal_search.rs:123
 msgid "Search text…"
 msgstr "搜索文本…"
 
-#: rustconn/src/dialogs/terminal_search.rs:156
+#: rustconn/src/dialogs/terminal_search.rs:126
 msgid "Case sensitive"
 msgstr "区分大小写"
 
-#: rustconn/src/dialogs/terminal_search.rs:160
+#: rustconn/src/dialogs/terminal_search.rs:128
 msgid "Regex"
 msgstr "正则表达式"
 
-#: rustconn/src/dialogs/terminal_search.rs:161
+#: rustconn/src/dialogs/terminal_search.rs:129
 msgid "Use regular expression pattern"
 msgstr "使用正则表达式模式"
 
-#: rustconn/src/dialogs/terminal_search.rs:166
+#: rustconn/src/dialogs/terminal_search.rs:132
 msgid "Highlight All"
 msgstr "全部高亮"
 
-#: rustconn/src/dialogs/terminal_search.rs:167
+#: rustconn/src/dialogs/terminal_search.rs:133
 msgid "Highlight all matches in terminal"
 msgstr "在终端中高亮显示所有匹配项"
 
-#: rustconn/src/dialogs/terminal_search.rs:179
-#: rustconn/src/dialogs/terminal_search.rs:181
+#: rustconn/src/dialogs/terminal_search.rs:138
+#: rustconn/src/dialogs/terminal_search.rs:140
 msgid "Previous match"
 msgstr "上一个匹配"
 
-#: rustconn/src/dialogs/terminal_search.rs:186
-#: rustconn/src/dialogs/terminal_search.rs:188
+#: rustconn/src/dialogs/terminal_search.rs:143
+#: rustconn/src/dialogs/terminal_search.rs:145
 msgid "Next match"
 msgstr "下一个匹配"
 
-#: rustconn/src/dialogs/terminal_search.rs:192
-#: rustconn/src/dialogs/terminal_search.rs:249
+#: rustconn/src/dialogs/terminal_search.rs:153
+#: rustconn/src/dialogs/terminal_search.rs:310
 msgid "Enter text to search"
 msgstr "输入搜索文本"
 
-#: rustconn/src/dialogs/terminal_search.rs:382
+#: rustconn/src/dialogs/terminal_search.rs:361
 msgid "Found matches"
 msgstr "找到匹配项"
 
-#: rustconn/src/dialogs/terminal_search.rs:384
+#: rustconn/src/dialogs/terminal_search.rs:363
 msgid "No matches found"
 msgstr "未找到匹配项"
 
-#: rustconn/src/dialogs/terminal_search.rs:391
+#: rustconn/src/dialogs/terminal_search.rs:370
 msgid "Search error"
 msgstr "搜索错误"
 
@@ -12735,10 +12733,6 @@ msgstr "管理工作区"
 msgid "Manage Snippets"
 msgstr "管理代码片段"
 
-#: rustconn/src/sidebar_ui.rs:1522 rustconn/src/window/ui.rs:307
-msgid "Tools"
-msgstr "工具"
-
 #: rustconn/src/sidebar_ui.rs:1543
 msgid "Sort by Recent Use"
 msgstr "按最近使用排序"
@@ -13781,13 +13775,13 @@ msgstr "无法将会话移动到独立窗口。"
 msgid "Could not move the session back to the main window."
 msgstr "无法将会话移回主窗口。"
 
-#: rustconn/src/window/detach_actions.rs:780
-#: rustconn/src/window/detach_actions.rs:804
+#: rustconn/src/window/detach_actions.rs:779
+#: rustconn/src/window/detach_actions.rs:803
 #: rustconn/src/window/group_broadcast.rs:464
 msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr "群组广播已禁用 — 按键仅发送到当前标签页"
 
-#: rustconn/src/window/detach_actions.rs:829
+#: rustconn/src/window/detach_actions.rs:828
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "群组广播需要两个或更多终端标签页"
 
@@ -14403,8 +14397,8 @@ msgid "'{}' now signs in with a key"
 msgstr "“{}”现在使用密钥登录"
 
 #: rustconn/src/window/key_setup.rs:907 rustconn/src/window/wizard.rs:42
-#: rustconn/src/window/wizard.rs:78 rustconn/src/window/wizard.rs:244
-#: rustconn/src/window/wizard.rs:280
+#: rustconn/src/window/wizard.rs:86 rustconn/src/window/wizard.rs:270
+#: rustconn/src/window/wizard.rs:314
 msgid "the application is busy"
 msgstr "应用正忙"
 
@@ -15969,13 +15963,13 @@ msgstr "保存模板错误"
 msgid "Are you sure you want to delete this template?"
 msgstr "您确定要删除此模板吗？"
 
-#: rustconn/src/window/terminal_actions.rs:441
+#: rustconn/src/window/terminal_actions.rs:438
 msgid ""
 "Could not start recording for '{}' — the recordings folder is missing or not "
 "writable"
 msgstr "无法开始录制“{}”——录制文件夹缺失或不可写入"
 
-#: rustconn/src/window/terminal_actions.rs:505
+#: rustconn/src/window/terminal_actions.rs:502
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr "此查看器独立运行，无法从 RustConn 关闭"
 
@@ -16027,6 +16021,10 @@ msgstr "工作区"
 msgid "Wake-on-LAN…"
 msgstr "网络唤醒…"
 
+#: rustconn/src/window/ui.rs:307
+msgid "Tools"
+msgstr "工具"
+
 #: rustconn/src/window/ui.rs:323
 msgid "Sessions"
 msgstr "会话"
@@ -16047,7 +16045,7 @@ msgstr "紧凑界面"
 msgid "Keyboard Passthrough"
 msgstr "键盘穿透"
 
-#: rustconn/src/window/wizard.rs:52 rustconn/src/window/wizard.rs:253
+#: rustconn/src/window/wizard.rs:52 rustconn/src/window/wizard.rs:279
 msgid "Connection “{}” created"
 msgstr "连接“{}”已创建"
 
@@ -16086,6 +16084,18 @@ msgstr "连接管理器"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Override global monitoring settings for this connection"
+#~ msgstr "覆盖此连接的全局监控设置"
+
+#~ msgid "Remote host metrics collection"
+#~ msgstr "远程主机指标收集"
+
+#~ msgid "Show icon"
+#~ msgstr "显示图标"
+
+#~ msgid "Search in Terminal"
+#~ msgstr "在终端中搜索"
 
 #~ msgid "Recording — open the terminal menu to stop"
 #~ msgstr "正在录制 — 打开终端菜单可停止"

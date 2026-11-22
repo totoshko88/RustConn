@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 21:27+0200\n"
+"POT-Creation-Date: 2026-11-22 22:04+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -183,6 +183,8 @@ msgstr "Sazlama jurnalı"
 #: rustconn/src/dialogs/portable_passphrase_change.rs:376
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
+#: rustconn/src/dialogs/terminal_search.rs:149
+#: rustconn/src/dialogs/terminal_search.rs:151
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1084 rustconn/src/split_view/adapter.rs:1377
 #: rustconn/src/terminal/tab_menu.rs:817 rustconn/src/vault_ops.rs:65
@@ -445,7 +447,7 @@ msgstr[0] "{} bağlantı bu nümunəyə uyğundur"
 msgstr[1] "{} bağlantı bu nümunəyə uyğundur"
 
 #: rustconn/src/dialogs/cluster.rs:185 rustconn/src/dialogs/cluster.rs:237
-#: rustconn/src/dialogs/terminal_search.rs:389
+#: rustconn/src/dialogs/terminal_search.rs:368
 msgid "Invalid regex pattern"
 msgstr "Etibarsız regex nümunəsi"
 
@@ -562,7 +564,7 @@ msgstr "Yeni qrup"
 #: rustconn/src/dialogs/command_palette.rs:693
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:606
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/settings/ui_tab.rs:927
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:2034
 #: rustconn/src/split_view/bridge.rs:2297 rustconn/src/tray.rs:309
@@ -750,8 +752,10 @@ msgid "Remote Monitoring"
 msgstr "Uzaqdan monitorinq"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:305
-msgid "Override global monitoring settings for this connection"
-msgstr "Bu bağlantı üçün qlobal monitorinq tənzimləmələrini üstələ"
+msgid ""
+"Override global monitoring settings for this connection. Works for SSH only; "
+"not available for RDP, VNC, Telnet and other protocols"
+msgstr "Bu bağlantı üçün qlobal monitorinq tənzimləmələrini üstələ. Yalnız SSH üçün işləyir; RDP, VNC, Telnet və digər protokollar üçün əlçatan deyil"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:319
 msgid "Enable Monitoring"
@@ -774,7 +778,7 @@ msgid "Save terminal output to file"
 msgstr "Terminal çıxışını fayla saxla"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:344
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:170
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:172
 #: rustconn/src/terminal/tab_menu.rs:1348
 msgid "Activity Monitor"
 msgstr "Fəaliyyət monitoru"
@@ -793,7 +797,7 @@ msgid "Quiet Period"
 msgstr "Sakitlik dövrü"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:362
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:190
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:192
 msgid "Seconds of silence before activity notification"
 msgstr "Fəaliyyət bildirişindən əvvəl sükut saniyələri"
 
@@ -802,7 +806,7 @@ msgid "Silence Timeout"
 msgstr "Sükut fasiləsi"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:371
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:198
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:200
 msgid "Seconds of no output before silence notification"
 msgstr "Sükut bildirişindən əvvəl çıxışsız saniyələr"
 
@@ -1022,7 +1026,7 @@ msgstr "Qlobal ayardan istifadə et"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:827
 #: rustconn/src/dialogs/connection/dialog/rows.rs:450
-#: rustconn/src/dialogs/settings/ui_tab.rs:665
+#: rustconn/src/dialogs/settings/ui_tab.rs:664
 #: rustconn/src/window/edit_group.rs:2386
 msgid "Enabled"
 msgstr "Aktiv"
@@ -8158,15 +8162,17 @@ msgstr ""
 msgid "Monitoring"
 msgstr "Monitorinq"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:59
-msgid "Remote host metrics collection"
-msgstr "Uzaq host metriklərinin toplanması"
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:60
+msgid ""
+"Remote host metrics collection. Works for SSH sessions only; not available "
+"for RDP, VNC, Telnet and other protocols"
+msgstr "Uzaq host metriklərinin toplanması. Yalnız SSH sessiyaları üçün işləyir; RDP, VNC, Telnet və digər protokollar üçün əlçatan deyil"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:63
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:65
 msgid "Enable monitoring"
 msgstr "Monitorinqi aktivləşdir"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:65
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:67
 msgid ""
 "Global switch for all connections (per-connection: Advanced tab in "
 "connection settings)"
@@ -8174,19 +8180,19 @@ msgstr ""
 "Bütün bağlantılar üçün qlobal açar (bağlantı üzrə: bağlantı "
 "tənzimləmələrində Qabaqcıl tabı)"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:71
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:73
 msgid "Polling interval"
 msgstr "Sorğu intervalı"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:72
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:74
 msgid "Seconds between metric updates"
 msgstr "Metrik yeniləmələri arasındakı saniyələr"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:83
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:85
 msgid "Reset Per-Connection Overrides"
 msgstr "Bağlantı üzrə ləğvetmələri sıfırla"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:85
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:87
 msgid ""
 "Make every connection follow the global switch. Polling intervals set per "
 "connection are kept."
@@ -8194,64 +8200,64 @@ msgstr ""
 "Hər bağlantının qlobal açarı izləməsini təmin et. Hər bağlantı üzrə təyin "
 "edilmiş sorğu intervalları saxlanılır."
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:89
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:91
 msgid "Reset…"
 msgstr "Sıfırla…"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:100
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:102
 msgid "Visible Metrics"
 msgstr "Görünən metriklər"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:101
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:103
 msgid "Select which metrics to display"
 msgstr "Hansı metriklərin göstəriləcəyini seçin"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:105
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:107
 msgid "CPU usage"
 msgstr "CPU istifadəsi"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:112
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:114
 msgid "Memory usage"
 msgstr "Yaddaş istifadəsi"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:119
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:121
 msgid "Disk usage"
 msgstr "Disk istifadəsi"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:126
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:128
 msgid "Network throughput"
 msgstr "Şəbəkə ötürmə qabiliyyəti"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:133
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:135
 msgid "Load average"
 msgstr "Orta yüklənmə"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:140
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:142
 msgid "System information"
 msgstr "Sistem məlumatı"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:141
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:143
 msgid "Distribution, kernel version, uptime"
 msgstr "Distributiv, nüvə versiyası, işləmə müddəti"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:172
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:174
 msgid "Default settings for terminal activity and silence detection"
 msgstr ""
 "Terminal aktivliyi və səssizlik aşkarlanması üçün standart tənzimləmələr"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:180
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:182
 msgid "Default Mode"
 msgstr "Standart rejim"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:181
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:183
 msgid "Monitoring mode applied to new connections"
 msgstr "Yeni bağlantılara tətbiq olunan monitorinq rejimi"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:189
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:191
 msgid "Default Quiet Period"
 msgstr "Standart sakitlik müddəti"
 
-#: rustconn/src/dialogs/settings/monitoring_tab.rs:197
+#: rustconn/src/dialogs/settings/monitoring_tab.rs:199
 msgid "Default Silence Timeout"
 msgstr "Standart səssizlik fasiləsi"
 
@@ -9647,7 +9653,7 @@ msgstr "Dil"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:218
 #: rustconn/src/dialogs/settings/ui_tab.rs:234
-#: rustconn/src/dialogs/settings/ui_tab.rs:636
+#: rustconn/src/dialogs/settings/ui_tab.rs:634
 msgid "Restart required to apply"
 msgstr "Tətbiq etmək üçün yenidən başlatma tələb olunur"
 
@@ -9927,7 +9933,7 @@ msgid "Open session automatically"
 msgstr "Sessiyanı avtomatik aç"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:605
-#: rustconn/src/dialogs/settings/ui_tab.rs:928
+#: rustconn/src/dialogs/settings/ui_tab.rs:927
 msgid "Do Nothing"
 msgstr "Heç nə etmə"
 
@@ -9939,51 +9945,47 @@ msgstr "Xoş gəldin tabını göstər"
 msgid "Display Welcome tab when no session opens at startup"
 msgstr "Başlatmada heç bir sessiya açılmadıqda Xoş gəldin tabını göstər"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:629
-msgid "System Tray"
-msgstr "Sistem trayı"
-
-#: rustconn/src/dialogs/settings/ui_tab.rs:630
+#: rustconn/src/dialogs/settings/ui_tab.rs:627
 msgid "Requires desktop environment with tray support"
 msgstr "Tray dəstəyi olan iş masası mühiti tələb edir"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:635
-msgid "Show icon"
-msgstr "İkonu göstər"
+#: rustconn/src/dialogs/settings/ui_tab.rs:633
+msgid "System Tray"
+msgstr "Sistem trayı"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:641
+#: rustconn/src/dialogs/settings/ui_tab.rs:640
 msgid "Minimize to tray"
 msgstr "Traya kiçilt"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:642
+#: rustconn/src/dialogs/settings/ui_tab.rs:641
 msgid "Hide window instead of closing"
 msgstr "Bağlamaq əvəzinə pəncərəni gizlət"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:659
+#: rustconn/src/dialogs/settings/ui_tab.rs:658
 msgid "Session Restore"
 msgstr "Sessiya bərpası"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:660
+#: rustconn/src/dialogs/settings/ui_tab.rs:659
 msgid "Restore previous connections on startup"
 msgstr "Başlatmada əvvəlki bağlantıları bərpa et"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:666
+#: rustconn/src/dialogs/settings/ui_tab.rs:665
 msgid "Reconnect to previous sessions on startup"
 msgstr "Başlatmada əvvəlki sessiyalara yenidən qoşul"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:671
+#: rustconn/src/dialogs/settings/ui_tab.rs:670
 msgid "Ask first"
 msgstr "Əvvəlcə soruş"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:672
+#: rustconn/src/dialogs/settings/ui_tab.rs:671
 msgid "Prompt before restoring sessions"
 msgstr "Sessiyaları bərpa etməzdən əvvəl soruş"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:677
+#: rustconn/src/dialogs/settings/ui_tab.rs:676
 msgid "Max age"
 msgstr "Maks. yaş"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:678
+#: rustconn/src/dialogs/settings/ui_tab.rs:677
 msgid "Hours before sessions expire"
 msgstr "Sessiyaların bitməsinə qalan saat"
 
@@ -10769,58 +10771,54 @@ msgstr "Port: {}"
 msgid "User: {}"
 msgstr "İstifadəçi: {}"
 
-#: rustconn/src/dialogs/terminal_search.rs:122
-msgid "Search in Terminal"
-msgstr "Terminalda axtar"
-
-#: rustconn/src/dialogs/terminal_search.rs:148
+#: rustconn/src/dialogs/terminal_search.rs:123
 msgid "Search text…"
 msgstr "Mətn axtar…"
 
-#: rustconn/src/dialogs/terminal_search.rs:156
+#: rustconn/src/dialogs/terminal_search.rs:126
 msgid "Case sensitive"
 msgstr "Böyük-kiçik hərfə həssas"
 
-#: rustconn/src/dialogs/terminal_search.rs:160
+#: rustconn/src/dialogs/terminal_search.rs:128
 msgid "Regex"
 msgstr "Regex"
 
-#: rustconn/src/dialogs/terminal_search.rs:161
+#: rustconn/src/dialogs/terminal_search.rs:129
 msgid "Use regular expression pattern"
 msgstr "Adi ifadə (regex) naxışından istifadə et"
 
-#: rustconn/src/dialogs/terminal_search.rs:166
+#: rustconn/src/dialogs/terminal_search.rs:132
 msgid "Highlight All"
 msgstr "Hamısını vurğula"
 
-#: rustconn/src/dialogs/terminal_search.rs:167
+#: rustconn/src/dialogs/terminal_search.rs:133
 msgid "Highlight all matches in terminal"
 msgstr "Terminaldakı bütün uyğunluqları vurğula"
 
-#: rustconn/src/dialogs/terminal_search.rs:179
-#: rustconn/src/dialogs/terminal_search.rs:181
+#: rustconn/src/dialogs/terminal_search.rs:138
+#: rustconn/src/dialogs/terminal_search.rs:140
 msgid "Previous match"
 msgstr "Əvvəlki uyğunluq"
 
-#: rustconn/src/dialogs/terminal_search.rs:186
-#: rustconn/src/dialogs/terminal_search.rs:188
+#: rustconn/src/dialogs/terminal_search.rs:143
+#: rustconn/src/dialogs/terminal_search.rs:145
 msgid "Next match"
 msgstr "Növbəti uyğunluq"
 
-#: rustconn/src/dialogs/terminal_search.rs:192
-#: rustconn/src/dialogs/terminal_search.rs:249
+#: rustconn/src/dialogs/terminal_search.rs:153
+#: rustconn/src/dialogs/terminal_search.rs:310
 msgid "Enter text to search"
 msgstr "Axtarmaq üçün mətn daxil edin"
 
-#: rustconn/src/dialogs/terminal_search.rs:382
+#: rustconn/src/dialogs/terminal_search.rs:361
 msgid "Found matches"
 msgstr "Uyğunluqlar tapıldı"
 
-#: rustconn/src/dialogs/terminal_search.rs:384
+#: rustconn/src/dialogs/terminal_search.rs:363
 msgid "No matches found"
 msgstr "Uyğunluq tapılmadı"
 
-#: rustconn/src/dialogs/terminal_search.rs:391
+#: rustconn/src/dialogs/terminal_search.rs:370
 msgid "Search error"
 msgstr "Axtarış xətası"
 
@@ -13079,10 +13077,6 @@ msgstr "İş sahələrini idarə et"
 msgid "Manage Snippets"
 msgstr "Fraqmentləri idarə et"
 
-#: rustconn/src/sidebar_ui.rs:1522 rustconn/src/window/ui.rs:307
-msgid "Tools"
-msgstr "Alətlər"
-
 #: rustconn/src/sidebar_ui.rs:1543
 msgid "Sort by Recent Use"
 msgstr "Son istifadəyə görə çeşidlə"
@@ -14156,13 +14150,13 @@ msgstr "Sessiya öz pəncərəsinə köçürülə bilmədi."
 msgid "Could not move the session back to the main window."
 msgstr "Sessiya əsas pəncərəyə qaytarıla bilmədi."
 
-#: rustconn/src/window/detach_actions.rs:780
-#: rustconn/src/window/detach_actions.rs:804
+#: rustconn/src/window/detach_actions.rs:779
+#: rustconn/src/window/detach_actions.rs:803
 #: rustconn/src/window/group_broadcast.rs:464
 msgid "Tab Broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Qrup yayımı söndürülüb — klaviş vuruşları yalnız fokusdakı taba gedir"
 
-#: rustconn/src/window/detach_actions.rs:829
+#: rustconn/src/window/detach_actions.rs:828
 msgid "Tab Broadcast needs two or more terminal tabs"
 msgstr "Tab yayımı üçün iki və ya daha çox terminal tabı lazımdır"
 
@@ -14803,8 +14797,8 @@ msgid "'{}' now signs in with a key"
 msgstr "'{}' artıq açarla daxil olur"
 
 #: rustconn/src/window/key_setup.rs:907 rustconn/src/window/wizard.rs:42
-#: rustconn/src/window/wizard.rs:78 rustconn/src/window/wizard.rs:244
-#: rustconn/src/window/wizard.rs:280
+#: rustconn/src/window/wizard.rs:86 rustconn/src/window/wizard.rs:270
+#: rustconn/src/window/wizard.rs:314
 msgid "the application is busy"
 msgstr "tətbiq məşğuldur"
 
@@ -16435,7 +16429,7 @@ msgstr "Şablon saxlanılarkən xəta"
 msgid "Are you sure you want to delete this template?"
 msgstr "Bu şablonu silmək istədiyinizə əminsiniz?"
 
-#: rustconn/src/window/terminal_actions.rs:441
+#: rustconn/src/window/terminal_actions.rs:438
 msgid ""
 "Could not start recording for '{}' — the recordings folder is missing or not "
 "writable"
@@ -16443,7 +16437,7 @@ msgstr ""
 "'{}' üçün yazma başladıla bilmədi — yazılar qovluğu yoxdur və ya yazıla "
 "bilməz"
 
-#: rustconn/src/window/terminal_actions.rs:505
+#: rustconn/src/window/terminal_actions.rs:502
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr "Bu görüntüləyici müstəqil işləyir və RustConn-dan bağlana bilməz"
 
@@ -16495,6 +16489,10 @@ msgstr "İş sahələri"
 msgid "Wake-on-LAN…"
 msgstr "Wake-on-LAN…"
 
+#: rustconn/src/window/ui.rs:307
+msgid "Tools"
+msgstr "Alətlər"
+
 #: rustconn/src/window/ui.rs:323
 msgid "Sessions"
 msgstr "Sessiyalar"
@@ -16515,7 +16513,7 @@ msgstr "Yığcam interfeys"
 msgid "Keyboard Passthrough"
 msgstr "Klaviatura ötürməsi"
 
-#: rustconn/src/window/wizard.rs:52 rustconn/src/window/wizard.rs:253
+#: rustconn/src/window/wizard.rs:52 rustconn/src/window/wizard.rs:279
 msgid "Connection “{}” created"
 msgstr "“{}” bağlantısı yaradıldı"
 
@@ -16554,6 +16552,18 @@ msgstr "Bağlantı meneceri"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Override global monitoring settings for this connection"
+#~ msgstr "Bu bağlantı üçün qlobal monitorinq tənzimləmələrini üstələ"
+
+#~ msgid "Remote host metrics collection"
+#~ msgstr "Uzaq host metriklərinin toplanması"
+
+#~ msgid "Show icon"
+#~ msgstr "İkonu göstər"
+
+#~ msgid "Search in Terminal"
+#~ msgstr "Terminalda axtar"
 
 #~ msgid "Recording — open the terminal menu to stop"
 #~ msgstr "Yazılır — dayandırmaq üçün terminal menyusunu açın"
