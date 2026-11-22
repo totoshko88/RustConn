@@ -289,15 +289,10 @@ impl MainWindow {
         });
     }
 
-    /// Shows the terminal search dialog
-    pub(super) fn show_terminal_search_dialog(
-        window: &adw::ApplicationWindow,
-        notebook: &SharedNotebook,
-    ) {
+    /// Shows the terminal search bar
+    pub(super) fn show_terminal_search_dialog(notebook: &SharedNotebook) {
         if let Some(terminal) = notebook.get_active_terminal() {
-            let dialog =
-                crate::dialogs::TerminalSearchDialog::new(Some(&window.clone().upcast()), terminal);
-            dialog.show();
+            crate::dialogs::TerminalSearchBar::show(&terminal);
         }
     }
 }

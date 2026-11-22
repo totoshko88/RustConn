@@ -673,8 +673,7 @@ fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &D
                 && let Some(session_id) = group.selected_session()
                 && let Some(terminal) = notebook.get_terminal(session_id)
             {
-                let parent = group.window().clone().upcast();
-                crate::dialogs::TerminalSearchDialog::new(Some(&parent), terminal).show();
+                crate::dialogs::TerminalSearchBar::show(&terminal);
             }
         }),
     );
@@ -988,15 +987,11 @@ fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &D
 
     let search_action = gio::SimpleAction::new("terminal-search", None);
     let notebook_search = handles.notebook.clone();
-    let window_search = window.downgrade();
     search_action.connect_activate(move |_, _| {
         if let Some(notebook) = notebook_search.upgrade()
-            && let Some(parent) = window_search.upgrade()
             && let Some(terminal) = notebook.get_terminal(session_id)
         {
-            let dialog =
-                crate::dialogs::TerminalSearchDialog::new(Some(&parent.clone().upcast()), terminal);
-            dialog.show();
+            crate::dialogs::TerminalSearchBar::show(&terminal);
         }
     });
     window.add_action(&search_action);

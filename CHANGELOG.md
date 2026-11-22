@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Terminal search is a bar at the top of the terminal, not a modal sheet — issue [#442](https://github.com/totoshko88/RustConn/issues/442), reported by @thiagoojack** — the search no longer blocks the session: the terminal stays scrollable and selectable while it is open. **Enter** goes to the next match, **Shift+Enter** to the previous one, **Esc** closes the bar and returns focus to the terminal. The bar pushes the terminal down by its own height, so it never covers a match. Case sensitive, Regex and Highlight All work as before, and the bar works in tabs, split panes and detached or session-group windows. (`rustconn/src/dialogs/terminal_search.rs`)
 - **Save & Connect in the wizard no longer asks for the password you just typed** — the password was written to the vault on a worker thread while the connect started at once and read the vault, so a slow backend (KeePassXC took about 3 s) answered "not found" and a password prompt opened. The wizard now hands the typed password to the session cache for that first connect. (`rustconn/src/window/wizard.rs`)
 
 ### Added
