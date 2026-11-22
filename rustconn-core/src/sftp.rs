@@ -25,6 +25,57 @@ pub struct SshAgentInfo {
 /// application startup. Initialised once from `main()`.
 static AGENT_INFO: OnceLock<SshAgentInfo> = OnceLock::new();
 
+/// Opens when the background start from [`start_ssh_agent_in_background`] is
+/// over, whether or not it found an agent. Unset when nothing started one.
+static AGENT_STARTUP: OnceLock<std::sync::Arc<crate::startup_gate::StartupGate<()>>> =
+    OnceLock::new();
+
+/// How long a launch waits for the background agent start. `ssh-agent -s` is
+/// itself bounded by `AGENT_COMMAND_TIMEOUT`, so this only guards a lost thread.
+const AGENT_STARTUP_WAIT: std::time::Duration = std::time::Duration::from_secs(6);
+
+/// Runs [`ensure_ssh_agent`] on a thread and stores the result with
+/// [`set_agent_info`], so a slow or absent `ssh-agent` does not delay the window.
+///
+/// Every reader of the stored agent ([`get_agent_info`],
+/// [`resolve_ssh_agent_socket`], [`agent_env_vars`]) waits for this thread, so a
+/// launch right after start still gets the agent. Call once, from `main()`.
+pub fn start_ssh_agent_in_background() {
+    let gate = std::sync::Arc::new(crate::startup_gate::StartupGate::pending());
+    if AGENT_STARTUP.set(std::sync::Arc::clone(&gate)).is_err() {
+        return;
+    }
+    let spawned = std::thread::Builder::new()
+        .name("ssh-agent-start".into())
+        .spawn({
+            let gate = std::sync::Arc::clone(&gate);
+            move || {
+                if let Some(info) = ensure_ssh_agent() {
+                    set_agent_info(info);
+                } else {
+                    tracing::warn!(
+                        "Could not ensure ssh-agent is running; \
+                         SFTP via file managers may require manual setup"
+                    );
+                }
+                gate.open(());
+            }
+        });
+    if spawned.is_err() {
+        gate.open(());
+    }
+}
+
+/// The stored agent, after any background start has finished.
+fn agent_info() -> Option<&'static SshAgentInfo> {
+    if let Some(gate) = AGENT_STARTUP.get()
+        && gate.wait(AGENT_STARTUP_WAIT).is_none()
+    {
+        tracing::warn!("ssh-agent start did not finish in time; continuing without it");
+    }
+    AGENT_INFO.get()
+}
+
 /// Stores ssh-agent information globally.
 ///
 /// Call this once from `main()` after [`ensure_ssh_agent`] returns
@@ -36,7 +87,7 @@ pub fn set_agent_info(info: SshAgentInfo) {
 /// Returns the globally stored ssh-agent info, if any.
 #[must_use]
 pub fn get_agent_info() -> Option<&'static SshAgentInfo> {
-    AGENT_INFO.get()
+    agent_info()
 }
 
 /// The agent socket from Settings, shared by every launch in this process.
@@ -141,7 +192,7 @@ pub fn resolve_ssh_agent_socket(
     pick_agent_socket(
         per_connection,
         global.as_deref(),
-        AGENT_INFO.get().map(|info| info.socket_path.as_str()),
+        agent_info().map(|info| info.socket_path.as_str()),
         std::env::var("SSH_AUTH_SOCK").ok().as_deref(),
     )
 }
@@ -164,8 +215,7 @@ fn agent_env_vars_with(
     let Some(socket) = resolve_ssh_agent_socket(per_connection, global_override) else {
         return Vec::new();
     };
-    let pid = AGENT_INFO
-        .get()
+    let pid = agent_info()
         .filter(|info| info.socket_path == socket)
         .and_then(|info| info.pid.clone());
     let mut vars = vec![("SSH_AUTH_SOCK", socket)];

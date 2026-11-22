@@ -5,6 +5,7 @@
 
 mod connections;
 mod sessions;
+pub mod startup_secrets;
 mod sync;
 
 use std::cell::RefCell;
@@ -22,13 +23,14 @@ use rustconn_core::models::{
 use rustconn_core::secret::{CredentialResolver, SecretManager};
 use rustconn_core::session::SessionManager;
 use rustconn_core::snippet::SnippetManager;
+use rustconn_core::startup_gate::StartupGate;
 use rustconn_core::sync::SyncManager;
 use rustconn_core::template::TemplateManager;
 use rustconn_core::workspace::WorkspaceProfileManager;
 use secrecy::SecretString;
 use uuid::Uuid;
 
-use crate::async_utils::with_runtime;
+use startup_secrets::{KEYRING_WAIT, KeyringGate, KeyringJobs, StartupSnapshot};
 
 /// Internal clipboard for connection copy/paste operations
 ///
@@ -271,6 +273,11 @@ pub struct AppState {
     /// Whether the KeePass keyring load at startup failed or timed out.
     /// Checked once after the main window is shown to display a toast.
     kdbx_keyring_failed: bool,
+    /// Keyring reads still to do after the window is shown; taken once by
+    /// [`Self::take_startup_keyring_jobs`].
+    keyring_jobs: KeyringJobs,
+    /// Opens when those reads are over (already open when none were needed).
+    keyring_gate: Arc<KeyringGate>,
     /// What startup found wrong with the config files, if anything. Taken once
     /// by the main window for its banner, like `kdbx_keyring_failed`.
     config_file_notice: Option<ConfigFileNotice>,
@@ -321,6 +328,37 @@ struct CredentialResolutionContext {
     secret_settings: rustconn_core::config::SecretSettings,
     secret_manager: SecretManager,
     global_variables: Vec<rustconn_core::Variable>,
+    /// Set when the startup keyring reads were still running as this context
+    /// was built; `None` when it already holds the final secrets.
+    keyring_gate: Option<Arc<KeyringGate>>,
+}
+
+impl CredentialResolutionContext {
+    /// Waits (worker thread only) for the startup keyring reads, then takes
+    /// their result: the loaded secrets and the secret manager built with them.
+    /// A connect made right after start therefore resolves with the same
+    /// secrets as one made later. On timeout the context is used as it is.
+    fn after_startup_keyring(mut self) -> Self {
+        let Some(gate) = self.keyring_gate.take() else {
+            return self;
+        };
+        match gate.wait(KEYRING_WAIT) {
+            Some(Some(snapshot)) => self.overlay(snapshot),
+            Some(None) => {}
+            None => tracing::warn!(
+                "startup keyring reads did not finish in time; resolving without them"
+            ),
+        }
+        self
+    }
+
+    fn overlay(&mut self, snapshot: StartupSnapshot) {
+        if self.kdbx_password.is_none() {
+            self.kdbx_password = snapshot.secrets.kdbx_password.clone();
+        }
+        self.secret_settings = snapshot.secrets;
+        self.secret_manager = snapshot.manager;
+    }
 }
 
 impl AppState {
@@ -357,7 +395,6 @@ impl AppState {
             .filter(|version| rustconn_core::config::is_newer_than_running(version));
 
         // Validate KDBX integration at startup
-        let mut kdbx_keyring_failed = false;
         if settings.secrets.kdbx_enabled {
             let mut disable_integration = false;
 
@@ -390,65 +427,8 @@ impl AppState {
                     tracing::info!("KeePass password restored from encrypted storage");
                 }
 
-                // If password still not available and user chose system keyring storage,
-                // load it from keyring now. This is typically a fast local D-Bus
-                // call (~10ms), but on cold boot (daemon not started) or with KWallet
-                // it may block longer. Use a 5-second timeout to avoid delaying startup.
-                // Without this, connections using KeePass vault cannot resolve credentials
-                // until the user opens Settings (where keyring loading previously lived).
-                // Guard: skip if kdbx_path doesn't exist (file deleted, USB detached) —
-                // no point holding a password in memory for an unreachable database.
-                if settings.secrets.kdbx_password.is_none()
-                    && settings.secrets.kdbx_save_to_keyring
-                    && settings
-                        .secrets
-                        .kdbx_path
-                        .as_ref()
-                        .is_some_and(|p| p.exists())
-                {
-                    match with_runtime(|rt| {
-                        rt.block_on(async {
-                            tokio::time::timeout(
-                                std::time::Duration::from_secs(5),
-                                rustconn_core::secret::get_kdbx_password_from_keyring(),
-                            )
-                            .await
-                        })
-                    }) {
-                        Ok(Ok(Ok(Some(password)))) => {
-                            settings.secrets.kdbx_password = Some(password);
-                            tracing::info!("KeePass password restored from system keyring");
-                        }
-                        Ok(Ok(Ok(None))) => {
-                            tracing::warn!(
-                                "KeePass password not found in system keyring — \
-                                 user may need to re-enter it in Settings"
-                            );
-                            kdbx_keyring_failed = true;
-                        }
-                        Ok(Ok(Err(e))) => {
-                            tracing::warn!(
-                                error = %e,
-                                "Failed to load KeePass password from system keyring"
-                            );
-                            kdbx_keyring_failed = true;
-                        }
-                        Ok(Err(_elapsed)) => {
-                            tracing::warn!(
-                                "Keyring query timed out after 5s — \
-                                 KeePass credentials will be loaded when Settings is opened"
-                            );
-                            kdbx_keyring_failed = true;
-                        }
-                        Err(e) => {
-                            tracing::warn!(
-                                error = %e,
-                                "Runtime error loading KeePass password from keyring"
-                            );
-                            kdbx_keyring_failed = true;
-                        }
-                    }
-                }
+                // A password still missing and kept in the system keyring is read
+                // after the window is shown (`startup_secrets`).
             }
         }
 
@@ -470,96 +450,12 @@ impl AppState {
                         "1Password service account token restored from encrypted storage"
                     );
                 }
-                // If token still not available and keyring storage is configured,
-                // load from keyring with a 5s timeout (same pattern as KeePass above).
-                if settings.secrets.onepassword_service_account_token.is_none()
-                    && settings.secrets.onepassword_save_to_keyring
-                {
-                    match with_runtime(|rt| {
-                        rt.block_on(async {
-                            tokio::time::timeout(
-                                std::time::Duration::from_secs(5),
-                                rustconn_core::secret::get_token_from_keyring(),
-                            )
-                            .await
-                        })
-                    }) {
-                        Ok(Ok(Ok(Some(token)))) => {
-                            settings.secrets.onepassword_service_account_token = Some(token);
-                            tracing::info!(
-                                "1Password service account token restored from system keyring"
-                            );
-                        }
-                        Ok(Ok(Ok(None))) => {
-                            tracing::debug!("No 1Password token found in system keyring");
-                        }
-                        Ok(Ok(Err(e))) => {
-                            tracing::warn!(
-                                error = %e,
-                                "Failed to load 1Password token from system keyring"
-                            );
-                        }
-                        Ok(Err(_elapsed)) => {
-                            tracing::warn!(
-                                "Keyring query timed out after 5s — \
-                                 1Password token will be loaded when Settings is opened"
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!(
-                                error = %e,
-                                "Runtime error loading 1Password token from keyring"
-                            );
-                        }
-                    }
-                }
             }
             rustconn_core::config::SecretBackendType::Passbolt => {
                 if settings.secrets.passbolt_passphrase_encrypted.is_some()
                     && settings.secrets.decrypt_passbolt_passphrase()
                 {
                     tracing::info!("Passbolt passphrase restored from encrypted storage");
-                }
-                // If passphrase still not available and keyring storage is configured,
-                // load from keyring with a 5s timeout.
-                if settings.secrets.passbolt_passphrase.is_none()
-                    && settings.secrets.passbolt_save_to_keyring
-                {
-                    match with_runtime(|rt| {
-                        rt.block_on(async {
-                            tokio::time::timeout(
-                                std::time::Duration::from_secs(5),
-                                rustconn_core::secret::get_passphrase_from_keyring(),
-                            )
-                            .await
-                        })
-                    }) {
-                        Ok(Ok(Ok(Some(passphrase)))) => {
-                            settings.secrets.passbolt_passphrase = Some(passphrase);
-                            tracing::info!("Passbolt passphrase restored from system keyring");
-                        }
-                        Ok(Ok(Ok(None))) => {
-                            tracing::debug!("No Passbolt passphrase found in system keyring");
-                        }
-                        Ok(Ok(Err(e))) => {
-                            tracing::warn!(
-                                error = %e,
-                                "Failed to load Passbolt passphrase from system keyring"
-                            );
-                        }
-                        Ok(Err(_elapsed)) => {
-                            tracing::warn!(
-                                "Keyring query timed out after 5s — \
-                                 Passbolt passphrase will be loaded when Settings is opened"
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!(
-                                error = %e,
-                                "Runtime error loading Passbolt passphrase from keyring"
-                            );
-                        }
-                    }
                 }
             }
             rustconn_core::config::SecretBackendType::PortableEncryptedFile => {
@@ -572,45 +468,6 @@ impl AppState {
                 {
                     tracing::info!("Portable file passphrase restored from encrypted storage");
                 }
-                if settings.secrets.portable_passphrase.is_none()
-                    && settings.secrets.portable_save_to_keyring
-                {
-                    match with_runtime(|rt| {
-                        rt.block_on(async {
-                            tokio::time::timeout(
-                                std::time::Duration::from_secs(5),
-                                rustconn_core::secret::get_portable_passphrase_from_keyring(),
-                            )
-                            .await
-                        })
-                    }) {
-                        Ok(Ok(Ok(Some(passphrase)))) => {
-                            settings.secrets.portable_passphrase = Some(passphrase);
-                            tracing::info!("Portable file passphrase restored from system keyring");
-                        }
-                        Ok(Ok(Ok(None))) => {
-                            tracing::debug!("No portable file passphrase found in system keyring");
-                        }
-                        Ok(Ok(Err(e))) => {
-                            tracing::warn!(
-                                error = %e,
-                                "Failed to load the portable file passphrase from system keyring"
-                            );
-                        }
-                        Ok(Err(_elapsed)) => {
-                            tracing::warn!(
-                                "Keyring query timed out after 5s — the portable file \
-                                 passphrase will be asked for on first connect"
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!(
-                                error = %e,
-                                "Runtime error loading the portable file passphrase from keyring"
-                            );
-                        }
-                    }
-                }
             }
             _ => {
                 // Bitwarden: handled in app.rs idle_add_local_once
@@ -618,6 +475,15 @@ impl AppState {
                 // LibSecret, Pass, macOS Keychain: stateless
             }
         }
+
+        // What the keyring still has to supply. Read after the window is shown;
+        // until then the gate is closed and credential lookups wait for it.
+        let keyring_jobs = KeyringJobs::for_settings(&settings.secrets);
+        let keyring_gate: Arc<KeyringGate> = Arc::new(if keyring_jobs.any() {
+            StartupGate::pending()
+        } else {
+            StartupGate::ready(None)
+        });
 
         // Initialize connection manager
         let connection_manager = ConnectionManager::new(config_manager.clone())
@@ -735,7 +601,9 @@ impl AppState {
             simple_sync_dirty: std::cell::Cell::new(false),
             workspace_manager,
             folder_tracker: Arc::new(std::sync::Mutex::new(FolderConnectionTracker::new())),
-            kdbx_keyring_failed,
+            kdbx_keyring_failed: false,
+            keyring_jobs,
+            keyring_gate,
             config_file_notice,
             routing_memory: std::cell::RefCell::new(
                 rustconn_core::connection::RoutingMemory::load_default(),
@@ -1086,6 +954,11 @@ impl AppState {
         let secret_settings = self.settings.secrets.clone();
         let secret_manager = self.secret_manager.clone();
         let global_variables = self.settings.global_variables.clone();
+        let keyring_gate = self
+            .keyring_gate
+            .get()
+            .is_none()
+            .then(|| Arc::clone(&self.keyring_gate));
 
         // Get groups for hierarchical path building
         let groups: Vec<ConnectionGroup> = self
@@ -1109,6 +982,7 @@ impl AppState {
                     secret_settings,
                     secret_manager,
                     global_variables,
+                    keyring_gate,
                 })
             },
             callback,
@@ -1152,6 +1026,10 @@ impl AppState {
             secret_settings: self.settings.secrets.clone(),
             secret_manager: self.secret_manager.clone(),
             global_variables: self.settings.global_variables.clone(),
+            // This runs on the GTK thread, which must not wait for the reads
+            // (their result is applied on it). Before they finish it sees no
+            // keyring-held secret and takes the prompt path, as after a failed read.
+            keyring_gate: None,
         };
 
         // The single-attempt resolver, deliberately not the retrying wrapper:
@@ -1306,6 +1184,8 @@ impl AppState {
         // `items_after_statements`).
         // Not `ssh.`: every protocol (RDP, VNC, SPICE, …) resolves through here.
         let _perf = rustconn_core::tracing::perf::PerfSpan::new("connect.resolve", "credentials");
+
+        let ctx = ctx.after_startup_keyring();
 
         // Captured before the context moves into the final attempt.
         let conn_username = ctx.connection.username.clone();
@@ -2183,6 +2063,27 @@ impl AppState {
         std::mem::take(&mut self.kdbx_keyring_failed)
     }
 
+    /// Takes the keyring reads startup still has to do, once.
+    pub fn take_startup_keyring_jobs(&mut self) -> KeyringJobs {
+        std::mem::take(&mut self.keyring_jobs)
+    }
+
+    /// Applies the startup keyring reads, rebuilds the secret manager when they
+    /// filled anything, and opens the gate that credential lookups wait on.
+    ///
+    /// Secrets set meanwhile (Settings, an unlock dialog) are kept.
+    pub fn finish_startup_keyring(&mut self, loaded: startup_secrets::KeyringSecrets) {
+        self.kdbx_keyring_failed |= loaded.kdbx_failed;
+        if loaded.apply(&mut self.settings.secrets) {
+            self.secret_manager
+                .rebuild_from_settings(&self.settings.secrets);
+        }
+        self.keyring_gate.open(Some(StartupSnapshot {
+            secrets: self.settings.secrets.clone(),
+            manager: self.secret_manager.clone(),
+        }));
+    }
+
     /// Takes what startup found wrong with the config files, once.
     ///
     /// The main window shows it in a banner; a second call returns `None`, as
@@ -2804,6 +2705,7 @@ mod cacheable_credentials_tests {
 #[cfg(test)]
 mod tests {
     use super::password_source_needs_resolution;
+    use std::sync::Arc;
     use rustconn_core::models::PasswordSource;
 
     // Root cause of issue #330: the reconnect path read the target password
@@ -2909,5 +2811,51 @@ mod tests {
             resolved(Some("group-user"), None),
         );
         assert_eq!(identity_of(out).0.as_deref(), Some("group-user"));
+    }
+
+    fn early_context(gate: Arc<super::KeyringGate>) -> super::CredentialResolutionContext {
+        let secrets = rustconn_core::config::SecretSettings::default();
+        super::CredentialResolutionContext {
+            connection: rustconn_core::models::Connection::new_ssh("c".into(), "h".into(), 22),
+            groups: Vec::new(),
+            kdbx_enabled: true,
+            kdbx_path: None,
+            kdbx_password: None,
+            kdbx_key_file: None,
+            secret_manager: rustconn_core::secret::SecretManager::build_from_settings(&secrets),
+            secret_settings: secrets,
+            global_variables: Vec::new(),
+            keyring_gate: Some(gate),
+        }
+    }
+
+    // A lookup that starts before the keyring reads finish waits for them and
+    // then holds the loaded secret, not the `None` it was built with.
+    #[test]
+    fn early_lookup_waits_for_the_keyring_reads() {
+        use secrecy::ExposeSecret;
+        let gate = Arc::new(super::KeyringGate::pending());
+        let worker = {
+            let ctx = early_context(Arc::clone(&gate));
+            std::thread::spawn(move || ctx.after_startup_keyring())
+        };
+        std::thread::sleep(std::time::Duration::from_millis(30));
+        let mut loaded = rustconn_core::config::SecretSettings::default();
+        loaded.kdbx_password = Some(secrecy::SecretString::from("pw"));
+        gate.open(Some(super::StartupSnapshot {
+            manager: rustconn_core::secret::SecretManager::build_from_settings(&loaded),
+            secrets: loaded,
+        }));
+        let ctx = worker.join().unwrap();
+        assert_eq!(ctx.kdbx_password.unwrap().expose_secret(), "pw");
+        assert!(ctx.keyring_gate.is_none());
+    }
+
+    // A gate that was already open at capture time costs nothing and changes nothing.
+    #[test]
+    fn no_gate_leaves_the_context_alone() {
+        let mut ctx = early_context(Arc::new(super::KeyringGate::ready(None)));
+        ctx.keyring_gate = None;
+        assert!(ctx.after_startup_keyring().kdbx_password.is_none());
     }
 }

@@ -531,6 +531,9 @@ fn install_glib_css_warning_filter() {
 }
 
 fn main() -> gtk4::glib::ExitCode {
+    // Starts the clock for the `op="startup"` lines (logged once tracing is up).
+    rustconn_core::tracing::perf::startup_phase("main");
+
     // macOS .app bundle: detect bundle Resources path for programmatic
     // configuration of i18n, GSettings schemas, and icon paths.
     // Unlike the old approach, this does NOT re-exec the process —
@@ -604,6 +607,7 @@ fn main() -> gtk4::glib::ExitCode {
     // and before anything spawns a thread that might panic. Rust panics only;
     // a SIGSEGV in a C library does not come through here.
     rustconn_core::crash_report::install_panic_hook();
+    rustconn_core::tracing::perf::startup_phase("logging-ready");
 
     // Choose the GSK renderer before GTK reads it. Placed after the subscriber
     // so the choice — a heuristic, when the setting is Automatic — is visible in
@@ -620,15 +624,11 @@ fn main() -> gtk4::glib::ExitCode {
 
     // Ensure ssh-agent is running so that child processes (Dolphin,
     // mc, ssh-add) inherit SSH_AUTH_SOCK. On some DEs (KDE on
-    // openSUSE Tumbleweed) ssh-agent is not started by default.
-    if let Some(info) = rustconn_core::sftp::ensure_ssh_agent() {
-        rustconn_core::sftp::set_agent_info(info);
-    } else {
-        tracing::warn!(
-            "Could not ensure ssh-agent is running; \
-             SFTP via file managers may require manual setup"
-        );
-    }
+    // openSUSE Tumbleweed) ssh-agent is not started by default. Started on a
+    // thread so spawning it does not delay the window; every launch path that
+    // reads the agent waits for it. After the renderer choice above, which is
+    // the last write to the startup environment.
+    rustconn_core::sftp::start_ssh_agent_in_background();
 
     // Initialize Tokio runtime for async operations.
     // Runtime creation can fail in extremely constrained environments

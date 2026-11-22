@@ -101,6 +101,7 @@ pub mod ssh_agent;
 pub mod ssh_askpass;
 pub mod ssh_key_setup;
 pub mod ssh_tunnel;
+pub mod startup_gate;
 pub mod sync;
 pub mod template;
 pub mod terminal_themes;

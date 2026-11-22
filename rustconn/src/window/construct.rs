@@ -295,7 +295,15 @@ impl MainWindow {
         ));
         // Write the bundled example scripts on first run, so the auto-run
         // pickers list them before the Scripts manager has ever been opened.
-        crate::dialogs::script::ensure_bundled_examples();
+        // On a thread: it reads and compares every bundled file, which the
+        // window does not wait for. shortcut: a picker opened within the first
+        // milliseconds of a first run can miss them; it lists them on reopening.
+        if let Err(e) = std::thread::Builder::new()
+            .name("seed-examples".into())
+            .spawn(crate::dialogs::script::ensure_bundled_examples)
+        {
+            tracing::warn!(%e, "Could not start the bundled example seeding");
+        }
         let activity_coordinator = Rc::new(ActivityCoordinator::new());
         let activity_for_close = activity_coordinator.clone();
         terminal_notebook.set_activity_coordinator(activity_coordinator.clone());
