@@ -390,11 +390,193 @@ fn move_session_to_group_window(
     group.present();
 }
 
+/// How long a window opened for a dropped tab may stay empty before it closes.
+///
+/// The tab reaches it two idles after the drop; a window still empty after this
+/// belongs to a drop that was refused (a split tab, an external viewer) or that
+/// libadwaita cancelled.
+const EMPTY_TAB_WINDOW_GRACE: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Opens a tabbed window of no particular group for a tab dropped outside every
+/// window, and returns its tab view for libadwaita to drop the tab on.
+fn open_tab_window(handles: &DetachHandles) -> Option<adw::TabView> {
+    let targets = handles.upgrade()?;
+    let app = targets
+        .main_window
+        .application()
+        .and_downcast::<adw::Application>()?;
+    let group_id = Uuid::new_v4();
+    let group = SessionGroupWindow::new(&app, "");
+    wire_group_window(&group, group_id, handles);
+    targets.registry.insert_group(group_id, Rc::clone(&group));
+    group.present();
+    tracing::info!(%group_id, "window opened for a tab dropped outside every window");
+
+    let weak = Rc::downgrade(&group);
+    glib::timeout_add_local_once(EMPTY_TAB_WINDOW_GRACE, move || {
+        if let Some(group) = weak.upgrade()
+            && group.is_empty()
+            && !group.is_closing()
+        {
+            tracing::debug!("closing the window of a tab drop that did not arrive");
+            group.close();
+        }
+    });
+    Some(group.tab_view().clone())
+}
+
+/// Moves the session of a dragged tab to the window it was dropped on.
+///
+/// Runs once the tab is back in its own view (see
+/// `crate::terminal::set_drop_handler`), so the session is found through the
+/// ordinary bookkeeping and moved through the ordinary paths: out of the main
+/// window as *Move to New Window* takes it, back as *Move Tab to Main Window*
+/// brings it. `position` is where it was dropped in the target tab bar.
+fn handle_tab_drop(
+    handles: &DetachHandles,
+    page: &adw::TabPage,
+    target: &adw::TabView,
+    position: i32,
+) {
+    let Some(targets) = handles.upgrade() else {
+        return;
+    };
+    let target_group = targets.registry.group_for_view(target);
+    let to_main = target == targets.notebook.tab_view();
+
+    if let Some((source, session_id)) = targets.registry.group_hosting_page(page) {
+        if to_main {
+            tracing::info!(session = %session_id, "tab dragged to the main window");
+            attach_session(handles, session_id);
+            let page = targets
+                .notebook
+                .sessions_map()
+                .borrow()
+                .get(&session_id)
+                .cloned();
+            if let Some(page) = page {
+                let view = targets.notebook.tab_view();
+                let position = crate::terminal::clamp_drop_position(
+                    position,
+                    view.n_pinned_pages(),
+                    view.n_pages() - 1,
+                );
+                view.reorder_page(&page, position);
+            }
+        } else if let Some(group) = &target_group
+            && !Rc::ptr_eq(group, &source)
+        {
+            move_between_group_windows(&targets, &source, group, session_id, position);
+        }
+    } else if let Some(group) = &target_group {
+        let session_id = targets
+            .notebook
+            .sessions_map()
+            .borrow()
+            .iter()
+            .find_map(|(sid, p)| (p == page).then_some(*sid));
+        if let Some(session_id) = session_id {
+            move_main_tab_to_group_window(handles, &targets, session_id, group, position);
+        }
+    }
+
+    // A window opened for this drop that ended up with nothing in it.
+    if let Some(group) = target_group
+        && group.is_empty()
+        && !group.is_closing()
+    {
+        group.close();
+    }
+}
+
+/// Moves a session out of its main-window tab into a group window's tab bar.
+///
+/// A session that cannot leave its tab is explained as *Move to New Window*
+/// explains it, and stays.
+fn move_main_tab_to_group_window(
+    handles: &DetachHandles,
+    targets: &DetachTargets,
+    session_id: Uuid,
+    group: &Rc<SessionGroupWindow>,
+    position: i32,
+) {
+    let verdict = targets.notebook.detach_verdict(session_id);
+    if let Some(explanation) = verdict_explanation(verdict) {
+        tracing::info!(
+            session = %session_id,
+            reason = verdict.reason_key(),
+            "tab drop to another window rejected"
+        );
+        handles
+            .toasts
+            .show_toast_with_type(&explanation, ToastType::Warning);
+        return;
+    }
+    let Some(info) = targets.notebook.get_session_info(session_id) else {
+        return;
+    };
+    let Some(content) = targets.notebook.take_session_content(session_id) else {
+        handles
+            .toasts
+            .show_error(&i18n("Could not move the session to its own window."));
+        return;
+    };
+    group.stop_broadcast();
+    group.add_session(
+        session_id,
+        info.connection_id,
+        &info.name,
+        &info.protocol,
+        &content,
+    );
+    group.place_session(session_id, position);
+    group.present();
+    tracing::info!(session = %session_id, "tab dragged into another window");
+}
+
+/// Moves a session's tab from one group window to another, keeping the session.
+///
+/// The session stays detached throughout; only the window showing its content
+/// box changes, so nothing is reconnected or rebuilt.
+fn move_between_group_windows(
+    targets: &DetachTargets,
+    source: &Rc<SessionGroupWindow>,
+    group: &Rc<SessionGroupWindow>,
+    session_id: Uuid,
+    position: i32,
+) {
+    let (Some(content), Some(info)) = (
+        source.session_content(session_id),
+        targets.notebook.get_session_info(session_id),
+    ) else {
+        return;
+    };
+    // Drops the page only: the session is marked as leaving, so not ended. A
+    // source window left empty closes itself, as after any last tab leaves.
+    source.remove_session(session_id);
+    if content.parent().is_some() {
+        content.unparent();
+    }
+    group.stop_broadcast();
+    group.add_session(
+        session_id,
+        info.connection_id,
+        &info.name,
+        &info.protocol,
+        &content,
+    );
+    group.place_session(session_id, position);
+    group.present();
+    tracing::info!(session = %session_id, "tab dragged between two windows");
+}
+
 /// Wires the callbacks and the window actions of a fresh group window.
 ///
 /// The closures hold the window weakly: the registry owns the only strong
 /// reference, so dropping its entry releases the window.
 fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &DetachHandles) {
+    // A tab may be released anywhere on this window to move into it.
+    crate::terminal::accept_tab_drops(group.window(), group.tab_view());
     let handles_attach = handles.clone();
     group.set_on_attach(move |session_id| attach_session(&handles_attach, session_id));
 
@@ -994,6 +1176,16 @@ impl MainWindow {
                 tracing::error!(%error, "could not register win.detach-session-to-monitor");
             }
         }
+
+        // Tabs dragged between windows, or out of every window. A tab may be
+        // released anywhere on the main window to come back to it.
+        crate::terminal::accept_tab_drops(window, self.terminal_notebook.tab_view());
+        let handles_drop = handles.clone();
+        crate::terminal::set_drop_handler(move |page, target, position| {
+            handle_tab_drop(&handles_drop, page, target, position);
+        });
+        let handles_window = handles.clone();
+        crate::terminal::set_new_window_handler(move || open_tab_window(&handles_window));
 
         let attach_action = gio::SimpleAction::new("attach-session", Some(glib::VariantTy::STRING));
         let handles_attach = handles.clone();
