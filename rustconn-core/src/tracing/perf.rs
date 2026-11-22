@@ -31,9 +31,10 @@ use std::time::Instant;
 /// being a real Rust module path.
 pub const PERF_TARGET: &str = "rustconn::perf";
 
-/// Logs how far startup has got: `op="startup"`, `transport=<phase>` and the
-/// milliseconds since the first call, which `main()` makes the first thing it does.
-/// Phase names are fixed labels. The time from exec to that first call
+/// Logs how far startup has got.
+///
+/// The line carries `op="startup"`, `transport=<phase>` and the milliseconds
+/// since the first call, which `main()` makes the first thing it does. Phase names are fixed labels. The time from exec to that first call
 /// (dynamic linking) is not included.
 pub fn startup_phase(phase: &'static str) {
     static ORIGIN: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();

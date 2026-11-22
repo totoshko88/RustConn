@@ -458,6 +458,8 @@ impl AppState {
                     tracing::info!("Passbolt passphrase restored from encrypted storage");
                 }
             }
+            #[allow(clippy::collapsible_match)]
+            // the decrypt has a side effect; keep it out of a guard
             rustconn_core::config::SecretBackendType::PortableEncryptedFile => {
                 // Restore the portable store passphrase so the first connection
                 // of the session does not have to prompt. Without this the
@@ -2705,8 +2707,8 @@ mod cacheable_credentials_tests {
 #[cfg(test)]
 mod tests {
     use super::password_source_needs_resolution;
-    use std::sync::Arc;
     use rustconn_core::models::PasswordSource;
+    use std::sync::Arc;
 
     // Root cause of issue #330: the reconnect path read the target password
     // from the session cache only. When the cache is empty (expired past the
@@ -2840,8 +2842,10 @@ mod tests {
             std::thread::spawn(move || ctx.after_startup_keyring())
         };
         std::thread::sleep(std::time::Duration::from_millis(30));
-        let mut loaded = rustconn_core::config::SecretSettings::default();
-        loaded.kdbx_password = Some(secrecy::SecretString::from("pw"));
+        let loaded = rustconn_core::config::SecretSettings {
+            kdbx_password: Some(secrecy::SecretString::from("pw")),
+            ..Default::default()
+        };
         gate.open(Some(super::StartupSnapshot {
             manager: rustconn_core::secret::SecretManager::build_from_settings(&loaded),
             secrets: loaded,

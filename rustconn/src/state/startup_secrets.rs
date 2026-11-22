@@ -41,6 +41,7 @@ pub struct StartupSnapshot {
 pub type KeyringGate = StartupGate<Option<StartupSnapshot>>;
 
 /// Which keyring reads startup still has to do.
+#[allow(clippy::struct_excessive_bools)] // one independent flag per read
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct KeyringJobs {
     kdbx: bool,

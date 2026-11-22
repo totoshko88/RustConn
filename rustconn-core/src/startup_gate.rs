@@ -44,6 +44,7 @@ impl<T: Clone> StartupGate<T> {
         if slot.is_none() {
             *slot = Some(value);
         }
+        drop(slot);
         self.opened.notify_all();
     }
 
