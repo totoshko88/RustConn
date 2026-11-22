@@ -29,6 +29,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 use gtk4::glib;
 use gtk4::prelude::*;
@@ -45,7 +46,20 @@ type NewWindowHandler = Rc<dyn Fn() -> Option<adw::TabView>>;
 /// windows accept it, so a terminal never pastes it as text.
 const SINGLE_TAB_MIME: &str = "application/x-rustconn-tab";
 
+/// A tab dropped on something that refused the drop but wants the tab once it
+/// is back home (a split panel). Expires so a stale claim never fires later.
+struct Claim {
+    page: glib::WeakRef<adw::TabPage>,
+    at: Instant,
+    action: Box<dyn FnOnce()>,
+}
+
+/// How long a claim stays valid: the cancel that follows a refused drop comes
+/// within the same drag, well inside this.
+const CLAIM_TTL: Duration = Duration::from_secs(2);
+
 thread_local! {
+    static CLAIM: RefCell<Option<Claim>> = const { RefCell::new(None) };
     static DROP_HANDLER: RefCell<Option<DropHandler>> = const { RefCell::new(None) };
     static NEW_WINDOW_HANDLER: RefCell<Option<NewWindowHandler>> = const { RefCell::new(None) };
     /// The view of the RustConn window a drag is over, if any.
@@ -58,6 +72,32 @@ thread_local! {
 /// The view of the RustConn window the current drag is over.
 fn drag_over() -> Option<adw::TabView> {
     DRAG_OVER.with(|slot| slot.borrow().as_ref().and_then(glib::WeakRef::upgrade))
+}
+
+/// Registers that `page`, dragged from the tab bar, was dropped on a widget that
+/// refused it, and that `action` should run once libadwaita has put it back in
+/// its own view. Without this such a tab is taken for one dropped outside every
+/// window and gets a window of its own.
+pub(crate) fn claim_tab_drop(page: &adw::TabPage, action: impl FnOnce() + 'static) {
+    CLAIM.with(|slot| {
+        *slot.borrow_mut() = Some(Claim {
+            page: page.downgrade(),
+            at: Instant::now(),
+            action: Box::new(action),
+        });
+    });
+}
+
+/// Takes the claim on `page`, if one is pending and fresh.
+fn take_claim(page: &adw::TabPage) -> Option<Box<dyn FnOnce()>> {
+    let claim = CLAIM.with(|slot| slot.borrow_mut().take())?;
+    (claim_is_fresh(claim.at.elapsed()) && claim.page.upgrade().as_ref() == Some(page))
+        .then_some(claim.action)
+}
+
+/// Whether a claim of age `age` is still valid.
+fn claim_is_fresh(age: Duration) -> bool {
+    age <= CLAIM_TTL
 }
 
 /// Runs the drop handler for `page` on the next idle.
@@ -341,6 +381,11 @@ fn return_cancelled_drag(view: &adw::TabView, page: &adw::TabPage) -> bool {
     if entry.is_none() {
         return false;
     }
+    if let Some(action) = take_claim(page) {
+        tracing::info!("tab dropped on a split panel");
+        glib::idle_add_local_once(action);
+        return true;
+    }
     match drag_over() {
         // Back in its own window: a drop on its own tab bar, which is a
         // reorder libadwaita already made, or a cancelled drag.
@@ -381,7 +426,15 @@ fn return_position(pinned: bool, position: i32, n_pinned: i32, n_pages: i32) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::{clamp_drop_position, return_position};
+    use super::{CLAIM_TTL, claim_is_fresh, clamp_drop_position, return_position};
+    use std::time::Duration;
+
+    #[test]
+    fn a_claim_expires_after_its_ttl() {
+        assert!(claim_is_fresh(Duration::ZERO));
+        assert!(claim_is_fresh(CLAIM_TTL));
+        assert!(!claim_is_fresh(CLAIM_TTL + Duration::from_millis(1)));
+    }
 
     #[test]
     fn a_drop_past_the_end_lands_last() {

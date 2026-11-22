@@ -2410,6 +2410,24 @@ impl SplitViewBridge {
             });
     }
 
+    /// Sets up the callback for a tab bar tab dropped on a panel.
+    ///
+    /// Receives the pane UUID and the dragged page, like
+    /// [`Self::setup_new_shell_callback`] translates the panel.
+    pub fn setup_tab_drop_callback<F>(&self, on_tab_dropped: F)
+    where
+        F: Fn(Uuid, &adw::TabPage) + 'static,
+    {
+        let panel_uuid_map = Rc::clone(&self.panel_uuid_map);
+        self.adapter
+            .borrow()
+            .set_tab_drop_callback(move |panel_id, page| {
+                if let Some(panel_uuid) = panel_uuid_map.borrow().get(&panel_id).copied() {
+                    on_tab_dropped(panel_uuid, page);
+                }
+            });
+    }
+
     /// Sets up the "Select Tab" callback for empty panel placeholders.
     ///
     /// When the user clicks the "Select Tab" button in an empty panel,
