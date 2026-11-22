@@ -457,7 +457,7 @@ impl TerminalNotebook {
     /// pane's name with another pane's host. Takes the maps rather than `&self`
     /// so the tab context menu's `'static` rename closure can reach it, as it
     /// does `apply_session_label`.
-    fn apply_split_tab_title(chrome: &TabChrome, owner: Uuid) {
+    pub(super) fn apply_split_tab_title(chrome: &TabChrome, owner: Uuid) {
         let Some(entry) = chrome.split_tab_titles.borrow().get(&owner).cloned() else {
             return;
         };
