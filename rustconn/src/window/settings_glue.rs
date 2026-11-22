@@ -129,7 +129,14 @@ impl MainWindow {
                     let bridges = session_split_bridges.borrow();
                     for bridge in bridges.values() {
                         bridge.set_show_pane_labels(settings.ui.show_split_pane_labels);
-                        bridge.set_hide_hover_controls(settings.ui.hide_split_pane_hover_controls);
+                        // A split shown in a group window keeps its corner controls
+                        // hidden: they act on the main window (see `detach_actions`).
+                        let in_group_window = bridge
+                            .owner_session()
+                            .is_some_and(|owner| notebook.is_detached(owner));
+                        bridge.set_hide_hover_controls(
+                            in_group_window || settings.ui.hide_split_pane_hover_controls,
+                        );
                     }
                 }
 
