@@ -432,6 +432,8 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         }
     };
 
+    rustconn_core::tracing::perf::startup_phase("state-ready");
+
     // Install the debounced connection-history flusher (writes happen on a
     // background thread instead of inline in the connect/disconnect paths)
     setup_history_flush(&state);
@@ -454,6 +456,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 
     // Create main window with state
     let window = MainWindow::new(app, state.clone());
+    rustconn_core::tracing::perf::startup_phase("window-built");
 
     // Track it for the re-activation guard above.
     MAIN_WINDOW.with(|cell| {
@@ -614,6 +617,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 
     // Present window immediately — no waiting for secret backends
     window.present();
+    rustconn_core::tracing::perf::startup_phase("presented");
     #[cfg(not(target_os = "macos"))]
     crate::portal_check::warn_if_missing(window.gtk_window());
 
@@ -903,6 +907,7 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     let window_for_secrets = window.gtk_window().downgrade();
     let secret_banner_for_secrets = window.secret_banner().clone();
     glib::idle_add_local_once(move || {
+        rustconn_core::tracing::perf::startup_phase("first-idle");
         // Phase 1: Decrypt stored credentials only for the active backend (lazy)
         // Bitwarden credentials are decrypted only when Bitwarden is the preferred
         // backend — avoids holding unused secrets in memory.
@@ -933,21 +938,38 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             });
         }
 
-        // Show toast if KeePass keyring load failed at startup
-        if let Ok(mut state_mut) = state_for_secrets.try_borrow_mut()
-            && state_mut.take_kdbx_keyring_failed()
-            && let Some(win) = window_for_secrets.upgrade()
-        {
-            let msg = crate::i18n::i18n(
-                "KeePass password not loaded from keyring — re-enter it in Settings",
-            );
-            crate::toast::show_toast_with_action_on_window(
-                &win,
-                &msg,
-                &crate::i18n::i18n("Settings"),
-                "win.settings",
-                crate::toast::ToastType::Warning,
-            );
+        // Keyring-held secrets (KeePass, 1Password, Passbolt, portable store) are
+        // read on a thread now that the window is up: a locked or hung Secret
+        // Service used to hold the window back for up to 5 s per secret.
+        // Credential lookups wait for the result (see `state::startup_secrets`).
+        let keyring_jobs = with_state_mut(&state_for_secrets, |s| s.take_startup_keyring_jobs());
+        if keyring_jobs.any() {
+            let rx = crate::state::startup_secrets::load_in_background(keyring_jobs);
+            let state_for_keyring = state_for_secrets.clone();
+            let window_for_keyring = window_for_secrets.clone();
+            glib::spawn_future_local(async move {
+                let loaded = rx.await.unwrap_or_default();
+                rustconn_core::tracing::perf::startup_phase("keyring-loaded");
+                let failed = with_state_mut(&state_for_keyring, |s| {
+                    s.finish_startup_keyring(loaded);
+                    s.take_kdbx_keyring_failed()
+                });
+                // The secrets-backend banner reads the passphrase state, which
+                // was empty until now.
+                recheck_secret_backend_on_active_window();
+                if failed && let Some(win) = window_for_keyring.upgrade() {
+                    let msg = crate::i18n::i18n(
+                        "KeePass password not loaded from keyring — re-enter it in Settings",
+                    );
+                    crate::toast::show_toast_with_action_on_window(
+                        &win,
+                        &msg,
+                        &crate::i18n::i18n("Settings"),
+                        "win.settings",
+                        crate::toast::ToastType::Warning,
+                    );
+                }
+            });
         }
 
         // The backend verdict has to be reachable again after startup, because
@@ -2484,6 +2506,7 @@ pub fn run() -> glib::ExitCode {
         tracing::error!(%e, "Failed to initialize libadwaita");
         return glib::ExitCode::FAILURE;
     }
+    rustconn_core::tracing::perf::startup_phase("gtk-init");
 
     // macOS: put RustConn's icon on the Dock tile when no bundle can supply one.
     // After gtk4::init() on purpose — the NSApplication this needs is created by
