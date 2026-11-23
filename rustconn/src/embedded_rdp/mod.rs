@@ -74,6 +74,20 @@ use types::{ErrorCallback, FallbackCallback, StateCallback};
 
 use crate::i18n::i18n;
 
+/// Error text reported when the server requires NLA and no password was given.
+///
+/// The session code matches it with
+/// [`is_credentials_required_message`] to open the password dialog instead of
+/// treating the attempt as failed; both live here so they cannot drift apart.
+pub fn credentials_required_message() -> String {
+    i18n("The server requires a password to sign in.")
+}
+
+/// Returns `true` when `msg` is [`credentials_required_message`].
+pub fn is_credentials_required_message(msg: &str) -> bool {
+    msg == credentials_required_message()
+}
+
 /// Inter-character delay when autotyping a command into the Windows Run dialog.
 ///
 /// Matches the previous scancode path (~30 ms/key) — slow enough that the

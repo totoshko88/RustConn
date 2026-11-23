@@ -267,8 +267,45 @@ impl RetryState {
     }
 }
 
+/// A reconnected session that ends within this many seconds counts as
+/// "short-lived" for [`next_short_lived_streak`].
+pub const SHORT_LIVED_RECONNECT_SECS: i64 = 30;
+
+/// Counts consecutive in-place reconnects whose process ended quickly.
+///
+/// Auto-reconnect waits for the host to answer a port probe, so a host that
+/// stays reachable while the session itself keeps failing (a server that
+/// accepts the connection and closes it) is reconnected at once, forever. The
+/// caller stops auto-reconnecting once this streak reaches the retry
+/// configuration's `max_attempts`.
+///
+/// `was_reconnect` is whether the process that just ended was started by an
+/// in-place reconnect; a session's first process always resets the streak, as
+/// does any process that lived at least [`SHORT_LIVED_RECONNECT_SECS`].
+#[must_use]
+pub const fn next_short_lived_streak(
+    previous: u32,
+    was_reconnect: bool,
+    lifetime_secs: i64,
+) -> u32 {
+    if was_reconnect && lifetime_secs < SHORT_LIVED_RECONNECT_SECS {
+        previous.saturating_add(1)
+    } else {
+        0
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn short_lived_streak_counts_only_quick_reconnects() {
+        use super::next_short_lived_streak;
+        assert_eq!(next_short_lived_streak(0, true, 5), 1);
+        assert_eq!(next_short_lived_streak(2, true, 5), 3);
+        assert_eq!(next_short_lived_streak(2, true, 30), 0);
+        assert_eq!(next_short_lived_streak(2, false, 5), 0);
+        assert_eq!(next_short_lived_streak(u32::MAX, true, 1), u32::MAX);
+    }
     use super::*;
 
     #[test]

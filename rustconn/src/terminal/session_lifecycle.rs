@@ -564,6 +564,25 @@ impl TerminalNotebook {
         self.poll_cancel_tokens.borrow_mut().insert(key, cancel);
     }
 
+    /// Records how the session's process that just ended went, and returns the
+    /// streak of consecutive quickly-ending in-place reconnects.
+    pub fn record_short_lived_reconnect(
+        &self,
+        session_id: Uuid,
+        was_reconnect: bool,
+        lifetime_secs: i64,
+    ) -> u32 {
+        let mut map = self.short_lived_reconnects.borrow_mut();
+        let previous = map.get(&session_id).copied().unwrap_or(0);
+        let streak = rustconn_core::connection::next_short_lived_streak(
+            previous,
+            was_reconnect,
+            lifetime_secs,
+        );
+        map.insert(session_id, streak);
+        streak
+    }
+
     /// Records whether an unattended sweep may reconnect this session.
     ///
     /// Called by the disconnect path with the same verdict it reached for its
@@ -1226,6 +1245,14 @@ impl TerminalNotebook {
         *self.on_reconnect.borrow_mut() = Some(Box::new(callback));
     }
 
+    /// Sets the callback invoked with the connection ID when a session's
+    /// command could not be started, so the caller can mark it failed.
+    pub fn set_on_spawn_failed<F>(&self, callback: F)
+    where
+        F: Fn(Uuid) + 'static,
+    {
+        *self.on_spawn_failed.borrow_mut() = Some(Box::new(callback));
+    }
     /// Sets the resolver for a split guest's pane container box (issue #328).
     ///
     /// The window wires this to look a session up across its per-tab split

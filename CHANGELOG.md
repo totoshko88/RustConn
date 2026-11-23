@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
+- **Sidebar status stuck on "connecting" when a client is missing or login is refused** — a Telnet, Mosh, Serial or other terminal connection whose client program is not installed (`command not found`) showed the "not installed" banner but left the sidebar row on the connecting icon for good, because a command that never started never exits to mark the row failed. The same happened to an embedded VNC attempt refused with `Authentication failure`. Both now turn the row to the failed icon.
+- **Embedded RDP to a Windows host with NLA never asked for the password** — a connection with no stored password tries without one first, so that a server with its own login screen (xrdp) can show it. A Windows host that requires Network Level Authentication refuses such an attempt with `server requires Enhanced RDP Security with CredSSP`, which ended the connection as failed with no prompt. That refusal now opens the password dialog.
+- **Endless auto-reconnect against a host that accepts and closes the session** — auto-reconnect waits for the host to answer a port probe, and the 5-second rapid-crash guard measured from the tab's creation, not from the reconnect. A server that accepted every connection and closed it a few seconds later (seen with Telnet) was reconnected at once, forever, and the sidebar flipped between connected and failed. Auto-reconnect now stops after the connection's retry limit of consecutive reconnects that each ended within 30 seconds; **Reconnect** still works by hand.
 - **Terminal search GUI test still failed on CI** — the 0.26.2 fix waited for VTE to parse the fed text, but the test kept failing in the Xvfb job (VTE 0.84.0, GTK 4.22): it searched after a fixed 600 ms pause, while the search entry runs the search from a debounce timer. The test now waits up to 10 s for the selection, and on failure prints the bar's labels (the status among them) and the terminal text, so the next failure says whether the search ran. The search code is unchanged. (`rustconn/src/dialogs/terminal_search.rs`)
 
+### Documentation
+- **macOS: protocol client tools documented** — `docs/MACOS_BUILD.md` lists the Homebrew packages for Telnet, FreeRDP, Mosh, TigerVNC and picocom, the `vncviewer` link the TigerVNC cask needs, `evil-winrm` for WinRM through Homebrew's Ruby, and how to build the SPICE viewer `remote-viewer` from the `jeffreywildman/virt-manager` tap, whose upstream download URL is dead.
 ## [0.26.2] - 2026-11-23
 
 ### Added

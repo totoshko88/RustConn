@@ -1049,6 +1049,39 @@ impl MainWindow {
                     "Skipping auto-reconnect: session crashed within 5 seconds of start"
                 );
             }
+            // The rapid-crash check reads the tab's start, so it never fires
+            // for a reconnect. A host that answers the port probe but closes
+            // every session (a server that accepts and hangs up) was therefore
+            // reconnected at once, forever, the sidebar flipping between
+            // connected and failed. Stop after `max_attempts` consecutive
+            // reconnects that each ended quickly.
+            let short_lived_streak = notebook_clone
+                .get_session_info(session_id)
+                .map_or(0, |info| {
+                    let lifetime_secs = chrono::Utc::now()
+                        .signed_duration_since(info.started_at())
+                        .num_seconds();
+                    notebook_clone.record_short_lived_reconnect(
+                        session_id,
+                        info.reconnected_at.is_some(),
+                        lifetime_secs,
+                    )
+                });
+            let max_attempts = state_clone
+                .try_borrow()
+                .ok()
+                .and_then(|s| s.get_connection(connection_id).map(|c| c.retry_config.clone().unwrap_or_default().max_attempts))
+                .unwrap_or_default();
+            let is_reconnect_loop = short_lived_streak >= max_attempts.max(1);
+            if is_reconnect_loop {
+                tracing::warn!(
+                    %session_id,
+                    %connection_id,
+                    short_lived_streak,
+                    "Skipping auto-reconnect: the session keeps closing right after each reconnect"
+                );
+            }
+            let is_rapid_crash = is_rapid_crash || is_reconnect_loop;
 
             // Record the verdict for the unattended sweeps (network change,
             // resume from sleep) before acting on it. They can only see that a

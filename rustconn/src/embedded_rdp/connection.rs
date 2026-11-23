@@ -2851,6 +2851,22 @@ Open Settings → Connection → Media Codecs to re-download it.",
         // same CredSSP exchange) so it stops there with actionable advice. See
         // issue #366 for the KRdp/FreeRDP-3.32 Ext-security server regression
         // that produces this status with correct credentials.
+        // An attempt made without a password (password source "None") against
+        // a server that requires NLA: the server cannot show its own login
+        // screen, so the caller must ask for the password instead.
+        let attempted_without_password = ctx
+            .fallback_config
+            .borrow()
+            .as_ref()
+            .is_some_and(|config| config.password.is_none());
+        if attempted_without_password && rustconn_core::rdp_client::server_requires_nla(msg) {
+            tracing::info!(
+                protocol = "rdp",
+                "[IronRDP] Server requires NLA and no password was given, asking for credentials"
+            );
+            Self::report_ironrdp_error(ctx, &super::credentials_required_message());
+            return;
+        }
         if !class.warrants_freerdp_fallback() {
             // The config borrow ends with this statement, before the error
             // callback runs: that callback may reconnect, which rewrites it.

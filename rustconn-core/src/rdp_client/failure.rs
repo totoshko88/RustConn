@@ -459,6 +459,20 @@ pub fn warrants_tls_only_fallback(msg: &str) -> bool {
     is_invalid_token || is_logon_reject
 }
 
+/// Returns `true` when the server refused the negotiation because it requires NLA.
+///
+/// `ironrdp-connector` reports it as `server requires Enhanced RDP Security
+/// with CredSSP` (`HYBRID_REQUIRED_BY_SERVER`, failure code 5).
+///
+/// A Windows host with NLA on answers this way to an attempt made without a
+/// password, so the caller asks for one instead of failing the connection.
+#[must_use]
+pub fn server_requires_nla(msg: &str) -> bool {
+    let lower = classified_text(msg);
+    lower.contains("requires enhanced rdp security with credssp")
+        || lower.contains("hybrid_required_by_server")
+}
+
 /// Returns `true` for the CredSSP `invalid MIC token sequence number` failure.
 ///
 /// The embedded client's Kerberos NLA finished the TLS step and then failed
@@ -730,6 +744,16 @@ mod reconnect_tests {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hybrid_required_by_server_is_recognised() {
+        let msg = "Connection failed: Connection begin failed: [negotiation failure] \
+             negotiation failure: server requires Enhanced RDP Security with CredSSP \
+             [kind: Negotiation(NegotiationFailure(FailureCode(5)))]";
+        assert!(server_requires_nla(msg));
+        assert!(!server_requires_nla(ISSUE_235));
+        assert!(!server_requires_nla(CREDSSP_LOGON_FAILURE));
+    }
 
     const ISSUE_235: &str = "Connection failed: Connection begin failed: \
          negotiation failure: server only supports Standard RDP Security";
