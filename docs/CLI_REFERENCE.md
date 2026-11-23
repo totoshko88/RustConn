@@ -973,7 +973,7 @@ Backend aliases:
 
 | Backend | Aliases |
 |---------|---------|
-| System keyring (libsecret) | `keyring`, `libsecret` |
+| System keyring (libsecret on Linux, Keychain on macOS) | `keyring`, `libsecret` |
 | KeePass KDBX | `keepass`, `kdbx`, `keepassxc` |
 | Bitwarden | `bitwarden`, `bw` |
 | 1Password | `1password`, `onepassword`, `op` |
