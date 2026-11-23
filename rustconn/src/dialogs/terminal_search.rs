@@ -480,8 +480,31 @@ mod tests {
         );
         let entry = find_entry(&bar).expect("entry");
         entry.set_text("foo");
-        pump(600);
-        assert!(terminal.has_selection(), "the search must select a match");
+        // The entry debounces `search-changed`, and on a loaded runner the
+        // timer can fire well after a fixed pause, so wait for the selection.
+        // On timeout, the status label tells which step did not happen: still
+        // "Enter text…" means the search never ran, "No matches found" means
+        // VTE ran it and found nothing.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while !terminal.has_selection() && std::time::Instant::now() < deadline {
+            pump(20);
+        }
+        let mut labels = Vec::new();
+        let mut stack = vec![bar.clone()];
+        while let Some(w) = stack.pop() {
+            if let Some(l) = w.downcast_ref::<Label>() {
+                labels.push(l.text().to_string());
+            }
+            stack.extend(std::iter::successors(w.first_child(), |c| c.next_sibling()));
+        }
+        assert!(
+            terminal.has_selection(),
+            "the search must select a match (bar labels: {labels:?}, text: {:?})",
+            terminal
+                .text_range_format(vte4::Format::Text, 0, 0, 3, 80)
+                .0
+                .map(|t| t.to_string())
+        );
         assert_eq!(
             terminal.text_selected(vte4::Format::Text).as_deref(),
             Some("foo")
