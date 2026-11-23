@@ -6,6 +6,21 @@
 //!
 //! Uses the `security-framework` crate for safe Rust bindings to Security.framework.
 
+/// `errSecItemNotFound`: the Keychain has no item for the service/account.
+#[cfg(target_os = "macos")]
+const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+
+/// Whether a Security.framework error means "no such item".
+///
+/// Matched on the status code, not the message: macOS words it "The specified
+/// item could not be found in the keychain.", which carries neither the code
+/// nor "not found", so the old text match treated every missing field as a
+/// hard error and a connection with no domain could not read its password.
+#[cfg(target_os = "macos")]
+fn is_item_not_found(error: security_framework::base::Error) -> bool {
+    error.code() == ERR_SEC_ITEM_NOT_FOUND
+}
+
 #[cfg(target_os = "macos")]
 mod inner {
     use async_trait::async_trait;
@@ -92,9 +107,7 @@ mod inner {
                     }
                 }
                 Err(e) => {
-                    // errSecItemNotFound (-25300) means the item doesn't exist
-                    let err_str = e.to_string();
-                    if err_str.contains("-25300") || err_str.contains("not found") {
+                    if super::is_item_not_found(e) {
                         Ok(None)
                     } else {
                         Err(SecretError::LibSecret(format!(
@@ -112,8 +125,7 @@ mod inner {
                 Ok(()) => Ok(()),
                 Err(e) => {
                     // Ignore "not found" errors during deletion
-                    let err_str = e.to_string();
-                    if err_str.contains("-25300") || err_str.contains("not found") {
+                    if super::is_item_not_found(e) {
                         Ok(())
                     } else {
                         Err(SecretError::DeleteFailed(format!(
@@ -298,8 +310,7 @@ pub mod keychain_ops {
         match get_generic_password(APP_SERVICE, key) {
             Ok(bytes) => decode_secret_bytes(bytes),
             Err(e) => {
-                let err_str = e.to_string();
-                if err_str.contains("-25300") || err_str.contains("not found") {
+                if super::is_item_not_found(e) {
                     Ok(None)
                 } else {
                     Err(SecretError::LibSecret(format!(
@@ -320,8 +331,7 @@ pub mod keychain_ops {
         match delete_generic_password(APP_SERVICE, key) {
             Ok(()) => Ok(()),
             Err(e) => {
-                let err_str = e.to_string();
-                if err_str.contains("-25300") || err_str.contains("not found") {
+                if super::is_item_not_found(e) {
                     Ok(())
                 } else {
                     Err(SecretError::DeleteFailed(format!(

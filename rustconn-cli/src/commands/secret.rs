@@ -374,15 +374,21 @@ fn cmd_secret_status(config_path: Option<&Path>) -> Result<(), CliError> {
     println!("Secret Backend Status");
     println!("=====================\n");
 
-    let libsecret_available = rustconn_core::which::is_available("secret-tool");
-    println!(
-        "Keyring (libsecret):  {}",
-        if libsecret_available {
-            "Available ✓"
-        } else {
-            "Not available (secret-tool not found)"
-        }
-    );
+    // On macOS the keyring backend is the system Keychain (Security.framework),
+    // which is always present; `secret-tool` is the Linux libsecret client.
+    if cfg!(target_os = "macos") {
+        println!("Keyring (Keychain):   Available ✓");
+    } else {
+        let libsecret_available = rustconn_core::which::is_available("secret-tool");
+        println!(
+            "Keyring (libsecret):  {}",
+            if libsecret_available {
+                "Available ✓"
+            } else {
+                "Not available (secret-tool not found)"
+            }
+        );
+    }
 
     let keepass_status = KeePassStatus::detect();
     if keepass_status.keepassxc_installed {
@@ -513,7 +519,11 @@ fn cmd_secret_get(
                     }
                     if creds.expose_password().is_some() {
                         println!("Password:   ********");
-                        println!("\nUse 'secret-tool' to view actual value");
+                        if cfg!(target_os = "macos") {
+                            println!("\nUse Keychain Access (service \"rustconn\") to view actual value");
+                        } else {
+                            println!("\nUse 'secret-tool' to view actual value");
+                        }
                     } else {
                         println!("Password:   (not set)");
                     }
