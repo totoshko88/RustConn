@@ -393,7 +393,8 @@ const fn vault_op_timeout(
         SecretBackendType::Bitwarden
         | SecretBackendType::OnePassword
         | SecretBackendType::Passbolt
-        | SecretBackendType::Pass => std::time::Duration::from_secs(45),
+        | SecretBackendType::Pass
+        | SecretBackendType::ProtonPass => std::time::Duration::from_secs(45),
         // Answers from this machine.
         SecretBackendType::LibSecret
         | SecretBackendType::MacOsKeychain
@@ -428,6 +429,7 @@ const fn perf_transport_label(backend: rustconn_core::config::SecretBackendType)
         SecretBackendType::OnePassword => "1password",
         SecretBackendType::Passbolt => "passbolt",
         SecretBackendType::Pass => "pass",
+        SecretBackendType::ProtonPass => "proton-pass",
         SecretBackendType::LibSecret => "libsecret",
         SecretBackendType::MacOsKeychain => "macos-keychain",
         SecretBackendType::KeePassXc => "keepassxc",
@@ -1876,6 +1878,22 @@ fn retrieve_by_vault_entry_name(
                                 .map(|p| zeroize::Zeroizing::new(p.to_string()))
                         }))
                     }
+                    SecretBackendType::ProtonPass => {
+                        // Proton Pass: entry_name is the item title in the
+                        // RustConn vault (or any vault, with root search on).
+                        let backend =
+                            rustconn_core::secret::ProtonPassBackend::from_secret_settings(
+                                settings,
+                            );
+                        let creds = backend
+                            .retrieve(entry_name)
+                            .await
+                            .map_err(|e| format!("{e}"))?;
+                        Ok(creds.and_then(|c| {
+                            c.expose_password()
+                                .map(|p| zeroize::Zeroizing::new(p.to_string()))
+                        }))
+                    }
                     #[cfg(target_os = "macos")]
                     SecretBackendType::MacOsKeychain => {
                         let backend = rustconn_core::secret::MacOsKeychainBackend::new();
@@ -2784,6 +2802,9 @@ fn build_single_backend(
         ),
         SecretBackendType::Pass => std::sync::Arc::new(
             rustconn_core::secret::PassBackend::from_secret_settings(secret_settings),
+        ),
+        SecretBackendType::ProtonPass => std::sync::Arc::new(
+            rustconn_core::secret::ProtonPassBackend::from_secret_settings(secret_settings),
         ),
         #[cfg(target_os = "macos")]
         SecretBackendType::MacOsKeychain => {
@@ -3720,6 +3741,7 @@ pub fn select_backend_for_load(
         SecretBackendType::OnePassword => SecretBackendType::OnePassword,
         SecretBackendType::Passbolt => SecretBackendType::Passbolt,
         SecretBackendType::Pass => SecretBackendType::Pass,
+        SecretBackendType::ProtonPass => SecretBackendType::ProtonPass,
         SecretBackendType::MacOsKeychain => SecretBackendType::MacOsKeychain,
         SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
             if secrets.kdbx_enabled && secrets.kdbx_path.is_some() {
@@ -3807,6 +3829,7 @@ mod tests {
             SecretBackendType::OnePassword,
             SecretBackendType::Passbolt,
             SecretBackendType::Pass,
+            SecretBackendType::ProtonPass,
         ];
         let local = [
             SecretBackendType::LibSecret,
@@ -3887,6 +3910,12 @@ mod tests {
     }
 
     #[test]
+    fn select_backend_proton_pass() {
+        let s = default_secret_settings(SecretBackendType::ProtonPass);
+        assert_eq!(select_backend_for_load(&s), SecretBackendType::ProtonPass);
+    }
+
+    #[test]
     fn select_backend_libsecret() {
         let s = default_secret_settings(SecretBackendType::LibSecret);
         assert_eq!(select_backend_for_load(&s), SecretBackendType::LibSecret);
@@ -3918,6 +3947,13 @@ mod tests {
                 SecretSettings {
                     pass_read_only: true,
                     ..default_secret_settings(SecretBackendType::Pass)
+                },
+            ),
+            (
+                SecretBackendType::ProtonPass,
+                SecretSettings {
+                    proton_pass_read_only: true,
+                    ..default_secret_settings(SecretBackendType::ProtonPass)
                 },
             ),
         ] {
@@ -4375,6 +4411,7 @@ mod tests {
             SecretBackendType::OnePassword,
             SecretBackendType::Passbolt,
             SecretBackendType::Pass,
+            SecretBackendType::ProtonPass,
             SecretBackendType::EncryptedFile,
             SecretBackendType::PortableEncryptedFile,
         ] {

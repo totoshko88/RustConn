@@ -443,6 +443,7 @@ pub fn get_cli_path_dirs() -> Vec<PathBuf> {
         "boundary",
         "bitwarden",
         "1password",
+        "proton-pass",
         "tigervnc/usr/bin",
         "kubectl",
         "hoop",

@@ -270,6 +270,11 @@ impl SecretManager {
             SecretBackendType::Pass => {
                 backends.push(Arc::new(super::PassBackend::from_secret_settings(settings)));
             }
+            SecretBackendType::ProtonPass => {
+                backends.push(Arc::new(super::ProtonPassBackend::from_secret_settings(
+                    settings,
+                )));
+            }
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                 // KeePass is handled via direct KDBX access in
                 // resolve_credentials_blocking, not through SecretManager.
@@ -1352,6 +1357,18 @@ mod cli_backend_toggle_tests {
             preferred_backend: SecretBackendType::Pass,
             pass_read_only: true,
             pass_root_search: true,
+            ..Default::default()
+        });
+        assert!(toggled.is_read_only());
+        assert!(toggled.searches_from_root());
+    }
+
+    #[test]
+    fn proton_pass_toggles_reach_the_backend() {
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::ProtonPass,
+            proton_pass_read_only: true,
+            proton_pass_root_search: true,
             ..Default::default()
         });
         assert!(toggled.is_read_only());

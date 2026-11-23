@@ -973,6 +973,7 @@ fn find_in_flatpak_cli_dir(command: &str) -> Option<PathBuf> {
         cli_dir.join("boundary"),
         cli_dir.join("bitwarden"),
         cli_dir.join("1password"),
+        cli_dir.join("proton-pass"),
         cli_dir.join("tigervnc"),
         cli_dir.join("tigervnc/usr/bin"),
         cli_dir.join("kubectl"),

@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.26.1** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.26.2** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -299,7 +299,7 @@ A vault entry's user name and domain are used together with its password, the sa
 
 At connect time this applies to that session only; the saved connection is not changed. **Load credentials from vault** (the folder button next to the password) fills the password, user name and domain into the editor, so **Save** stores them.
 
-Where the domain comes from: libsecret, pass, macOS Keychain and the encrypted file store it in its own field. In **Bitwarden**, add a custom field named `domain` (any case) to the item; the notes are read as the domain only on RustConn's own `RustConn: …` items, never on an item found by *Search from vault root*. KeePassXC (the user name and domain are not read yet), 1Password and Passbolt supply none.
+Where the domain comes from: libsecret, pass, macOS Keychain and the encrypted file store it in its own field. In **Bitwarden**, add a custom field named `domain` (any case) to the item; the notes are read as the domain only on RustConn's own `RustConn: …` items, never on an item found by *Search from vault root*. **Proton Pass** keeps it in a text field named `domain` on the item. KeePassXC (the user name and domain are not read yet), 1Password and Passbolt supply none.
 
 **SSH Agent Authentication:**
 Set the auth method (or the key source) to **SSH Agent** and pick one of the keys the agent currently holds from the dropdown. That choice is honoured at connect time: RustConn restricts the connection to the selected key with `-i <public key> -o IdentitiesOnly=yes`, so the other keys in the agent are not offered. The identity passed to `ssh` is the key's *public* half, written to `$XDG_RUNTIME_DIR/rustconn/agent-keys/`; the private key never leaves the agent and you are asked to confirm at most once. This matters on an agent holding many keys, where a server with a low `MaxAuthTries` can refuse the connection before the right key is reached.
@@ -4024,7 +4024,7 @@ Download and install additional CLI tools directly within the sandbox:
 
 **Zero Trust CLIs:** AWS CLI, AWS SSM Plugin, Google Cloud CLI, Azure CLI, OCI CLI, Teleport, Tailscale, Cloudflare Tunnel, HashiCorp Boundary, Hoop.dev
 
-**Password Manager CLIs:** Bitwarden CLI, 1Password CLI
+**Password Manager CLIs:** Bitwarden CLI, 1Password CLI, Proton Pass CLI
 
 **Remote Scripts:** pywinrm, for `.ps1` scripts on WinRM hosts with [Run Local Script](#run-local-script)
 
@@ -4203,17 +4203,18 @@ Also in this group: **Auto-hide the sidebar on connect**, and **Open tunnelled b
 ### Secrets page
 
 **Secret backend group:**
-- **Backend** — libsecret (or macOS Keychain), KeePassXC, Bitwarden, 1Password, Passbolt, Pass (passwordstore.org), Encrypted file, Portable encrypted file
+- **Backend** — libsecret (or macOS Keychain), KeePassXC, Bitwarden, 1Password, Passbolt, Pass (passwordstore.org), Encrypted file, Portable encrypted file, Proton Pass
 - **Version** — whether the backend's client program is installed, and which version
 - **Status** — whether that backend can actually store and read a password *right now*. This is the line to read: a backend can be installed and still be unusable because it is locked, not logged in, has no database file chosen, or has no keyring service answering. Shown for every backend. If you select one that is not ready, a banner appears under the header bar after you close Settings, naming the backend and what is missing.
 - **Also read from the encrypted file** — look in this computer's encrypted credential file as well as in the selected backend when resolving a password, so entries saved before you switched backend keep working. Reading only: saving always targets the selected backend, and a write it refuses is reported so you can choose where the password goes instead of having it moved for you.
-- **Read-only mode** — RustConn reads from this backend but never writes to it. Saving, deleting or renaming a password is refused and reported, so you choose where it goes instead of a silent failure. Use it when another tool owns the vault and RustConn should not modify it. Available per backend (Bitwarden, 1Password, Passbolt, Pass, KeePassXC).
-- **Search from vault root** — when a password is not found at RustConn's own scoped path, look through the whole vault before giving up. Reading only: saving always writes back to RustConn's scoped path, so entries you create stay organised and this cannot overwrite another tool's data. Use it to reach credentials another tool stored outside RustConn's area. Available per backend (Bitwarden, 1Password, Passbolt, Pass, KeePassXC).
+- **Read-only mode** — RustConn reads from this backend but never writes to it. Saving, deleting or renaming a password is refused and reported, so you choose where it goes instead of a silent failure. Use it when another tool owns the vault and RustConn should not modify it. Available per backend (Bitwarden, 1Password, Passbolt, Pass, Proton Pass, KeePassXC).
+- **Search from vault root** — when a password is not found at RustConn's own scoped path, look through the whole vault before giving up. Reading only: saving always writes back to RustConn's scoped path, so entries you create stay organised and this cannot overwrite another tool's data. Use it to reach credentials another tool stored outside RustConn's area. Available per backend (Bitwarden, 1Password, Passbolt, Pass, KeePassXC); on Proton Pass it is called **Search all vaults** and looks through every vault the account can see.
 - **Copy Passwords…** — move passwords you already have from one store into another. This is the supported way to migrate after changing backend.
 - **Credential Encryption** — Backend master passwords encrypted with AES-256-GCM + Argon2id (machine-specific key)
 - **Bitwarden Settings:** Vault status, unlock button, master password persistence, save to system keyring, auto-unlock, API key authentication for 2FA
 - **1Password Settings:** Account status, sign-in button, biometric auth support, service account token
 - **Passbolt Settings:** CLI detection, server URL, GPG passphrase, server configuration status
+- **Proton Pass Settings:** account status and a sign-in button that runs `pass-cli login` in a terminal. Items live in a vault named **RustConn**, created on the first save. In the Flatpak and the Snap the button opens a terminal inside RustConn instead, see [Proton Pass Not Working](#proton-pass-not-working)
 - **Pass Settings:** CLI detection, custom `PASSWORD_STORE_DIR`, GPG-encrypted files
 - **KeePassXC KDBX Settings:** Database path, key file, password/key file authentication. The KeePass group also carries its own **Read-only mode** and **Search from vault root** switches: *Search from vault root* widens a lookup to the whole database when a credential is not found at RustConn's scoped `RustConn/` path (reading only — saves stay scoped, so this can never reintroduce a doubled-prefix write), which is how it reaches entries you created by hand or imported from another tool. *Read-only mode* is recorded and honoured where KeePass is written through the backend chain; note the main credential-resolution path that runs on connect only ever reads a KeePass entry, so there is nothing for read-only to block there — it is a safeguard for the write paths, not the connect path. **YubiKey / Challenge-Response:** when the database is secured with a hardware key, RustConn shows a "touch your key" banner while `keepassxc-cli` waits for the touch — on connect and password load as well as on save (0.23.0).
 - **System Keyring Requirements:** Requires `libsecret-tools` (`secret-tool` binary)
@@ -4779,7 +4780,7 @@ RustConn can automatically fill SSH password prompts using credentials stored in
 2. **Store the password in your vault** — use the "Load from vault" button (📂) to verify the password is retrievable. The lookup key format depends on your backend:
    - **KeePass/KDBX**: `RustConn/GroupName/ConnectionName (protocol)` — hierarchical path matching your group structure
    - **Keyring (libsecret)**: `RustConn/GroupName/ConnectionName (protocol)` — e.g. "RustConn/Production/MyServer (ssh)", or "RustConn/MyServer (ssh)" for a connection in no group
-   - **Bitwarden/1Password/Passbolt/Pass**: `rustconn/ConnectionName`
+   - **Bitwarden/1Password/Passbolt/Pass/Proton Pass**: `rustconn/ConnectionName`
 
 3. **Test before connecting** — click the ✓ button next to the password field to run a credential resolution test. It shows the exact lookup key used and whether the vault returned a password.
 
@@ -4844,13 +4845,14 @@ Instead of storing passwords directly per-connection, you can use **Global Varia
 | 1Password | Teams using 1Password | High — cloud-synced, E2E encrypted |
 | Passbolt | Self-hosted team password management | High — GPG-based |
 | Pass (passwordstore.org) | CLI-oriented users, git-synced passwords | High — GPG-encrypted files |
+| Proton Pass | Users of Proton Pass | High — cloud-synced, E2E encrypted |
 | KDBX File | Offline/air-gapped environments | High — AES-256, local file only |
 | Encrypted-file fallback | Systems with no usable keyring (headless, minimal desktops) | Medium — AES-256-GCM, but key sits on the same disk (obfuscation at rest, not a boundary) |
 | Portable encrypted file | Sharing one password set across your own machines, including Linux ↔ macOS | High — AES-256-GCM under an Argon2id passphrase; the key is never written to disk |
 
 Configure your preferred backend in Settings → Secrets. RustConn falls back to the system keyring if the preferred backend is unavailable.
 
-Most backends (Bitwarden, 1Password, Passbolt, Pass and KeePassXC) also carry two per-backend options on their Secrets-page group: **Read-only mode**, so RustConn reads but never writes to a vault another tool owns, and **Search from vault root**, so a lookup that misses RustConn's own scoped path falls back to searching the whole vault. Both widen or restrict *reading* only — saves always target RustConn's scoped path. See [Settings → Secrets](#secrets-page).
+Most backends (Bitwarden, 1Password, Passbolt, Pass, Proton Pass and KeePassXC) also carry two per-backend options on their Secrets-page group: **Read-only mode**, so RustConn reads but never writes to a vault another tool owns, and **Search from vault root**, so a lookup that misses RustConn's own scoped path falls back to searching the whole vault. Both widen or restrict *reading* only — saves always target RustConn's scoped path. See [Settings → Secrets](#secrets-page).
 
 ### Portable Encrypted File (cloud-syncable)
 
@@ -5103,6 +5105,22 @@ RustConn opens the KeePass database directly by file (`.kdbx`); it does not use 
 1. Install `pass`: `sudo apt install pass` or `sudo dnf install pass`
 2. Initialize store: `pass init <gpg-id>`
 3. Select Pass backend in Settings → Secrets
+
+### Proton Pass Not Working
+
+1. Install the Proton Pass CLI (`pass-cli`) as described at protonpass.github.io/pass-cli and check that `pass-cli --version` runs. Flatpak: install it from Menu → **Components…** instead (a `pass-cli` on the host is not visible in the sandbox); RustConn downloads the build listed in Proton's release manifest and refuses it unless its SHA-256 matches
+2. Sign in: `pass-cli login` (web login, including SSO and security keys) or `pass-cli login --personal-access-token …`. `pass-cli info` shows the account. A personal access token session ends after 2 hours
+3. Select Proton Pass in Settings → Secrets. "Not signed in" there or "Not logged in to Proton Pass" on connect means the CLI has no session: sign in again
+4. A session locked with `pass-cli session lock` refuses every lookup until `pass-cli session unlock`
+5. **Flatpak: sign in inside the sandbox.** `pass-cli` keeps its session in its data directory, which is `~/.var/app/io.github.totoshko88.RustConn/data/proton-pass-cli` in the sandbox and `~/.local/share/proton-pass-cli` on the host, so a `pass-cli login` in a host terminal or a Local Shell tab (a host shell) signs in a session RustConn does not read. Use the **Sign In** button in Settings → Secrets → Proton Pass: in the Flatpak (and the Snap) it runs `pass-cli login` in a terminal inside RustConn. Click the link it prints to finish in your browser; the window closes and the status updates once you are signed in. If the login fails, the window stays open with the error. For a personal access token, or to run another `pass-cli` command in the sandbox, use your own terminal application:
+
+   ```bash
+   flatpak run --env=PROTON_PASS_LINUX_KEYRING=dbus \
+     --command="$HOME/.var/app/io.github.totoshko88.RustConn/cli/proton-pass/pass-cli" \
+     io.github.totoshko88.RustConn login --personal-access-token …
+   ```
+
+   Replace `login …` with `info`, `logout` or `session unlock` as needed. `PROTON_PASS_LINUX_KEYRING=dbus` is required: by default `pass-cli` keeps the key that encrypts its session in the kernel keyring, which the Flatpak sandbox blocks, so it would fail before reaching Proton. RustConn sets the same variable on every `pass-cli` it runs in the Flatpak, the **Sign In** terminal included, so the key goes to your Secret Service keyring (GNOME Keyring, KWallet) and the session survives a reboot
 
 ### Embedded RDP/VNC Issues
 

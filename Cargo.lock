@@ -4983,7 +4983,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "async-channel",
  "chrono",
@@ -5023,7 +5023,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "chrono",
  "clap",
@@ -5046,7 +5046,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "aes 0.9.4",
  "ar",
@@ -5125,7 +5125,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5134,18 +5134,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.26.1"
+version = "0.26.2"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-lock-sys"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5154,7 +5154,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "libc",
  "nix",
@@ -7263,9 +7263,9 @@ dependencies = [
 
 [[package]]
 name = "yuv"
-version = "0.8.20"
+version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d109d1eacc7b034329873d2d848039b365c65ab7d751b19ee84e4921c62c607"
+checksum = "c2145858fb536669bf8eef4ddfdd3dee3504239af508c4468705c4dc4d518112"
 dependencies = [
  "num-traits",
 ]
@@ -7512,9 +7512,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.8.1"
+version = "9.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9534624d547e3f516ecde0ed9a70d37788f01d340efcfdd03bf3ea8e163c1d0"
+checksum = "2d8dbe089cf6b0448b78f5fc50139ab5aaa40d08ac07cdc1baf2c13add35fcce"
 dependencies = [
  "aes 0.9.4",
  "bzip2",

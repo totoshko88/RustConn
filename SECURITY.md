@@ -41,7 +41,7 @@ your threat model.
 For real secrets, use one of the integrated secret backends:
 
 - **System keyring** (libsecret / GNOME Keyring / KWallet via `secret-tool`)
-- **Vault managers**: Bitwarden, KeePassXC, 1Password, Passbolt
+- **Vault managers**: Bitwarden, KeePassXC, 1Password, Passbolt, Proton Pass
 
 These keep secrets encrypted at rest under a key that is **not** stored next to
 the data, and (for the system keyring) unlocked together with your login

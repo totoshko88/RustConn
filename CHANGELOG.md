@@ -5,6 +5,24 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.26.2] - 2026-11-23
+
+### Added
+- **Proton Pass secret backend (issue #444)** — Settings → Secrets gains **Proton Pass**, which stores and reads connection credentials through the official Proton Pass CLI (`pass-cli`). Each connection is one login item titled `rustconn/<name>` in a vault named **RustConn**, created on the first save; the Windows domain goes in a `domain` text field. Sign in once with `pass-cli login` (the **Sign In** button opens it in a terminal); RustConn never sees a Proton credential and reuses the CLI's own session, and a missing session is reported as such. Passwords reach `pass-cli` only over stdin, as a login template: `item update` takes values on the command line only, so a save writes a fresh item and removes the one it replaces only after the new one exists, and a field the save leaves out is carried over. **Read-only mode** and **Search all vaults** (which also matches items titled by host or connection name) work as on the other CLI backends. `rustconn-cli secret get|set|delete --backend proton-pass` and `secret status` cover it too. (`rustconn-core/src/secret/proton_pass.rs`, `rustconn/src/dialogs/settings/secrets_tab/`, `rustconn-cli/src/commands/secret.rs`)
+- **Proton Pass CLI in Flatpak Components** — Menu → **Components…** offers the Proton Pass CLI under Password Manager CLIs, so the Proton Pass backend works in the Flatpak (the Snap lists it too, untested there). The installer reads Proton's release manifest (`versions.json`, format 1), downloads the Linux build for the machine's architecture from `proton.me` and refuses it unless its SHA-256 matches the manifest. In the Flatpak, RustConn runs `pass-cli` with `PROTON_PASS_LINUX_KEYRING=dbus`, because the sandbox blocks the kernel keyring `pass-cli` keeps its session key in by default; the key goes to the Secret Service instead. Settings → Secrets detects the downloaded CLI. In a sandbox the **Sign In** button no longer looks for a host terminal (there is none in reach, and its `pass-cli` would keep a separate session): it opens a dialog that runs `pass-cli login` in a terminal inside RustConn, with a clickable sign-in link, refreshes the status when the login exits and closes on success. (`rustconn-core/src/cli_download/install_custom.rs`, `rustconn-core/src/secret/proton_pass.rs`, `rustconn/src/dialogs/settings/secrets_tab/detection.rs`, `rustconn/src/dialogs/settings/secrets_tab/proton_login.rs`)
+
+### Fixed
+
+- **Proton Pass hardening** — a vault name, or a vault or item id printed by `pass-cli`, that starts with `-` (it would be read as a flag) or holds a line break is refused or dropped instead of being passed as an argument, and the Sign In dialog opens a clicked link only when it is `https://` on `proton.me`. (`rustconn-core/src/secret/proton_pass.rs`, `rustconn/src/dialogs/settings/secrets_tab/proton_login.rs`)
+- **Review fixes for Proton Pass and the wizard** — `pass-cli` that exits before reading the password template now reports its own error (for example "Not logged in") instead of a broken-pipe message, and the stdin write counts toward the 30 s limit. A whole Proton Pass save, read or delete is capped at 90 s. A failed `item create` no longer repeats `pass-cli`'s stderr, which can quote the password. A save tries to remove every replaced item even when one removal fails. The password template is built in a pre-sized wiped buffer. The Sign In dialog refuses links with a backslash or user info, which browsers read as another host. In the connection wizard, **Next** follows the typed host again after the protocol changes, and a SPICE socket connection no longer keeps a jump host. (`rustconn-core/src/secret/proton_pass.rs`, `rustconn/src/dialogs/settings/secrets_tab/proton_login.rs`, `rustconn/src/dialogs/connection_wizard/`)
+- **Connection wizard: a SPICE connection with a unix socket path no longer asks for a host** — **Next** is enabled when the **Socket Path** row is filled, and the connection editor accepts such a connection on save (it used to answer "Host is required"). Other protocols still need a host. (`rustconn/src/dialogs/connection_wizard/mod.rs`, `rustconn/src/dialogs/connection_wizard/connection_page.rs`, `rustconn/src/dialogs/connection/builders.rs`)
+- **Flaky terminal search test** — the GUI test of the search bar fed text to the terminal and waited a fixed 300 ms, but VTE parses it later, so on a slow runner the search saw an empty buffer. The test now waits until all lines are parsed. The search code is unchanged. (`rustconn/src/dialogs/terminal_search.rs`)
+
+### Dependencies
+- **yuv 0.8.20 → 0.8.21**, **zip 9.8.1 → 9.8.2**
+
 ## [0.26.1] - 2026-11-23
 
 ### Added

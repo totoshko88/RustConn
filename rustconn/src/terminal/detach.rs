@@ -338,6 +338,13 @@ impl TerminalNotebook {
         self.detached.borrow().contains(&session_id)
     }
 
+    /// Marks a session detached without moving any widget, for tests that
+    /// drive the window layer with a session already in another window.
+    #[cfg(test)]
+    pub(crate) fn mark_detached_for_test(&self, session_id: Uuid) {
+        self.detached.borrow_mut().insert(session_id);
+    }
+
     /// Returns the ids of every session that currently has a detached window.
     ///
     /// Sorted by session id: the park set is a `HashSet`, and its iteration

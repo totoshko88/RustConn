@@ -2,6 +2,7 @@
 
 pub(crate) mod detection;
 mod keyring;
+mod proton_login;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -236,6 +237,13 @@ pub struct SecretsPageWidgets {
     pub pass_read_only_row: adw::SwitchRow,
     /// Search the whole pass store, not just the RustConn folder.
     pub pass_root_search_row: adw::SwitchRow,
+    // Proton Pass widgets
+    pub proton_pass_group: adw::PreferencesGroup,
+    pub proton_pass_status_label: Label,
+    /// Block writes to the Proton Pass vault (read-only mode).
+    pub proton_pass_read_only_row: adw::SwitchRow,
+    /// Search every Proton Pass vault, not just the RustConn one.
+    pub proton_pass_root_search_row: adw::SwitchRow,
     /// Machine-bound encrypted file group. It has nothing to configure, but it
     /// tells the user where the file is and what is in it — selecting the backend
     /// used to display nothing at all.
@@ -419,6 +427,9 @@ const BACKEND_PASS_INDEX: u32 = 5;
 const BACKEND_ENCRYPTED_FILE_INDEX: u32 = 6;
 /// Selector position of the portable, passphrase-protected file backend.
 const BACKEND_PORTABLE_INDEX: u32 = 7;
+/// Selector position of the Proton Pass backend. Appended after the file
+/// backends so the earlier positions keep their meaning.
+const BACKEND_PROTON_PASS_INDEX: u32 = 8;
 
 /// One row of the backend selector.
 pub struct BackendChoice {
@@ -525,6 +536,11 @@ pub fn backend_choices() -> Vec<BackendChoice> {
             ),
             SecretBackendType::PortableEncryptedFile,
         ),
+        choice(
+            SecretBackendType::ProtonPass.display_name(),
+            i18n("Your Proton Pass vault, through the pass-cli command line tool"),
+            SecretBackendType::ProtonPass,
+        ),
     ]
 }
 
@@ -556,6 +572,7 @@ pub const fn backend_to_index(backend: SecretBackendType) -> u32 {
         SecretBackendType::Pass => BACKEND_PASS_INDEX,
         SecretBackendType::EncryptedFile => BACKEND_ENCRYPTED_FILE_INDEX,
         SecretBackendType::PortableEncryptedFile => BACKEND_PORTABLE_INDEX,
+        SecretBackendType::ProtonPass => BACKEND_PROTON_PASS_INDEX,
     }
 }
 
@@ -765,7 +782,7 @@ fn credential_file_status_row() -> (adw::ActionRow, Label) {
 
 #[cfg(test)]
 mod backend_table_tests {
-    use super::{BACKEND_PORTABLE_INDEX, backend_choices, backend_to_index, index_to_backend};
+    use super::{BACKEND_PROTON_PASS_INDEX, backend_choices, backend_to_index, index_to_backend};
 
     /// The table and the `BACKEND_*_INDEX` constants are two separate statements
     /// of the same fact, and `backend_to_index` is a third. Without this,
@@ -775,7 +792,7 @@ mod backend_table_tests {
     #[test]
     fn the_table_order_agrees_with_the_index_mapping() {
         for (position, choice) in backend_choices().iter().enumerate() {
-            let index = u32::try_from(position).expect("the table is eight rows long");
+            let index = u32::try_from(position).expect("the table is nine rows long");
             assert_eq!(
                 backend_to_index(choice.backend),
                 index,
@@ -813,7 +830,7 @@ mod backend_table_tests {
         use rustconn_core::config::SecretBackendType;
 
         assert_eq!(
-            index_to_backend(BACKEND_PORTABLE_INDEX + 1),
+            index_to_backend(BACKEND_PROTON_PASS_INDEX + 1),
             SecretBackendType::default()
         );
     }
@@ -1062,6 +1079,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
     let passbolt_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
     let pass_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
+    let proton_pass_version: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
 
     // Cached secret-tool availability — populated by background detection thread.
     // `None` = not yet checked, `Some(true/false)` = result known.
@@ -1408,7 +1426,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             // Try to open a terminal with op signin
             // This requires user interaction for biometric or password
             let op_cmd_str = op_cmd.borrow().clone();
-            let terminal_cmds = terminal_launchers(&op_cmd_str);
+            let terminal_cmds = terminal_launchers(&op_cmd_str, "signin");
 
             let mut launched = false;
             for (term, args) in &terminal_cmds {
@@ -1667,6 +1685,91 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     pass_group.add(&pass_root_search_row);
 
     page.add(&pass_group);
+
+    // === Proton Pass Group ===
+    //
+    // `pass-cli` keeps its own session, so there is no credential to enter here:
+    // the user logs in once in a terminal and RustConn reuses that session.
+    let proton_pass_group = adw::PreferencesGroup::builder()
+        .title(i18n("Proton Pass"))
+        .description(i18n(
+            "Credentials are kept in a vault named RustConn, created on the first save",
+        ))
+        .build();
+
+    let proton_pass_status_label = Label::builder()
+        .label(i18n("Detecting…"))
+        .halign(gtk4::Align::End)
+        .valign(gtk4::Align::Center)
+        .css_classes(["dim-label"])
+        .build();
+
+    let proton_pass_signin_button = Button::builder()
+        .label(i18n("Sign In"))
+        .valign(gtk4::Align::Center)
+        .tooltip_text(i18n("Sign in to Proton Pass (opens terminal)"))
+        .build();
+
+    let proton_status_box = GtkBox::builder()
+        .orientation(Orientation::Horizontal)
+        .spacing(12)
+        .valign(gtk4::Align::Center)
+        .build();
+    proton_status_box.append(&proton_pass_status_label);
+    proton_status_box.append(&proton_pass_signin_button);
+
+    let proton_status_row = adw::ActionRow::builder()
+        .title(i18n("Account Status"))
+        .subtitle(i18n("Sign in with 'pass-cli login' in a terminal"))
+        .build();
+    proton_status_row.add_suffix(&proton_status_box);
+    proton_pass_group.add(&proton_status_row);
+
+    {
+        let status_label = proton_pass_status_label.clone();
+        proton_pass_signin_button.connect_clicked(move |button| {
+            // In a sandbox the login must run inside it, where the backend reads
+            // the session; host terminals are out of reach there anyway.
+            if rustconn_core::is_sandboxed() {
+                match rustconn_core::which::find_in_path("pass-cli") {
+                    Some(pass_cli) => proton_login::present(button, &pass_cli, &status_label),
+                    None => update_status_label(&status_label, &i18n("Not installed"), "error"),
+                }
+                return;
+            }
+            button.set_sensitive(false);
+            // The web login prints a URL and waits for the browser flow, so it
+            // needs a terminal the user can see.
+            let launched = terminal_launchers("pass-cli", "login")
+                .iter()
+                .any(|(term, args)| {
+                    rustconn_core::which::is_available(term)
+                        && std::process::Command::new(term).args(args).spawn().is_ok()
+                });
+            if launched {
+                update_status_label(&status_label, &i18n("Check terminal"), "warning");
+            } else {
+                update_status_label(&status_label, &i18n("No terminal found"), "error");
+            }
+            button.set_sensitive(true);
+        });
+    }
+
+    let proton_pass_read_only_row = adw::SwitchRow::builder()
+        .title(i18n("Read-only mode"))
+        .subtitle(i18n("Block writes to this vault; only read secrets"))
+        .build();
+    proton_pass_group.add(&proton_pass_read_only_row);
+
+    let proton_pass_root_search_row = adw::SwitchRow::builder()
+        .title(i18n("Search all vaults"))
+        .subtitle(i18n(
+            "Look up secrets in every vault, not just RustConn. The first entry with a matching name is used",
+        ))
+        .build();
+    proton_pass_group.add(&proton_pass_root_search_row);
+
+    page.add(&proton_pass_group);
 
     // === Machine-Bound Encrypted File Group ===
     //
@@ -2431,6 +2534,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_group_clone = onepassword_group.clone();
     let passbolt_group_clone = passbolt_group.clone();
     let pass_group_clone = pass_group.clone();
+    let proton_pass_group_clone = proton_pass_group.clone();
     let portable_group_clone = portable_group.clone();
     let encrypted_file_group_clone = encrypted_file_group.clone();
     let kdbx_group_clone = kdbx_group.clone();
@@ -2444,6 +2548,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_version_clone = onepassword_version.clone();
     let passbolt_version_clone = passbolt_version.clone();
     let pass_version_clone = pass_version.clone();
+    let proton_pass_version_clone = proton_pass_version.clone();
     let detection_complete_clone = detection_complete.clone();
     let availability_label_clone = availability_label.clone();
     let detection_result_clone = detection_result.clone();
@@ -2468,6 +2573,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         onepassword_group_clone.set_visible(selected == BACKEND_ONEPASSWORD_INDEX);
         passbolt_group_clone.set_visible(selected == BACKEND_PASSBOLT_INDEX);
         pass_group_clone.set_visible(selected == BACKEND_PASS_INDEX);
+        proton_pass_group_clone.set_visible(selected == BACKEND_PROTON_PASS_INDEX);
         encrypted_file_group_clone.set_visible(selected == BACKEND_ENCRYPTED_FILE_INDEX);
         portable_group_clone.set_visible(selected == BACKEND_PORTABLE_INDEX);
         let show_kdbx = selected == BACKEND_KEEPASSXC_INDEX;
@@ -2518,6 +2624,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             BACKEND_ONEPASSWORD_INDEX => set_ver(&onepassword_version_clone.borrow()),
             BACKEND_PASSBOLT_INDEX => set_ver(&passbolt_version_clone.borrow()),
             BACKEND_PASS_INDEX => set_ver(&pass_version_clone.borrow()),
+            BACKEND_PROTON_PASS_INDEX => set_ver(&proton_pass_version_clone.borrow()),
             _ => version_row_clone.set_visible(false),
         }
 
@@ -2627,7 +2734,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     }
                 });
             }
-            _ => {} // LibSecret, Pass, macOS Keychain — stateless
+            _ => {} // LibSecret, Pass, Proton Pass, macOS Keychain — stateless
         }
     });
 
@@ -2641,6 +2748,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     onepassword_group.set_visible(false);
     passbolt_group.set_visible(false);
     pass_group.set_visible(false);
+    proton_pass_group.set_visible(false);
     encrypted_file_group.set_visible(false);
     portable_group.set_visible(false);
 
@@ -2828,11 +2936,13 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let pb_open_button = passbolt_open_vault_button.clone();
         let pb_url_entry = passbolt_server_url_entry.clone();
         let pass_status_label = pass_status_label.clone();
+        let proton_status_label = proton_pass_status_label.clone();
         let kpxc_ver = keepassxc_version.clone();
         let bw_ver = bitwarden_version.clone();
         let op_ver = onepassword_version.clone();
         let pb_ver = passbolt_version.clone();
         let pass_ver = pass_version.clone();
+        let proton_ver = proton_pass_version.clone();
         let det_complete = detection_complete.clone();
         let st_avail = secret_tool_available.clone();
         // Storage combos and their status labels, so a keyring selection loaded
@@ -2894,6 +3004,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                     *op_ver.borrow_mut() = det.onepassword_version.clone();
                     *pb_ver.borrow_mut() = det.passbolt_version.clone();
                     *pass_ver.borrow_mut() = det.pass_version.clone();
+                    *proton_ver.borrow_mut() = det.proton_pass_version.clone();
                     *det_complete.borrow_mut() = true;
                     *st_avail.borrow_mut() = Some(det.secret_tool_available);
                     if !det.secret_tool_available {
@@ -2940,6 +3051,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                         3 => &det.onepassword_version,
                         4 => &det.passbolt_version,
                         5 => &det.pass_version,
+                        BACKEND_PROTON_PASS_INDEX => &det.proton_pass_version,
                         _ => &None,
                     };
                     version_label.remove_css_class("dim-label");
@@ -2993,6 +3105,12 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                         update_status_label(&pass_status_label, &text, css);
                     } else {
                         update_status_label(&pass_status_label, &i18n("Not installed"), "error");
+                    }
+
+                    if let Some((text, css)) = det.proton_pass_status {
+                        update_status_label(&proton_status_label, &text, css);
+                    } else {
+                        update_status_label(&proton_status_label, &i18n("Not installed"), "error");
                     }
 
                     // Update Passbolt URL from detection if empty
@@ -3072,6 +3190,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         pass_status_label,
         pass_read_only_row,
         pass_root_search_row,
+        proton_pass_group,
+        proton_pass_status_label,
+        proton_pass_read_only_row,
+        proton_pass_root_search_row,
         encrypted_file_group,
         portable_group,
         portable_path_entry,
@@ -3205,6 +3327,12 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     widgets
         .pass_root_search_row
         .set_active(settings.pass_root_search);
+    widgets
+        .proton_pass_read_only_row
+        .set_active(settings.proton_pass_read_only);
+    widgets
+        .proton_pass_root_search_row
+        .set_active(settings.proton_pass_root_search);
 
     // Load Bitwarden API credentials if available (from encrypted storage)
     if let Some(ref client_id) = settings.bitwarden_client_id {
@@ -3323,6 +3451,9 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         .pass_group
         .set_visible(backend_index == BACKEND_PASS_INDEX);
     widgets
+        .proton_pass_group
+        .set_visible(backend_index == BACKEND_PROTON_PASS_INDEX);
+    widgets
         .encrypted_file_group
         .set_visible(backend_index == BACKEND_ENCRYPTED_FILE_INDEX);
     widgets
@@ -3386,6 +3517,7 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
         SecretBackendType::LibSecret
         | SecretBackendType::MacOsKeychain
         | SecretBackendType::Pass
+        | SecretBackendType::ProtonPass
         | SecretBackendType::EncryptedFile => {
             // Stateless backends — nothing to load from keyring.
             // (EncryptedFile keeps its entries in its own file; no settings-tab
@@ -4040,6 +4172,8 @@ pub fn collect_secret_settings(
         passbolt_root_search: widgets.passbolt_root_search_row.is_active(),
         pass_read_only: widgets.pass_read_only_row.is_active(),
         pass_root_search: widgets.pass_root_search_row.is_active(),
+        proton_pass_read_only: widgets.proton_pass_read_only_row.is_active(),
+        proton_pass_root_search: widgets.proton_pass_root_search_row.is_active(),
         kdbx_read_only: widgets.kdbx_read_only_row.is_active(),
         kdbx_root_search: widgets.kdbx_root_search_row.is_active(),
         // Collect portable encrypted file settings. An empty entry stays `None`,
@@ -4186,26 +4320,28 @@ fn revoke_stale_keyring_credentials(previous: &SecretSettings, current: &SecretS
     failures
 }
 
-/// External terminals to try for `op signin`, desktop-native choice first.
+/// External terminals to try for an interactive `program subcommand` (`op
+/// signin`, `pass-cli login`), desktop-native choice first.
 /// `xdg-terminal-exec` follows the user's configured default; the rest are the
 /// terminals shipped by GNOME (ptyxis, gnome-terminal), KDE (konsole), XFCE and
 /// the common standalone ones. Each takes the command in its own syntax.
-fn terminal_launchers(op: &str) -> Vec<(&'static str, Vec<String>)> {
+fn terminal_launchers(program: &str, subcommand: &str) -> Vec<(&'static str, Vec<String>)> {
     let own = |args: &[&str]| args.iter().map(|a| (*a).to_string()).collect::<Vec<_>>();
+    let (p, sub) = (program, subcommand);
     vec![
-        ("xdg-terminal-exec", own(&[op, "signin"])),
-        ("ptyxis", own(&["--", op, "signin"])),
-        ("kitty", own(&[op, "signin"])),
-        ("foot", own(&[op, "signin"])),
-        ("alacritty", own(&["-e", op, "signin"])),
-        ("gnome-terminal", own(&["--", op, "signin"])),
-        ("konsole", own(&["-e", op, "signin"])),
+        ("xdg-terminal-exec", own(&[p, sub])),
+        ("ptyxis", own(&["--", p, sub])),
+        ("kitty", own(&[p, sub])),
+        ("foot", own(&[p, sub])),
+        ("alacritty", own(&["-e", p, sub])),
+        ("gnome-terminal", own(&["--", p, sub])),
+        ("konsole", own(&["-e", p, sub])),
         // xfce4-terminal takes the whole command line as one string.
         (
             "xfce4-terminal",
-            vec!["-e".to_string(), format!("{op} signin")],
+            vec!["-e".to_string(), format!("{p} {sub}")],
         ),
-        ("xterm", own(&["-e", op, "signin"])),
+        ("xterm", own(&["-e", p, sub])),
     ]
 }
 
@@ -4270,6 +4406,7 @@ mod tests {
             ("onepassword", SecretBackendType::OnePassword),
             ("passbolt", SecretBackendType::Passbolt),
             ("pass", SecretBackendType::Pass),
+            ("proton_pass", SecretBackendType::ProtonPass),
             ("macos_keychain", SecretBackendType::MacOsKeychain),
             ("encrypted_file", SecretBackendType::EncryptedFile),
             (
@@ -4288,7 +4425,7 @@ mod tests {
 
     #[test]
     fn signin_terminals_cover_kde_and_gnome_defaults() {
-        let list = terminal_launchers("op");
+        let list = terminal_launchers("op", "signin");
         let names: Vec<_> = list.iter().map(|(n, _)| *n).collect();
         for want in ["xdg-terminal-exec", "ptyxis", "konsole", "kitty", "foot"] {
             assert!(names.contains(&want), "{want} missing");
@@ -4296,5 +4433,9 @@ mod tests {
         // xfce4-terminal wants one string, not separate arguments.
         let xfce = list.iter().find(|(n, _)| *n == "xfce4-terminal").unwrap();
         assert_eq!(xfce.1, ["-e", "op signin"]);
+
+        let pp = terminal_launchers("pass-cli", "login");
+        let xfce = pp.iter().find(|(n, _)| *n == "xfce4-terminal").unwrap();
+        assert_eq!(xfce.1, ["-e", "pass-cli login"]);
     }
 }

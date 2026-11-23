@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use super::download::{download_with_progress, verify_published_sha256};
+use super::download::{download_with_progress, verify_checksum, verify_published_sha256};
 use super::extract::{extract_tar_gz, extract_zip};
 use super::{
     CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
@@ -54,6 +54,9 @@ pub(super) async fn install_custom_component(
                 cancel_token,
             )
             .await
+        }
+        "pass-cli" => {
+            install_proton_pass(component, cli_dir, progress_callback, cancel_token).await
         }
         _ => Err(CliDownloadError::NotAvailable(format!(
             "Custom installation not implemented for {}",
@@ -597,4 +600,219 @@ pub(super) async fn install_hoop(
     }
 
     Ok(binary_path)
+}
+
+/// Proton's release manifest for `pass-cli`, the one its own `install.sh` reads.
+pub(super) const PROTON_PASS_MANIFEST_URL: &str =
+    "https://proton.me/download/pass-cli/versions.json";
+
+/// One Linux build of `pass-cli`, as listed in [`PROTON_PASS_MANIFEST_URL`].
+#[derive(Debug, PartialEq, Eq)]
+struct PassCliRelease {
+    version: String,
+    url: String,
+    sha256: String,
+}
+
+/// Reads the `arch` (`x86_64` or `aarch64`) Linux build from Proton's manifest.
+///
+/// Refuses everything `install.sh` refuses — a `formatVersion` other than 1, a
+/// missing version, URL or hash — and also a URL outside `https://proton.me/`,
+/// a hash that is not 64 hex digits, and a version that is not a plain version
+/// string: the manifest is the only thing vouching for the binary.
+fn parse_pass_cli_manifest(text: &str, arch: &str) -> CliDownloadResult<PassCliRelease> {
+    let manifest: serde_json::Value = serde_json::from_str(text).map_err(|e| {
+        CliDownloadError::NotAvailable(format!("Proton Pass manifest is not valid JSON: {e}"))
+    })?;
+    if manifest
+        .get("formatVersion")
+        .and_then(serde_json::Value::as_u64)
+        != Some(1)
+    {
+        return Err(CliDownloadError::NotAvailable(
+            "Unsupported Proton Pass manifest format version".to_string(),
+        ));
+    }
+
+    let versions = &manifest["passCliVersions"];
+    let build = &versions["urls"]["linux"][arch];
+    let field =
+        |value: &serde_json::Value| value.as_str().filter(|s| !s.is_empty()).map(str::to_string);
+    let (Some(version), Some(url), Some(hash)) = (
+        field(&versions["version"]),
+        field(&build["url"]),
+        field(&build["hash"]),
+    ) else {
+        return Err(CliDownloadError::NotAvailable(format!(
+            "Proton Pass manifest lists no Linux {arch} build"
+        )));
+    };
+
+    if !version
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'+'))
+    {
+        return Err(CliDownloadError::NotAvailable(
+            "Proton Pass manifest has a malformed version".to_string(),
+        ));
+    }
+    if !url.starts_with("https://proton.me/") {
+        return Err(CliDownloadError::NotAvailable(
+            "Proton Pass manifest points outside proton.me".to_string(),
+        ));
+    }
+    if hash.len() != 64 || !hash.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(CliDownloadError::NoChecksum);
+    }
+
+    Ok(PassCliRelease {
+        version,
+        url,
+        sha256: hash.to_ascii_lowercase(),
+    })
+}
+
+/// Installs the Proton Pass CLI from the build Proton's manifest names, refusing
+/// it unless it matches the manifest's SHA-256.
+pub(super) async fn install_proton_pass(
+    component: &DownloadableComponent,
+    cli_dir: &Path,
+    progress_callback: ProgressCallback,
+    cancel_token: DownloadCancellation,
+) -> CliDownloadResult<PathBuf> {
+    if let Some(ref cb) = progress_callback {
+        cb(DownloadProgress {
+            downloaded: 0,
+            total: None,
+            status: "Detecting latest Proton Pass CLI version...".to_string(),
+        });
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(super::HTTP_DOWNLOAD_TIMEOUT)
+        .build()
+        .map_err(|e| CliDownloadError::DownloadFailed(e.to_string()))?;
+
+    let manifest = client
+        .get(PROTON_PASS_MANIFEST_URL)
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(|e| CliDownloadError::DownloadFailed(e.to_string()))?
+        .text()
+        .await
+        .map_err(|e| CliDownloadError::DownloadFailed(e.to_string()))?;
+
+    if cancel_token.is_cancelled() {
+        return Err(CliDownloadError::Cancelled);
+    }
+
+    let arch = if cfg!(target_arch = "aarch64") {
+        "aarch64"
+    } else {
+        "x86_64"
+    };
+    let release = parse_pass_cli_manifest(&manifest, arch)?;
+    let version = release.version;
+
+    tracing::info!(%version, download_url = %release.url, "Proton Pass CLI: detected latest version");
+
+    if let Some(ref cb) = progress_callback {
+        cb(DownloadProgress {
+            downloaded: 0,
+            total: None,
+            status: format!("Downloading Proton Pass CLI {version}..."),
+        });
+    }
+
+    let bytes = download_with_progress(&release.url, &progress_callback, &cancel_token).await?;
+
+    if cancel_token.is_cancelled() {
+        return Err(CliDownloadError::Cancelled);
+    }
+
+    verify_checksum(&bytes, &release.sha256)?;
+
+    let install_dir = cli_dir.join(component.install_subdir);
+    tokio::fs::create_dir_all(&install_dir).await?;
+
+    let binary_path = install_dir.join(component.binary_name);
+    tokio::fs::write(&binary_path, &bytes).await?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&binary_path, std::fs::Permissions::from_mode(0o755))
+            .map_err(CliDownloadError::IoError)?;
+    }
+
+    let version_file = install_dir.join(".version");
+    tokio::fs::write(&version_file, &version).await?;
+
+    if let Some(ref cb) = progress_callback {
+        cb(DownloadProgress {
+            downloaded: bytes.len() as u64,
+            total: Some(bytes.len() as u64),
+            status: format!("Proton Pass CLI {version} installed successfully"),
+        });
+    }
+
+    Ok(binary_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HASH: &str = "3e9520fe79ab4698e03905c8bf0fff4889b3028975e832a5f801a9c82008b612";
+
+    fn manifest(format: &str, url: &str, hash: &str) -> String {
+        format!(
+            r#"{{"formatVersion": {format}, "passCliVersions": {{"version": "2.7.1", "urls": {{
+                "linux": {{"x86_64": {{"url": "{url}", "hash": "{hash}"}}}},
+                "macos": {{"aarch64": {{"url": "https://proton.me/m", "hash": "{HASH}"}}}}
+            }}}}}}"#
+        )
+    }
+
+    #[test]
+    fn pass_cli_manifest_yields_the_linux_build() {
+        let url = "https://proton.me/download/pass-cli/2.7.1/pass-cli-linux-x86_64";
+        let release = parse_pass_cli_manifest(&manifest("1", url, &HASH.to_uppercase()), "x86_64")
+            .expect("valid manifest");
+        assert_eq!(
+            release,
+            PassCliRelease {
+                version: "2.7.1".to_string(),
+                url: url.to_string(),
+                sha256: HASH.to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn pass_cli_manifest_refuses_what_it_cannot_vouch_for() {
+        let url = "https://proton.me/download/pass-cli/2.7.1/pass-cli-linux-x86_64";
+        // Unknown format, as install.sh refuses.
+        assert!(parse_pass_cli_manifest(&manifest("2", url, HASH), "x86_64").is_err());
+        // No build for this architecture (only macOS has aarch64 here).
+        assert!(parse_pass_cli_manifest(&manifest("1", url, HASH), "aarch64").is_err());
+        // A download from anywhere but proton.me.
+        let evil = "https://example.com/pass-cli";
+        assert!(parse_pass_cli_manifest(&manifest("1", evil, HASH), "x86_64").is_err());
+        let lookalike = "https://proton.me.example.com/pass-cli";
+        assert!(parse_pass_cli_manifest(&manifest("1", lookalike, HASH), "x86_64").is_err());
+        // A hash that is not a SHA-256.
+        assert!(matches!(
+            parse_pass_cli_manifest(&manifest("1", url, &HASH[..63]), "x86_64"),
+            Err(CliDownloadError::NoChecksum)
+        ));
+        assert!(matches!(
+            parse_pass_cli_manifest(&manifest("1", url, ""), "x86_64"),
+            Err(CliDownloadError::NotAvailable(_))
+        ));
+        assert!(parse_pass_cli_manifest("<html>404</html>", "x86_64").is_err());
+        let bad_version = manifest("1", url, HASH).replace("2.7.1", "../x");
+        assert!(parse_pass_cli_manifest(&bad_version, "x86_64").is_err());
+    }
 }

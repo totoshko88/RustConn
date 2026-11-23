@@ -20,8 +20,9 @@ You are editing a file that handles credentials.
 
 - Vault operations (store/retrieve/delete) → 10s timeout for local backends
   (keyring, KDBX, encrypted files); 45s for the CLI-backed ones (Bitwarden,
-  1Password, Passbolt, pass) — `vault_op_timeout` in `vault_ops.rs`, measured in
-  issue #312
+  1Password, Passbolt, pass, Proton Pass) — `vault_op_timeout` in `vault_ops.rs`,
+  measured in issue #312. Proton Pass also caps one whole backend operation at
+  90s (`PP_OPERATION_TIMEOUT`), because a save runs several `pass-cli` calls
 - Credential resolution → 30s timeout
 - Bitwarden auto_unlock → 30s timeout
 - Backend availability probes (Settings → Secrets detection, startup banner

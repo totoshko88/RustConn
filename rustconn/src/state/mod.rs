@@ -471,7 +471,8 @@ impl AppState {
             _ => {
                 // Bitwarden: handled in app.rs idle_add_local_once
                 // KeePass: handled above
-                // LibSecret, Pass, macOS Keychain: stateless
+                // LibSecret, Pass, Proton Pass, macOS Keychain: stateless
+                // (Proton Pass keeps its session inside pass-cli)
             }
         }
 
