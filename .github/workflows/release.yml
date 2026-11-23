@@ -58,7 +58,7 @@ jobs:
       # the source tree. Version-pinned like cargo-machete in ci.yml — a moving
       # upstream must not change the build silently.
       - name: Install cargo-auditable
-        uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2.88.1
+        uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6
         with:
           tool: cargo-auditable@0.7.7
 
@@ -404,7 +404,7 @@ jobs:
             gettext
 
       - name: Install cargo-auditable
-        uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2.88.1
+        uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6
         with:
           tool: cargo-auditable@0.7.7
 
