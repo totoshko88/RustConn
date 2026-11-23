@@ -520,7 +520,9 @@ fn cmd_secret_get(
                     if creds.expose_password().is_some() {
                         println!("Password:   ********");
                         if cfg!(target_os = "macos") {
-                            println!("\nUse Keychain Access (service \"rustconn\") to view actual value");
+                            println!(
+                                "\nUse Keychain Access (service \"rustconn\") to view actual value"
+                            );
                         } else {
                             println!("\nUse 'secret-tool' to view actual value");
                         }
