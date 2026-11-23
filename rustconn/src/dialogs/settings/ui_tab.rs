@@ -70,7 +70,7 @@ pub fn create_ui_page() -> (
     GtkBox,
     adw::ComboRow,
     adw::SwitchRow,
-    adw::SwitchRow,
+    adw::ExpanderRow, // enable_tray_icon
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
@@ -623,19 +623,18 @@ pub fn create_ui_page() -> (
     page.add(&startup_group);
 
     // === System Tray Group (collapsible) ===
-    let tray_group = adw::PreferencesGroup::builder().build();
+    let tray_group = adw::PreferencesGroup::builder()
+        .description(i18n("Requires desktop environment with tray support"))
+        .build();
 
-    let tray_expander = adw::ExpanderRow::builder()
+    // The enable switch sits on the expander row itself, so it is visible
+    // without expanding; the row holds only the sub-options.
+    let enable_tray_icon = adw::ExpanderRow::builder()
         .title(i18n("System Tray"))
-        .subtitle(i18n("Requires desktop environment with tray support"))
-        .show_enable_switch(false)
-        .build();
-
-    let enable_tray_icon = adw::SwitchRow::builder()
-        .title(i18n("Show icon"))
         .subtitle(i18n("Restart required to apply"))
+        .show_enable_switch(true)
         .build();
-    tray_expander.add_row(&enable_tray_icon);
+    let tray_expander = enable_tray_icon.clone();
 
     let minimize_to_tray = adw::SwitchRow::builder()
         .title(i18n("Minimize to tray"))
@@ -645,8 +644,8 @@ pub fn create_ui_page() -> (
 
     // Make minimize_to_tray sensitive based on enable_tray_icon
     let minimize_to_tray_clone = minimize_to_tray.clone();
-    enable_tray_icon.connect_active_notify(move |row| {
-        minimize_to_tray_clone.set_sensitive(row.is_active());
+    enable_tray_icon.connect_enable_expansion_notify(move |row| {
+        minimize_to_tray_clone.set_sensitive(row.enables_expansion());
     });
 
     tray_group.add(&tray_expander);
@@ -770,7 +769,7 @@ pub fn load_ui_settings(
     color_scheme_box: &GtkBox,
     language_dropdown: &adw::ComboRow,
     remember_geometry: &adw::SwitchRow,
-    enable_tray_icon: &adw::SwitchRow,
+    enable_tray_icon: &adw::ExpanderRow,
     minimize_to_tray: &adw::SwitchRow,
     session_restore_enabled: &adw::SwitchRow,
     prompt_on_restore: &adw::SwitchRow,
@@ -845,7 +844,7 @@ pub fn load_ui_settings(
     language_dropdown.set_selected(lang_index as u32);
 
     remember_geometry.set_active(settings.remember_window_geometry);
-    enable_tray_icon.set_active(settings.enable_tray_icon);
+    enable_tray_icon.set_enable_expansion(settings.enable_tray_icon);
     minimize_to_tray.set_active(settings.minimize_to_tray);
     minimize_to_tray.set_sensitive(settings.enable_tray_icon);
 
@@ -957,7 +956,7 @@ pub fn collect_ui_settings(
     color_scheme_box: &GtkBox,
     language_dropdown: &adw::ComboRow,
     remember_geometry: &adw::SwitchRow,
-    enable_tray_icon: &adw::SwitchRow,
+    enable_tray_icon: &adw::ExpanderRow,
     minimize_to_tray: &adw::SwitchRow,
     session_restore_enabled: &adw::SwitchRow,
     prompt_on_restore: &adw::SwitchRow,
@@ -1030,7 +1029,7 @@ pub fn collect_ui_settings(
         window_maximized: false,
         sidebar_width: Some(clamp_sidebar_width(sidebar_width_row.value().round() as i32)),
         sidebar_drag_resize: sidebar_drag_resize.is_active(),
-        enable_tray_icon: enable_tray_icon.is_active(),
+        enable_tray_icon: enable_tray_icon.enables_expansion(),
         minimize_to_tray: minimize_to_tray.is_active(),
         expanded_groups: std::collections::HashSet::new(),
         session_restore: SessionRestoreSettings {

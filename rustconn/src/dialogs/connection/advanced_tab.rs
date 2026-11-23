@@ -302,7 +302,7 @@ pub(super) fn create_advanced_tab() -> (
     let monitoring_group = adw::PreferencesGroup::builder()
         .title(i18n("Remote Monitoring"))
         .description(i18n(
-            "Override global monitoring settings for this connection",
+            "Override global monitoring settings for this connection. Works for SSH only; not available for RDP, VNC, Telnet and other protocols",
         ))
         .build();
 

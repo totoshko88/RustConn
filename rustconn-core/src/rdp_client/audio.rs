@@ -152,14 +152,6 @@ impl RustConnAudioBackend {
         ]
     }
 
-    /// Returns the current audio format info if available
-    #[must_use]
-    pub fn current_format_info(&self) -> Option<AudioFormatInfo> {
-        self.current_format
-            .and_then(|idx| self.supported_formats.get(idx))
-            .map(AudioFormatInfo::from)
-    }
-
     /// Returns whether audio is enabled
     #[must_use]
     pub const fn is_enabled(&self) -> bool {

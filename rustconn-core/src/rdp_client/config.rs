@@ -237,20 +237,6 @@ impl RemoteAppConfig {
             expand_env: false,
         }
     }
-
-    /// Sets the working directory
-    #[must_use]
-    pub fn with_working_dir(mut self, dir: impl Into<String>) -> Self {
-        self.working_dir = Some(dir.into());
-        self
-    }
-
-    /// Sets command line arguments
-    #[must_use]
-    pub fn with_arguments(mut self, args: impl Into<String>) -> Self {
-        self.arguments = Some(args.into());
-        self
-    }
 }
 
 /// RDP security protocol options
@@ -434,24 +420,10 @@ impl RdpClientConfig {
         self
     }
 
-    /// Sets the graphics quality
-    #[must_use]
-    pub const fn with_graphics_quality(mut self, quality: GraphicsQuality) -> Self {
-        self.graphics_quality = quality;
-        self
-    }
-
     /// Sets the RD Gateway configuration
     #[must_use]
     pub fn with_gateway(mut self, gateway: GatewayConfig) -> Self {
         self.gateway = gateway;
-        self
-    }
-
-    /// Sets the monitor layout
-    #[must_use]
-    pub fn with_monitor_layout(mut self, layout: MonitorLayout) -> Self {
-        self.monitor_layout = layout;
         self
     }
 
@@ -486,20 +458,6 @@ impl RdpClientConfig {
     #[must_use]
     pub const fn with_smartcard(mut self, enabled: bool) -> Self {
         self.smartcard_enabled = enabled;
-        self
-    }
-
-    /// Sets RemoteApp configuration
-    #[must_use]
-    pub fn with_remote_app(mut self, app: RemoteAppConfig) -> Self {
-        self.remote_app = Some(app);
-        self
-    }
-
-    /// Sets the connection name
-    #[must_use]
-    pub fn with_connection_name(mut self, name: impl Into<String>) -> Self {
-        self.connection_name = Some(name.into());
         self
     }
 

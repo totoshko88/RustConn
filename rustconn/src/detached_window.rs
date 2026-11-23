@@ -570,6 +570,29 @@ impl DetachedWindowRegistry {
         drop(forgotten);
     }
 
+    /// Returns the tabbed window whose tab view is `view`, if any.
+    #[must_use]
+    pub fn group_for_view(&self, view: &adw::TabView) -> Option<Rc<SessionGroupWindow>> {
+        self.groups
+            .borrow()
+            .values()
+            .find(|group| group.tab_view() == view)
+            .cloned()
+    }
+
+    /// Returns the tabbed window holding `page`, with the session it shows.
+    #[must_use]
+    pub fn group_hosting_page(
+        &self,
+        page: &adw::TabPage,
+    ) -> Option<(Rc<SessionGroupWindow>, Uuid)> {
+        self.groups.borrow().values().find_map(|group| {
+            group
+                .session_for_page(page)
+                .map(|session_id| (Rc::clone(group), session_id))
+        })
+    }
+
     /// Returns the tabbed window currently showing a session, if any.
     ///
     /// Cloned out so no borrow is held while the caller drives GTK.

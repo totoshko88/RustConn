@@ -1,30 +1,25 @@
-//! Terminal search dialog for finding text in VTE terminals
+//! Terminal search bar for finding text in VTE terminals
 //!
-//! Provides a search interface for VTE terminals with regex support,
+//! Provides a non-modal search bar for VTE terminals with regex support,
 //! highlight all matches, and navigation between matches.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, CheckButton, Label, Orientation, SearchEntry};
-use libadwaita as adw;
 use rustconn_core::{CompiledHighlightRules, HighlightRule};
 use uuid::Uuid;
 use vte4::Terminal;
 use vte4::prelude::*;
 
 use crate::i18n::i18n;
-use crate::terminal::highlight_overlay::HighlightOverlay;
+use crate::terminal::highlight_overlay::{HighlightOverlay, host_overlay};
 
 /// PCRE2 multiline compile flag. VTE's `search_set_regex()` rejects a regex
 /// compiled without it, so a search built with flags 0 never ran.
 const PCRE2_MULTILINE: u32 = 0x0000_0400;
-
-/// Extra pixels kept free below the terminal for the sheet's edge and shadow.
-const SHEET_SLACK: i32 = 8;
 
 /// Builds the regex text for a search: the user's text as a regex, or escaped
 /// for a literal search, with `(?i)` in front unless the search is case sensitive.
@@ -96,323 +91,310 @@ fn match_rules(pattern: String) -> CompiledHighlightRules {
     CompiledHighlightRules::compile_with_options(&[rule], &[], false)
 }
 
-/// Terminal search dialog for VTE terminals
-pub struct TerminalSearchDialog {
-    dialog: adw::Dialog,
-    search_entry: SearchEntry,
-    case_sensitive: CheckButton,
-    regex_toggle: CheckButton,
-    highlight_all: CheckButton,
-    match_label: Label,
-    terminal: Terminal,
-    current_search: Rc<RefCell<String>>,
-    prev_btn: Button,
-    next_btn: Button,
-    highlighter: Rc<SearchHighlight>,
-    toolbar_view: adw::ToolbarView,
-    /// Parent widget for presenting the dialog.
-    parent: Option<gtk4::Widget>,
-}
+/// Widget name of the search bar, used to find an open bar on an overlay.
+const BAR_NAME: &str = "terminal-search-bar";
 
-impl TerminalSearchDialog {
-    /// Creates a new terminal search dialog
-    #[must_use]
-    pub fn new(parent: Option<&gtk4::Window>, terminal: Terminal) -> Self {
-        let dialog = adw::Dialog::builder()
-            .title(i18n("Search in Terminal"))
-            .presentation_mode(adw::DialogPresentationMode::BottomSheet)
-            .follows_content_size(true)
-            .build();
+/// Non-modal search bar for a VTE terminal (issue #442).
+///
+/// The bar sits at the top of the `gtk4::Overlay` that hosts the terminal, the
+/// same overlay the highlight layer uses, so one code path serves main-window
+/// tabs, split panes and detached windows. The overlay's child is pushed down by
+/// the bar's height, so the bar never covers a match, and the terminal stays
+/// scrollable and selectable while the bar is open.
+pub struct TerminalSearchBar;
 
-        let parent_widget: Option<gtk4::Widget> =
-            parent.map(|p| p.clone().upcast::<gtk4::Widget>());
+impl TerminalSearchBar {
+    /// Opens the bar on `terminal`, or focuses it when it is already open.
+    pub fn show(terminal: &Terminal) {
+        let Some(overlay) = host_overlay(terminal) else {
+            return;
+        };
+        if let Some(open) = find_bar(&overlay) {
+            if let Some(entry) = find_entry(&open) {
+                entry.grab_focus();
+            }
+            return;
+        }
+        let Some(content) = overlay.child() else {
+            return;
+        };
 
-        // Header bar with standard window close button (×) per GNOME HIG
-        let header = adw::HeaderBar::new();
-
-        // Create main content
-        let content = GtkBox::new(Orientation::Vertical, 12);
-        content.set_margin_top(12);
-        content.set_margin_bottom(12);
-        content.set_margin_start(12);
-        content.set_margin_end(12);
-
-        // Use ToolbarView for adw::Dialog
-        let toolbar_view = adw::ToolbarView::new();
-        toolbar_view.add_top_bar(&header);
-        toolbar_view.set_content(Some(&content));
-        dialog.set_child(Some(&toolbar_view));
-
-        // Search entry
         let search_entry = SearchEntry::builder()
             .placeholder_text(i18n("Search text…"))
             .hexpand(true)
             .build();
-        content.append(&search_entry);
-
-        // Options row
-        let options_box = GtkBox::new(Orientation::Horizontal, 12);
-
         let case_sensitive = CheckButton::builder().label(i18n("Case sensitive")).build();
-        options_box.append(&case_sensitive);
-
         let regex_toggle = CheckButton::builder()
             .label(i18n("Regex"))
             .tooltip_text(i18n("Use regular expression pattern"))
             .build();
-        options_box.append(&regex_toggle);
-
         let highlight_all = CheckButton::builder()
             .label(i18n("Highlight All"))
             .tooltip_text(i18n("Highlight all matches in terminal"))
             .active(true)
             .build();
-        options_box.append(&highlight_all);
-
-        content.append(&options_box);
-
-        // Navigation row
-        let nav_box = GtkBox::new(Orientation::Horizontal, 6);
-
         let prev_btn = Button::builder()
             .icon_name("go-up-symbolic")
             .tooltip_text(i18n("Previous match"))
             .build();
         prev_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Previous match"))]);
-        nav_box.append(&prev_btn);
-
         let next_btn = Button::builder()
             .icon_name("go-down-symbolic")
             .tooltip_text(i18n("Next match"))
             .build();
         next_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Next match"))]);
-        nav_box.append(&next_btn);
-
+        let close_btn = Button::builder()
+            .icon_name("window-close-symbolic")
+            .css_classes(["flat"])
+            .tooltip_text(i18n("Close"))
+            .build();
+        close_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Close"))]);
         let match_label = Label::builder()
             .label(i18n("Enter text to search"))
             .hexpand(true)
             .halign(gtk4::Align::Start)
+            .css_classes(["dim-label"])
             .build();
-        nav_box.append(&match_label);
 
-        content.append(&nav_box);
+        let top_row = GtkBox::new(Orientation::Horizontal, 6);
+        top_row.append(&search_entry);
+        top_row.append(&prev_btn);
+        top_row.append(&next_btn);
+        top_row.append(&close_btn);
+        let options_row = GtkBox::new(Orientation::Horizontal, 12);
+        options_row.append(&case_sensitive);
+        options_row.append(&regex_toggle);
+        options_row.append(&highlight_all);
+        options_row.append(&match_label);
 
-        let current_search = Rc::new(RefCell::new(String::new()));
-
-        let highlighter = Rc::new(SearchHighlight::new(&terminal));
-
-        let dialog = Self {
-            dialog,
-            search_entry,
-            case_sensitive,
-            regex_toggle,
-            highlight_all,
-            match_label,
-            terminal,
-            current_search,
-            prev_btn,
-            next_btn,
-            highlighter,
-            toolbar_view,
-            parent: parent_widget,
-        };
-
-        dialog.setup_signals();
-        dialog
-    }
-
-    /// Sets up signal handlers for the dialog
-    fn setup_signals(&self) {
-        // Clear terminal search highlights whenever the dialog closes, by any
-        // means — the header-bar × button, Escape, or a programmatic close.
-        // The terminal gets its rows back from under the sheet (issue #442).
-        let terminal_close = self.terminal.clone();
-        let highlighter_close = Rc::clone(&self.highlighter);
-        self.dialog.connect_closed(move |_| {
-            highlighter_close.remove();
-            terminal_close.set_margin_bottom(0);
-            terminal_close.search_set_regex(None, 0);
-        });
-
-        // Search on text change
-        let terminal = self.terminal.clone();
-        let case_sensitive = self.case_sensitive.clone();
-        let regex_toggle = self.regex_toggle.clone();
-        let highlight_all = self.highlight_all.clone();
-        let match_label = self.match_label.clone();
-        let current_search = self.current_search.clone();
-        let highlighter = Rc::clone(&self.highlighter);
-
-        self.search_entry.connect_search_changed(move |entry| {
-            let text = entry.text();
-            if text.is_empty() {
-                match_label.set_text(&i18n("Enter text to search"));
-                *current_search.borrow_mut() = String::new();
-                highlighter.set(None);
-                terminal.search_set_regex(None, 0);
-                return;
-            }
-
-            *current_search.borrow_mut() = text.to_string();
-            Self::perform_search(
-                &terminal,
-                &highlighter,
-                &text,
-                case_sensitive.is_active(),
-                regex_toggle.is_active(),
-                highlight_all.is_active(),
-                &match_label,
-            );
-        });
-
-        // Re-search when any toggle changes
-        let make_toggle_handler = |term: Terminal,
-                                   hl_layer: Rc<SearchHighlight>,
-                                   entry: SearchEntry,
-                                   cs: CheckButton,
-                                   rx: CheckButton,
-                                   hl: CheckButton,
-                                   lbl: Label| {
-            move |_: &CheckButton| {
-                let text = entry.text();
-                if !text.is_empty() {
-                    Self::perform_search(
-                        &term,
-                        &hl_layer,
-                        &text,
-                        cs.is_active(),
-                        rx.is_active(),
-                        hl.is_active(),
-                        &lbl,
-                    );
-                }
-            }
-        };
-
-        self.case_sensitive.connect_toggled(make_toggle_handler(
-            self.terminal.clone(),
-            Rc::clone(&self.highlighter),
-            self.search_entry.clone(),
-            self.case_sensitive.clone(),
-            self.regex_toggle.clone(),
-            self.highlight_all.clone(),
-            self.match_label.clone(),
-        ));
-
-        self.regex_toggle.connect_toggled(make_toggle_handler(
-            self.terminal.clone(),
-            Rc::clone(&self.highlighter),
-            self.search_entry.clone(),
-            self.case_sensitive.clone(),
-            self.regex_toggle.clone(),
-            self.highlight_all.clone(),
-            self.match_label.clone(),
-        ));
-
-        self.highlight_all.connect_toggled({
-            let highlighter = Rc::clone(&self.highlighter);
-            let search_entry = self.search_entry.clone();
-            let case_sensitive = self.case_sensitive.clone();
-            let regex_toggle = self.regex_toggle.clone();
-            move |btn| {
-                let text = search_entry.text();
-                if text.is_empty() {
-                    return;
-                }
-
-                // Only toggle the highlight layer without navigating
-                highlighter.set(btn.is_active().then(|| {
-                    search_pattern(&text, case_sensitive.is_active(), regex_toggle.is_active())
-                }));
-            }
-        });
-
-        // Navigation buttons
-        let terminal_prev = self.terminal.clone();
-        self.prev_btn.connect_clicked(move |_| {
-            terminal_prev.search_find_previous();
-        });
-
-        let terminal_next = self.terminal.clone();
-        self.next_btn.connect_clicked(move |_| {
-            terminal_next.search_find_next();
-        });
-
-        // Handle Enter key to find next
-        let terminal_enter = self.terminal.clone();
-        self.search_entry.connect_activate(move |_| {
-            terminal_enter.search_find_next();
-        });
-
-        // Handle Escape key to close — clear highlights
-        let dialog_escape = self.dialog.clone();
-        let key_controller = gtk4::EventControllerKey::new();
-        key_controller.connect_key_pressed(move |_, key, _, _| {
-            if key == gtk4::gdk::Key::Escape {
-                // Highlights are cleared by the `connect_closed` handler above.
-                dialog_escape.close();
-                return gtk4::glib::Propagation::Stop;
-            }
-            gtk4::glib::Propagation::Proceed
-        });
-        self.dialog.add_controller(key_controller);
-    }
-
-    /// Performs a search in the terminal
-    fn perform_search(
-        terminal: &Terminal,
-        highlighter: &SearchHighlight,
-        text: &str,
-        case_sensitive: bool,
-        is_regex: bool,
-        highlight_all: bool,
-        match_label: &Label,
-    ) {
-        let pattern = search_pattern(text, case_sensitive, is_regex);
-
-        let regex_result = vte4::Regex::for_search(&pattern, PCRE2_MULTILINE);
-
-        if let Ok(regex) = regex_result {
-            terminal.search_set_regex(Some(&regex), 0);
-            terminal.search_set_wrap_around(true);
-
-            highlighter.set(highlight_all.then_some(pattern));
-
-            if terminal.search_find_next() {
-                match_label.set_text(&i18n("Found matches"));
-            } else {
-                match_label.set_text(&i18n("No matches found"));
-            }
-        } else {
-            highlighter.set(None);
-            if is_regex {
-                match_label.set_text(&i18n("Invalid regex pattern"));
-            } else {
-                match_label.set_text(&i18n("Search error"));
-            }
-            terminal.search_set_regex(None, 0);
+        let bar = GtkBox::new(Orientation::Vertical, 6);
+        bar.set_widget_name(BAR_NAME);
+        bar.set_valign(gtk4::Align::Start);
+        bar.set_halign(gtk4::Align::Fill);
+        bar.add_css_class("background");
+        for set in [
+            GtkBox::set_margin_top,
+            GtkBox::set_margin_bottom,
+            GtkBox::set_margin_start,
+            GtkBox::set_margin_end,
+        ] {
+            set(&bar, 6);
         }
+        bar.append(&top_row);
+        bar.append(&options_row);
+
+        // The handlers on the entry and the toggles hold `controls` weakly: a
+        // strong copy there is an entry → handler → controls → entry cycle that
+        // keeps the entry, and the terminal in `controls`, alive for good. The
+        // one strong copy lives in `close`, which only the bar's own children
+        // and controllers hold, so it goes when the bar does.
+        let controls = Rc::new(Controls {
+            terminal: terminal.clone(),
+            entry: search_entry.clone(),
+            case_sensitive: case_sensitive.clone(),
+            regex_toggle: regex_toggle.clone(),
+            highlight_all: highlight_all.clone(),
+            label: match_label,
+            highlighter: Rc::new(SearchHighlight::new(terminal)),
+        });
+
+        // Close: takes the bar off, gives the rows back, returns focus.
+        //
+        // The closure lives in controllers attached to the bar, so it holds the
+        // bar, the terminal and the content weakly: a strong bar here is a
+        // bar → controller → closure → bar cycle that keeps the bar, and every
+        // terminal its handlers hold, alive after the tab closes.
+        let previous_margin_top = content.margin_top();
+        let close = {
+            let terminal = terminal.downgrade();
+            let overlay = overlay.downgrade();
+            let bar = bar.downgrade();
+            let content = content.downgrade();
+            let controls = Rc::clone(&controls);
+            Rc::new(move || {
+                controls.highlighter.remove();
+                if let Some(content) = content.upgrade() {
+                    content.set_margin_top(previous_margin_top);
+                }
+                if let (Some(overlay), Some(bar)) = (overlay.upgrade(), bar.upgrade()) {
+                    overlay.remove_overlay(&bar);
+                }
+                if let Some(terminal) = terminal.upgrade() {
+                    terminal.search_set_regex(None, 0);
+                    terminal.grab_focus();
+                }
+            })
+        };
+        close_btn.connect_clicked({
+            let close = Rc::clone(&close);
+            move |_| close()
+        });
+
+        search_entry.connect_search_changed({
+            let c = Rc::downgrade(&controls);
+            move |_| {
+                if let Some(c) = c.upgrade() {
+                    c.run();
+                }
+            }
+        });
+        for toggle in [&case_sensitive, &regex_toggle] {
+            toggle.connect_toggled({
+                let c = Rc::downgrade(&controls);
+                move |_| {
+                    if let Some(c) = c.upgrade() {
+                        c.run();
+                    }
+                }
+            });
+        }
+        highlight_all.connect_toggled({
+            let c = Rc::downgrade(&controls);
+            move |btn| {
+                let Some(c) = c.upgrade() else {
+                    return;
+                };
+                let text = c.entry.text();
+                if !text.is_empty() {
+                    c.highlighter.set(btn.is_active().then(|| {
+                        search_pattern(
+                            &text,
+                            c.case_sensitive.is_active(),
+                            c.regex_toggle.is_active(),
+                        )
+                    }));
+                }
+            }
+        });
+        prev_btn.connect_clicked({
+            let t = terminal.clone();
+            move |_| {
+                t.search_find_previous();
+            }
+        });
+        next_btn.connect_clicked({
+            let t = terminal.clone();
+            move |_| {
+                t.search_find_next();
+            }
+        });
+        search_entry.connect_activate({
+            let t = terminal.clone();
+            move |_| {
+                t.search_find_next();
+            }
+        });
+        // Shift+Enter goes to the previous match; Escape closes the bar. The
+        // capture phase runs before the entry handles the key itself.
+        let keys = gtk4::EventControllerKey::new();
+        keys.set_propagation_phase(gtk4::PropagationPhase::Capture);
+        keys.connect_key_pressed({
+            let t = terminal.clone();
+            let close = Rc::clone(&close);
+            move |_, key, _, state| {
+                use gtk4::gdk::Key;
+                if key == Key::Escape {
+                    close();
+                    return gtk4::glib::Propagation::Stop;
+                }
+                if matches!(key, Key::Return | Key::KP_Enter | Key::ISO_Enter)
+                    && state.contains(gtk4::gdk::ModifierType::SHIFT_MASK)
+                {
+                    t.search_find_previous();
+                    return gtk4::glib::Propagation::Stop;
+                }
+                gtk4::glib::Propagation::Proceed
+            }
+        });
+        bar.add_controller(keys);
+
+        overlay.add_overlay(&bar);
+        // Reserve the bar's height above the terminal so it never hides a row.
+        let (_, bar_height, _, _) = bar.measure(Orientation::Vertical, overlay.width().max(-1));
+        content.set_margin_top(bar_height);
+        search_entry.grab_focus();
     }
+}
 
-    /// Shows the dialog
-    pub fn show(&self) {
-        self.dialog.present(self.parent.as_ref());
-        self.search_entry.grab_focus();
+/// Everything a search needs, shared by the bar's signal handlers.
+struct Controls {
+    terminal: Terminal,
+    entry: SearchEntry,
+    case_sensitive: CheckButton,
+    regex_toggle: CheckButton,
+    highlight_all: CheckButton,
+    label: Label,
+    highlighter: Rc<SearchHighlight>,
+}
 
-        // The sheet covers the bottom of the window. Shrink the terminal by the
-        // sheet's height so it never hides a match, even on the last row
-        // (issue #442).
-        let (_, sheet_height, _, _) = self.toolbar_view.measure(
-            Orientation::Vertical,
-            self.parent.as_ref().map_or(-1, |p| p.width()),
+impl Controls {
+    /// Runs the search for the entry's current text and options.
+    fn run(&self) {
+        let text = self.entry.text();
+        if text.is_empty() {
+            self.label.set_text(&i18n("Enter text to search"));
+            self.highlighter.set(None);
+            self.terminal.search_set_regex(None, 0);
+            return;
+        }
+        perform_search(
+            &self.terminal,
+            &self.highlighter,
+            &text,
+            self.case_sensitive.is_active(),
+            self.regex_toggle.is_active(),
+            self.highlight_all.is_active(),
+            &self.label,
         );
-        self.terminal.set_margin_bottom(sheet_height + SHEET_SLACK);
     }
+}
 
-    /// Returns the underlying dialog
-    #[must_use]
-    pub const fn dialog(&self) -> &adw::Dialog {
-        &self.dialog
+/// Finds an open search bar on `overlay`.
+fn find_bar(overlay: &gtk4::Overlay) -> Option<gtk4::Widget> {
+    let mut child = overlay.first_child();
+    while let Some(w) = child {
+        if w.widget_name() == BAR_NAME {
+            return Some(w);
+        }
+        child = w.next_sibling();
+    }
+    None
+}
+
+/// Finds the search entry inside `bar`.
+fn find_entry(bar: &gtk4::Widget) -> Option<SearchEntry> {
+    let row = bar.first_child()?;
+    row.first_child()?.downcast().ok()
+}
+
+/// Performs a search in the terminal.
+fn perform_search(
+    terminal: &Terminal,
+    highlighter: &SearchHighlight,
+    text: &str,
+    case_sensitive: bool,
+    is_regex: bool,
+    highlight_all: bool,
+    match_label: &Label,
+) {
+    let pattern = search_pattern(text, case_sensitive, is_regex);
+    if let Ok(regex) = vte4::Regex::for_search(&pattern, PCRE2_MULTILINE) {
+        terminal.search_set_regex(Some(&regex), 0);
+        terminal.search_set_wrap_around(true);
+        highlighter.set(highlight_all.then_some(pattern));
+        if terminal.search_find_next() {
+            match_label.set_text(&i18n("Found matches"));
+        } else {
+            match_label.set_text(&i18n("No matches found"));
+        }
+    } else {
+        highlighter.set(None);
+        if is_regex {
+            match_label.set_text(&i18n("Invalid regex pattern"));
+        } else {
+            match_label.set_text(&i18n("Search error"));
+        }
+        terminal.search_set_regex(None, 0);
     }
 }
 
@@ -441,12 +423,13 @@ mod tests {
         );
     }
 
-    /// Opening the sheet reserves its height below the terminal, closing gives
-    /// it back, and a search selects the match (issues #441, #442).
+    /// Opening the bar reserves its height above the terminal, a search selects
+    /// a match, Shift+Enter is wired, closing gives the room back and returns
+    /// focus (issues #441, #442).
     #[test]
     #[ignore = "initialises GTK: needs a display and its own process"]
-    fn sheet_reserves_room_and_search_selects_match() {
-        if gtk4::init().is_err() || adw::init().is_err() {
+    fn bar_reserves_room_and_search_selects_match() {
+        if gtk4::init().is_err() {
             return;
         }
         let pump = |ms: u64| {
@@ -463,23 +446,29 @@ mod tests {
         let host = GtkBox::new(Orientation::Vertical, 0);
         host.append(&terminal);
         overlay.set_child(Some(&host));
-        let window = adw::ApplicationWindow::builder()
+        let window = gtk4::Window::builder()
             .default_width(700)
             .default_height(500)
-            .content(&overlay)
+            .child(&overlay)
             .build();
         window.present();
         terminal.feed(b"first foo\r\nsecond\r\nthird foo FOO\r\n");
+        // A margin the host had before the bar opened must survive closing it.
+        host.set_margin_top(3);
         pump(300);
 
-        let dialog = TerminalSearchDialog::new(Some(window.upcast_ref()), terminal.clone());
-        dialog.show();
-        dialog.search_entry.set_text("foo");
-        pump(300);
-        assert!(
-            terminal.margin_bottom() > 0,
-            "sheet height must be reserved"
+        TerminalSearchBar::show(&terminal);
+        let bar = find_bar(&overlay).expect("bar is on the overlay");
+        assert!(host.margin_top() > 3, "bar height must be reserved");
+        // A second call reuses the open bar.
+        TerminalSearchBar::show(&terminal);
+        assert_eq!(
+            std::iter::successors(overlay.first_child(), |w| w.next_sibling()).count(),
+            3
         );
+        let entry = find_entry(&bar).expect("entry");
+        entry.set_text("foo");
+        pump(600);
         assert!(terminal.has_selection(), "the search must select a match");
         assert_eq!(
             terminal.text_selected(vte4::Format::Text).as_deref(),
@@ -489,8 +478,26 @@ mod tests {
             pump(ms.parse().unwrap_or(0));
         }
 
-        dialog.dialog.force_close();
-        pump(200);
-        assert_eq!(terminal.margin_bottom(), 0, "closing must free the room");
+        // The close button removes the bar and gives the rows back.
+        let close_btn = bar
+            .first_child()
+            .and_then(|row| row.last_child())
+            .and_then(|w| w.downcast::<Button>().ok())
+            .expect("close button");
+        close_btn.emit_clicked();
+        pump(100);
+        assert!(find_bar(&overlay).is_none());
+        assert_eq!(host.margin_top(), 3, "closing must restore the old margin");
+        // The close closure must not keep the bar alive through its own
+        // controllers once the overlay lets go of it.
+        let weak_bar = bar.downgrade();
+        let weak_entry = entry.downgrade();
+        drop(close_btn);
+        drop(entry);
+        drop(bar);
+        pump(100);
+        assert!(weak_bar.upgrade().is_none(), "closed bar must be freed");
+        // Nor may the entry's own handlers keep it, and the terminal, alive.
+        assert!(weak_entry.upgrade().is_none(), "closed entry must be freed");
     }
 }

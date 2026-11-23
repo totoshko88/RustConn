@@ -69,6 +69,8 @@ pub struct TemplateDialog {
     rdp_color_dropdown: DropDown,
     rdp_audio_mode_dropdown: DropDown,
     rdp_gateway_entry: Entry,
+    rdp_printer_check: adw::SwitchRow,
+    rdp_toolbar_check: adw::SwitchRow,
     rdp_custom_args_entry: Entry,
     // VNC fields
     vnc_client_mode_dropdown: DropDown,
@@ -78,6 +80,7 @@ pub struct TemplateDialog {
     vnc_view_only_check: adw::SwitchRow,
     vnc_scaling_check: adw::SwitchRow,
     vnc_clipboard_check: adw::SwitchRow,
+    vnc_toolbar_check: adw::SwitchRow,
     vnc_custom_args_entry: Entry,
     // SPICE fields
     spice_tls_check: adw::SwitchRow,
@@ -209,6 +212,16 @@ impl TemplateDialog {
         ) = Self::create_ssh_options();
         protocol_stack.add_named(&ssh_box, Some("ssh"));
 
+        // Switches the protocol pages add to their Features group. They are
+        // created here so the dialog keeps a handle on them for load and save.
+        let rdp_printer_check = adw::SwitchRow::builder()
+            .title(i18n("Printer Redirection"))
+            .subtitle(i18n("Share your local printer with the remote session"))
+            .active(false)
+            .build();
+        let rdp_toolbar_check = Self::session_toolbar_switch();
+        let vnc_toolbar_check = Self::session_toolbar_switch();
+
         // RDP options
         let (
             rdp_box,
@@ -219,7 +232,7 @@ impl TemplateDialog {
             rdp_audio_mode_dropdown,
             rdp_gateway_entry,
             rdp_custom_args_entry,
-        ) = Self::create_rdp_options();
+        ) = Self::create_rdp_options(&rdp_printer_check, &rdp_toolbar_check);
         protocol_stack.add_named(&rdp_box, Some("rdp"));
 
         // VNC options
@@ -233,7 +246,7 @@ impl TemplateDialog {
             vnc_scaling_check,
             vnc_clipboard_check,
             vnc_custom_args_entry,
-        ) = Self::create_vnc_options();
+        ) = Self::create_vnc_options(&vnc_toolbar_check);
         protocol_stack.add_named(&vnc_box, Some("vnc"));
 
         // SPICE options
@@ -355,6 +368,8 @@ impl TemplateDialog {
             &rdp_color_dropdown,
             &rdp_audio_mode_dropdown,
             &rdp_gateway_entry,
+            &rdp_printer_check,
+            &rdp_toolbar_check,
             &rdp_custom_args_entry,
             &vnc_client_mode_dropdown,
             &vnc_encoding_entry,
@@ -363,6 +378,7 @@ impl TemplateDialog {
             &vnc_view_only_check,
             &vnc_scaling_check,
             &vnc_clipboard_check,
+            &vnc_toolbar_check,
             &vnc_custom_args_entry,
             &spice_tls_check,
             &spice_ca_cert_entry,
@@ -427,6 +443,8 @@ impl TemplateDialog {
             rdp_color_dropdown,
             rdp_audio_mode_dropdown,
             rdp_gateway_entry,
+            rdp_printer_check,
+            rdp_toolbar_check,
             rdp_custom_args_entry,
             vnc_client_mode_dropdown,
             vnc_encoding_entry,
@@ -435,6 +453,7 @@ impl TemplateDialog {
             vnc_view_only_check,
             vnc_scaling_check,
             vnc_clipboard_check,
+            vnc_toolbar_check,
             vnc_custom_args_entry,
             spice_tls_check,
             spice_ca_cert_entry,
@@ -779,7 +798,22 @@ impl TemplateDialog {
         )
     }
 
-    fn create_rdp_options() -> (
+    /// Session toolbar switch, worded as in the connection editor. It is
+    /// stated positively while the stored field reads `hide_floating_toolbar`.
+    fn session_toolbar_switch() -> adw::SwitchRow {
+        adw::SwitchRow::builder()
+            .title(i18n("Session Toolbar"))
+            .subtitle(i18n(
+                "Turn off to remove the floating toolbar and its reveal arrow. Ctrl+Alt+Del and the toolbar buttons go with it.",
+            ))
+            .active(true)
+            .build()
+    }
+
+    fn create_rdp_options(
+        printer_check: &adw::SwitchRow,
+        toolbar_check: &adw::SwitchRow,
+    ) -> (
         GtkBox,
         DropDown,
         SpinButton,
@@ -936,6 +970,8 @@ impl TemplateDialog {
             .build();
         gateway_row.add_suffix(&gateway_entry);
         features_group.add(&gateway_row);
+        features_group.add(printer_check);
+        features_group.add(toolbar_check);
 
         content.append(&features_group);
 
@@ -977,7 +1013,9 @@ impl TemplateDialog {
         )
     }
 
-    fn create_vnc_options() -> (
+    fn create_vnc_options(
+        toolbar_check: &adw::SwitchRow,
+    ) -> (
         GtkBox,
         DropDown,
         Entry,
@@ -1113,6 +1151,7 @@ impl TemplateDialog {
             .active(true)
             .build();
         features_group.add(&clipboard_check);
+        features_group.add(toolbar_check);
 
         content.append(&features_group);
 
@@ -1977,6 +2016,8 @@ impl TemplateDialog {
         rdp_color_dropdown: &DropDown,
         rdp_audio_mode_dropdown: &DropDown,
         rdp_gateway_entry: &Entry,
+        rdp_printer_check: &adw::SwitchRow,
+        rdp_toolbar_check: &adw::SwitchRow,
         rdp_custom_args_entry: &Entry,
         vnc_client_mode_dropdown: &DropDown,
         vnc_encoding_entry: &Entry,
@@ -1985,6 +2026,7 @@ impl TemplateDialog {
         vnc_view_only_check: &adw::SwitchRow,
         vnc_scaling_check: &adw::SwitchRow,
         vnc_clipboard_check: &adw::SwitchRow,
+        vnc_toolbar_check: &adw::SwitchRow,
         vnc_custom_args_entry: &Entry,
         spice_tls_check: &adw::SwitchRow,
         spice_ca_cert_entry: &Entry,
@@ -2046,6 +2088,8 @@ impl TemplateDialog {
         let rdp_color_dropdown = rdp_color_dropdown.clone();
         let rdp_audio_mode_dropdown = rdp_audio_mode_dropdown.clone();
         let rdp_gateway_entry = rdp_gateway_entry.clone();
+        let rdp_printer_check = rdp_printer_check.clone();
+        let rdp_toolbar_check = rdp_toolbar_check.clone();
         let rdp_custom_args_entry = rdp_custom_args_entry.clone();
         let vnc_client_mode_dropdown = vnc_client_mode_dropdown.clone();
         let vnc_encoding_entry = vnc_encoding_entry.clone();
@@ -2054,6 +2098,7 @@ impl TemplateDialog {
         let vnc_view_only_check = vnc_view_only_check.clone();
         let vnc_scaling_check = vnc_scaling_check.clone();
         let vnc_clipboard_check = vnc_clipboard_check.clone();
+        let vnc_toolbar_check = vnc_toolbar_check.clone();
         let vnc_custom_args_entry = vnc_custom_args_entry.clone();
         let spice_tls_check = spice_tls_check.clone();
         let spice_ca_cert_entry = spice_ca_cert_entry.clone();
@@ -2115,6 +2160,8 @@ impl TemplateDialog {
                 &rdp_color_dropdown,
                 &rdp_audio_mode_dropdown,
                 &rdp_gateway_entry,
+                &rdp_printer_check,
+                &rdp_toolbar_check,
                 &rdp_custom_args_entry,
                 &vnc_client_mode_dropdown,
                 &vnc_encoding_entry,
@@ -2123,6 +2170,7 @@ impl TemplateDialog {
                 &vnc_view_only_check,
                 &vnc_scaling_check,
                 &vnc_clipboard_check,
+                &vnc_toolbar_check,
                 &vnc_custom_args_entry,
                 &spice_tls_check,
                 &spice_ca_cert_entry,
@@ -2234,6 +2282,8 @@ impl TemplateDialog {
         rdp_color_dropdown: &DropDown,
         rdp_audio_mode_dropdown: &DropDown,
         rdp_gateway_entry: &Entry,
+        rdp_printer_check: &adw::SwitchRow,
+        rdp_toolbar_check: &adw::SwitchRow,
         rdp_custom_args_entry: &Entry,
         vnc_client_mode_dropdown: &DropDown,
         vnc_encoding_entry: &Entry,
@@ -2242,6 +2292,7 @@ impl TemplateDialog {
         vnc_view_only_check: &adw::SwitchRow,
         vnc_scaling_check: &adw::SwitchRow,
         vnc_clipboard_check: &adw::SwitchRow,
+        vnc_toolbar_check: &adw::SwitchRow,
         vnc_custom_args_entry: &Entry,
         spice_tls_check: &adw::SwitchRow,
         spice_ca_cert_entry: &Entry,
@@ -2284,6 +2335,8 @@ impl TemplateDialog {
                 rdp_color_dropdown,
                 rdp_audio_mode_dropdown,
                 rdp_gateway_entry,
+                rdp_printer_check,
+                rdp_toolbar_check,
                 rdp_custom_args_entry,
             ),
             2 => Self::build_vnc_config(
@@ -2294,6 +2347,7 @@ impl TemplateDialog {
                 vnc_view_only_check,
                 vnc_scaling_check,
                 vnc_clipboard_check,
+                vnc_toolbar_check,
                 vnc_custom_args_entry,
             ),
             3 => Self::build_spice_config(
@@ -2437,6 +2491,10 @@ impl TemplateDialog {
         ProtocolConfig::Ssh(config)
     }
 
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
     fn build_rdp_config(
         client_mode_dropdown: &DropDown,
         width_spin: &SpinButton,
@@ -2444,6 +2502,8 @@ impl TemplateDialog {
         color_dropdown: &DropDown,
         audio_mode_dropdown: &DropDown,
         gateway_entry: &Entry,
+        printer_check: &adw::SwitchRow,
+        toolbar_check: &adw::SwitchRow,
         custom_args_entry: &Entry,
     ) -> ProtocolConfig {
         let client_mode = if client_mode_dropdown.selected() == 1 {
@@ -2500,10 +2560,7 @@ impl TemplateDialog {
             // Templates do not expose the Server OS hint; it defaults to Auto
             // (Windows tools shown) and is set per-connection (issue #366).
             server_os: rustconn_core::models::RdpServerOs::default(),
-            // ponytail: template editor doesn't expose printer redirection yet;
-            // configure it per-connection in the connection editor. Wire a switch
-            // here if templates need it.
-            printer_enabled: false,
+            printer_enabled: printer_check.is_active(),
             gateway: if gateway_text.is_empty() {
                 None
             } else {
@@ -2529,11 +2586,7 @@ impl TemplateDialog {
             // given the `true` bool above, the historical default.
             clipboard_direction: None,
             show_local_cursor: true,
-            // ponytail: the template editor does not expose the floating
-            // toolbar toggle (issue #260) — same reasoning as printer
-            // redirection above. A template produces a connection with the
-            // toolbar, and the connection editor turns it off.
-            hide_floating_toolbar: false,
+            hide_floating_toolbar: !toolbar_check.is_active(),
             jiggler_enabled: false,
             jiggler_interval_secs: 60,
             jump_host_id: None,
@@ -2570,6 +2623,7 @@ impl TemplateDialog {
         view_only_check: &adw::SwitchRow,
         scaling_check: &adw::SwitchRow,
         clipboard_check: &adw::SwitchRow,
+        toolbar_check: &adw::SwitchRow,
         custom_args_entry: &Entry,
     ) -> ProtocolConfig {
         let client_mode = if client_mode_dropdown.selected() == 1 {
@@ -2602,8 +2656,7 @@ impl TemplateDialog {
             vnc_viewer_override: None,
             scale_override: ScaleOverride::default(),
             show_local_cursor: true,
-            // ponytail: not exposed in the template editor; see the RDP builder.
-            hide_floating_toolbar: false,
+            hide_floating_toolbar: !toolbar_check.is_active(),
             jump_host_id: None,
             accept_certificate: false,
             mptcp: false,
@@ -2915,6 +2968,9 @@ impl TemplateDialog {
         if let Some(ref gw) = config.gateway {
             self.rdp_gateway_entry.set_text(&gw.hostname);
         }
+        self.rdp_printer_check.set_active(config.printer_enabled);
+        self.rdp_toolbar_check
+            .set_active(!config.hide_floating_toolbar);
         if !config.custom_args.is_empty() {
             self.rdp_custom_args_entry
                 .set_text(&config.custom_args.join(" "));
@@ -2940,6 +2996,8 @@ impl TemplateDialog {
         self.vnc_scaling_check.set_active(config.scaling);
         self.vnc_clipboard_check
             .set_active(config.clipboard_enabled);
+        self.vnc_toolbar_check
+            .set_active(!config.hide_floating_toolbar);
         if !config.custom_args.is_empty() {
             self.vnc_custom_args_entry
                 .set_text(&config.custom_args.join(" "));

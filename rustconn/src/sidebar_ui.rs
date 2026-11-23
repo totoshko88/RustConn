@@ -1519,7 +1519,7 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
         Some("win.manage-workspaces"),
     );
     tools_section.append(Some(&i18n("Manage Snippets")), Some("win.manage-snippets"));
-    menu.append_section(Some(&i18n("Tools")), &tools_section);
+    menu.append_section(None, &tools_section);
 
     // List section — act on the connection list. Delete is intentionally NOT
     // here: deleting via a menu (open → aim → click) is a worse path than the

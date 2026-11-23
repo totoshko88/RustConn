@@ -271,6 +271,8 @@ impl TerminalNotebook {
 
     /// Applies terminal settings to all existing terminals
     pub fn apply_settings(&self, settings: &rustconn_core::config::TerminalSettings) {
+        // The global theme is painted over every theme the quick picker chose.
+        self.session_themes.borrow_mut().clear();
         let terminals = self.terminals.borrow();
         for terminal in terminals.values() {
             config::configure_terminal_with_settings(terminal, settings);
@@ -346,6 +348,8 @@ impl TerminalNotebook {
         F: Fn(Uuid) -> Option<rustconn_core::models::ConnectionThemeOverride>,
     {
         let base_theme = TerminalTheme::resolve(theme_name, crate::app::system_is_dark());
+        // Every terminal is repainted below, picked themes included.
+        self.session_themes.borrow_mut().clear();
         let terminals = self.terminals.borrow();
         let session_info = self.session_info.borrow();
         for (session_id, terminal) in terminals.iter() {
@@ -356,6 +360,28 @@ impl TerminalNotebook {
                 config::apply_theme_override_with_base(terminal, &theme_override, &base_theme);
             }
         }
+    }
+
+    /// Repaints one session with the named theme, as Settings does.
+    ///
+    /// Not saved, and not layered with the connection's colour override: the
+    /// user just chose this theme for this session. Remembered for
+    /// [`Self::session_theme`] until a global repaint, a reconnect or the
+    /// session's end paints over it.
+    pub fn set_session_theme(&self, session_id: Uuid, theme_name: &str) {
+        if let Some(terminal) = self.terminals.borrow().get(&session_id) {
+            config::setup_colors_with_theme(terminal, theme_name);
+            self.session_themes
+                .borrow_mut()
+                .insert(session_id, theme_name.to_string());
+        }
+    }
+
+    /// The theme [`Self::set_session_theme`] last painted on `session_id`,
+    /// if nothing has painted over it since.
+    #[must_use]
+    pub fn session_theme(&self, session_id: Uuid) -> Option<String> {
+        self.session_themes.borrow().get(&session_id).cloned()
     }
 
     /// Sets up highlight rules for a terminal session.

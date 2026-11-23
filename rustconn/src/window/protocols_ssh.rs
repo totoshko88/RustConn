@@ -662,7 +662,7 @@ fn build_ssh_command_args(
             let cached = state
                 .try_borrow()
                 .ok()
-                .and_then(|s| s.get_cached_credentials(hid).cloned())
+                .and_then(|s| s.get_cached_credentials(hid))
                 .and_then(|c| {
                     use secrecy::ExposeSecret;
                     if c.password.expose_secret().is_empty() {

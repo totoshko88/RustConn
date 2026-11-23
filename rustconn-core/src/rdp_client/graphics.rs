@@ -24,8 +24,6 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::models::RdpPerformanceMode;
-
 /// Graphics mode for RDP sessions
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum GraphicsMode {
@@ -83,22 +81,6 @@ impl GraphicsMode {
     #[must_use]
     pub const fn requires_h264(&self) -> bool {
         matches!(self, Self::GfxH264 | Self::GfxAvc444)
-    }
-
-    /// Returns whether this mode uses the GFX pipeline
-    #[must_use]
-    pub const fn uses_gfx(&self) -> bool {
-        matches!(self, Self::Gfx | Self::GfxH264 | Self::GfxAvc444)
-    }
-
-    /// Returns the recommended color depth for this mode
-    #[must_use]
-    pub const fn recommended_color_depth(&self) -> u8 {
-        match self {
-            Self::Legacy => 16,
-            Self::RemoteFx | Self::Gfx => 24,
-            Self::GfxH264 | Self::GfxAvc444 | Self::Auto => 32,
-        }
     }
 
     /// Returns whether this mode is currently supported by IronRDP
@@ -194,48 +176,6 @@ impl ServerGraphicsCapabilities {
             GraphicsMode::RemoteFx
         } else {
             GraphicsMode::Legacy
-        }
-    }
-
-    /// Selects graphics mode based on `RdpPerformanceMode` preference
-    ///
-    /// - Quality → prefer GfxAvc444 (best image quality)
-    /// - Balanced → prefer GfxH264 (good quality, moderate bandwidth)
-    /// - Speed → prefer RemoteFX/Legacy (skip H.264 modes entirely)
-    ///
-    /// Falls back through the auto priority order if the preferred mode
-    /// is not supported by the server.
-    #[must_use]
-    pub fn select_for_performance_mode(&self, perf: RdpPerformanceMode) -> GraphicsMode {
-        match perf {
-            RdpPerformanceMode::Quality => {
-                #[cfg(feature = "gfx-h264")]
-                {
-                    if self.supports_avc444 {
-                        return GraphicsMode::GfxAvc444;
-                    }
-                }
-                // Fall through to auto priority
-                self.auto_select()
-            }
-            RdpPerformanceMode::Balanced => {
-                #[cfg(feature = "gfx-h264")]
-                {
-                    if self.supports_h264 {
-                        return GraphicsMode::GfxH264;
-                    }
-                }
-                // Fall through to auto priority
-                self.auto_select()
-            }
-            RdpPerformanceMode::Speed => {
-                // Skip all H.264 modes — prefer RemoteFX or Legacy
-                if self.supports_remotefx {
-                    GraphicsMode::RemoteFx
-                } else {
-                    GraphicsMode::Legacy
-                }
-            }
         }
     }
 
@@ -355,15 +295,6 @@ impl GraphicsQuality {
     pub const fn performance() -> Self {
         Self {
             color_depth: 16,
-            features: GraphicsFeatures::all_disabled(),
-        }
-    }
-
-    /// Creates quality settings for low bandwidth connections
-    #[must_use]
-    pub const fn low_bandwidth() -> Self {
-        Self {
-            color_depth: 15,
             features: GraphicsFeatures::all_disabled(),
         }
     }
@@ -526,18 +457,6 @@ impl FrameStatistics {
             0.0
         } else {
             (self.frames_dropped as f32 / self.frames_received as f32) * 100.0
-        }
-    }
-
-    /// Returns the average bandwidth in Kbps
-    #[must_use]
-    pub fn bandwidth_kbps(&self) -> f32 {
-        if self.current_fps == 0.0 {
-            0.0
-        } else {
-            // bytes_per_frame * fps * 8 / 1000
-            let bytes_per_frame = self.bytes_received as f32 / self.frames_decoded.max(1) as f32;
-            bytes_per_frame * self.current_fps * 8.0 / 1000.0
         }
     }
 }

@@ -4,7 +4,6 @@
 //! including process handling, logging, and terminal integration.
 
 mod logger;
-mod manager;
 /// Session recording in `scriptreplay`-compatible format.
 pub mod recording;
 mod restore;
@@ -22,12 +21,8 @@ pub use logger::{
     LogConfig, LogContext, LogError, LogResult, SanitizeConfig, SessionLogger,
     contains_sensitive_prompt, prune_logs, sanitize_output, strip_ansi_escapes,
 };
-pub use manager::{
-    DEFAULT_HEALTH_CHECK_INTERVAL_SECS, HealthCheckConfig, HealthCheckEvent, HealthStatus,
-    SessionManager,
-};
 pub use restore::{
     PanelRestoreData, RESTORE_STATE_VERSION, SessionRestoreData, SessionRestoreError,
     SessionRestoreState, SplitLayoutRestoreData,
 };
-pub use session::{Session, SessionState, SessionType};
+pub use session::SessionType;

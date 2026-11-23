@@ -128,7 +128,7 @@ pub use snippet::SnippetDialog;
 pub use statistics::{StatisticsDialog, empty_statistics};
 pub use template::{TemplateCallback, TemplateDialog};
 pub use template_manager::TemplateManagerDialog;
-pub use terminal_search::TerminalSearchDialog;
+pub use terminal_search::TerminalSearchBar;
 pub use tunnel::TunnelManagerWindow;
 pub use variable_setup::{VariableSetupResponse, show_variable_setup_dialog};
 pub use variables::VariablesDialog;

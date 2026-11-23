@@ -49,6 +49,10 @@ struct DetachHandles {
     registry: Weak<DetachedWindowRegistry>,
     main_window: glib::WeakRef<adw::ApplicationWindow>,
     toasts: SharedToastOverlay,
+    /// Split layouts, to hide a moved split's pane controls (see
+    /// [`set_split_controls`]).
+    bridges: Weak<RefCell<std::collections::HashMap<Uuid, Rc<crate::split_view::SplitViewBridge>>>>,
+    state: Weak<RefCell<crate::state::AppState>>,
 }
 
 /// The upgraded counterparts of [`DetachHandles`].
@@ -90,6 +94,34 @@ fn verdict_explanation(verdict: DetachVerdict) -> Option<String> {
             "This session is displayed in a split layout. Return it to its own tab first.",
         )),
     }
+}
+
+/// Hides the pane buttons of the split a session owns while it lives in a group
+/// window, and gives them back, as the settings say, when it returns.
+///
+/// The buttons and the pane menu run `win.*` actions that exist only on the main
+/// window and resolve their split from its selected tab, so in another window
+/// they would do nothing. shortcut: panes are edited after the split is moved
+/// back; per-window pane actions would be the upgrade.
+fn set_split_controls(handles: &DetachHandles, owner: Uuid, in_group_window: bool) {
+    let Some(bridges) = handles.bridges.upgrade() else {
+        return;
+    };
+    let Some(bridge) = bridges
+        .borrow()
+        .get(&owner)
+        .filter(|bridge| bridge.is_owned_by(owner))
+        .cloned()
+    else {
+        return;
+    };
+    let hidden = in_group_window
+        || handles.state.upgrade().is_some_and(|state| {
+            state
+                .try_borrow()
+                .is_ok_and(|s| s.settings().ui.hide_split_pane_hover_controls)
+        });
+    bridge.set_hide_hover_controls(hidden);
 }
 
 /// Parses a session id from an action parameter.
@@ -184,6 +216,27 @@ pub fn rename_open_sessions(notebook: &SharedNotebook, connection_id: Uuid, new_
             windows = retitled,
             "connection rename applied to open sessions"
         );
+    }
+}
+
+/// Keeps the tab of a split that moved to its own window named after the
+/// focused pane, as the main window's tab is. A split still in the main window
+/// is retitled by the notebook, so only a hosted owner is handled here.
+pub fn retitle_split_window(
+    notebook: &SharedNotebook,
+    source: &crate::split_view::SplitTitleSource,
+) {
+    if !source.is_split {
+        return;
+    }
+    let Some(group) = crate::window::detached_window_registry()
+        .and_then(|registry| registry.group_of(source.owner))
+    else {
+        return;
+    };
+    let target = crate::terminal::title_session(source.owner, source.focused, &source.displayed);
+    if let Some(info) = notebook.get_session_info(target) {
+        group.set_session_title(source.owner, &info.name);
     }
 }
 
@@ -290,7 +343,20 @@ fn attach_session(handles: &DetachHandles, session_id: Uuid) {
         return;
     }
 
-    if !targets.notebook.attach_session(session_id) {
+    // A split owner comes back with its layout and every pane.
+    let split_content = targets
+        .registry
+        .group_of(session_id)
+        .and_then(|group| group.session_content(session_id))
+        .filter(|_| targets.notebook.split_members(session_id).len() >= 2);
+    let attached = match &split_content {
+        Some(content) => targets.notebook.attach_split(session_id, content),
+        None => targets.notebook.attach_session(session_id),
+    };
+    if attached && split_content.is_some() {
+        set_split_controls(handles, session_id, false);
+    }
+    if !attached {
         let message = i18n("Could not move the session back to the main window.");
         let shown = targets
             .registry
@@ -390,11 +456,228 @@ fn move_session_to_group_window(
     group.present();
 }
 
+/// How long a window opened for a dropped tab may stay empty before it closes.
+///
+/// The tab reaches it two idles after the drop; a window still empty after this
+/// belongs to a drop that was refused (a split tab, an external viewer) or that
+/// libadwaita cancelled.
+const EMPTY_TAB_WINDOW_GRACE: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Opens a tabbed window of no particular group for a tab dropped outside every
+/// window, and returns its tab view for libadwaita to drop the tab on.
+fn open_tab_window(handles: &DetachHandles) -> Option<adw::TabView> {
+    let targets = handles.upgrade()?;
+    let app = targets
+        .main_window
+        .application()
+        .and_downcast::<adw::Application>()?;
+    let group_id = Uuid::new_v4();
+    let group = SessionGroupWindow::new(&app, "");
+    wire_group_window(&group, group_id, handles);
+    targets.registry.insert_group(group_id, Rc::clone(&group));
+    group.present();
+    tracing::info!(%group_id, "window opened for a tab dropped outside every window");
+
+    let weak = Rc::downgrade(&group);
+    glib::timeout_add_local_once(EMPTY_TAB_WINDOW_GRACE, move || {
+        if let Some(group) = weak.upgrade()
+            && group.is_empty()
+            && !group.is_closing()
+        {
+            tracing::debug!("closing the window of a tab drop that did not arrive");
+            group.close();
+        }
+    });
+    Some(group.tab_view().clone())
+}
+
+/// Moves the session of a dragged tab to the window it was dropped on.
+///
+/// Runs once the tab is back in its own view (see
+/// `crate::terminal::set_drop_handler`), so the session is found through the
+/// ordinary bookkeeping and moved through the ordinary paths: out of the main
+/// window as *Move to New Window* takes it, back as *Move Tab to Main Window*
+/// brings it. `position` is where it was dropped in the target tab bar.
+fn handle_tab_drop(
+    handles: &DetachHandles,
+    page: &adw::TabPage,
+    target: &adw::TabView,
+    position: i32,
+) {
+    let Some(targets) = handles.upgrade() else {
+        return;
+    };
+    let target_group = targets.registry.group_for_view(target);
+    let to_main = target == targets.notebook.tab_view();
+
+    if let Some((source, session_id)) = targets.registry.group_hosting_page(page) {
+        if to_main {
+            tracing::info!(session = %session_id, "tab dragged to the main window");
+            attach_session(handles, session_id);
+            let page = targets
+                .notebook
+                .sessions_map()
+                .borrow()
+                .get(&session_id)
+                .cloned();
+            if let Some(page) = page {
+                let view = targets.notebook.tab_view();
+                let position = crate::terminal::clamp_drop_position(
+                    position,
+                    view.n_pinned_pages(),
+                    view.n_pages() - 1,
+                );
+                view.reorder_page(&page, position);
+            }
+        } else if let Some(group) = &target_group
+            && !Rc::ptr_eq(group, &source)
+        {
+            move_between_group_windows(handles, &targets, &source, group, session_id, position);
+        }
+    } else if let Some(group) = &target_group {
+        let session_id = targets
+            .notebook
+            .sessions_map()
+            .borrow()
+            .iter()
+            .find_map(|(sid, p)| (p == page).then_some(*sid));
+        if let Some(session_id) = session_id {
+            move_main_tab_to_group_window(handles, &targets, session_id, group, position);
+        }
+    }
+
+    // A window opened for this drop that ended up with nothing in it.
+    if let Some(group) = target_group
+        && group.is_empty()
+        && !group.is_closing()
+    {
+        group.close();
+    }
+}
+
+/// Moves a session out of its main-window tab into a group window's tab bar.
+///
+/// A session that cannot leave its tab is explained as *Move to New Window*
+/// explains it, and stays.
+fn move_main_tab_to_group_window(
+    handles: &DetachHandles,
+    targets: &DetachTargets,
+    session_id: Uuid,
+    group: &Rc<SessionGroupWindow>,
+    position: i32,
+) {
+    let verdict = targets.notebook.detach_verdict(session_id);
+    // A split owner takes its whole split along, with every pane's session.
+    let whole_split = verdict == DetachVerdict::SplitOwner
+        && targets.notebook.split_members(session_id).len() >= 2;
+    if !whole_split && let Some(explanation) = verdict_explanation(verdict) {
+        tracing::info!(
+            session = %session_id,
+            reason = verdict.reason_key(),
+            "tab drop to another window rejected"
+        );
+        handles
+            .toasts
+            .show_toast_with_type(&explanation, ToastType::Warning);
+        return;
+    }
+    let Some(info) = targets.notebook.get_session_info(session_id) else {
+        return;
+    };
+    // The tab's own title: for a split it names the focused pane.
+    let title = targets
+        .notebook
+        .sessions_map()
+        .borrow()
+        .get(&session_id)
+        .map(|page| page.title().to_string())
+        .filter(|title| whole_split && !title.is_empty())
+        .unwrap_or_else(|| info.name.clone());
+    let content = if whole_split {
+        targets.notebook.take_split_content(session_id)
+    } else {
+        targets.notebook.take_session_content(session_id)
+    };
+    let Some(content) = content else {
+        handles
+            .toasts
+            .show_error(&i18n("Could not move the session to its own window."));
+        return;
+    };
+    if whole_split {
+        set_split_controls(handles, session_id, true);
+    }
+    group.stop_broadcast();
+    group.add_session(
+        session_id,
+        info.connection_id,
+        &title,
+        &info.protocol,
+        &content,
+    );
+    group.place_session(session_id, position);
+    group.present();
+    tracing::info!(session = %session_id, whole_split, "tab dragged into another window");
+}
+
+/// The title of a tab moved between windows: the focused pane's name, else the
+/// session's own.
+fn moved_tab_title(focused_name: Option<String>, session_name: &str) -> String {
+    focused_name
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| session_name.to_string())
+}
+
+/// Moves a session's tab from one group window to another, keeping the session.
+///
+/// The session stays detached throughout; only the window showing its content
+/// box changes, so nothing is reconnected or rebuilt.
+fn move_between_group_windows(
+    handles: &DetachHandles,
+    targets: &DetachTargets,
+    source: &Rc<SessionGroupWindow>,
+    group: &Rc<SessionGroupWindow>,
+    session_id: Uuid,
+    position: i32,
+) {
+    let (Some(content), Some(info)) = (
+        source.session_content(session_id),
+        targets.notebook.get_session_info(session_id),
+    ) else {
+        return;
+    };
+    // A moved split keeps naming its focused pane, as it did in the source
+    // window (`retitle_split_window`); the next focus change would be too late.
+    let focused_name = super::theme_actions::focused_pane(&handles.bridges, session_id)
+        .and_then(|pane| targets.notebook.get_session_info(pane))
+        .map(|pane| pane.name);
+    let title = moved_tab_title(focused_name, &info.name);
+    // Drops the page only: the session is marked as leaving, so not ended. A
+    // source window left empty closes itself, as after any last tab leaves.
+    source.remove_session(session_id);
+    if content.parent().is_some() {
+        content.unparent();
+    }
+    group.stop_broadcast();
+    group.add_session(
+        session_id,
+        info.connection_id,
+        &title,
+        &info.protocol,
+        &content,
+    );
+    group.place_session(session_id, position);
+    group.present();
+    tracing::info!(session = %session_id, "tab dragged between two windows");
+}
+
 /// Wires the callbacks and the window actions of a fresh group window.
 ///
 /// The closures hold the window weakly: the registry owns the only strong
 /// reference, so dropping its entry releases the window.
 fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &DetachHandles) {
+    // A tab may be released anywhere on this window to move into it.
+    crate::terminal::accept_tab_drops(group.window(), group.tab_view());
     let handles_attach = handles.clone();
     group.set_on_attach(move |session_id| attach_session(&handles_attach, session_id));
 
@@ -403,8 +686,25 @@ fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &D
     let notebook = handles.notebook.clone();
     group.set_on_close(move |session_id| {
         if let Some(notebook) = notebook.upgrade() {
+            // A moved split ends with every session it shows. Asked before the
+            // owner closes, because closing it gives the guests their tabs back.
+            let guests: Vec<Uuid> = notebook
+                .split_members(session_id)
+                .into_iter()
+                .filter(|id| *id != session_id)
+                .collect();
             notebook.close_session(session_id);
+            for guest in guests {
+                notebook.close_session(guest);
+            }
         }
+    });
+
+    let notebook_weight = handles.notebook.clone();
+    group.set_session_weight(move |session_id| {
+        notebook_weight
+            .upgrade()
+            .map_or(1, |notebook| notebook.split_members(session_id).len())
     });
 
     wire_group_window_broadcast(group, &handles.notebook);
@@ -491,8 +791,7 @@ fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &D
                 && let Some(session_id) = group.selected_session()
                 && let Some(terminal) = notebook.get_terminal(session_id)
             {
-                let parent = group.window().clone().upcast();
-                crate::dialogs::TerminalSearchDialog::new(Some(&parent), terminal).show();
+                crate::dialogs::TerminalSearchBar::show(&terminal);
             }
         }),
     );
@@ -518,6 +817,29 @@ fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &D
             }
         }),
     );
+    // The theme picker acts on this window's selected tab, and by name only on
+    // a tab this window hosts.
+    let group_active = Rc::downgrade(group);
+    let group_hosts = Rc::downgrade(group);
+    super::theme_actions::install_picker_actions(
+        group.window(),
+        &picker_source(handles),
+        move || group_active.upgrade()?.selected_session(),
+        move |session| {
+            group_hosts
+                .upgrade()
+                .is_some_and(|group| group.sessions().contains(&session))
+        },
+    );
+}
+
+/// The theme picker's view of the notebook, the split layouts and the state.
+fn picker_source(handles: &DetachHandles) -> super::theme_actions::PickerSource {
+    super::theme_actions::PickerSource {
+        notebook: handles.notebook.clone(),
+        bridges: handles.bridges.clone(),
+        state: handles.state.clone(),
+    }
 }
 
 /// Gives a group window its own broadcast to every terminal tab it hosts
@@ -806,15 +1128,11 @@ fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &D
 
     let search_action = gio::SimpleAction::new("terminal-search", None);
     let notebook_search = handles.notebook.clone();
-    let window_search = window.downgrade();
     search_action.connect_activate(move |_, _| {
         if let Some(notebook) = notebook_search.upgrade()
-            && let Some(parent) = window_search.upgrade()
             && let Some(terminal) = notebook.get_terminal(session_id)
         {
-            let dialog =
-                crate::dialogs::TerminalSearchDialog::new(Some(&parent.clone().upcast()), terminal);
-            dialog.show();
+            crate::dialogs::TerminalSearchBar::show(&terminal);
         }
     });
     window.add_action(&search_action);
@@ -893,6 +1211,13 @@ fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &D
         }
     });
     window.add_action(&settings_action);
+    // The theme picker repaints this window's session and no other.
+    super::theme_actions::install_picker_actions(
+        &window,
+        &picker_source(handles),
+        move || Some(session_id),
+        move |session| session == session_id,
+    );
 
     follow_passthrough_for_primary_menu(detached, handles);
 }
@@ -949,6 +1274,8 @@ impl MainWindow {
             registry: Rc::downgrade(&self.detached_windows),
             main_window: window.downgrade(),
             toasts: Rc::clone(&self.toast_overlay),
+            bridges: Rc::downgrade(&self.session_split_bridges),
+            state: Rc::downgrade(&self.state),
         };
 
         let detach_action = gio::SimpleAction::new("detach-session", Some(glib::VariantTy::STRING));
@@ -994,6 +1321,16 @@ impl MainWindow {
                 tracing::error!(%error, "could not register win.detach-session-to-monitor");
             }
         }
+
+        // Tabs dragged between windows, or out of every window. A tab may be
+        // released anywhere on the main window to come back to it.
+        crate::terminal::accept_tab_drops(window, self.terminal_notebook.tab_view());
+        let handles_drop = handles.clone();
+        crate::terminal::set_drop_handler(move |page, target, position| {
+            handle_tab_drop(&handles_drop, page, target, position);
+        });
+        let handles_window = handles.clone();
+        crate::terminal::set_new_window_handler(move || open_tab_window(&handles_window));
 
         let attach_action = gio::SimpleAction::new("attach-session", Some(glib::VariantTy::STRING));
         let handles_attach = handles.clone();
@@ -1055,6 +1392,35 @@ impl MainWindow {
                 drop_group_tab_later(&registry_ended, session_id);
             });
 
+        // A split hosted in a group window can fall apart there (a pane's session
+        // ends and the layout collapses), which gives its owner a tab in the main
+        // window again. The group window's tab is then an empty shell: drop it.
+        let registry_back = handles.registry.clone();
+        let notebook_back = handles.notebook.clone();
+        self.terminal_notebook
+            .tab_view()
+            .connect_page_attached(move |_, page, _| {
+                let (registry, notebook) = (registry_back.clone(), notebook_back.clone());
+                let page = page.clone();
+                glib::idle_add_local_once(move || {
+                    let (Some(registry), Some(notebook)) = (registry.upgrade(), notebook.upgrade())
+                    else {
+                        return;
+                    };
+                    let owner = notebook
+                        .sessions_map()
+                        .borrow()
+                        .iter()
+                        .find_map(|(sid, p)| (*p == page).then_some(*sid));
+                    if let Some(owner) = owner
+                        && !notebook.is_detached(owner)
+                        && let Some(group) = registry.group_of(owner)
+                    {
+                        group.remove_session(owner);
+                    }
+                });
+            });
+
         // A cluster opened "in a new window": each member's tab is moved into
         // the cluster's own window as it appears. On idle, because the tab is
         // announced from inside its own creation, which is not finished yet.
@@ -1081,7 +1447,14 @@ impl MainWindow {
 mod tests {
     use rustconn_core::DetachVerdict;
 
-    use super::{DETACH_TO_MONITOR_TYPE, session_id_from, verdict_explanation};
+    use super::{DETACH_TO_MONITOR_TYPE, moved_tab_title, session_id_from, verdict_explanation};
+
+    #[test]
+    fn a_moved_split_is_titled_after_its_focused_pane() {
+        assert_eq!(moved_tab_title(Some("db-2".into()), "web-1"), "db-2");
+        assert_eq!(moved_tab_title(None, "web-1"), "web-1");
+        assert_eq!(moved_tab_title(Some(String::new()), "web-1"), "web-1");
+    }
 
     #[test]
     fn every_blocking_verdict_has_an_explanation() {

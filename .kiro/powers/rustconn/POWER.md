@@ -192,7 +192,7 @@ pub type SharedAppState = Rc<RefCell<AppState>>;
 ```
 
 - Pass `&SharedAppState` for mutable access
-- Manager structs: `ConnectionManager`, `SessionManager`, `SecretManager`, `ClusterManager`, `SnippetManager`, `TemplateManager`
+- Manager structs: `ConnectionManager`, `SecretManager`, `ClusterManager`, `SnippetManager`, `TemplateManager`
 - Async: `with_runtime()` for thread-local tokio runtime
 - Never hold a borrow across async boundaries or GTK callbacks
 

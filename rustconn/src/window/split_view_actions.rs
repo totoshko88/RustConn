@@ -131,6 +131,39 @@ fn wire_new_shell_button(placement: PanelPlacement, state: SharedAppState) {
     });
 }
 
+/// Wires a tab dragged from the tab bar onto one of this layout's panels.
+///
+/// The panel's drop target hands over the dragged page; once libadwaita has put
+/// the tab back in its own view (`terminal::claim_tab_drop`) the session goes
+/// through [`PanelPlacement::place`] like a Select Tab pick. That path only fills
+/// an empty panel, so a drop on an occupied one, or of a tab that holds a split
+/// itself, leaves the tab where it is and says so. A page that is not one of this
+/// window's tabs (dragged from another window) is not claimed.
+fn wire_tab_drop(placement: PanelPlacement) {
+    let bridge = Rc::clone(&placement.bridge);
+    bridge.setup_tab_drop_callback(move |panel_uuid, page| {
+        let Some(session_id) = placement
+            .notebook
+            .sessions_map()
+            .borrow()
+            .iter()
+            .find_map(|(sid, p)| (p == page).then_some(*sid))
+        else {
+            return;
+        };
+        let placement = placement.clone();
+        crate::terminal::claim_tab_drop(page, move || {
+            // A tab that holds a split cannot also be a pane of one.
+            let owns_split = placement.bridges.borrow().contains_key(&session_id);
+            if owns_split || !placement.place(panel_uuid, session_id) {
+                crate::toast::show_warning_toast_on_active_window(&crate::i18n::i18n(
+                    "Some tabs could not be added to the split.",
+                ));
+            }
+        });
+    });
+}
+
 /// Everything a session needs done to it to become a pane's content.
 ///
 /// Three routes lead here — Select Tab in a horizontal split, Select Tab in a
@@ -543,6 +576,7 @@ impl MainWindow {
                 let notebook_for_title = notebook.clone();
                 new_bridge.set_title_listener(Rc::new(move |source| {
                     notebook_for_title.update_split_tab_title(source);
+                    super::detach_actions::retitle_split_window(&notebook_for_title, source);
                 }));
                 bridges.insert(session_id, new_bridge.clone());
                 new_bridge
@@ -801,6 +835,7 @@ impl MainWindow {
                 );
 
                 // The panel's other way out of being empty: a fresh local shell.
+                wire_tab_drop(placement_h.clone());
                 wire_new_shell_button(placement_h, state_h.clone());
 
                 // Wire the panel buttons and panel context menu
@@ -1022,6 +1057,7 @@ impl MainWindow {
                 );
 
                 // The panel's other way out of being empty: a fresh local shell.
+                wire_tab_drop(placement_v.clone());
                 wire_new_shell_button(placement_v, state_v.clone());
 
                 // Wire the panel buttons and panel context menu

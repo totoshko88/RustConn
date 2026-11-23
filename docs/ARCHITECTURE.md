@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.26.0** | Last updated: November 2026
+**Version 0.26.1** | Last updated: November 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -228,7 +228,6 @@ pub type SharedAppState = Rc<RefCell<AppState>>;
 
 pub struct AppState {
     connection_manager: ConnectionManager,
-    session_manager: SessionManager,
     snippet_manager: SnippetManager,
     template_manager: TemplateManager,
     secret_manager: SecretManager,
@@ -293,7 +292,6 @@ Each domain has a dedicated manager in `rustconn-core`:
 | Manager | Responsibility |
 |---------|---------------|
 | `ConnectionManager` | CRUD for connections and groups |
-| `SessionManager` | Active session tracking, logging |
 | `SecretManager` | Credential storage with backend fallback |
 | `ConfigManager` | Settings persistence |
 | `SnippetManager` | Command snippets |
@@ -349,29 +347,6 @@ loop {
 5. On exhaustion → stops polling, marks session as failed
 
 **Validation:** `delay_for_attempt()` enforces a minimum of 100ms for `initial_delay_ms` and ensures `max_delay_ms >= initial_delay_ms` to prevent degenerate configurations from deserialized data.
-
-### Session Health Monitoring
-
-The `SessionManager` includes health check capabilities:
-
-```rust
-// Configure health checks
-let config = HealthCheckConfig::default()
-    .with_interval(Duration::from_secs(30))
-    .with_auto_cleanup(true);
-
-// Check session health
-let status = session_manager.get_session_health(session_id);
-match status {
-    HealthStatus::Healthy => { /* Session is active */ }
-    HealthStatus::Unhealthy(reason) => { /* Connection issues */ }
-    HealthStatus::Unknown => { /* Status not determined */ }
-    HealthStatus::Terminated => { /* Session ended */ }
-}
-
-// Get all unhealthy sessions
-let problems = session_manager.unhealthy_sessions();
-```
 
 ### Session State Persistence
 
@@ -1491,7 +1466,6 @@ rustconn-core/src/
 │   └── ...
 ├── session/               # Session management
 │   ├── mod.rs             # Module exports
-│   ├── manager.rs         # SessionManager with health checks
 │   ├── logger.rs          # Session logging with sanitization
 │   ├── recording.rs       # Session recording (scriptreplay-compatible format)
 │   ├── restore.rs         # Session state persistence

@@ -403,6 +403,40 @@ impl TileView {
     }
 }
 
+/// Sessions a window would end: each tab counts its own weight, at least one.
+fn live_sessions(tabs: impl Iterator<Item = Uuid>, weight: impl Fn(Uuid) -> usize) -> usize {
+    tabs.map(|id| weight(id).max(1)).sum()
+}
+
+/// Whether closing a tab must be confirmed first (pure).
+///
+/// Only the user's close of a tab that holds a split of two or more sessions
+/// asks, as in the main window. A tab dropped without teardown (`leaving`) and
+/// one the user already confirmed close at once; a one-session tab closes as
+/// before.
+const fn split_tab_needs_confirm(sessions_in_tab: usize, leaving: bool, confirmed: bool) -> bool {
+    sessions_in_tab >= 2 && !leaving && !confirmed
+}
+
+/// Asks before ending sessions: **Cancel** (default) or **Close All Sessions**.
+fn ask_end_sessions(
+    window: &adw::ApplicationWindow,
+    heading: &str,
+    body: &str,
+    on_answer: impl Fn(bool) + 'static,
+) {
+    let dialog = adw::AlertDialog::new(Some(heading), Some(body));
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("close", &i18n("Close All Sessions"));
+    dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
+    dialog.set_default_response(Some("cancel"));
+    dialog.set_close_response("cancel");
+    dialog.connect_response(None, move |_, response| {
+        on_answer(response == "close");
+    });
+    dialog.present(Some(window));
+}
+
 /// A top-level window with a tab per hosted session.
 pub struct SessionGroupWindow {
     window: adw::ApplicationWindow,
@@ -414,6 +448,10 @@ pub struct SessionGroupWindow {
     /// Sessions whose page is being dropped because the session moved away or
     /// already ended, so the `close-page` handler must not end it (again).
     leaving: Rc<RefCell<Vec<Uuid>>>,
+    /// Split tabs whose close the user confirmed; consumed by `close-page`.
+    confirmed: Rc<RefCell<HashSet<Uuid>>>,
+    /// Split tabs with a close question open, so a second click asks nothing.
+    asking: Rc<RefCell<HashSet<Uuid>>>,
     /// Set once the window itself is closing, so emptying it does not ask it to
     /// close a second time.
     closing: Rc<Cell<bool>>,
@@ -426,6 +464,8 @@ pub struct SessionGroupWindow {
     /// on screen. Its **Stop** button turns the broadcast off.
     broadcast_banner: adw::Banner,
     on_close: SessionCallback,
+    /// How many sessions a tab holds: 1, or the panes of a moved split.
+    session_weight: Rc<RefCell<Option<Box<dyn Fn(Uuid) -> usize>>>>,
     on_attach: SessionCallback,
     on_members_changed: PlainCallback,
     on_broadcast_toggled: ToggleCallback,
@@ -440,13 +480,21 @@ pub struct SessionGroupWindow {
 impl SessionGroupWindow {
     /// Creates an empty window titled after the group it shows.
     ///
+    /// An empty `title` makes a window of no particular group, such as the one a
+    /// tab dropped outside every window opens; it is called RustConn.
+    ///
     /// The window is not presented yet; add a session and call
     /// [`Self::present`].
     #[must_use]
     pub fn new(app: &adw::Application, title: &str) -> Rc<Self> {
+        let (window_title, title) = if title.is_empty() {
+            ("RustConn".to_owned(), "RustConn")
+        } else {
+            (i18n_f("{} — RustConn", &[title]), title)
+        };
         let window = adw::ApplicationWindow::builder()
             .application(app)
-            .title(i18n_f("{} — RustConn", &[title]))
+            .title(window_title)
             .default_width(DEFAULT_WIDTH)
             .default_height(DEFAULT_HEIGHT)
             .width_request(360)
@@ -461,6 +509,8 @@ impl SessionGroupWindow {
             .view(&tab_view)
             .autohide(false)
             .build();
+        // A window's only tab can still be dragged to another window.
+        crate::terminal::drag_single_tab(&tab_bar, &tab_view, |_| true);
 
         let attach_button = Button::from_icon_name("view-restore-symbolic");
         let attach_label = i18n("Move to Main Window");
@@ -506,8 +556,15 @@ impl SessionGroupWindow {
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
         toolbar_view.add_top_bar(&broadcast_banner);
-        toolbar_view.add_top_bar(&tab_bar);
-        toolbar_view.set_content(Some(&stack));
+        // The tab bar sits in the content, not among the top bars: those are
+        // wrapped in a GtkWindowHandle, which turned dragging a tab out into
+        // moving the window as well. The main window keeps its tab bar out of
+        // a handle the same way.
+        let body = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        stack.set_vexpand(true);
+        body.append(&tab_bar);
+        body.append(&stack);
+        toolbar_view.set_content(Some(&body));
 
         let toast_overlay = adw::ToastOverlay::new();
         toast_overlay.set_child(Some(&toolbar_view));
@@ -525,11 +582,14 @@ impl SessionGroupWindow {
             members,
             tiling,
             leaving: Rc::new(RefCell::new(Vec::new())),
+            confirmed: Rc::new(RefCell::new(HashSet::new())),
+            asking: Rc::new(RefCell::new(HashSet::new())),
             closing: Rc::new(Cell::new(false)),
             attach_button,
             broadcast_toggle,
             broadcast_banner,
             on_close: Rc::new(RefCell::new(None)),
+            session_weight: Rc::new(RefCell::new(None)),
             on_attach: Rc::new(RefCell::new(None)),
             on_members_changed: Rc::new(RefCell::new(None)),
             on_broadcast_toggled: Rc::new(RefCell::new(None)),
@@ -644,9 +704,58 @@ impl SessionGroupWindow {
         let on_members_changed = Rc::clone(&self.on_members_changed);
         let tiling = Rc::downgrade(&self.tiling);
         let window = self.window.downgrade();
+        let weight = Rc::clone(&self.session_weight);
+        let confirmed = Rc::clone(&self.confirmed);
+        let asking = Rc::clone(&self.asking);
         self.tab_view.connect_close_page(move |tab_view, page| {
             let session = Self::session_of(&members.borrow(), page);
             if let Some(session_id) = session {
+                // A moved split ends with every session it shows, so the user
+                // is asked first. The window closing for good asks on its own.
+                let sessions_in_tab = weight.borrow().as_ref().map_or(1, |weigh| weigh(session_id));
+                let was_confirmed = confirmed.borrow_mut().remove(&session_id);
+                if !closing.get()
+                    && split_tab_needs_confirm(
+                        sessions_in_tab,
+                        leaving.borrow().contains(&session_id),
+                        was_confirmed,
+                    )
+                    && let Some(window) = window.upgrade()
+                {
+                    // Cancel and every answer leave the tab as it was; a
+                    // confirmed close comes back through this handler.
+                    tab_view.close_page_finish(page, false);
+                    if asking.borrow_mut().insert(session_id) {
+                        let only_tab = members.borrow().len() == 1;
+                        let (heading, body) = if only_tab {
+                            (
+                                i18n("Close this window?"),
+                                i18n_f(
+                                    "This ends all {} sessions in this window.",
+                                    &[&sessions_in_tab.to_string()],
+                                ),
+                            )
+                        } else {
+                            (
+                                i18n("Close Split Tab?"),
+                                i18n_f(
+                                    "This ends all {} sessions in this split.",
+                                    &[&sessions_in_tab.to_string()],
+                                ),
+                            )
+                        };
+                        let (tab_view, page) = (tab_view.clone(), page.clone());
+                        let (confirmed, asking) = (Rc::clone(&confirmed), Rc::clone(&asking));
+                        ask_end_sessions(&window, &heading, &body, move |close| {
+                            asking.borrow_mut().remove(&session_id);
+                            if close {
+                                confirmed.borrow_mut().insert(session_id);
+                                tab_view.close_page(&page);
+                            }
+                        });
+                    }
+                    return glib::Propagation::Stop;
+                }
                 members.borrow_mut().remove(&session_id);
                 let was_leaving = {
                     let mut leaving = leaving.borrow_mut();
@@ -690,33 +799,29 @@ impl SessionGroupWindow {
         let members = Rc::clone(&self.members);
         let closing = Rc::clone(&self.closing);
         let on_close = Rc::clone(&self.on_close);
+        let weight = Rc::clone(&self.session_weight);
         self.window.connect_close_request(move |window| {
-            let live = members.borrow().len();
+            let live = live_sessions(members.borrow().keys().copied(), |id| {
+                weight.borrow().as_ref().map_or(1, |weigh| weigh(id))
+            });
             if !closing.get() && live >= 2 {
-                let dialog = adw::AlertDialog::new(
-                    Some(&i18n("Close this window?")),
-                    Some(&i18n_f(
-                        "This ends all {} sessions in this window.",
-                        &[&live.to_string()],
-                    )),
-                );
-                dialog.add_response("cancel", &i18n("Cancel"));
-                dialog.add_response("close", &i18n("Close All Sessions"));
-                dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
-                dialog.set_default_response(Some("cancel"));
-                dialog.set_close_response("cancel");
                 let window_weak = window.downgrade();
                 let closing = Rc::clone(&closing);
-                dialog.connect_response(None, move |_, response| {
-                    if response == "close"
-                        && let Some(window) = window_weak.upgrade()
-                    {
-                        // Set before closing, so the request goes through.
-                        closing.set(true);
-                        window.close();
-                    }
-                });
-                dialog.present(Some(window));
+                ask_end_sessions(
+                    window,
+                    &i18n("Close this window?"),
+                    &i18n_f(
+                        "This ends all {} sessions in this window.",
+                        &[&live.to_string()],
+                    ),
+                    move |close| {
+                        if close && let Some(window) = window_weak.upgrade() {
+                            // Set before closing, so the request goes through.
+                            closing.set(true);
+                            window.close();
+                        }
+                    },
+                );
                 return glib::Propagation::Stop;
             }
             closing.set(true);
@@ -750,12 +855,13 @@ impl SessionGroupWindow {
         });
     }
 
-    /// Keeps every hosted tab in this window.
+    /// Keeps every hosted tab's bookkeeping in this window.
     ///
-    /// A tab dragged onto another window's tab bar is handed back, and one
-    /// dropped outside every window opens nothing. Moving a session is what
-    /// **Move Tab to Main Window** is for; a drag would carry its page past the
-    /// bookkeeping of both windows.
+    /// A drag would carry a page past the bookkeeping of both windows, so a tab
+    /// dragged onto another window's tab bar is handed back first; the window
+    /// layer then moves its session there properly (see
+    /// `crate::terminal::set_drop_handler`). A tab dropped outside every window
+    /// gets a new window the same way.
     fn keep_tabs_here(&self) {
         let members = Rc::clone(&self.members);
         crate::terminal::return_transferred_tabs(&self.tab_view, move |page| {
@@ -763,10 +869,8 @@ impl SessionGroupWindow {
                 .try_borrow()
                 .is_ok_and(|members| Self::session_of(&members, page).is_some())
         });
-        self.tab_view.connect_create_window(|_| {
-            tracing::debug!("group window: tab tear-off is not supported, cancelled");
-            None
-        });
+        self.tab_view
+            .connect_create_window(|_| crate::terminal::new_window_view());
     }
 
     /// Puts keyboard focus into the session of the tab that was switched to.
@@ -822,6 +926,63 @@ impl SessionGroupWindow {
         tracing::info!(session = %session_id, "session added to group window");
         self.tiling.refresh();
         Self::notify_members_changed(&self.on_members_changed);
+    }
+
+    /// The view holding this window's tabs.
+    #[must_use]
+    pub const fn tab_view(&self) -> &adw::TabView {
+        &self.tab_view
+    }
+
+    /// The session a page of this window shows.
+    #[must_use]
+    pub fn session_for_page(&self, page: &adw::TabPage) -> Option<Uuid> {
+        Self::session_of(&self.members.borrow(), page)
+    }
+
+    /// The content box of a hosted session, as `add_session` received it.
+    #[must_use]
+    pub fn session_content(&self, session_id: Uuid) -> Option<gtk4::Box> {
+        self.members
+            .borrow()
+            .get(&session_id)
+            .map(|member| member.content.clone())
+    }
+
+    /// Moves a session's tab to `position` (clamped to the view) and selects it.
+    pub fn place_session(&self, session_id: Uuid, position: i32) {
+        let page = self
+            .members
+            .borrow()
+            .get(&session_id)
+            .map(|member| member.page.clone());
+        if let Some(page) = page {
+            let position = crate::terminal::clamp_drop_position(
+                position,
+                self.tab_view.n_pinned_pages(),
+                self.tab_view.n_pages() - 1,
+            );
+            self.tab_view.reorder_page(&page, position);
+            self.tab_view.set_selected_page(&page);
+        }
+    }
+
+    /// Turns this window's Tab Broadcast off, if it is on.
+    ///
+    /// For a tab dragged in: it must not start receiving keystrokes typed for
+    /// the tabs that were already here.
+    pub fn stop_broadcast(&self) {
+        if self.broadcast_toggle.is_active()
+            && let Some(ref callback) = *self.on_broadcast_toggled.borrow()
+        {
+            callback(false);
+        }
+    }
+
+    /// Whether no session is hosted here.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.members.borrow().is_empty()
     }
 
     /// Every hosted session (order unspecified).
@@ -1036,6 +1197,28 @@ impl SessionGroupWindow {
         *self.on_close.borrow_mut() = Some(Box::new(callback));
     }
 
+    /// Sets how many sessions a tab holds, so a moved split counts its panes.
+    pub fn set_session_weight<F>(&self, weight: F)
+    where
+        F: Fn(Uuid) -> usize + 'static,
+    {
+        *self.session_weight.borrow_mut() = Some(Box::new(weight));
+    }
+
+    /// Retitles one session's tab, as the main window's tab follows a split's
+    /// focused pane. Returns whether the session is hosted here.
+    pub fn set_session_title(&self, session_id: Uuid, title: &str) -> bool {
+        let page = self
+            .members
+            .borrow()
+            .get(&session_id)
+            .map(|member| member.page.clone());
+        page.is_some_and(|page| {
+            page.set_title(title);
+            true
+        })
+    }
+
     /// Sets the callback that moves a session back to the main window.
     pub fn set_on_attach<F>(&self, callback: F)
     where
@@ -1071,6 +1254,25 @@ mod tests {
         let mut leaves = Vec::new();
         tile_tree(&plan).leaves(&mut leaves);
         leaves
+    }
+
+    #[test]
+    fn only_a_users_close_of_a_split_tab_asks() {
+        assert!(split_tab_needs_confirm(2, false, false));
+        assert!(split_tab_needs_confirm(5, false, false));
+        assert!(!split_tab_needs_confirm(1, false, false));
+        assert!(!split_tab_needs_confirm(0, false, false));
+        assert!(!split_tab_needs_confirm(3, true, false));
+        assert!(!split_tab_needs_confirm(3, false, true));
+    }
+
+    #[test]
+    fn a_split_tab_counts_every_pane() {
+        let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
+        let weight = |id| if id == a { 3 } else { 0 };
+        assert_eq!(live_sessions([a].into_iter(), weight), 3);
+        assert_eq!(live_sessions([a, b].into_iter(), weight), 4);
+        assert_eq!(live_sessions(std::iter::empty(), weight), 0);
     }
 
     #[test]

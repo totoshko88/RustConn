@@ -66,16 +66,16 @@ use crate::ssh_askpass::{self, AskpassSlot};
 use crate::ssh_tunnel;
 
 /// Directory name under the SSH directory that holds generated keys.
-pub const KEY_SETUP_SUBDIR: &str = "rustconn";
+pub(crate) const KEY_SETUP_SUBDIR: &str = "rustconn";
 
 /// Default wall-clock budget for one `ssh`/`ssh-keygen` run.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Printed by [`DEPLOY_SCRIPT`] when it appended the key.
-pub const SENTINEL_INSTALLED: &str = "RUSTCONN-KEY-INSTALLED";
+pub(crate) const SENTINEL_INSTALLED: &str = "RUSTCONN-KEY-INSTALLED";
 
 /// Printed by [`DEPLOY_SCRIPT`] when the key was already in `authorized_keys`.
-pub const SENTINEL_PRESENT: &str = "RUSTCONN-KEY-PRESENT";
+pub(crate) const SENTINEL_PRESENT: &str = "RUSTCONN-KEY-PRESENT";
 
 /// Longest public-key line accepted, in bytes.
 const MAX_PUBLIC_KEY_LEN: usize = 16 * 1024;
@@ -98,7 +98,7 @@ const LOG_LIMIT: usize = 4096;
 /// `authorized_keys`, 12 no key on stdin, 13 appending. `umask 077` gives a new
 /// `~/.ssh` mode 0700 and a new `authorized_keys` mode 0600; the modes of files
 /// that already exist are left alone, and a bad mode shows up in verification.
-pub const DEPLOY_SCRIPT: &str = concat!(
+pub(crate) const DEPLOY_SCRIPT: &str = concat!(
     "umask 077; ",
     "d=\"$HOME/.ssh\"; ",
     "f=\"$d/authorized_keys\"; ",
@@ -188,7 +188,7 @@ pub enum KeyAlgorithm {
 impl KeyAlgorithm {
     /// Suffix of the key file name (`ed25519` or `rsa`).
     #[must_use]
-    pub const fn file_suffix(self) -> &'static str {
+    pub(crate) const fn file_suffix(self) -> &'static str {
         match self {
             Self::Ed25519 => "ed25519",
             Self::Rsa4096 => "rsa",
@@ -196,8 +196,9 @@ impl KeyAlgorithm {
     }
 
     /// The type field of the public-key line.
+    #[cfg(test)]
     #[must_use]
-    pub const fn ssh_type(self) -> &'static str {
+    pub(crate) const fn ssh_type(self) -> &'static str {
         match self {
             Self::Ed25519 => "ssh-ed25519",
             Self::Rsa4096 => "ssh-rsa",
@@ -206,7 +207,7 @@ impl KeyAlgorithm {
 
     /// The `ssh-keygen` arguments that select this algorithm.
     #[must_use]
-    pub fn keygen_type_args(self) -> &'static [&'static str] {
+    pub(crate) fn keygen_type_args(self) -> &'static [&'static str] {
         match self {
             Self::Ed25519 => &["-t", "ed25519"],
             Self::Rsa4096 => &["-t", "rsa", "-b", "4096"],
@@ -419,7 +420,7 @@ pub enum KeySetupError {
 /// directory is replaced by `current`, so the path survives a refresh:
 /// `~/snap/rustconn/current/.ssh/rustconn`. Otherwise `<ssh_dir>/rustconn`.
 #[must_use]
-pub fn key_setup_dir(ssh_dir: &Path, snap_user_data: Option<&Path>) -> PathBuf {
+pub(crate) fn key_setup_dir(ssh_dir: &Path, snap_user_data: Option<&Path>) -> PathBuf {
     match snap_user_data {
         Some(data) => match data.parent() {
             Some(snap_root) => snap_root
@@ -526,7 +527,7 @@ fn set_private_mode(dir: &Path) -> io::Result<()> {
 /// is at most 32 characters with no leading or trailing `-`, and falls back to
 /// `connection` when nothing is left. Names are not transliterated.
 #[must_use]
-pub fn connection_slug(name: &str) -> String {
+pub(crate) fn connection_slug(name: &str) -> String {
     let mut slug = String::new();
     let mut pending_separator = false;
     for c in name.chars() {
@@ -552,7 +553,11 @@ pub fn connection_slug(name: &str) -> String {
 /// The private-key file name: `<slug>-<id8>_<type>`, e.g.
 /// `prod-db-1-5fb5186b_ed25519`.
 #[must_use]
-pub fn key_file_stem(connection_name: &str, connection_id: Uuid, algo: KeyAlgorithm) -> String {
+pub(crate) fn key_file_stem(
+    connection_name: &str,
+    connection_id: Uuid,
+    algo: KeyAlgorithm,
+) -> String {
     let simple = connection_id.simple().to_string();
     format!(
         "{}-{}_{}",
@@ -653,7 +658,7 @@ fn consistent_pair(private: &Path, public: &Path, algo: KeyAlgorithm) -> Option<
 /// typed. The host name is reduced to `[A-Za-z0-9.-]`, cut to 64 characters,
 /// and becomes `localhost` when nothing is left.
 #[must_use]
-pub fn key_comment(local_hostname: &str, date: chrono::NaiveDate) -> String {
+pub(crate) fn key_comment(local_hostname: &str, date: chrono::NaiveDate) -> String {
     let mut host: String = local_hostname
         .chars()
         .map(|c| {
@@ -842,7 +847,7 @@ pub struct GeneratedKey {
 /// `-N ""` is added only when there is no passphrase; with one, the passphrase
 /// is asked for through askpass and **never** appears in argv.
 #[must_use]
-pub fn keygen_args(
+pub(crate) fn keygen_args(
     path: &Path,
     algo: KeyAlgorithm,
     comment: &str,
@@ -1048,7 +1053,7 @@ pub fn existing_key(private_key_path: &Path) -> Result<ExistingKey, KeySetupErro
 /// A directory that cannot be scanned is logged and skipped, not
 /// propagated, so one bad directory does not empty the whole list.
 #[must_use]
-pub fn existing_key_candidates_in(dirs: &[PathBuf]) -> Vec<PathBuf> {
+pub(crate) fn existing_key_candidates_in(dirs: &[PathBuf]) -> Vec<PathBuf> {
     let mut seen = std::collections::HashSet::new();
     let mut candidates = Vec::new();
     for dir in dirs {
@@ -1196,7 +1201,7 @@ impl SshTarget {
 
 /// The remote command that runs [`DEPLOY_SCRIPT`]: `exec sh -c '<script>'`.
 #[must_use]
-pub fn deploy_remote_command() -> String {
+pub(crate) fn deploy_remote_command() -> String {
     format!("exec sh -c '{DEPLOY_SCRIPT}'")
 }
 
@@ -1211,7 +1216,7 @@ pub fn deploy_remote_command() -> String {
 /// [`SshTarget`]) and options that would change the target. `-J`, `ProxyCommand`,
 /// `-F` and every other option pass through unchanged and in order.
 #[must_use]
-pub fn control_channel_args(session_args: &[String]) -> Vec<String> {
+pub(crate) fn control_channel_args(session_args: &[String]) -> Vec<String> {
     channel_args(session_args, false)
 }
 
@@ -1382,7 +1387,10 @@ fn push_tail(args: &mut Vec<String>, target: &SshTarget) -> Result<(), KeySetupE
 /// that starts with `-` or contains whitespace, control characters or `@`, a
 /// host with a shell metacharacter (`` ` `` `$` `;` `&` `|` quotes, brackets
 /// and the like), or port 0.
-pub fn deploy_args(target: &SshTarget, has_password: bool) -> Result<Vec<String>, KeySetupError> {
+pub(crate) fn deploy_args(
+    target: &SshTarget,
+    has_password: bool,
+) -> Result<Vec<String>, KeySetupError> {
     remote_command_args(target, has_password, &deploy_remote_command())
 }
 
@@ -1423,7 +1431,7 @@ pub fn remote_command_args(
 ///
 /// Returns [`KeySetupError::InvalidTarget`] as [`deploy_args`] does, and also
 /// for a key path that is not valid UTF-8.
-pub fn verify_args(
+pub(crate) fn verify_args(
     target: &SshTarget,
     private_key_path: &Path,
     has_passphrase: bool,
@@ -1489,7 +1497,7 @@ pub enum VerifyOutcome {
 /// # Errors
 ///
 /// The [`KeySetupError`] variant that matches the failure; see the module docs.
-pub fn classify_deploy(
+pub(crate) fn classify_deploy(
     exit_code: Option<i32>,
     stdout: &str,
     stderr: &str,
@@ -1546,7 +1554,7 @@ pub fn classify_deploy(
 /// The [`KeySetupError`] variant that matches the failure;
 /// [`KeySetupError::KeyNotAccepted`] covers every "logged in, but not with this
 /// key" case.
-pub fn classify_verify(
+pub(crate) fn classify_verify(
     exit_code: Option<i32>,
     stderr: &str,
     expected_fingerprint: &str,

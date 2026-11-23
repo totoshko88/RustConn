@@ -210,12 +210,6 @@ impl RustConnClipboardBackend {
         self.direction.allows_local_to_remote()
     }
 
-    /// Returns true if the clipboard is ready
-    #[must_use]
-    pub const fn is_ready(&self) -> bool {
-        self.ready
-    }
-
     /// Sets pending copy data for a format
     ///
     /// This should be called when the GUI has clipboard data ready to send.
@@ -373,18 +367,6 @@ impl RustConnClipboardBackend {
     #[must_use]
     pub const fn server_capabilities(&self) -> ClipboardGeneralCapabilityFlags {
         self.server_capabilities
-    }
-
-    /// Returns true if the peer negotiated stream-based file copy.
-    ///
-    /// Checks `STREAM_FILECLIP_ENABLED`, the flag MS-RDPECLIP 2.2.2.1 actually
-    /// gates File Contents Request/Response on. This used to test
-    /// `USE_LONG_FORMAT_NAMES`, which says nothing about file transfer and so
-    /// reported support on servers that had none.
-    #[must_use]
-    pub const fn supports_file_clipboard(&self) -> bool {
-        self.server_capabilities
-            .contains(ClipboardGeneralCapabilityFlags::STREAM_FILECLIP_ENABLED)
     }
 }
 

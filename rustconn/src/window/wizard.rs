@@ -60,6 +60,7 @@ impl MainWindow {
                     let conn_name = conn.name.clone();
                     let conn_host = conn.host.clone();
                     let conn_username = conn.username.clone();
+                    let conn_domain = conn.domain.clone();
                     let password_source = conn.password_source.clone();
                     let protocol = conn.protocol;
                     let created = match state_for_cb.try_borrow_mut() {
@@ -73,6 +74,13 @@ impl MainWindow {
                                 &conn_host,
                                 conn_username.as_deref().unwrap_or(""),
                                 protocol,
+                            );
+                            Self::cache_wizard_password(
+                                &mut state_mut,
+                                conn_id,
+                                conn_username.as_deref().unwrap_or(""),
+                                conn_domain.as_deref().unwrap_or(""),
+                                password.as_ref(),
                             );
                         }),
                         Err(_) => Err(crate::i18n::i18n("the application is busy")),
@@ -114,6 +122,24 @@ impl MainWindow {
         });
 
         wizard.present(window);
+    }
+
+    /// Keeps a wizard-typed password for the connect that follows Save & Connect.
+    ///
+    /// The vault write runs on a worker thread, and the connect path reads the
+    /// vault at once, so it could miss the entry and prompt for a password the
+    /// user had just typed. The session cache is what that path checks first.
+    pub(super) fn cache_wizard_password(
+        state_mut: &mut crate::state::AppState,
+        conn_id: uuid::Uuid,
+        username: &str,
+        domain: &str,
+        password: Option<&secrecy::SecretString>,
+    ) {
+        use secrecy::ExposeSecret;
+        if let Some(pwd) = password {
+            state_mut.cache_credentials(conn_id, username, pwd.expose_secret(), domain);
+        }
     }
 
     /// Persists a wizard-entered password to the configured vault.
@@ -262,6 +288,7 @@ impl MainWindow {
                 let conn_name = new_conn.name.clone();
                 let conn_host = new_conn.host.clone();
                 let conn_username = new_conn.username.clone();
+                let conn_domain = new_conn.domain.clone();
                 let password_source = new_conn.password_source.clone();
                 let protocol = new_conn.protocol;
                 let created = match state_for_cb.try_borrow_mut() {
@@ -275,6 +302,13 @@ impl MainWindow {
                             &conn_host,
                             conn_username.as_deref().unwrap_or(""),
                             protocol,
+                        );
+                        Self::cache_wizard_password(
+                            &mut state_mut,
+                            conn_id,
+                            conn_username.as_deref().unwrap_or(""),
+                            conn_domain.as_deref().unwrap_or(""),
+                            password.as_ref(),
                         );
                     }),
                     Err(_) => Err(crate::i18n::i18n("the application is busy")),

@@ -470,7 +470,7 @@ fn look_up_stored_password(c: &Rc<Controller>) {
         .state
         .try_borrow()
         .ok()
-        .and_then(|s| s.get_cached_credentials(c.connection_id).cloned())
+        .and_then(|s| s.get_cached_credentials(c.connection_id))
         .map(|credentials| credentials.password)
         .filter(|p| !p.expose_secret().is_empty());
     if let Some(password) = cached {

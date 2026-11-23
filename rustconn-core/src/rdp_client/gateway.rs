@@ -122,21 +122,6 @@ impl GatewayConfig {
         self
     }
 
-    /// Sets gateway credentials
-    #[must_use]
-    pub fn with_credentials(mut self, username: impl Into<String>, domain: Option<String>) -> Self {
-        self.username = Some(username.into());
-        self.domain = domain;
-        self
-    }
-
-    /// Sets the authentication method
-    #[must_use]
-    pub const fn with_auth_method(mut self, method: GatewayAuthMethod) -> Self {
-        self.auth_method = method;
-        self
-    }
-
     /// Adds a hostname to the bypass list
     #[must_use]
     pub fn with_bypass(mut self, hostname: impl Into<String>) -> Self {
@@ -341,12 +326,6 @@ impl GatewayState {
     #[must_use]
     pub const fn is_connected(&self) -> bool {
         matches!(self, Self::Connected)
-    }
-
-    /// Returns whether the gateway is in a transitional state
-    #[must_use]
-    pub const fn is_transitioning(&self) -> bool {
-        matches!(self, Self::Connecting | Self::Authenticating)
     }
 }
 

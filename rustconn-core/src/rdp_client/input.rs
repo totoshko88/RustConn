@@ -242,21 +242,6 @@ impl CoordinateTransform {
         (x, y)
     }
 
-    /// Checks if widget coordinates are within the framebuffer display area
-    ///
-    /// # Arguments
-    ///
-    /// * `widget_x` - X coordinate in widget space
-    /// * `widget_y` - Y coordinate in widget space
-    ///
-    /// # Returns
-    ///
-    /// `true` if the coordinates are within the displayed framebuffer area.
-    #[must_use]
-    pub fn is_within_framebuffer(&self, widget_x: f64, widget_y: f64) -> bool {
-        self.transform(widget_x, widget_y).is_some()
-    }
-
     /// Returns the display bounds of the framebuffer within the widget
     ///
     /// # Returns

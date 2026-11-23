@@ -238,9 +238,7 @@ impl MainWindow {
                             let cached_pw: Option<secrecy::SecretString> = state_c
                                 .try_borrow()
                                 .ok()
-                                .and_then(|s| {
-                                    s.get_cached_credentials(tunnel.connection_id).cloned()
-                                })
+                                .and_then(|s| s.get_cached_credentials(tunnel.connection_id))
                                 .and_then(|c| {
                                     use secrecy::ExposeSecret;
                                     if c.password.expose_secret().is_empty() {
@@ -311,7 +309,7 @@ impl MainWindow {
                 let cached_pw: Option<secrecy::SecretString> = state
                     .try_borrow()
                     .ok()
-                    .and_then(|s| s.get_cached_credentials(tunnel.connection_id).cloned())
+                    .and_then(|s| s.get_cached_credentials(tunnel.connection_id))
                     .and_then(|c| {
                         use secrecy::ExposeSecret;
                         if c.password.expose_secret().is_empty() {

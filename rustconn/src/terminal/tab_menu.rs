@@ -1446,6 +1446,14 @@ impl TerminalNotebook {
         if state.is_terminal {
             let save_section = gio::Menu::new();
             save_section.append(Some(&i18n("Save Output…")), Some("tab.save-output"));
+            if let Some(session) = state.session {
+                let theme = gio::MenuItem::new(Some(&i18n("Terminal Theme…")), None);
+                theme.set_action_and_target_value(
+                    Some("win.pick-terminal-theme-for"),
+                    Some(&session.to_string().to_variant()),
+                );
+                save_section.append_item(&theme);
+            }
             menu.append_section(None, &save_section);
         }
 
@@ -1687,6 +1695,7 @@ mod tests {
         });
         for action in [
             "win.record-script-for",
+            "win.pick-terminal-theme-for",
             "win.share-session-for",
             "win.start-tftp",
         ] {

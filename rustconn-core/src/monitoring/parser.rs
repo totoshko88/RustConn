@@ -71,7 +71,7 @@ pub const SYSTEM_INFO_COMMAND: &str = concat!(
 /// markers the Linux path uses so one `exec` returns everything. The interface
 /// loop sums rx/tx across all interfaces for an aggregate throughput counter,
 /// the RouterOS analogue of `/proc/net/dev`.
-pub const ROUTEROS_METRICS_COMMAND: &str = concat!(
+pub(crate) const ROUTEROS_METRICS_COMMAND: &str = concat!(
     ":put \"---RUSTCONN_ROS_METRICS---\";",
     ":put [/system resource get cpu-load];",
     ":put [/system resource get free-memory];",
@@ -91,7 +91,7 @@ pub const ROUTEROS_METRICS_COMMAND: &str = concat!(
 /// The RouterOS counterpart of [`SYSTEM_INFO_COMMAND`]: version, board and
 /// architecture name, CPU count, total memory, uptime and identity, each on its
 /// own `:put` line in a fixed order.
-pub const ROUTEROS_SYSINFO_COMMAND: &str = concat!(
+pub(crate) const ROUTEROS_SYSINFO_COMMAND: &str = concat!(
     ":put \"---RUSTCONN_ROS_SYSINFO---\";",
     ":put [/system resource get version];",
     ":put [/system resource get board-name];",
@@ -115,7 +115,7 @@ pub const ROUTEROS_SYSINFO_COMMAND: &str = concat!(
 /// not perfect. A genuine Linux host never hits it: the metrics command uses
 /// `cat`/`tail`/`df`, which exist on Linux and BusyBox alike.
 #[must_use]
-pub fn looks_like_routeros(output: &str) -> bool {
+pub(crate) fn looks_like_routeros(output: &str) -> bool {
     output.contains("bad command name") || output.contains("command not found")
 }
 
@@ -184,7 +184,7 @@ impl MetricsParser {
     ///
     /// Returns [`MonitoringError::ParseError`] if the section is missing or a
     /// required numeric line cannot be read.
-    pub fn parse_routeros(output: &str) -> MonitoringResult<ParsedMetrics> {
+    pub(crate) fn parse_routeros(output: &str) -> MonitoringResult<ParsedMetrics> {
         let section = Self::section(
             output,
             "---RUSTCONN_ROS_METRICS---",
@@ -258,7 +258,7 @@ impl MetricsParser {
     /// # Errors
     ///
     /// Returns [`MonitoringError::ParseError`] if the section is missing.
-    pub fn parse_system_info_routeros(output: &str) -> MonitoringResult<SystemInfo> {
+    pub(crate) fn parse_system_info_routeros(output: &str) -> MonitoringResult<SystemInfo> {
         let section = Self::section(
             output,
             "---RUSTCONN_ROS_SYSINFO---",

@@ -328,7 +328,7 @@ pub(super) fn next_frame_redraw(drawing_area: &DrawingArea) -> impl Fn() + use<>
 }
 
 /// Finds the `gtk4::Overlay` that hosts `terminal` right now, if any.
-fn host_overlay(terminal: &Terminal) -> Option<Overlay> {
+pub(crate) fn host_overlay(terminal: &Terminal) -> Option<Overlay> {
     let mut ancestor = terminal.parent();
     for _ in 0..HOST_OVERLAY_SEARCH_DEPTH {
         match ancestor?.downcast::<Overlay>() {

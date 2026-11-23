@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.26.0** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.26.1** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -2446,6 +2446,7 @@ A session can be moved out of the main window into a window of its own — usefu
 
 - **Detach** — Right-click a tab → **Move to New Window**, or press **Ctrl+Shift+M**. The tab leaves the main window and the session appears in its own window, focused and ready for input. You can also detach straight from the **sidebar**: right-click the connection → **Move to New Window**. From the sidebar this works even on a session that is currently in a split pane or sitting in a background tab — a split pane is popped out of the split first and then moved to its own window, in one step.
 - **Attach** — Click the restore button in the detached window's header bar (**Move to Main Window**), or press **Ctrl+Shift+M** again while that window has focus. The session returns to a tab with the same title, icon, tab group, and color it had before, and the now-empty window closes.
+- **Drag a tab** — Drag a tab out of the tab bar and drop it where no RustConn window is: a new window opens with that session in a tab. Drop it anywhere on another RustConn window — its tab bar, its title or its content — to move it there: at the place you drop it on the tab bar, last otherwise. This works from the main window to a tabbed window (one opened this way, or a [cluster opened in its own window](#clusters)), back to the main window, and between two tabbed windows, also with the only tab of a window, whose window then closes. The session is handed over as with **Move to New Window**, so nothing reconnects. A tab dropped into a window with **Tab Broadcast** on turns that broadcast off. A tab that cannot leave the main window (a split tab, an external viewer) stays where it was and the reason is shown. If you let go of a tab by mistake outside every window, drag it back from the new window.
 - **Choose a monitor** — With two or more monitors connected, the tab menu also offers one **Move to New Window on Monitor N** item per monitor (for example "Monitor 2 (DP-1)"), listed flat below **Move to New Window**, not in a submenu. The window opens fullscreen on the chosen monitor, because Wayland does not let an application place a window at specific coordinates, and a toast tells you to press **F11** to leave fullscreen. With a single monitor these items are not shown.
 
 **Supported sessions:** everything RustConn renders itself — terminal sessions (SSH, Local Shell, Telnet, Serial, Kubernetes, MOSH, Zero Trust, and SFTP in mc mode) plus embedded RDP, embedded VNC, and embedded Web.
