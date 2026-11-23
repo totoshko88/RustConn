@@ -1973,6 +1973,14 @@ impl SettingsDialog {
     }
 
     /// Returns a reference to the dialog for toast notifications
+    /// Opens the dialog on the Secrets page instead of the first one.
+    ///
+    /// For the "Open Settings" choice of a dialog that says the password store
+    /// could not be read, whose body tells the user to look under Secrets.
+    pub fn show_secrets_page(&self) {
+        self.dialog.set_visible_page(&self.secrets_widgets.page);
+    }
+
     pub fn dialog(&self) -> &adw::PreferencesDialog {
         &self.dialog
     }

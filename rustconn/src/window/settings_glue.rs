@@ -16,6 +16,7 @@ impl MainWindow {
         overlay_split_view: adw::OverlaySplitView,
         session_split_bridges: SessionSplitBridges,
         header_title: adw::WindowTitle,
+        open_secrets_page: bool,
     ) {
         let opened_at = std::time::Instant::now();
         tracing::debug!("settings action activated");
@@ -41,6 +42,9 @@ impl MainWindow {
         dialog.connect_credential_transfer(&state);
         dialog.connect_portable_passphrase_change(&state);
         dialog.connect_monitoring_override_reset(&state);
+        if open_secrets_page {
+            dialog.show_secrets_page();
+        }
         tracing::debug!(
             elapsed_ms = opened_at.elapsed().as_millis() as u64,
             "settings dialog constructed and populated"
