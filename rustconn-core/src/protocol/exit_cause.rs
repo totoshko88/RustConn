@@ -74,8 +74,49 @@ pub fn ssh_exit_is_auth_failure(
     lifetime_secs <= STARTUP_FAILURE_WINDOW_SECS
 }
 
+/// evil-winrm's message for credentials the WinRM service refused.
+const WINRM_AUTH_MARKER: &str = "winrmauthorizationerror";
+
+/// Returns whether a WinRM client exit was the service refusing the sign-in.
+///
+/// evil-winrm prints `WinRM::WinRMAuthorizationError` and exits 1 when the
+/// account is rejected, which includes a local administrator stripped of its
+/// rights by UAC remote restrictions. The host still answers the port probe,
+/// so without this verdict automatic reconnection retried the same refused
+/// sign-in in a loop. Like [`ssh_exit_is_auth_failure`], only a failure within
+/// [`STARTUP_FAILURE_WINDOW_SECS`] counts: later output is the remote shell's.
+#[must_use]
+pub fn winrm_exit_is_auth_failure(
+    exit_code: i32,
+    protocol: &str,
+    lifetime_secs: i64,
+    screen_text: &str,
+) -> bool {
+    protocol == "winrm"
+        && exit_code != 0
+        && lifetime_secs <= STARTUP_FAILURE_WINDOW_SECS
+        && output_tail(screen_text).contains(WINRM_AUTH_MARKER)
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn winrm_authorization_error_is_an_auth_failure() {
+        let screen = "Info: Establishing connection to remote endpoint\n\
+             Error: An error of type WinRM::WinRMAuthorizationError happened, message is \
+             WinRM::WinRMAuthorizationError\n";
+        assert!(winrm_exit_is_auth_failure(1, "winrm", 21, screen));
+        assert!(!winrm_exit_is_auth_failure(1, "winrm", 600, screen));
+        assert!(!winrm_exit_is_auth_failure(0, "winrm", 21, screen));
+        assert!(!winrm_exit_is_auth_failure(1, "ssh", 21, screen));
+        assert!(!winrm_exit_is_auth_failure(
+            1,
+            "winrm",
+            21,
+            "Error: Connection refused"
+        ));
+    }
+
     use super::*;
 
     #[test]

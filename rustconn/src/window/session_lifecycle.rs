@@ -1012,6 +1012,33 @@ impl MainWindow {
                     auth_failure
                 });
 
+            // A WinRM sign-in the service refused: same treatment as a refused
+            // ssh login, read before `mark_tab_disconnected` resets the screen.
+            let is_winrm_auth_failure = notebook_clone
+                .get_session_info(session_id)
+                .filter(|info| info.protocol == "winrm")
+                .is_some_and(|info| {
+                    let lifetime_secs = chrono::Utc::now()
+                        .signed_duration_since(info.started_at())
+                        .num_seconds();
+                    let screen = Zeroizing::new(
+                        notebook_clone.get_terminal_text(session_id).unwrap_or_default(),
+                    );
+                    rustconn_core::protocol::winrm_exit_is_auth_failure(
+                        exit_code,
+                        &info.protocol,
+                        lifetime_secs,
+                        &screen,
+                    )
+                });
+            if is_winrm_auth_failure {
+                tracing::warn!(
+                    %session_id,
+                    %connection_id,
+                    "Skipping auto-reconnect: the WinRM service refused the sign-in"
+                );
+            }
+            let is_ssh_auth_failure = is_ssh_auth_failure || is_winrm_auth_failure;
             // Mark tab as disconnected and show reconnect overlay
             notebook_clone.mark_tab_disconnected(session_id);
             notebook_clone.show_reconnect_overlay(session_id);
