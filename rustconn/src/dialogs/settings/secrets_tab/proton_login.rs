@@ -131,8 +131,14 @@ pub(super) fn present(parent: &impl IsA<gtk4::Widget>, pass_cli: &Path, status_l
 /// terminal shows whatever the CLI prints, so only Proton's own sign-in links
 /// are opened on click.
 fn is_proton_link(uri: &str) -> bool {
+    // A backslash or userinfo makes browsers read another host than GLib does
+    // (`https://evil.com\@proton.me/`).
+    if uri.contains('\\') {
+        return false;
+    }
     glib::Uri::parse(uri, glib::UriFlags::NONE).is_ok_and(|u| {
         u.scheme() == "https"
+            && u.userinfo().is_none()
             && u.host()
                 .is_some_and(|h| h == "proton.me" || h.ends_with(".proton.me"))
     })

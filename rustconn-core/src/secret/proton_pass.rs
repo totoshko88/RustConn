@@ -47,6 +47,21 @@ const DEFAULT_VAULT: &str = "RustConn";
 /// would otherwise stall the caller forever. Thirty seconds matches the
 /// 1Password and Bitwarden backends.
 const PP_INVOCATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+/// Ceiling on one whole backend operation. A `store` runs up to seven
+/// invocations in a row, so the per-invocation limit alone would allow minutes.
+const PP_OPERATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(90);
+
+/// Bounds a whole backend operation by [`PP_OPERATION_TIMEOUT`].
+async fn bounded<T>(op: impl std::future::Future<Output = SecretResult<T>>) -> SecretResult<T> {
+    tokio::time::timeout(PP_OPERATION_TIMEOUT, op)
+        .await
+        .map_err(|_| {
+            SecretError::ConnectionFailed(format!(
+                "Proton Pass operation timed out after {}s",
+                PP_OPERATION_TIMEOUT.as_secs()
+            ))
+        })?
+}
 
 /// `pass-cli`'s wording when there is no usable session (not logged in, or the
 /// session expired and was cleaned up).
@@ -243,15 +258,18 @@ impl ProtonPassBackend {
             .spawn()
             .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run pass-cli: {e}")))?;
 
-        if let (Some(payload), Some(mut pipe)) = (stdin, child.stdin.take()) {
-            pipe.write_all(payload).await.map_err(|e| {
-                SecretError::ConnectionFailed(format!("Failed to write to pass-cli: {e}"))
-            })?;
-            // EOF ends the template.
-            drop(pipe);
-        }
-
-        tokio::time::timeout(PP_INVOCATION_TIMEOUT, child.wait_with_output())
+        let stdin_pipe = child.stdin.take();
+        let exchange = async {
+            if let (Some(payload), Some(mut pipe)) = (stdin, stdin_pipe) {
+                // A write error (broken pipe) means pass-cli exited early;
+                // its stderr says why, so it is read below, not reported here.
+                let _ = pipe.write_all(payload).await;
+                // EOF ends the template.
+                drop(pipe);
+            }
+            child.wait_with_output().await
+        };
+        tokio::time::timeout(PP_INVOCATION_TIMEOUT, exchange)
             .await
             .map_err(|_| {
                 SecretError::ConnectionFailed(format!(
@@ -261,7 +279,6 @@ impl ProtonPassBackend {
             })?
             .map_err(|e| SecretError::ConnectionFailed(format!("Failed to wait for pass-cli: {e}")))
     }
-
     /// Runs `pass-cli` and returns stdout, or the mapped error on a non-zero exit.
     async fn run(&self, args: &[&str]) -> SecretResult<String> {
         let output = self.run_raw(args, None).await?;
@@ -487,7 +504,7 @@ impl ProtonPassBackend {
 
     /// Builds the login template JSON for `credentials` in a buffer that is
     /// wiped on drop.
-    fn template_json(title: &str, credentials: &Credentials) -> SecretResult<Zeroizing<String>> {
+    fn template_json(title: &str, credentials: &Credentials) -> SecretResult<Zeroizing<Vec<u8>>> {
         let mut extra_fields = Vec::new();
         if let Some(domain) = credentials.domain.as_deref().filter(|d| !d.is_empty()) {
             extra_fields.push(ExtraField {
@@ -504,10 +521,23 @@ impl ProtonPassBackend {
             extra_fields,
         };
         // Serialising plain strings cannot fail; the error path is mapped
-        // without the serde message all the same.
-        serde_json::to_string(&template)
-            .map(Zeroizing::new)
-            .map_err(|_| SecretError::StoreFailed("Failed to build Proton Pass item".to_string()))
+        // without the serde message all the same. The buffer is sized for the
+        // worst JSON escaping (6 bytes per char) so it never reallocates and
+        // leaves a copy of the password in freed memory.
+        let chars: usize = [
+            title,
+            credentials.username.as_deref().unwrap_or(""),
+            credentials.domain.as_deref().unwrap_or(""),
+            credentials.expose_password().unwrap_or(""),
+        ]
+        .iter()
+        .map(|t| t.len())
+        .sum();
+        let mut buf = Zeroizing::new(Vec::with_capacity(chars * 6 + 256));
+        serde_json::to_writer(&mut *buf, &template).map_err(|_| {
+            SecretError::StoreFailed("Failed to build Proton Pass item".to_string())
+        })?;
+        Ok(buf)
     }
 
     async fn delete_item(&self, item: &ItemSummary) -> SecretResult<()> {
@@ -537,6 +567,47 @@ impl Default for ProtonPassBackend {
 #[async_trait]
 impl SecretBackend for ProtonPassBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        bounded(self.store_inner(connection_id, credentials)).await
+    }
+    async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
+        bounded(self.retrieve_with_aliases(connection_id, &[])).await
+    }
+    async fn retrieve_identity(
+        &self,
+        identity: super::backend::LookupIdentity<'_>,
+    ) -> SecretResult<Option<Credentials>> {
+        let aliases = identity.aliases();
+        bounded(self.retrieve_with_aliases(identity.key, &aliases)).await
+    }
+    async fn delete(&self, connection_id: &str) -> SecretResult<()> {
+        bounded(self.delete_inner(connection_id)).await
+    }
+    async fn is_available(&self) -> bool {
+        // In-process PATH lookup: a session check would be an API round-trip
+        // per secret operation, and a missing session is reported by the
+        // operation itself.
+        crate::which::is_available(PASS_CLI)
+    }
+    fn backend_id(&self) -> &'static str {
+        "proton_pass"
+    }
+    fn display_name(&self) -> &'static str {
+        "Proton Pass"
+    }
+    fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+    fn searches_from_root(&self) -> bool {
+        self.root_search
+    }
+}
+
+impl ProtonPassBackend {
+    async fn store_inner(
+        &self,
+        connection_id: &str,
+        credentials: &Credentials,
+    ) -> SecretResult<()> {
         self.ensure_writable()?;
         let share_id = self.get_or_create_vault().await?;
         let existing = self.own_items(&share_id, connection_id).await?;
@@ -564,40 +635,36 @@ impl SecretBackend for ProtonPassBackend {
             "--from-template",
             "-",
         ];
-        let output = self.run_raw(&args, Some(body.as_bytes())).await?;
+        let output = self.run_raw(&args, Some(body.as_slice())).await?;
         if !output.status.success() {
-            return Err(
-                match Self::failure(&args, &String::from_utf8_lossy(&output.stderr)) {
-                    SecretError::ConnectionFailed(msg) => SecretError::StoreFailed(msg),
-                    other => other,
-                },
-            );
+            // The CLI's stderr is not repeated here: a template parse error can
+            // quote the offending value, which is the password.
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(if stderr.contains(NOT_AUTHENTICATED) {
+                Self::failure(&args, &stderr)
+            } else {
+                SecretError::StoreFailed(format!("pass-cli item create failed ({})", output.status))
+            });
         }
 
         // Only now that the new item exists are the ones it replaces removed.
+        // Every old item is attempted even if one fails, so a duplicate left
+        // behind is as small as possible; the next save removes any that stay.
+        let mut failure = None;
         for old in &existing {
-            self.delete_item(old).await.map_err(|e| {
-                SecretError::StoreFailed(format!(
-                    "Saved the new Proton Pass item but could not remove the old one: {e}"
-                ))
-            })?;
+            if let Err(e) = self.delete_item(old).await {
+                failure.get_or_insert(e);
+            }
         }
-        Ok(())
+        match failure {
+            None => Ok(()),
+            Some(e) => Err(SecretError::StoreFailed(format!(
+                "Saved the new Proton Pass item but could not remove the old one: {e}"
+            ))),
+        }
     }
 
-    async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
-        self.retrieve_with_aliases(connection_id, &[]).await
-    }
-
-    async fn retrieve_identity(
-        &self,
-        identity: super::backend::LookupIdentity<'_>,
-    ) -> SecretResult<Option<Credentials>> {
-        let aliases = identity.aliases();
-        self.retrieve_with_aliases(identity.key, &aliases).await
-    }
-
-    async fn delete(&self, connection_id: &str) -> SecretResult<()> {
+    async fn delete_inner(&self, connection_id: &str) -> SecretResult<()> {
         self.ensure_writable()?;
         let Some(share_id) = self.find_vault().await? else {
             return Ok(());
@@ -607,31 +674,7 @@ impl SecretBackend for ProtonPassBackend {
         }
         Ok(())
     }
-
-    async fn is_available(&self) -> bool {
-        // In-process PATH lookup: a session check would be an API round-trip
-        // per secret operation, and a missing session is reported by the
-        // operation itself.
-        crate::which::is_available(PASS_CLI)
-    }
-
-    fn backend_id(&self) -> &'static str {
-        "proton_pass"
-    }
-
-    fn display_name(&self) -> &'static str {
-        "Proton Pass"
-    }
-
-    fn is_read_only(&self) -> bool {
-        self.read_only
-    }
-
-    fn searches_from_root(&self) -> bool {
-        self.root_search
-    }
 }
-
 impl std::fmt::Debug for ProtonPassBackend {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ProtonPassBackend")
@@ -720,7 +763,7 @@ mod tests {
             domain: Some("CORP".to_string()),
         };
         let json = ProtonPassBackend::template_json("rustconn/web", &creds).unwrap();
-        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&json).unwrap();
         assert_eq!(v["title"], "rustconn/web");
         assert_eq!(v["username"], "alice");
         assert_eq!(v["password"], "hunter2");
@@ -731,7 +774,7 @@ mod tests {
         );
 
         let bare = ProtonPassBackend::template_json("t", &Credentials::default()).unwrap();
-        let v: serde_json::Value = serde_json::from_str(&bare).unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bare).unwrap();
         assert_eq!(v["extra_fields"], serde_json::json!([]));
         assert!(v["password"].is_null());
     }
@@ -914,6 +957,52 @@ mod stub_tests {
         );
     }
 
+    /// `pass-cli` resolves a duplicated name to the first match, and so does
+    /// the backend: the first listed item is the one read.
+    #[tokio::test]
+    async fn retrieve_reads_the_first_of_duplicate_items() {
+        let (dir, backend) = setup();
+        std::fs::write(
+            dir.path().join("items.json"),
+            r#"{"items":[
+                {"id":"FIRST","share_id":"S1","title":"rustconn/web"},
+                {"id":"SECOND","share_id":"S1","title":"rustconn/web"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("field_username"), "alice").unwrap();
+        retry(|| backend.retrieve("rustconn/web"))
+            .await
+            .unwrap()
+            .expect("found");
+        let argv = std::fs::read_to_string(dir.path().join("argv.log")).unwrap();
+        assert!(argv.contains("--item-id FIRST"), "{argv}");
+        assert!(!argv.contains("SECOND"), "{argv}");
+    }
+    #[tokio::test]
+    async fn failed_create_does_not_repeat_the_cli_stderr() {
+        let (dir, backend) = setup();
+        let path = dir.path().join("pass-cli");
+        let script = stub(dir.path()).replace(
+            "'item create') cat > \"$D/created.json\" ;;",
+            &format!(
+                "'item create') cat > /dev/null; echo \"bad value {PASSWORD}\" >&2; exit 1 ;;"
+            ),
+        );
+        std::fs::write(&path, script).unwrap();
+        let creds = Credentials {
+            username: Some("alice".to_string()),
+            password: Some(SecretString::from(PASSWORD.to_string())),
+            domain: None,
+        };
+        let err = retry(|| backend.store("rustconn/web", &creds))
+            .await
+            .unwrap_err();
+        assert!(!err.to_string().contains(PASSWORD), "leaked: {err}");
+        assert!(
+            !dir.path().join("deleted").exists(),
+            "the old item must stay when create fails"
+        );
+    }
     #[tokio::test]
     async fn flag_like_vault_name_is_refused_before_spawning() {
         let (dir, backend) = setup();

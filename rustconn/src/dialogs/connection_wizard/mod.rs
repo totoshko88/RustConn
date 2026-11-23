@@ -800,6 +800,10 @@ impl ConnectionWizard {
                     cfg.jump_host_id = Some(jump_id);
                 }
                 cfg.unix_socket_path = partial.spice_unix_socket_path.clone();
+                // A socket connection has no network path to jump through.
+                if cfg.unix_socket_path.is_some() {
+                    cfg.jump_host_id = None;
+                }
                 ProtocolConfig::Spice(cfg)
             }
             ProtocolType::Telnet => {
