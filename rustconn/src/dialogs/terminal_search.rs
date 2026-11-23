@@ -455,7 +455,19 @@ mod tests {
         terminal.feed(b"first foo\r\nsecond\r\nthird foo FOO\r\n");
         // A margin the host had before the bar opened must survive closing it.
         host.set_margin_top(3);
-        pump(300);
+        // `feed()` only queues the bytes: VTE parses them on a later main-loop
+        // iteration. A search that runs before that sees an empty buffer and
+        // selects nothing, and nothing repeats it. A fixed pause made that a
+        // race on a slow runner, so wait until all three lines are parsed (the
+        // cursor sits on row 3).
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while terminal.cursor_position().1 < 3 {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "VTE did not parse the fed text"
+            );
+            pump(10);
+        }
 
         TerminalSearchBar::show(&terminal);
         let bar = find_bar(&overlay).expect("bar is on the overlay");
