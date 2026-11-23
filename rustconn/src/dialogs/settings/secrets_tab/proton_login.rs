@@ -127,6 +127,17 @@ pub(super) fn present(parent: &impl IsA<gtk4::Widget>, pass_cli: &Path, status_l
     terminal.grab_focus();
 }
 
+/// True for an `https://` link on `proton.me` or one of its subdomains. The
+/// terminal shows whatever the CLI prints, so only Proton's own sign-in links
+/// are opened on click.
+fn is_proton_link(uri: &str) -> bool {
+    glib::Uri::parse(uri, glib::UriFlags::NONE).is_ok_and(|u| {
+        u.scheme() == "https"
+            && u.host()
+                .is_some_and(|h| h == "proton.me" || h.ends_with(".proton.me"))
+    })
+}
+
 /// Underlines URLs under the pointer and opens one on click.
 fn make_links_clickable(terminal: &vte4::Terminal) {
     match vte4::Regex::for_match(URL_PATTERN, PCRE2_MULTILINE) {
@@ -145,6 +156,10 @@ fn make_links_clickable(terminal: &vte4::Terminal) {
         let (Some(uri), _) = terminal.check_match_at(x, y) else {
             return;
         };
+        if !is_proton_link(&uri) {
+            tracing::warn!("refused to open a sign-in link outside proton.me");
+            return;
+        }
         let window = terminal.root().and_downcast::<gtk4::Window>();
         gtk4::UriLauncher::new(&uri).launch(window.as_ref(), gio::Cancellable::NONE, |result| {
             if let Err(error) = result
@@ -177,4 +192,19 @@ fn refresh_status(status_label: &Label) {
         }
         glib::ControlFlow::Break
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_proton_link;
+
+    #[test]
+    fn only_https_proton_hosts_open() {
+        assert!(is_proton_link("https://account.proton.me/auth?x=1"));
+        assert!(is_proton_link("https://proton.me/"));
+        assert!(!is_proton_link("http://proton.me/"));
+        assert!(!is_proton_link("https://proton.me.evil.com/"));
+        assert!(!is_proton_link("https://evilproton.me/"));
+        assert!(!is_proton_link("https://user@evil.com/proton.me"));
+    }
 }

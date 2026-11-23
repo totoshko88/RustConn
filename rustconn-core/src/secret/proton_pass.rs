@@ -136,6 +136,15 @@ struct ExtraField<'a> {
     value: &'a str,
 }
 
+/// True for a value that is safe to pass as a positional `pass-cli` argument:
+/// non-empty, not starting with `-` (it would be parsed as a flag) and with no
+/// NUL or line break.
+fn is_plain_arg(value: &str) -> bool {
+    !value.is_empty()
+        && !value.starts_with('-')
+        && !value.chars().any(|c| c == '\0' || c == '\n' || c == '\r')
+}
+
 impl ProtonPassBackend {
     /// Creates a backend for the default `RustConn` vault.
     #[must_use]
@@ -270,7 +279,13 @@ impl ProtonPassBackend {
         let list: VaultList = serde_json::from_str(&out).map_err(|e| {
             SecretError::ConnectionFailed(format!("Failed to parse pass-cli vault list: {e}"))
         })?;
-        Ok(list.vaults)
+        // An id the CLI printed is passed back as an argument; one that looks
+        // like a flag is dropped rather than trusted.
+        Ok(list
+            .vaults
+            .into_iter()
+            .filter(|v| is_plain_arg(&v.share_id))
+            .collect())
     }
 
     /// Share id of the `RustConn` vault, or `None` when it does not exist yet.
@@ -288,14 +303,19 @@ impl ProtonPassBackend {
         if let Some(share_id) = self.find_vault().await? {
             return Ok(share_id);
         }
+        if !is_plain_arg(&self.vault_name) {
+            return Err(SecretError::StoreFailed(
+                "Invalid Proton Pass vault name".to_string(),
+            ));
+        }
         // `vault create` prints the new share id on its own line.
         let out = self
             .run(&["vault", "create", "--name", &self.vault_name])
             .await?;
         let share_id = out.trim();
-        if share_id.is_empty() {
+        if !is_plain_arg(share_id) {
             return Err(SecretError::StoreFailed(
-                "pass-cli vault create returned no share id".to_string(),
+                "pass-cli vault create returned no valid share id".to_string(),
             ));
         }
         Ok(share_id.to_string())
@@ -322,7 +342,11 @@ impl ProtonPassBackend {
         let list: ItemList = serde_json::from_str(&out).map_err(|e| {
             SecretError::ConnectionFailed(format!("Failed to parse pass-cli item list: {e}"))
         })?;
-        Ok(list.items)
+        Ok(list
+            .items
+            .into_iter()
+            .filter(|i| is_plain_arg(&i.id) && is_plain_arg(&i.share_id))
+            .collect())
     }
 
     /// `RustConn`'s own items for `key`: exact title in the `RustConn` vault.
@@ -888,6 +912,40 @@ mod stub_tests {
                 .unwrap()
                 .is_none()
         );
+    }
+
+    #[tokio::test]
+    async fn flag_like_vault_name_is_refused_before_spawning() {
+        let (dir, backend) = setup();
+        std::fs::write(dir.path().join("vaults.json"), r#"{"vaults":[]}"#).unwrap();
+        let backend = backend.with_vault_name("--share-id");
+        let creds = Credentials::default();
+        let err = retry(|| backend.store("rustconn/web", &creds))
+            .await
+            .unwrap_err();
+        assert!(matches!(err, SecretError::StoreFailed(_)));
+        let argv = std::fs::read_to_string(dir.path().join("argv.log")).unwrap();
+        assert!(!argv.contains("vault create"), "{argv}");
+    }
+
+    #[tokio::test]
+    async fn flag_like_ids_from_the_cli_are_dropped() {
+        let (dir, backend) = setup();
+        std::fs::write(
+            dir.path().join("items.json"),
+            r#"{"items":[{"id":"--evil","share_id":"S1","title":"rustconn/web"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("field_password"), "x").unwrap();
+        assert!(
+            retry(|| backend.retrieve("rustconn/web"))
+                .await
+                .unwrap()
+                .is_none()
+        );
+        retry(|| backend.delete("rustconn/web")).await.unwrap();
+        let argv = std::fs::read_to_string(dir.path().join("argv.log")).unwrap();
+        assert!(!argv.contains("--evil"), "{argv}");
     }
 
     #[tokio::test]

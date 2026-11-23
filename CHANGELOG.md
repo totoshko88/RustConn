@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Proton Pass hardening** — a vault name, or a vault or item id printed by `pass-cli`, that starts with `-` (it would be read as a flag) or holds a line break is refused or dropped instead of being passed as an argument, and the Sign In dialog opens a clicked link only when it is `https://` on `proton.me`. (`rustconn-core/src/secret/proton_pass.rs`, `rustconn/src/dialogs/settings/secrets_tab/proton_login.rs`)
 - **Connection wizard: a SPICE connection with a unix socket path no longer asks for a host** — **Next** is enabled when the **Socket Path** row is filled, and the connection editor accepts such a connection on save (it used to answer "Host is required"). Other protocols still need a host. (`rustconn/src/dialogs/connection_wizard/mod.rs`, `rustconn/src/dialogs/connection_wizard/connection_page.rs`, `rustconn/src/dialogs/connection/builders.rs`)
 - **Flaky terminal search test** — the GUI test of the search bar fed text to the terminal and waited a fixed 300 ms, but VTE parses it later, so on a slow runner the search saw an empty buffer. The test now waits until all lines are parsed. The search code is unchanged. (`rustconn/src/dialogs/terminal_search.rs`)
 
