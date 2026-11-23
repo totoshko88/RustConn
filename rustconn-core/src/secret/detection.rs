@@ -935,6 +935,9 @@ pub fn get_password_manager_launch_command(
                 .unwrap_or_else(|_| format!("{home}/.password-store"));
             Some((url_open_command().to_string(), vec![store_dir]))
         }
+        crate::config::SecretBackendType::ProtonPass => {
+            Some(proton_pass_launch_command(&extended_path))
+        }
         crate::config::SecretBackendType::MacOsKeychain => {
             // Open Keychain Access on macOS
             Some((
@@ -952,6 +955,28 @@ pub fn get_password_manager_launch_command(
             None
         }
     }
+}
+
+/// The Proton Pass desktop app (native package), then the Flathub one, then
+/// the web vault.
+fn proton_pass_launch_command(extended_path: &str) -> (String, Vec<String>) {
+    if crate::which::is_available("proton-pass") {
+        return ("proton-pass".to_string(), vec![]);
+    }
+    if flatpak_app_installed(
+        "me.proton.Pass",
+        extended_path,
+        "flatpak info (Proton Pass launch)",
+    ) {
+        return (
+            "flatpak".to_string(),
+            vec!["run".to_string(), "me.proton.Pass".to_string()],
+        );
+    }
+    (
+        url_open_command().to_string(),
+        vec!["https://pass.proton.me".to_string()],
+    )
 }
 
 /// Opens the password manager application for the given backend

@@ -408,6 +408,7 @@ fn arb_secret_backend_type() -> impl Strategy<Value = SecretBackendType> {
         Just(SecretBackendType::Passbolt),
         Just(SecretBackendType::Pass),
         Just(SecretBackendType::MacOsKeychain),
+        Just(SecretBackendType::ProtonPass),
     ]
 }
 
@@ -460,6 +461,8 @@ fn arb_secret_settings() -> impl Strategy<Value = SecretSettings> {
                 passbolt_root_search: false,
                 pass_read_only: false,
                 pass_root_search: false,
+                proton_pass_read_only: false,
+                proton_pass_root_search: false,
                 kdbx_read_only: false,
                 kdbx_root_search: false,
                 portable_file_path: None,
@@ -574,6 +577,8 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         passbolt_root_search: false,
                         pass_read_only: false,
                         pass_root_search: false,
+                        proton_pass_read_only: false,
+                        proton_pass_root_search: false,
                         kdbx_read_only: false,
                         kdbx_root_search: false,
                     },

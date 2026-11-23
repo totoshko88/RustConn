@@ -29,6 +29,7 @@ impl MainWindow {
             | rustconn_core::config::SecretBackendType::OnePassword
             | rustconn_core::config::SecretBackendType::Passbolt
             | rustconn_core::config::SecretBackendType::Pass
+            | rustconn_core::config::SecretBackendType::ProtonPass
             | rustconn_core::config::SecretBackendType::EncryptedFile => (true, true),
             // Configured but unusable while locked — see the matching arm in
             // `app::refresh_sidebar_secret_status`. The backend's own

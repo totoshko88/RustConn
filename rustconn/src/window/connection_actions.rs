@@ -650,6 +650,7 @@ impl MainWindow {
             | rustconn_core::config::SecretBackendType::OnePassword
             | rustconn_core::config::SecretBackendType::Passbolt
             | rustconn_core::config::SecretBackendType::Pass
+            | rustconn_core::config::SecretBackendType::ProtonPass
             | rustconn_core::config::SecretBackendType::EncryptedFile
             // Unconditional for the portable store on purpose, unlike the
             // sidebar indicator: this action reveals the store's location and

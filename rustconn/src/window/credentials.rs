@@ -395,6 +395,10 @@ impl MainWindow {
                                     names.push("Pass".to_string());
                                     types.push(preferred);
                                 }
+                                rustconn_core::config::SecretBackendType::ProtonPass => {
+                                    names.push("Proton Pass".to_string());
+                                    types.push(preferred);
+                                }
                                 rustconn_core::config::SecretBackendType::MacOsKeychain => {
                                     names.push("macOS Keychain".to_string());
                                     types.push(preferred);

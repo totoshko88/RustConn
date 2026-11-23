@@ -524,6 +524,12 @@ pub struct SecretSettings {
     /// Widen Pass reads to the store root, not just the `rustconn/` subtree.
     #[serde(default)]
     pub pass_root_search: bool,
+    /// Open the Proton Pass backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub proton_pass_read_only: bool,
+    /// Widen Proton Pass reads to every vault, not just the `RustConn` vault.
+    #[serde(default)]
+    pub proton_pass_root_search: bool,
     /// Path to the portable encrypted credential file.
     ///
     /// Can point to a cloud-synced directory (Dropbox, Syncthing, etc.) so the
@@ -660,6 +666,8 @@ impl std::fmt::Debug for SecretSettings {
             .field("passbolt_root_search", &self.passbolt_root_search)
             .field("pass_read_only", &self.pass_read_only)
             .field("pass_root_search", &self.pass_root_search)
+            .field("proton_pass_read_only", &self.proton_pass_read_only)
+            .field("proton_pass_root_search", &self.proton_pass_root_search)
             .field("portable_file_path", &self.portable_file_path)
             .field(
                 "portable_passphrase",
@@ -713,6 +721,8 @@ impl Default for SecretSettings {
             passbolt_root_search: false,
             pass_read_only: false,
             pass_root_search: false,
+            proton_pass_read_only: false,
+            proton_pass_root_search: false,
             kdbx_read_only: false,
             kdbx_root_search: false,
             portable_file_path: None,
@@ -756,6 +766,8 @@ impl PartialEq for SecretSettings {
             && self.passbolt_root_search == other.passbolt_root_search
             && self.pass_read_only == other.pass_read_only
             && self.pass_root_search == other.pass_root_search
+            && self.proton_pass_read_only == other.proton_pass_read_only
+            && self.proton_pass_root_search == other.proton_pass_root_search
             && self.kdbx_read_only == other.kdbx_read_only
             && self.kdbx_root_search == other.kdbx_root_search
             && self.portable_file_path == other.portable_file_path
@@ -848,6 +860,9 @@ pub enum SecretBackendType {
     /// and what makes a passphrase change rewrap 32 bytes rather than
     /// re-encrypt every credential.
     PortableEncryptedFile,
+    /// Proton Pass CLI (`pass-cli`). Appended after the older variants so
+    /// existing configs round-trip unchanged.
+    ProtonPass,
 }
 
 impl SecretBackendType {
@@ -879,6 +894,7 @@ impl SecretBackendType {
             Self::MacOsKeychain => "macOS Keychain",
             Self::EncryptedFile => "Encrypted file",
             Self::PortableEncryptedFile => "Portable encrypted file",
+            Self::ProtonPass => "Proton Pass",
         }
     }
 
@@ -911,6 +927,7 @@ impl SecretBackendType {
             "macos_keychain" => Some(Self::MacOsKeychain),
             "encrypted_file" => Some(Self::EncryptedFile),
             "portable_encrypted_file" => Some(Self::PortableEncryptedFile),
+            "proton_pass" => Some(Self::ProtonPass),
             _ => None,
         }
     }
@@ -2633,6 +2650,8 @@ mod tests {
         assert_toggle_distinguishes!(passbolt_root_search);
         assert_toggle_distinguishes!(pass_read_only);
         assert_toggle_distinguishes!(pass_root_search);
+        assert_toggle_distinguishes!(proton_pass_read_only);
+        assert_toggle_distinguishes!(proton_pass_root_search);
         assert_toggle_distinguishes!(kdbx_read_only);
         assert_toggle_distinguishes!(kdbx_root_search);
     }
