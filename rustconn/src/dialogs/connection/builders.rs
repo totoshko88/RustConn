@@ -360,8 +360,16 @@ impl ConnectionDialogData<'_> {
         let is_serial = protocol_idx == 6;
         let is_kubernetes = protocol_idx == 8;
 
-        // Host and port are optional for Zero Trust, Serial, and Kubernetes
-        if !is_zerotrust && !is_serial && !is_kubernetes {
+        // A SPICE connection through a unix socket needs no host
+        let is_spice_socket = protocol_idx == 3
+            && spice_unix_socket_path(
+                self.spice_unix_socket_check.is_active(),
+                &self.spice_socket_path_entry.text(),
+            )
+            .is_some();
+
+        // Host and port are optional for Zero Trust, Serial, Kubernetes and SPICE sockets
+        if !is_zerotrust && !is_serial && !is_kubernetes && !is_spice_socket {
             let host = self.host_entry.text();
             if host.trim().is_empty() {
                 return Err(i18n("Host is required"));

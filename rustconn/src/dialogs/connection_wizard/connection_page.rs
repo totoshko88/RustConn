@@ -470,22 +470,23 @@ impl ConnectionPage {
         });
 
         // Validation
-        let next_btn_v = next_button.clone();
-        let host_row_v = host_row.clone();
-        let current_protocol_v = current_protocol.clone();
-        host_row.connect_changed(move |_| {
-            let proto = *current_protocol_v.borrow();
-            let valid = match proto {
-                Some(
-                    ProtocolType::Serial
-                    | ProtocolType::Kubernetes
-                    | ProtocolType::Web
-                    | ProtocolType::ZeroTrust,
-                ) => true,
-                _ => !host_row_v.text().trim().is_empty(),
-            };
-            next_btn_v.set_sensitive(valid);
-        });
+        let revalidate = {
+            let next_btn_v = next_button.clone();
+            let host_row_v = host_row.clone();
+            let socket_row_v = spice_socket_row.clone();
+            let current_protocol_v = current_protocol.clone();
+            Rc::new(move || {
+                let proto = *current_protocol_v.borrow();
+                next_btn_v.set_sensitive(super::details_valid(
+                    proto,
+                    &host_row_v.text(),
+                    &socket_row_v.text(),
+                ));
+            })
+        };
+        let revalidate_host = revalidate.clone();
+        host_row.connect_changed(move |_| revalidate_host());
+        spice_socket_row.connect_changed(move |_| revalidate());
 
         // URL validation for Web protocol
         let next_btn_url = next_button.clone();
