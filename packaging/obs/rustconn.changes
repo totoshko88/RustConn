@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Mon Nov 23 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.2
+- Version bump to 0.26.2
+- Added: Proton Pass secret backend (#444) with the Proton Pass CLI in Flatpak
+  Components and an in-app sign-in dialog; rustconn-cli secret --backend
+  proton-pass
+- Fixed: Proton Pass hardening and review fixes (flag-like names refused,
+  sign-in links limited to proton.me, pass-cli errors reported, 90 s operation
+  cap); SPICE socket connections no longer ask for a host; wizard Next follows
+  the typed host; flaky terminal search test
+- Dependencies: yuv 0.8.20 -> 0.8.21, zip 9.8.1 -> 9.8.2
+-------------------------------------------------------------------
 Mon Nov 23 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.1
 - Version bump to 0.26.1
 - Added: drag tabs between windows or out into a new one (PR #443); drag a

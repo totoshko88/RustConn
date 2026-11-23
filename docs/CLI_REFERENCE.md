@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.26.1** | Command-line interface for RustConn connection management
+**Version 0.26.2** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -909,7 +909,7 @@ rustconn-cli var delete "my_var"
 Available only when `rustconn-cli` is built with `--features secret-management`
 or `--features full`.
 
-Manage credentials stored in secret backends (system keyring, KeePass, Bitwarden, 1Password, Passbolt, Pass).
+Manage credentials stored in secret backends (system keyring, KeePass, Bitwarden, 1Password, Passbolt, Pass, Proton Pass).
 
 | Subcommand | Description |
 |------------|-------------|
@@ -925,6 +925,7 @@ rustconn-cli secret get "My Server" --backend keepass
 rustconn-cli secret set "My Server" --user admin --backend keyring          # Interactive password prompt
 echo "s3cret" | rustconn-cli secret set "My Server" --user admin --password-stdin
 rustconn-cli secret delete "My Server"
+rustconn-cli secret get "My Server" --backend proton-pass                   # needs a prior `pass-cli login`
 rustconn-cli secret verify-keepass --database ~/vault.kdbx
 rustconn-cli secret verify-keepass --database ~/vault.kdbx --yubikey 2       # YubiKey Challenge-Response slot (or 2:serial)
 ```
@@ -978,6 +979,7 @@ Backend aliases:
 | 1Password | `1password`, `onepassword`, `op` |
 | Passbolt | `passbolt` |
 | Pass (passwordstore.org) | `pass` |
+| Proton Pass | `proton-pass`, `protonpass`, `pass-cli` |
 | Encrypted file (machine-bound) | `encrypted-file`, `file` |
 | Portable encrypted file | `portable`, `portable-file` |
 

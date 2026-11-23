@@ -248,6 +248,7 @@ those connections could not be made.
 | `bw` | Bitwarden CLI |
 | `op` | 1Password CLI |
 | `passbolt` | Passbolt CLI |
+| `pass-cli` | Proton Pass CLI (untested in the Snap) |
 | `keepassxc-proxy` | KeePassXC proxy |
 
 ### Zero Trust CLIs
@@ -283,6 +284,7 @@ are needed for password manager CLIs (they run inside the sandbox).
 | Bitwarden | `bw` | `npm install -g @bitwarden/cli` or snap: `sudo snap install bw` |
 | 1Password | `op` | [1password.com/downloads/command-line](https://1password.com/downloads/command-line/) |
 | Passbolt | `go-passbolt-cli` | [passbolt.com](https://www.passbolt.com/) |
+| Proton Pass | `pass-cli` | [protonpass.github.io/pass-cli](https://protonpass.github.io/pass-cli/) |
 | KeePassXC | `keepassxc-proxy` | `keepassxc` package |
 
 ## Quick Setup

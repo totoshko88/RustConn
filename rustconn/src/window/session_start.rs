@@ -1177,3 +1177,92 @@ impl MainWindow {
         }
     }
 }
+
+#[cfg(test)]
+mod moved_split_focus_tests {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    use std::rc::Rc;
+
+    use gtk4::prelude::*;
+    use libadwaita as adw;
+    use uuid::Uuid;
+
+    use super::MainWindow;
+    use crate::detached_window::DetachedWindowRegistry;
+    use crate::session_group_window::SessionGroupWindow;
+    use crate::split_view::SplitViewBridge;
+    use crate::terminal::TerminalNotebook;
+    use crate::window::types::SessionSplitBridges;
+
+    /// The sidebar's Show Session / double-click on a session of a split that
+    /// was moved to a group window raises that window and selects the split's
+    /// tab, for a guest pane and for the owner alike, and leaves another group
+    /// window alone.
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run with xvfb-run -a scripts/run-ignored-gui-tests.sh"]
+    fn showing_a_session_of_a_moved_split_presents_its_group_window() {
+        if adw::init().is_err() {
+            return;
+        }
+        let app = adw::Application::builder()
+            .application_id("io.github.totoshko88.RustConn.Test.MovedSplitFocus")
+            .flags(gtk4::gio::ApplicationFlags::NON_UNIQUE)
+            .build();
+        let _ = app.register(None::<&gtk4::gio::Cancellable>);
+
+        let notebook = Rc::new(TerminalNotebook::new(false));
+        let (owner, guest) = (Uuid::from_u128(1), Uuid::from_u128(2));
+        let (other, elsewhere) = (Uuid::from_u128(3), Uuid::from_u128(4));
+        let connection = Uuid::from_u128(9);
+        for id in [owner, guest] {
+            let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+            notebook.add_embedded_session_tab(id, connection, "s", "ssh", &widget, None);
+        }
+        // What a moved split leaves behind: the guest parked in the split, the
+        // owner marked detached with its page parked.
+        notebook.park_session_tab(guest);
+        notebook.park_session_tab(owner);
+        notebook.mark_detached_for_test(owner);
+
+        let bridge = Rc::new(SplitViewBridge::new());
+        bridge.set_owner_session(owner);
+        assert!(bridge.show_session(guest).is_ok());
+        let bridges: SessionSplitBridges = Rc::new(RefCell::new(HashMap::new()));
+        bridges.borrow_mut().insert(owner, Rc::clone(&bridge));
+        bridges.borrow_mut().insert(guest, Rc::clone(&bridge));
+
+        let registry = Rc::new(DetachedWindowRegistry::new());
+        let add_group = |group_id: u128, ids: &[Uuid]| {
+            let group = SessionGroupWindow::new(&app, "");
+            for &id in ids {
+                let content = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+                group.add_session(id, connection, "t", "ssh", &content);
+            }
+            registry.insert_group(Uuid::from_u128(group_id), Rc::clone(&group));
+            group
+        };
+        let unrelated = add_group(70, &[elsewhere]);
+        // `other` comes first, so its tab is the selected one.
+        let group = add_group(71, &[other, owner]);
+        assert_eq!(group.selected_session(), Some(other));
+
+        // The same wiring `setup_detach_actions` installs.
+        let weak = Rc::downgrade(&registry);
+        notebook.set_on_focus_detached(move |id| {
+            if let Some(registry) = weak.upgrade() {
+                assert!(registry.present(id), "no window for {id}");
+            }
+        });
+
+        for target in [guest, owner] {
+            assert!(group.present_session(other));
+            assert!(MainWindow::focus_embedded_session(
+                &notebook, &bridges, target
+            ));
+            assert_eq!(group.selected_session(), Some(owner), "target {target}");
+            assert!(group.window().is_visible());
+        }
+        assert!(!unrelated.window().is_visible());
+    }
+}

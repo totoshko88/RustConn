@@ -118,6 +118,21 @@ pub struct PartialConnection {
     pub spice_unix_socket_path: Option<PathBuf>,
 }
 
+/// Whether the Connection Details page may go on. Most protocols need a
+/// host; SPICE with a unix socket path connects through the socket instead.
+fn details_valid(protocol: Option<ProtocolType>, host: &str, socket_text: &str) -> bool {
+    match protocol {
+        Some(
+            ProtocolType::Serial
+            | ProtocolType::Kubernetes
+            | ProtocolType::Web
+            | ProtocolType::ZeroTrust,
+        ) => true,
+        Some(ProtocolType::Spice) if socket_path_from_text(socket_text).is_some() => true,
+        _ => !host.trim().is_empty(),
+    }
+}
+
 /// Turns the wizard's SPICE socket text into a path; blank means none.
 fn socket_path_from_text(text: &str) -> Option<PathBuf> {
     let trimmed = text.trim();
@@ -785,6 +800,10 @@ impl ConnectionWizard {
                     cfg.jump_host_id = Some(jump_id);
                 }
                 cfg.unix_socket_path = partial.spice_unix_socket_path.clone();
+                // A socket connection has no network path to jump through.
+                if cfg.unix_socket_path.is_some() {
+                    cfg.jump_host_id = None;
+                }
                 ProtocolConfig::Spice(cfg)
             }
             ProtocolType::Telnet => {
@@ -915,6 +934,17 @@ impl ConnectionWizard {
 mod tests {
     use super::*;
     use rustconn_core::models::ProtocolConfig;
+
+    #[test]
+    fn spice_socket_replaces_host_requirement() {
+        let spice = Some(ProtocolType::Spice);
+        assert!(details_valid(spice, "", "/run/vm.sock"));
+        assert!(details_valid(spice, "h", "/run/vm.sock"));
+        assert!(details_valid(spice, "h", ""));
+        assert!(!details_valid(spice, "", ""));
+        assert!(!details_valid(spice, "  ", "  "));
+        assert!(!details_valid(Some(ProtocolType::Vnc), "", "/run/vm.sock"));
+    }
 
     #[test]
     fn socket_text_blank_is_none() {

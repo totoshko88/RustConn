@@ -180,7 +180,7 @@ impl FlatpakComponentsDialog {
         // Password managers section
         let password_group = Self::build_category_group(
             &i18n("Password Manager CLIs"),
-            &i18n("Required for Bitwarden and 1Password integration"),
+            &i18n("Required for Bitwarden, 1Password and Proton Pass integration"),
             ComponentCategory::PasswordManager,
             component_rows,
         );

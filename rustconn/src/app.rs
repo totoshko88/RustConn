@@ -1671,6 +1671,7 @@ fn refresh_sidebar_secret_status(
         | rustconn_core::config::SecretBackendType::OnePassword
         | rustconn_core::config::SecretBackendType::Passbolt
         | rustconn_core::config::SecretBackendType::Pass
+        | rustconn_core::config::SecretBackendType::ProtonPass
         | rustconn_core::config::SecretBackendType::EncryptedFile => (true, true),
         // The portable store is configured but unusable while locked, and a
         // locked store is the normal state at startup when the passphrase is not

@@ -555,6 +555,7 @@ impl VariablesDialog {
                             | rustconn_core::config::SecretBackendType::OnePassword
                             | rustconn_core::config::SecretBackendType::Passbolt
                             | rustconn_core::config::SecretBackendType::Pass
+                            | rustconn_core::config::SecretBackendType::ProtonPass
                     )
                 });
             vault_name_label_clone.set_visible(show_vault_name);

@@ -27,6 +27,8 @@ pub(crate) struct SecretCliDetection {
     pub passbolt_server_url: Option<String>,
     pub pass_version: Option<String>,
     pub pass_status: Option<(String, &'static str)>,
+    pub proton_pass_version: Option<String>,
+    pub proton_pass_status: Option<(String, &'static str)>,
     /// Whether `secret-tool` binary is available (for keyring operations)
     pub secret_tool_available: bool,
     /// Fine-grained availability of the platform system-keyring backend
@@ -177,6 +179,7 @@ pub(crate) fn backend_readiness(
         SecretBackendType::OnePassword => probed(|det| det.onepassword_status.as_ref()),
         SecretBackendType::Passbolt => probed(|det| det.passbolt_status.as_ref()),
         SecretBackendType::Pass => probed(|det| det.pass_status.as_ref()),
+        SecretBackendType::ProtonPass => probed(|det| det.proton_pass_status.as_ref()),
 
         SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
             let Some(det) = detection else {
@@ -303,6 +306,7 @@ fn run_detection(pass_store_dir: Option<&str>) -> SecretCliDetection {
         let onepassword = scope.spawn(detect_onepassword);
         let passbolt = scope.spawn(detect_passbolt);
         let pass = scope.spawn(move || detect_pass(pass_store_dir));
+        let proton_pass = scope.spawn(detect_proton_pass);
         let secret_tool = scope.spawn(detect_secret_tool);
         let keyring_avail = scope.spawn(detect_system_keyring_availability);
 
@@ -317,6 +321,7 @@ fn run_detection(pass_store_dir: Option<&str>) -> SecretCliDetection {
         let (passbolt_installed, passbolt_version, passbolt_status, passbolt_server_url) =
             passbolt.join().unwrap_or_default();
         let (pass_version, pass_status) = pass.join().unwrap_or_default();
+        let (proton_pass_version, proton_pass_status) = proton_pass.join().unwrap_or_default();
         let secret_tool_available = secret_tool.join().unwrap_or_default();
         let system_keyring_availability = keyring_avail
             .join()
@@ -344,6 +349,8 @@ fn run_detection(pass_store_dir: Option<&str>) -> SecretCliDetection {
             passbolt_server_url,
             pass_version,
             pass_status,
+            proton_pass_version,
+            proton_pass_status,
             secret_tool_available,
             system_keyring_availability,
         }
@@ -617,6 +624,50 @@ fn detect_pass(
     };
 
     (pass_version, pass_status)
+}
+
+/// Detects the Proton Pass CLI: `(version, status)`.
+///
+/// `pass-cli info` is what tells a logged-in CLI from one with no session; it
+/// reaches the Proton API, which is why it goes through [`probe`] like the other
+/// networked status checks.
+///
+/// `find_in_path` also searches the sandbox CLI directory, where the Flatpak
+/// Components dialog installs `pass-cli`.
+pub(super) fn detect_proton_pass() -> (Option<String>, Option<(String, &'static str)>) {
+    let Some(pass_cli) = rustconn_core::which::find_in_path("pass-cli") else {
+        return (None, None);
+    };
+    let pass_cli = pass_cli.to_string_lossy();
+    let Some(version) = get_cli_version(&pass_cli, &["--version"]) else {
+        return (None, None);
+    };
+    let mut cmd = std::process::Command::new(&*pass_cli);
+    cmd.env("PATH", rustconn_core::cli_download::get_extended_path())
+        .args(["info", "--output", "json"]);
+    if let Some((key, value)) = rustconn_core::secret::pass_cli_sandbox_env() {
+        cmd.env(key, value);
+    }
+    let status = match probe(&mut cmd, "pass-cli info") {
+        Some(o) if o.status.success() => {
+            let stdout = String::from_utf8_lossy(&o.stdout);
+            let account = serde_json::from_str::<serde_json::Value>(&stdout)
+                .ok()
+                .and_then(|info| {
+                    ["email", "username", "personal_access_token_name"]
+                        .iter()
+                        .find_map(|key| info.get(key).and_then(|v| v.as_str()).map(String::from))
+                });
+            match account {
+                Some(account) => (i18n_f("Signed in: {}", &[&account]), "success"),
+                None => (i18n("Signed in"), "success"),
+            }
+        }
+        // The row's subtitle names the command that fixes this.
+        Some(_) => (i18n("Not signed in"), "warning"),
+        None => (i18n("Error checking status"), "error"),
+    };
+    (Some(version), Some(status))
 }
 
 /// Checks `secret-tool` availability (for system keyring operations)
@@ -906,7 +957,7 @@ mod readiness_tests {
     /// Written out rather than derived, because `SecretBackendType` has no
     /// iterator and the point of these two tests is to notice a variant that was
     /// added to the enum and to only one of the two functions below.
-    const ALL_BACKENDS: [SecretBackendType; 10] = [
+    const ALL_BACKENDS: [SecretBackendType; 11] = [
         SecretBackendType::KeePassXc,
         SecretBackendType::KdbxFile,
         SecretBackendType::LibSecret,
@@ -917,6 +968,7 @@ mod readiness_tests {
         SecretBackendType::MacOsKeychain,
         SecretBackendType::EncryptedFile,
         SecretBackendType::PortableEncryptedFile,
+        SecretBackendType::ProtonPass,
     ];
 
     fn nothing_configured() -> LocalBackendState {

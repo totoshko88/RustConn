@@ -116,6 +116,17 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.26.2" date="2026-11-23">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.2</url>
+      <description>
+        <p>Version 0.26.2 - Proton Pass secret backend:</p>
+        <ul>
+          <li>Proton Pass is a new secret backend in Settings &gt; Secrets, also available from the CLI.</li>
+          <li>The Proton Pass CLI can be downloaded in Flatpak Components, with an in-app sign-in dialog.</li>
+          <li>A SPICE connection with a unix socket path no longer asks for a host.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.26.1" date="2026-11-23">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.1</url>
       <description>

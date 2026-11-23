@@ -2164,8 +2164,8 @@ pub enum SecretCommands {
         connection: String,
 
         /// Secret backend to use (keyring/libsecret, keepass/keepassxc,
-        /// bitwarden/bw, 1password/op, passbolt, pass, encrypted-file/file,
-        /// portable/portable-file)
+        /// bitwarden/bw, 1password/op, passbolt, pass, proton-pass,
+        /// encrypted-file/file, portable/portable-file)
         #[arg(short, long)]
         backend: Option<String>,
     },
@@ -2193,8 +2193,8 @@ pub enum SecretCommands {
         password_stdin: bool,
 
         /// Secret backend to use (keyring/libsecret, keepass/keepassxc,
-        /// bitwarden/bw, 1password/op, passbolt, pass, encrypted-file/file,
-        /// portable/portable-file)
+        /// bitwarden/bw, 1password/op, passbolt, pass, proton-pass,
+        /// encrypted-file/file, portable/portable-file)
         #[arg(short, long)]
         backend: Option<String>,
     },
@@ -2207,8 +2207,8 @@ pub enum SecretCommands {
         connection: String,
 
         /// Secret backend to use (keyring/libsecret, keepass/keepassxc,
-        /// bitwarden/bw, 1password/op, passbolt, pass, encrypted-file/file,
-        /// portable/portable-file)
+        /// bitwarden/bw, 1password/op, passbolt, pass, proton-pass,
+        /// encrypted-file/file, portable/portable-file)
         #[arg(short, long)]
         backend: Option<String>,
     },

@@ -455,7 +455,19 @@ mod tests {
         terminal.feed(b"first foo\r\nsecond\r\nthird foo FOO\r\n");
         // A margin the host had before the bar opened must survive closing it.
         host.set_margin_top(3);
-        pump(300);
+        // `feed()` only queues the bytes: VTE parses them on a later main-loop
+        // iteration. A search that runs before that sees an empty buffer and
+        // selects nothing, and nothing repeats it. A fixed pause made that a
+        // race on a slow runner, so wait until all three lines are parsed (the
+        // cursor sits on row 3).
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while terminal.cursor_position().1 < 3 {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "VTE did not parse the fed text"
+            );
+            pump(10);
+        }
 
         TerminalSearchBar::show(&terminal);
         let bar = find_bar(&overlay).expect("bar is on the overlay");
@@ -468,8 +480,31 @@ mod tests {
         );
         let entry = find_entry(&bar).expect("entry");
         entry.set_text("foo");
-        pump(600);
-        assert!(terminal.has_selection(), "the search must select a match");
+        // The entry debounces `search-changed`, and on a loaded runner the
+        // timer can fire well after a fixed pause, so wait for the selection.
+        // On timeout, the status label tells which step did not happen: still
+        // "Enter text…" means the search never ran, "No matches found" means
+        // VTE ran it and found nothing.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while !terminal.has_selection() && std::time::Instant::now() < deadline {
+            pump(20);
+        }
+        let mut labels = Vec::new();
+        let mut stack = vec![bar.clone()];
+        while let Some(w) = stack.pop() {
+            if let Some(l) = w.downcast_ref::<Label>() {
+                labels.push(l.text().to_string());
+            }
+            stack.extend(std::iter::successors(w.first_child(), |c| c.next_sibling()));
+        }
+        assert!(
+            terminal.has_selection(),
+            "the search must select a match (bar labels: {labels:?}, text: {:?})",
+            terminal
+                .text_range_format(vte4::Format::Text, 0, 0, 3, 80)
+                .0
+                .map(|t| t.to_string())
+        );
         assert_eq!(
             terminal.text_selected(vte4::Format::Text).as_deref(),
             Some("foo")
