@@ -283,6 +283,11 @@ impl CredentialResolver {
             SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
             SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
             SecretBackendType::Pass => self.resolve_from_pass(connection).await,
+            SecretBackendType::ProtonPass => {
+                // New backend, so there is no legacy key to fall back to.
+                let lookup_key = Self::generate_lookup_key(connection);
+                self.retrieve_vault_identity(&lookup_key, connection).await
+            }
             SecretBackendType::EncryptedFile => {
                 // Flat-key backend: retrieve via the secret manager using the
                 // same flat lookup key as store_unified, keeping store/resolve
@@ -567,6 +572,7 @@ impl CredentialResolver {
             SecretBackendType::OnePassword => SecretBackendType::OnePassword,
             SecretBackendType::Passbolt => SecretBackendType::Passbolt,
             SecretBackendType::Pass => SecretBackendType::Pass,
+            SecretBackendType::ProtonPass => SecretBackendType::ProtonPass,
             SecretBackendType::MacOsKeychain => SecretBackendType::MacOsKeychain,
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile => {
                 if self.settings.kdbx_enabled && self.settings.kdbx_path.is_some() {
@@ -698,8 +704,9 @@ impl CredentialResolver {
             SecretBackendType::Bitwarden
             | SecretBackendType::OnePassword
             | SecretBackendType::Passbolt
-            | SecretBackendType::Pass => {
-                // For Bitwarden/1Password/Passbolt/Pass, use connection name as identifier
+            | SecretBackendType::Pass
+            | SecretBackendType::ProtonPass => {
+                // For the CLI vault backends, use connection name as identifier
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.store(&lookup_key, credentials).await
             }
@@ -862,6 +869,11 @@ impl CredentialResolver {
             SecretBackendType::OnePassword => self.resolve_from_onepassword(connection).await,
             SecretBackendType::Passbolt => self.resolve_from_passbolt(connection).await,
             SecretBackendType::Pass => self.resolve_from_pass(connection).await,
+            SecretBackendType::ProtonPass => {
+                // New backend, so there is no legacy key to fall back to.
+                let lookup_key = Self::generate_lookup_key(connection);
+                self.retrieve_vault_identity(&lookup_key, connection).await
+            }
             SecretBackendType::EncryptedFile => {
                 // Flat-key backend with no hierarchy: use the flat lookup key
                 // (the stores use the same flat key).

@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Proton Pass secret backend (issue #444)** — Settings → Secrets gains **Proton Pass**, which stores and reads connection credentials through the official Proton Pass CLI (`pass-cli`). Each connection is one login item titled `rustconn/<name>` in a vault named **RustConn**, created on the first save; the Windows domain goes in a `domain` text field. Sign in once with `pass-cli login` (the **Sign In** button opens it in a terminal); RustConn never sees a Proton credential and reuses the CLI's own session, and a missing session is reported as such. Passwords reach `pass-cli` only over stdin, as a login template: `item update` takes values on the command line only, so a save writes a fresh item and removes the one it replaces only after the new one exists, and a field the save leaves out is carried over. **Read-only mode** and **Search all vaults** (which also matches items titled by host or connection name) work as on the other CLI backends. `rustconn-cli secret get|set|delete --backend proton-pass` and `secret status` cover it too. (`rustconn-core/src/secret/proton_pass.rs`, `rustconn/src/dialogs/settings/secrets_tab/`, `rustconn-cli/src/commands/secret.rs`)
+
 ## [0.26.0] - 2026-11-21
 
 ### Added

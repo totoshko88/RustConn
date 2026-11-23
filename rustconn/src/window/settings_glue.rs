@@ -305,6 +305,7 @@ impl MainWindow {
                                 | rustconn_core::config::SecretBackendType::OnePassword
                                 | rustconn_core::config::SecretBackendType::Passbolt
                                 | rustconn_core::config::SecretBackendType::Pass
+                                | rustconn_core::config::SecretBackendType::ProtonPass
                                 | rustconn_core::config::SecretBackendType::EncryptedFile
                                 | rustconn_core::config::SecretBackendType::PortableEncryptedFile => true,
                                 rustconn_core::config::SecretBackendType::KeePassXc
