@@ -4023,7 +4023,7 @@ Download and install additional CLI tools directly within the sandbox:
 
 **Zero Trust CLIs:** AWS CLI, AWS SSM Plugin, Google Cloud CLI, Azure CLI, OCI CLI, Teleport, Tailscale, Cloudflare Tunnel, HashiCorp Boundary, Hoop.dev
 
-**Password Manager CLIs:** Bitwarden CLI, 1Password CLI
+**Password Manager CLIs:** Bitwarden CLI, 1Password CLI, Proton Pass CLI
 
 **Remote Scripts:** pywinrm, for `.ps1` scripts on WinRM hosts with [Run Local Script](#run-local-script)
 
@@ -4213,7 +4213,7 @@ Also in this group: **Auto-hide the sidebar on connect**, and **Open tunnelled b
 - **Bitwarden Settings:** Vault status, unlock button, master password persistence, save to system keyring, auto-unlock, API key authentication for 2FA
 - **1Password Settings:** Account status, sign-in button, biometric auth support, service account token
 - **Passbolt Settings:** CLI detection, server URL, GPG passphrase, server configuration status
-- **Proton Pass Settings:** account status and a sign-in button that runs `pass-cli login` in a terminal. Items live in a vault named **RustConn**, created on the first save
+- **Proton Pass Settings:** account status and a sign-in button that runs `pass-cli login` in a terminal. Items live in a vault named **RustConn**, created on the first save. In the Flatpak the button finds no terminal; sign in as described in [Proton Pass Not Working](#proton-pass-not-working)
 - **Pass Settings:** CLI detection, custom `PASSWORD_STORE_DIR`, GPG-encrypted files
 - **KeePassXC KDBX Settings:** Database path, key file, password/key file authentication. The KeePass group also carries its own **Read-only mode** and **Search from vault root** switches: *Search from vault root* widens a lookup to the whole database when a credential is not found at RustConn's scoped `RustConn/` path (reading only — saves stay scoped, so this can never reintroduce a doubled-prefix write), which is how it reaches entries you created by hand or imported from another tool. *Read-only mode* is recorded and honoured where KeePass is written through the backend chain; note the main credential-resolution path that runs on connect only ever reads a KeePass entry, so there is nothing for read-only to block there — it is a safeguard for the write paths, not the connect path. **YubiKey / Challenge-Response:** when the database is secured with a hardware key, RustConn shows a "touch your key" banner while `keepassxc-cli` waits for the touch — on connect and password load as well as on save (0.23.0).
 - **System Keyring Requirements:** Requires `libsecret-tools` (`secret-tool` binary)
@@ -5107,11 +5107,19 @@ RustConn opens the KeePass database directly by file (`.kdbx`); it does not use 
 
 ### Proton Pass Not Working
 
-1. Install the Proton Pass CLI (`pass-cli`) as described at protonpass.github.io/pass-cli and check that `pass-cli --version` runs
+1. Install the Proton Pass CLI (`pass-cli`) as described at protonpass.github.io/pass-cli and check that `pass-cli --version` runs. Flatpak: install it from Menu → **Components…** instead (a `pass-cli` on the host is not visible in the sandbox); RustConn downloads the build listed in Proton's release manifest and refuses it unless its SHA-256 matches
 2. Sign in: `pass-cli login` (web login, including SSO and security keys) or `pass-cli login --personal-access-token …`. `pass-cli info` shows the account. A personal access token session ends after 2 hours
 3. Select Proton Pass in Settings → Secrets. "Not signed in" there or "Not logged in to Proton Pass" on connect means the CLI has no session: sign in again
 4. A session locked with `pass-cli session lock` refuses every lookup until `pass-cli session unlock`
-5. Flatpak: `pass-cli` is not bundled or downloadable in the sandbox yet
+5. **Flatpak: sign in inside the sandbox.** `pass-cli` keeps its session in its data directory, which is `~/.var/app/io.github.totoshko88.RustConn/data/proton-pass-cli` in the sandbox and `~/.local/share/proton-pass-cli` on the host, so a `pass-cli login` in a host terminal or a Local Shell tab (a host shell) signs in a session RustConn does not read. The **Sign In** button cannot help either: no terminal is visible from inside the sandbox. Run the login inside the sandbox from your own terminal application:
+
+   ```bash
+   flatpak run --env=PROTON_PASS_LINUX_KEYRING=dbus \
+     --command="$HOME/.var/app/io.github.totoshko88.RustConn/cli/proton-pass/pass-cli" \
+     io.github.totoshko88.RustConn login
+   ```
+
+   Append `--personal-access-token …` for a token login, as outside the sandbox. `PROTON_PASS_LINUX_KEYRING=dbus` is required: by default `pass-cli` keeps the key that encrypts its session in the kernel keyring, which the Flatpak sandbox blocks, so it would fail before reaching Proton. RustConn sets the same variable on every `pass-cli` it runs in the Flatpak, so the key goes to your Secret Service keyring (GNOME Keyring, KWallet) and the session survives a reboot. Use the same command with `info`, `logout` or `session unlock` in place of `login`
 
 ### Embedded RDP/VNC Issues
 

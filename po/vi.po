@@ -5524,8 +5524,8 @@ msgid "Password Manager CLIs"
 msgstr "CLI trình quản lý mật khẩu"
 
 #: rustconn/src/dialogs/flatpak_components.rs:183
-msgid "Required for Bitwarden and 1Password integration"
-msgstr "Cần cho việc tích hợp Bitwarden và 1Password"
+msgid "Required for Bitwarden, 1Password and Proton Pass integration"
+msgstr "Cần cho việc tích hợp Bitwarden, 1Password và Proton Pass"
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
 #: rustconn/src/dialogs/settings/clients_tab.rs:102

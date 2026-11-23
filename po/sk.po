@@ -5556,8 +5556,8 @@ msgid "Password Manager CLIs"
 msgstr "CLI správcov hesiel"
 
 #: rustconn/src/dialogs/flatpak_components.rs:183
-msgid "Required for Bitwarden and 1Password integration"
-msgstr "Vyžadované pre integráciu Bitwarden a 1Password"
+msgid "Required for Bitwarden, 1Password and Proton Pass integration"
+msgstr "Vyžadované pre integráciu Bitwarden, 1Password a Proton Pass"
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
 #: rustconn/src/dialogs/settings/clients_tab.rs:102

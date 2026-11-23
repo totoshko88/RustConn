@@ -631,13 +631,23 @@ fn detect_pass(
 /// `pass-cli info` is what tells a logged-in CLI from one with no session; it
 /// reaches the Proton API, which is why it goes through [`probe`] like the other
 /// networked status checks.
+///
+/// `find_in_path` also searches the sandbox CLI directory, where the Flatpak
+/// Components dialog installs `pass-cli`.
 fn detect_proton_pass() -> (Option<String>, Option<(String, &'static str)>) {
-    let Some(version) = get_cli_version("pass-cli", &["--version"]) else {
+    let Some(pass_cli) = rustconn_core::which::find_in_path("pass-cli") else {
         return (None, None);
     };
-    let mut cmd = std::process::Command::new("pass-cli");
+    let pass_cli = pass_cli.to_string_lossy();
+    let Some(version) = get_cli_version(&pass_cli, &["--version"]) else {
+        return (None, None);
+    };
+    let mut cmd = std::process::Command::new(&*pass_cli);
     cmd.env("PATH", rustconn_core::cli_download::get_extended_path())
         .args(["info", "--output", "json"]);
+    if let Some((key, value)) = rustconn_core::secret::pass_cli_sandbox_env() {
+        cmd.env(key, value);
+    }
     let status = match probe(&mut cmd, "pass-cli info") {
         Some(o) if o.status.success() => {
             let stdout = String::from_utf8_lossy(&o.stdout);

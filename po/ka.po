@@ -5571,8 +5571,8 @@ msgid "Password Manager CLIs"
 msgstr "პაროლის მმართველის CLI-ები"
 
 #: rustconn/src/dialogs/flatpak_components.rs:183
-msgid "Required for Bitwarden and 1Password integration"
-msgstr "აუცილებელია Bitwarden-ში და 1Password-ში ინტეგრაციისთვის"
+msgid "Required for Bitwarden, 1Password and Proton Pass integration"
+msgstr "აუცილებელია Bitwarden-ში, 1Password-ში და Proton Pass-ში ინტეგრაციისთვის"
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
 #: rustconn/src/dialogs/settings/clients_tab.rs:102

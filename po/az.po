@@ -5540,8 +5540,8 @@ msgid "Password Manager CLIs"
 msgstr "Parol meneceri CLI-ları"
 
 #: rustconn/src/dialogs/flatpak_components.rs:183
-msgid "Required for Bitwarden and 1Password integration"
-msgstr "Bitwarden və 1Password inteqrasiyası üçün tələb olunur"
+msgid "Required for Bitwarden, 1Password and Proton Pass integration"
+msgstr "Bitwarden, 1Password və Proton Pass inteqrasiyası üçün tələb olunur"
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
 #: rustconn/src/dialogs/settings/clients_tab.rs:102

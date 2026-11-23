@@ -110,7 +110,7 @@ pub use portable_encrypted_file::{
     prepare_portable_store, resolve_portable_store_path, store_portable_passphrase_in_keyring,
     verify_portable_passphrase,
 };
-pub use proton_pass::ProtonPassBackend;
+pub use proton_pass::{ProtonPassBackend, pass_cli_sandbox_env};
 pub use resolver::{
     CredentialResolver, resolve_group_kdbx_path_override, resolve_kdbx_path_override,
 };

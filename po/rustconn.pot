@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.26.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 11:18-0500\n"
+"POT-Creation-Date: 2026-11-22 20:41-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -5318,7 +5318,7 @@ msgid "Password Manager CLIs"
 msgstr ""
 
 #: rustconn/src/dialogs/flatpak_components.rs:183
-msgid "Required for Bitwarden and 1Password integration"
+msgid "Required for Bitwarden, 1Password and Proton Pass integration"
 msgstr ""
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
@@ -5847,7 +5847,7 @@ msgid "RDP File"
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:269
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:764
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:774
 msgid "Unknown"
 msgstr ""
 
@@ -7936,63 +7936,63 @@ msgstr ""
 msgid "Cannot determine store directory"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:652
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:877
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:662
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:887
 msgid "Signed in: {}"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:653
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:879
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:663
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:889
 msgid "Signed in"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:657
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:884
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:888
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:667
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:894
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:898
 msgid "Not signed in"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:658
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:765
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:891
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:914
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:668
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:775
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:901
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:924
 msgid "Error checking status"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:760
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:770
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1312
 msgid "Unlocked"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:761
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:771
 msgid "Locked"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:762
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:772
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1321
 msgid "Not logged in"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:763
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:773
 msgid "Status: {}"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:886
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:896
 msgid "Session expired"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:903
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:913
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3460
 msgid "Configured"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:907
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:911
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:917
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:921
 #: rustconn/src/embedded_vnc/ui.rs:322
 msgid "Not configured"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:909
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:919
 msgid "Authentication failed"
 msgstr ""
 

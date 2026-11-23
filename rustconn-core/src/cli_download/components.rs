@@ -240,6 +240,22 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         pinned_version: None,
         works_in_sandbox: true,
     },
+    DownloadableComponent {
+        id: "pass-cli",
+        name: "Proton Pass CLI",
+        description: "For Proton Pass integration",
+        category: ComponentCategory::PasswordManager,
+        install_method: InstallMethod::CustomScript,
+        download_url: Some(super::install_custom::PROTON_PASS_MANIFEST_URL),
+        aarch64_url: Some(super::install_custom::PROTON_PASS_MANIFEST_URL),
+        checksum: ChecksumPolicy::Published,
+        pip_package: None,
+        size_hint: "~55 MB",
+        binary_name: "pass-cli",
+        install_subdir: "proton-pass",
+        pinned_version: None,
+        works_in_sandbox: true,
+    },
     // Container orchestration CLIs
     DownloadableComponent {
         id: "kubectl",

@@ -5590,8 +5590,8 @@ msgid "Password Manager CLIs"
 msgstr "Passwortmanager-CLIs"
 
 #: rustconn/src/dialogs/flatpak_components.rs:183
-msgid "Required for Bitwarden and 1Password integration"
-msgstr "Erforderlich für Bitwarden- und 1Password-Integration"
+msgid "Required for Bitwarden, 1Password and Proton Pass integration"
+msgstr "Erforderlich für Bitwarden-, 1Password- und Proton-Pass-Integration"
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
 #: rustconn/src/dialogs/settings/clients_tab.rs:102

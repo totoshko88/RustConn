@@ -5597,8 +5597,8 @@ msgid "Password Manager CLIs"
 msgstr "CLI de gestionnaires de mots de passe"
 
 #: rustconn/src/dialogs/flatpak_components.rs:183
-msgid "Required for Bitwarden and 1Password integration"
-msgstr "Requis pour l'intégration Bitwarden et 1Password"
+msgid "Required for Bitwarden, 1Password and Proton Pass integration"
+msgstr "Requis pour l'intégration Bitwarden, 1Password et Proton Pass"
 
 #: rustconn/src/dialogs/flatpak_components.rs:193
 #: rustconn/src/dialogs/settings/clients_tab.rs:102

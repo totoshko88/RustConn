@@ -59,6 +59,23 @@ const FIELD_MISSING: &str = "Field does not exist";
 /// Custom field the Windows domain is stored in.
 const DOMAIN_FIELD: &str = "domain";
 
+/// `pass-cli`'s switch between the kernel keyring and the Secret Service for
+/// the key that encrypts its local session.
+const KEYRING_ENV: &str = "PROTON_PASS_LINUX_KEYRING";
+
+/// The environment variable `pass-cli` needs to keep a session in this process's
+/// sandbox, if any.
+///
+/// `pass-cli` keeps its session key in the kernel keyring by default, and the
+/// Flatpak seccomp filter refuses every `keyctl` call, so there it cannot even
+/// report "not logged in". The manifest grants the Secret Service instead. A
+/// value the user exported is left alone.
+#[must_use]
+pub fn pass_cli_sandbox_env() -> Option<(&'static str, &'static str)> {
+    (crate::flatpak::is_flatpak() && std::env::var_os(KEYRING_ENV).is_none())
+        .then_some((KEYRING_ENV, "dbus"))
+}
+
 /// Proton Pass CLI backend.
 pub struct ProtonPassBackend {
     /// Vault for `RustConn` entries.
@@ -175,6 +192,9 @@ impl ProtonPassBackend {
     fn command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new(&self.program);
         cmd.env("PATH", crate::cli_download::get_extended_path());
+        if let Some((key, value)) = pass_cli_sandbox_env() {
+            cmd.env(key, value);
+        }
         // The timeout drops the future; without this a stalled `pass-cli`
         // would outlive it.
         cmd.kill_on_drop(true);
