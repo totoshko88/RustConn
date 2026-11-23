@@ -183,31 +183,46 @@ impl TerminalSearchBar {
         bar.append(&top_row);
         bar.append(&options_row);
 
-        let highlighter = Rc::new(SearchHighlight::new(terminal));
-        let controls = Controls {
+        // The handlers on the entry and the toggles hold `controls` weakly: a
+        // strong copy there is an entry → handler → controls → entry cycle that
+        // keeps the entry, and the terminal in `controls`, alive for good. The
+        // one strong copy lives in `close`, which only the bar's own children
+        // and controllers hold, so it goes when the bar does.
+        let controls = Rc::new(Controls {
             terminal: terminal.clone(),
             entry: search_entry.clone(),
             case_sensitive: case_sensitive.clone(),
             regex_toggle: regex_toggle.clone(),
             highlight_all: highlight_all.clone(),
             label: match_label,
-            highlighter: Rc::clone(&highlighter),
-        };
+            highlighter: Rc::new(SearchHighlight::new(terminal)),
+        });
 
         // Close: takes the bar off, gives the rows back, returns focus.
+        //
+        // The closure lives in controllers attached to the bar, so it holds the
+        // bar, the terminal and the content weakly: a strong bar here is a
+        // bar → controller → closure → bar cycle that keeps the bar, and every
+        // terminal its handlers hold, alive after the tab closes.
+        let previous_margin_top = content.margin_top();
         let close = {
-            let terminal = terminal.clone();
+            let terminal = terminal.downgrade();
             let overlay = overlay.downgrade();
-            let bar = bar.clone();
-            let content = content.clone();
+            let bar = bar.downgrade();
+            let content = content.downgrade();
+            let controls = Rc::clone(&controls);
             Rc::new(move || {
-                highlighter.remove();
-                terminal.search_set_regex(None, 0);
-                content.set_margin_top(0);
-                if let Some(overlay) = overlay.upgrade() {
+                controls.highlighter.remove();
+                if let Some(content) = content.upgrade() {
+                    content.set_margin_top(previous_margin_top);
+                }
+                if let (Some(overlay), Some(bar)) = (overlay.upgrade(), bar.upgrade()) {
                     overlay.remove_overlay(&bar);
                 }
-                terminal.grab_focus();
+                if let Some(terminal) = terminal.upgrade() {
+                    terminal.search_set_regex(None, 0);
+                    terminal.grab_focus();
+                }
             })
         };
         close_btn.connect_clicked({
@@ -216,18 +231,29 @@ impl TerminalSearchBar {
         });
 
         search_entry.connect_search_changed({
-            let c = controls.clone();
-            move |_| c.run()
+            let c = Rc::downgrade(&controls);
+            move |_| {
+                if let Some(c) = c.upgrade() {
+                    c.run();
+                }
+            }
         });
         for toggle in [&case_sensitive, &regex_toggle] {
             toggle.connect_toggled({
-                let c = controls.clone();
-                move |_| c.run()
+                let c = Rc::downgrade(&controls);
+                move |_| {
+                    if let Some(c) = c.upgrade() {
+                        c.run();
+                    }
+                }
             });
         }
         highlight_all.connect_toggled({
-            let c = controls.clone();
+            let c = Rc::downgrade(&controls);
             move |btn| {
+                let Some(c) = c.upgrade() else {
+                    return;
+                };
                 let text = c.entry.text();
                 if !text.is_empty() {
                     c.highlighter.set(btn.is_active().then(|| {
@@ -290,8 +316,7 @@ impl TerminalSearchBar {
     }
 }
 
-/// Everything a search needs, cloned into each signal handler.
-#[derive(Clone)]
+/// Everything a search needs, shared by the bar's signal handlers.
 struct Controls {
     terminal: Terminal,
     entry: SearchEntry,
@@ -428,11 +453,13 @@ mod tests {
             .build();
         window.present();
         terminal.feed(b"first foo\r\nsecond\r\nthird foo FOO\r\n");
+        // A margin the host had before the bar opened must survive closing it.
+        host.set_margin_top(3);
         pump(300);
 
         TerminalSearchBar::show(&terminal);
         let bar = find_bar(&overlay).expect("bar is on the overlay");
-        assert!(host.margin_top() > 0, "bar height must be reserved");
+        assert!(host.margin_top() > 3, "bar height must be reserved");
         // A second call reuses the open bar.
         TerminalSearchBar::show(&terminal);
         assert_eq!(
@@ -460,6 +487,17 @@ mod tests {
         close_btn.emit_clicked();
         pump(100);
         assert!(find_bar(&overlay).is_none());
-        assert_eq!(host.margin_top(), 0, "closing must free the room");
+        assert_eq!(host.margin_top(), 3, "closing must restore the old margin");
+        // The close closure must not keep the bar alive through its own
+        // controllers once the overlay lets go of it.
+        let weak_bar = bar.downgrade();
+        let weak_entry = entry.downgrade();
+        drop(close_btn);
+        drop(entry);
+        drop(bar);
+        pump(100);
+        assert!(weak_bar.upgrade().is_none(), "closed bar must be freed");
+        // Nor may the entry's own handlers keep it, and the terminal, alive.
+        assert!(weak_entry.upgrade().is_none(), "closed entry must be freed");
     }
 }

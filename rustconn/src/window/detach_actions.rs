@@ -532,7 +532,7 @@ fn handle_tab_drop(
         } else if let Some(group) = &target_group
             && !Rc::ptr_eq(group, &source)
         {
-            move_between_group_windows(&targets, &source, group, session_id, position);
+            move_between_group_windows(handles, &targets, &source, group, session_id, position);
         }
     } else if let Some(group) = &target_group {
         let session_id = targets
@@ -620,11 +620,20 @@ fn move_main_tab_to_group_window(
     tracing::info!(session = %session_id, whole_split, "tab dragged into another window");
 }
 
+/// The title of a tab moved between windows: the focused pane's name, else the
+/// session's own.
+fn moved_tab_title(focused_name: Option<String>, session_name: &str) -> String {
+    focused_name
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| session_name.to_string())
+}
+
 /// Moves a session's tab from one group window to another, keeping the session.
 ///
 /// The session stays detached throughout; only the window showing its content
 /// box changes, so nothing is reconnected or rebuilt.
 fn move_between_group_windows(
+    handles: &DetachHandles,
     targets: &DetachTargets,
     source: &Rc<SessionGroupWindow>,
     group: &Rc<SessionGroupWindow>,
@@ -637,6 +646,12 @@ fn move_between_group_windows(
     ) else {
         return;
     };
+    // A moved split keeps naming its focused pane, as it did in the source
+    // window (`retitle_split_window`); the next focus change would be too late.
+    let focused_name = super::theme_actions::focused_pane(&handles.bridges, session_id)
+        .and_then(|pane| targets.notebook.get_session_info(pane))
+        .map(|pane| pane.name);
+    let title = moved_tab_title(focused_name, &info.name);
     // Drops the page only: the session is marked as leaving, so not ended. A
     // source window left empty closes itself, as after any last tab leaves.
     source.remove_session(session_id);
@@ -647,7 +662,7 @@ fn move_between_group_windows(
     group.add_session(
         session_id,
         info.connection_id,
-        &info.name,
+        &title,
         &info.protocol,
         &content,
     );
@@ -802,6 +817,29 @@ fn wire_group_window(group: &Rc<SessionGroupWindow>, group_id: Uuid, handles: &D
             }
         }),
     );
+    // The theme picker acts on this window's selected tab, and by name only on
+    // a tab this window hosts.
+    let group_active = Rc::downgrade(group);
+    let group_hosts = Rc::downgrade(group);
+    super::theme_actions::install_picker_actions(
+        group.window(),
+        &picker_source(handles),
+        move || group_active.upgrade()?.selected_session(),
+        move |session| {
+            group_hosts
+                .upgrade()
+                .is_some_and(|group| group.sessions().contains(&session))
+        },
+    );
+}
+
+/// The theme picker's view of the notebook, the split layouts and the state.
+fn picker_source(handles: &DetachHandles) -> super::theme_actions::PickerSource {
+    super::theme_actions::PickerSource {
+        notebook: handles.notebook.clone(),
+        bridges: handles.bridges.clone(),
+        state: handles.state.clone(),
+    }
 }
 
 /// Gives a group window its own broadcast to every terminal tab it hosts
@@ -1173,6 +1211,13 @@ fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &D
         }
     });
     window.add_action(&settings_action);
+    // The theme picker repaints this window's session and no other.
+    super::theme_actions::install_picker_actions(
+        &window,
+        &picker_source(handles),
+        move || Some(session_id),
+        move |session| session == session_id,
+    );
 
     follow_passthrough_for_primary_menu(detached, handles);
 }
@@ -1402,7 +1447,14 @@ impl MainWindow {
 mod tests {
     use rustconn_core::DetachVerdict;
 
-    use super::{DETACH_TO_MONITOR_TYPE, session_id_from, verdict_explanation};
+    use super::{DETACH_TO_MONITOR_TYPE, moved_tab_title, session_id_from, verdict_explanation};
+
+    #[test]
+    fn a_moved_split_is_titled_after_its_focused_pane() {
+        assert_eq!(moved_tab_title(Some("db-2".into()), "web-1"), "db-2");
+        assert_eq!(moved_tab_title(None, "web-1"), "web-1");
+        assert_eq!(moved_tab_title(Some(String::new()), "web-1"), "web-1");
+    }
 
     #[test]
     fn every_blocking_verdict_has_an_explanation() {

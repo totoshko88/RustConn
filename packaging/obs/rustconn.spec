@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.26.0
+Version:        0.26.1
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,13 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Nov 23 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.1-0
+- Version bump to 0.26.1
+- Added: drag tabs between windows or out into a new one (PR #443); drag a whole split out into its own window; drop a tab onto an empty split pane; quick terminal theme picker; template editor printer redirection and session toolbar; SPICE socket path in the wizard
+- Fixed: non-modal terminal search bar (#442); an edited user name wins over the vault and the credential cache; Save & Connect keeps the typed password; jump-host connects wait for the startup keyring; Esc while dragging a tab no longer opens a window
+- Changed: the window no longer waits for the keyring, ssh-agent or example scripts at start; system tray switch on its row; monitoring hints name SSH; unused rustconn-core API removed
+- Dependencies: ashpd 0.14.2 -> 0.14.3, hashbrown 0.17.1 -> 0.17.2
+
 * Sat Nov 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.0-0
 - Version bump to 0.26.0
 - Added: Duplicate via Wizard in the tab menu (#437); built-in script recording (#373); read-only session sharing over HTTP and WebTransport, with a shared-tab marker and Stop Sharing; read-only TFTP server; remote file editor

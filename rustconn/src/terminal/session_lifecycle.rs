@@ -470,6 +470,8 @@ impl TerminalNotebook {
         // the map borrow because that `Drop` talks to GTK.
         let stale_overlay = self.highlight_overlays.borrow_mut().remove(&session_id);
         drop(stale_overlay);
+        // A reconnect paints the configured colours again, over a picked theme.
+        self.session_themes.borrow_mut().remove(&session_id);
 
         // Remove stale VTE child PID entry — the process should have already
         // exited (child-exited removes it), but if reconnect is triggered

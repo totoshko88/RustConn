@@ -495,6 +495,9 @@ pub struct TerminalNotebook {
     script_menu_section: Rc<gio::Menu>,
     /// Highlight overlay widgets per session: session_id → HighlightOverlay
     highlight_overlays: Rc<RefCell<HashMap<Uuid, HighlightOverlay>>>,
+    /// The theme the quick picker last painted on a session, until a global
+    /// repaint, a reconnect or the session's end paints over it.
+    session_themes: Rc<RefCell<HashMap<Uuid, String>>>,
     /// GTK Overlay widgets per session for layering highlight DrawingArea
     terminal_overlays: Rc<RefCell<HashMap<Uuid, gtk4::Overlay>>>,
     /// Cancel tokens for background polling tasks (host check, auto-reconnect, WoL)
@@ -726,6 +729,7 @@ impl TerminalNotebook {
             shared_sessions: Rc::new(RefCell::new(HashSet::new())),
             script_menu_section: Rc::new(gio::Menu::new()),
             highlight_overlays: Rc::new(RefCell::new(HashMap::new())),
+            session_themes: Rc::new(RefCell::new(HashMap::new())),
             terminal_overlays: Rc::new(RefCell::new(HashMap::new())),
             active_recordings: Rc::new(RefCell::new(HashSet::new())),
             remote_recordings: RefCell::new(HashMap::new()),
@@ -774,6 +778,7 @@ impl TerminalNotebook {
         let active_recordings = self.active_recordings.clone();
         let session_highlight_rules = self.session_highlight_rules.clone();
         let highlight_overlays = self.highlight_overlays.clone();
+        let session_themes = self.session_themes.clone();
         let terminal_overlays = self.terminal_overlays.clone();
         let ssh_tunnels = self.ssh_tunnels.clone();
         let tab_containers = self.tab_containers.clone();
@@ -923,6 +928,8 @@ impl TerminalNotebook {
                 // map borrow: its `Drop` detaches the layer and its handlers.
                 let highlight_overlay = highlight_overlays.borrow_mut().remove(&session_id);
                 drop(highlight_overlay);
+                // The theme the quick picker painted ends with the session.
+                session_themes.borrow_mut().remove(&session_id);
 
                 // Remove terminal overlay widget for this session
                 terminal_overlays.borrow_mut().remove(&session_id);

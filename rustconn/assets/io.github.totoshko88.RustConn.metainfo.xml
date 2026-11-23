@@ -116,6 +116,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.26.1" date="2026-11-23">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.1</url>
+      <description>
+        <p>Version 0.26.1 - moving tabs and splits between windows, non-modal terminal search and faster start:</p>
+        <ul>
+          <li>Drag tabs between windows or out into a new one, and drag a whole split out into its own window.</li>
+          <li>A tab can be dropped onto an empty split pane.</li>
+          <li>A quick terminal theme picker in the tab menu and the command palette.</li>
+          <li>Terminal search is a bar at the top of the terminal and no longer blocks the session.</li>
+          <li>An edited user name now takes effect, and Save &amp; Connect no longer asks for the password just typed.</li>
+          <li>The window starts without waiting for the keyring, ssh-agent or example scripts.</li>
+          <li>The template editor gains printer redirection and session toolbar switches, and the wizard a SPICE socket path.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.26.0" date="2026-11-21">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.0</url>
       <description>

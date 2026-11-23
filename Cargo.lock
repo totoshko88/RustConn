@@ -211,9 +211,9 @@ checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
 name = "ashpd"
-version = "0.14.2"
+version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2cdaefc3d7fbc3a90a868ae471cf8b35407b7186c95ffc63bb787cbd5cf9fa5"
+checksum = "b60a01f4fbcba6a522ec4d285893bd0ce36f5987a8b3bf636e6aeb2d2acdf8ac"
 dependencies = [
  "bitflags 2.13.2",
  "futures-util",
@@ -2222,9 +2222,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.17.1"
+version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+checksum = "735eaa21a6a5ffb2e84362faaeb90c05ba8e19797ca30428478cb6ea3a4921bc"
 
 [[package]]
 name = "heapless"
@@ -4983,7 +4983,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "async-channel",
  "chrono",
@@ -5023,7 +5023,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "chrono",
  "clap",
@@ -5046,7 +5046,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "aes 0.9.4",
  "ar",
@@ -5125,7 +5125,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5134,18 +5134,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.26.0"
+version = "0.26.1"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-lock-sys"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5154,7 +5154,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "libc",
  "nix",

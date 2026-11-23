@@ -30,6 +30,11 @@ static AGENT_INFO: OnceLock<SshAgentInfo> = OnceLock::new();
 static AGENT_STARTUP: OnceLock<std::sync::Arc<crate::startup_gate::StartupGate<()>>> =
     OnceLock::new();
 
+/// The thread that called [`start_ssh_agent_in_background`]: `main()`, which
+/// then runs the GTK main loop. A reader on this thread does not wait for the
+/// start when a socket is already known (see [`must_wait_for_agent`]).
+static AGENT_STARTER_THREAD: OnceLock<std::thread::ThreadId> = OnceLock::new();
+
 /// How long a launch waits for the background agent start. `ssh-agent -s` is
 /// itself bounded by `AGENT_COMMAND_TIMEOUT`, so this only guards a lost thread.
 const AGENT_STARTUP_WAIT: std::time::Duration = std::time::Duration::from_secs(6);
@@ -37,14 +42,17 @@ const AGENT_STARTUP_WAIT: std::time::Duration = std::time::Duration::from_secs(6
 /// Runs [`ensure_ssh_agent`] on a thread and stores the result with
 /// [`set_agent_info`], so a slow or absent `ssh-agent` does not delay the window.
 ///
-/// Every reader of the stored agent ([`get_agent_info`],
-/// [`resolve_ssh_agent_socket`], [`agent_env_vars`]) waits for this thread, so a
-/// launch right after start still gets the agent. Call once, from `main()`.
+/// Readers of the stored agent ([`get_agent_info`],
+/// [`resolve_ssh_agent_socket`], [`agent_env_vars`]) on a worker thread wait for
+/// this thread, so a launch right after start still gets the agent. The calling
+/// thread (the GTK main thread) waits only when no socket is known at all.
+/// Call once, from `main()`.
 pub fn start_ssh_agent_in_background() {
     let gate = std::sync::Arc::new(crate::startup_gate::StartupGate::pending());
     if AGENT_STARTUP.set(std::sync::Arc::clone(&gate)).is_err() {
         return;
     }
+    let _ = AGENT_STARTER_THREAD.set(std::thread::current().id());
     let spawned = std::thread::Builder::new()
         .name("ssh-agent-start".into())
         .spawn({
@@ -66,12 +74,36 @@ pub fn start_ssh_agent_in_background() {
     }
 }
 
-/// The stored agent, after any background start has finished.
+/// Whether a reader must wait for a still-running background agent start.
+///
+/// A worker thread always waits, as it always has. The GTK main thread must not
+/// wait on a startup gate (see [`crate::startup_gate`]), so it uses what is
+/// already known — the inherited `SSH_AUTH_SOCK` — and waits only when nothing
+/// is: then the launch has no agent otherwise. That wait cannot deadlock, since
+/// the `ssh-agent-start` thread never needs the GTK thread, and it is bounded.
+const fn must_wait_for_agent(on_gtk_thread: bool, env_socket_known: bool) -> bool {
+    !on_gtk_thread || !env_socket_known
+}
+
+/// Whether the inherited `SSH_AUTH_SOCK` names a socket (set and not blank).
+fn env_agent_socket_known() -> bool {
+    std::env::var("SSH_AUTH_SOCK").is_ok_and(|value| !value.trim().is_empty())
+}
+
+/// The stored agent, after any background start has finished — or, on the GTK
+/// main thread with a socket already known, whatever is stored right now.
 fn agent_info() -> Option<&'static SshAgentInfo> {
     if let Some(gate) = AGENT_STARTUP.get()
-        && gate.wait(AGENT_STARTUP_WAIT).is_none()
+        && gate.get().is_none()
     {
-        tracing::warn!("ssh-agent start did not finish in time; continuing without it");
+        let on_gtk_thread = AGENT_STARTER_THREAD.get() == Some(&std::thread::current().id());
+        if must_wait_for_agent(on_gtk_thread, env_agent_socket_known()) {
+            if gate.wait(AGENT_STARTUP_WAIT).is_none() {
+                tracing::warn!("ssh-agent start did not finish in time; continuing without it");
+            }
+        } else {
+            tracing::debug!("ssh-agent start still running; using the inherited SSH_AUTH_SOCK");
+        }
     }
     AGENT_INFO.get()
 }
@@ -189,9 +221,13 @@ pub fn resolve_ssh_agent_socket(
     let global = global_override
         .and_then(normalize_socket_path)
         .or_else(global_agent_socket);
+    // A chosen socket outranks the detected agent, so do not wait for it.
+    if let Some(chosen) = pick_agent_socket(per_connection, global.as_deref(), None, None) {
+        return Some(chosen);
+    }
     pick_agent_socket(
-        per_connection,
-        global.as_deref(),
+        None,
+        None,
         agent_info().map(|info| info.socket_path.as_str()),
         std::env::var("SSH_AUTH_SOCK").ok().as_deref(),
     )
@@ -215,7 +251,9 @@ fn agent_env_vars_with(
     let Some(socket) = resolve_ssh_agent_socket(per_connection, global_override) else {
         return Vec::new();
     };
-    let pid = agent_info()
+    // No second wait: resolving above already waited when it had to.
+    let pid = AGENT_INFO
+        .get()
         .filter(|info| info.socket_path == socket)
         .and_then(|info| info.pid.clone());
     let mut vars = vec![("SSH_AUTH_SOCK", socket)];
@@ -1063,6 +1101,16 @@ fn shell_escape(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn gtk_thread_waits_for_agent_only_when_no_socket_is_known() {
+        // Worker threads wait as before, whatever the environment holds.
+        assert!(must_wait_for_agent(false, true));
+        assert!(must_wait_for_agent(false, false));
+        // The GTK thread uses the inherited socket instead of waiting.
+        assert!(!must_wait_for_agent(true, true));
+        assert!(must_wait_for_agent(true, false));
+    }
 
     #[test]
     fn test_build_sftp_uri_with_user_default_port() {

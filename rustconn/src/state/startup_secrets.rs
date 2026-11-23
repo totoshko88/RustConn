@@ -94,18 +94,33 @@ pub struct KeyringSecrets {
 impl KeyringSecrets {
     /// Fills the secrets that are still `None`; one set meanwhile (by Settings
     /// or an unlock dialog) is kept. Returns whether anything was filled.
+    ///
+    /// Only the backends `secrets` configures now are filled, by the same
+    /// rule as [`KeyringJobs::for_settings`]: a user who switched backend while
+    /// the reads ran does not get the old backend's secret back in memory.
     pub fn apply(self, secrets: &mut SecretSettings) -> bool {
+        let backend = secrets.preferred_backend;
+        let kdbx_wanted = secrets.kdbx_enabled;
         let mut changed = false;
-        for (slot, value) in [
-            (&mut secrets.kdbx_password, self.kdbx),
+        for (wanted, slot, value) in [
+            (kdbx_wanted, &mut secrets.kdbx_password, self.kdbx),
             (
+                backend == SecretBackendType::OnePassword,
                 &mut secrets.onepassword_service_account_token,
                 self.onepassword,
             ),
-            (&mut secrets.passbolt_passphrase, self.passbolt),
-            (&mut secrets.portable_passphrase, self.portable),
+            (
+                backend == SecretBackendType::Passbolt,
+                &mut secrets.passbolt_passphrase,
+                self.passbolt,
+            ),
+            (
+                backend == SecretBackendType::PortableEncryptedFile,
+                &mut secrets.portable_passphrase,
+                self.portable,
+            ),
         ] {
-            if slot.is_none() && value.is_some() {
+            if wanted && slot.is_none() && value.is_some() {
                 *slot = value;
                 changed = true;
             }
@@ -268,6 +283,8 @@ mod tests {
     fn apply_fills_only_empty_slots() {
         use secrecy::ExposeSecret;
         let mut s = SecretSettings {
+            kdbx_enabled: true,
+            preferred_backend: SecretBackendType::Passbolt,
             kdbx_password: Some(SecretString::from("set-meanwhile")),
             ..SecretSettings::default()
         };
@@ -279,6 +296,44 @@ mod tests {
         assert!(loaded.apply(&mut s));
         assert_eq!(s.kdbx_password.unwrap().expose_secret(), "set-meanwhile");
         assert_eq!(s.passbolt_passphrase.unwrap().expose_secret(), "pp");
+    }
+
+    /// The user switched from 1Password to Passbolt while the reads ran: the
+    /// 1Password token must not come back, and KeePass, now off, stays empty.
+    #[test]
+    fn apply_skips_backends_switched_away_from() {
+        use secrecy::ExposeSecret;
+        let mut s = SecretSettings {
+            preferred_backend: SecretBackendType::Passbolt,
+            kdbx_enabled: false,
+            ..SecretSettings::default()
+        };
+        let loaded = KeyringSecrets {
+            kdbx: Some(SecretString::from("kp")),
+            onepassword: Some(SecretString::from("token")),
+            passbolt: Some(SecretString::from("pp")),
+            portable: Some(SecretString::from("port")),
+            ..KeyringSecrets::default()
+        };
+        assert!(loaded.apply(&mut s));
+        assert!(s.kdbx_password.is_none());
+        assert!(s.onepassword_service_account_token.is_none());
+        assert!(s.portable_passphrase.is_none());
+        assert_eq!(s.passbolt_passphrase.unwrap().expose_secret(), "pp");
+    }
+
+    #[test]
+    fn apply_reports_no_change_when_only_other_backends_loaded() {
+        let mut s = SecretSettings {
+            preferred_backend: SecretBackendType::Passbolt,
+            ..SecretSettings::default()
+        };
+        let loaded = KeyringSecrets {
+            onepassword: Some(SecretString::from("token")),
+            ..KeyringSecrets::default()
+        };
+        assert!(!loaded.apply(&mut s));
+        assert!(s.onepassword_service_account_token.is_none());
     }
 
     #[test]

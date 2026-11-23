@@ -785,7 +785,7 @@ pub fn collect_terminal_settings(
 ///
 /// Same length and order as `names`, so every index the load/save/edit/delete paths
 /// compute against `theme_names()` still points at the same entry.
-fn theme_labels(names: &[String]) -> Vec<String> {
+pub(crate) fn theme_labels(names: &[String]) -> Vec<String> {
     names
         .iter()
         .map(|name| {

@@ -200,8 +200,19 @@ where
             ))
         });
     }
+    // `drag-cancel` runs before `drag-end`. A drag the user called off (Escape)
+    // forgets its page there, so `drag-end` opens no window for it; a drop that
+    // nothing accepted also ends in a cancel, with another reason, and keeps it.
+    source.connect_drag_cancel(|_, _, reason| {
+        if !cancel_opens_window(reason) {
+            tracing::debug!("lone tab drag cancelled by the user");
+            SINGLE_TAB_PAGE.with(|slot| slot.borrow_mut().take());
+        }
+        false
+    });
     source.connect_drag_end(|_, _, _| {
-        // Still set when no RustConn window took the drop.
+        // Still set when no RustConn window took the drop and the user did not
+        // cancel the drag.
         let page = SINGLE_TAB_PAGE.with(|slot| slot.borrow_mut().take());
         if let Some(page) = page.and_then(|p| p.upgrade())
             && drag_over().is_none()
@@ -212,6 +223,15 @@ where
         }
     });
     tab_bar.add_controller(source);
+}
+
+/// Whether a lone-tab drag cancelled for `reason` still opens a new window.
+///
+/// Only the user calling the drag off keeps the tab where it is. A release
+/// over nothing ends as `NoTarget` on X11 and as `Error` on Wayland (see the
+/// module docs), and both mean "released outside every window".
+fn cancel_opens_window(reason: gtk4::gdk::DragCancelReason) -> bool {
+    reason != gtk4::gdk::DragCancelReason::UserCancelled
 }
 
 /// Sets what happens to a tab dragged onto another window's tab bar.
@@ -426,8 +446,18 @@ fn return_position(pinned: bool, position: i32, n_pinned: i32, n_pages: i32) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::{CLAIM_TTL, claim_is_fresh, clamp_drop_position, return_position};
+    use super::{
+        CLAIM_TTL, cancel_opens_window, claim_is_fresh, clamp_drop_position, return_position,
+    };
+    use gtk4::gdk::DragCancelReason;
     use std::time::Duration;
+
+    #[test]
+    fn an_escaped_lone_tab_drag_opens_no_window() {
+        assert!(!cancel_opens_window(DragCancelReason::UserCancelled));
+        assert!(cancel_opens_window(DragCancelReason::NoTarget));
+        assert!(cancel_opens_window(DragCancelReason::Error));
+    }
 
     #[test]
     fn a_claim_expires_after_its_ttl() {

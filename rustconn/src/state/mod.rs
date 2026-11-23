@@ -640,9 +640,23 @@ impl AppState {
     /// Returns `None` if credentials are not cached or have expired. An expired
     /// entry stays in the map until the next insert of any connection, or until
     /// [`Self::forget_cached_credentials`] drops it.
+    ///
+    /// The entry comes back with the connection's current identity applied
+    /// ([`reconcile_cached_identity`]): a user name edited on a `Vault`
+    /// connection wins over the one cached by the last connect. Every cache
+    /// reader goes through here, so none of them replays the old name.
     #[must_use]
-    pub fn get_cached_credentials(&self, connection_id: Uuid) -> Option<&CachedCredentials> {
-        self.password_cache.get(connection_id)
+    pub fn get_cached_credentials(&self, connection_id: Uuid) -> Option<CachedCredentials> {
+        let cached = self.password_cache.get(connection_id)?.clone();
+        Some(match self.get_connection(connection_id) {
+            Some(conn) => reconcile_cached_identity(
+                conn.username.as_deref(),
+                conn.domain.as_deref(),
+                &conn.password_source,
+                cached,
+            ),
+            None => cached,
+        })
     }
 
     /// Drops every cached copy of how to sign in to a connection (issue #351).
@@ -1231,7 +1245,8 @@ impl AppState {
     /// user name wins. The vault entry keeps the name it was saved with, so an
     /// edit of the name on the connection would otherwise never take effect.
     /// A vault name for a different user is ignored together with its domain
-    /// prefix; a `DOMAIN\same-user` entry still supplies the domain. `Inherit`
+    /// prefix and the entry's domain field; a `DOMAIN\same-user` entry still
+    /// supplies the domain. `Inherit`
     /// is left alone: the group's override is applied by the resolver.
     ///
     /// Every resolution path ends here, so every backend and protocol sees the
@@ -1246,21 +1261,28 @@ impl AppState {
         use rustconn_core::sync::CredentialResolutionResult;
         match outcome {
             Ok(CredentialResolutionResult::Resolved(mut creds)) => {
-                let own = conn_username
-                    .map(str::trim)
-                    .filter(|u| !u.is_empty() && *source == PasswordSource::Vault);
-                let vault_user = creds.username.as_deref().filter(|v| {
-                    own.is_none_or(|own| {
-                        let user = rustconn_core::secret::split_down_level(v)
-                            .map_or_else(|| v.trim().to_string(), |(_, user)| user);
-                        user.eq_ignore_ascii_case(own)
-                    })
-                });
+                let own = own_vault_username(conn_username, source);
+                let vault_user = creds
+                    .username
+                    .as_deref()
+                    .filter(|v| own.is_none_or(|own| is_same_user(v, own)));
+                // An entry saved for another user carries that user's domain;
+                // it must not follow the name the connection was edited to.
+                let other_user = vault_user.is_none()
+                    && creds
+                        .username
+                        .as_deref()
+                        .is_some_and(|v| !v.trim().is_empty());
+                let vault_domain = if other_user {
+                    None
+                } else {
+                    creds.domain.as_deref()
+                };
                 let identity = rustconn_core::secret::merge_vault_identity(
                     conn_username,
                     conn_domain,
                     vault_user,
-                    creds.domain.as_deref(),
+                    vault_domain,
                 );
                 creds.username = own.map(str::to_string).or(identity.username);
                 creds.domain = identity.domain;
@@ -2069,7 +2091,8 @@ impl AppState {
     /// Applies the startup keyring reads, rebuilds the secret manager when they
     /// filled anything, and opens the gate that credential lookups wait on.
     ///
-    /// Secrets set meanwhile (Settings, an unlock dialog) are kept.
+    /// Secrets set meanwhile (Settings, an unlock dialog) are kept, and only
+    /// the backends configured now are filled ([`startup_secrets::KeyringSecrets::apply`]).
     pub fn finish_startup_keyring(&mut self, loaded: startup_secrets::KeyringSecrets) {
         self.kdbx_keyring_failed |= loaded.kdbx_failed;
         if loaded.apply(&mut self.settings.secrets) {
@@ -2329,6 +2352,51 @@ impl AppState {
 /// `Script` — resolves through the backend and so is worth the lookup.
 pub(crate) fn password_source_needs_resolution(source: &PasswordSource) -> bool {
     !matches!(source, PasswordSource::None | PasswordSource::Prompt)
+}
+
+/// The connection's own user name when it overrides a stored one: non-empty
+/// after trimming, and only for a `Vault` password. A stored credential keeps
+/// the name it was saved with, so an edit on the connection must win.
+fn own_vault_username<'a>(
+    conn_username: Option<&'a str>,
+    source: &PasswordSource,
+) -> Option<&'a str> {
+    conn_username
+        .map(str::trim)
+        .filter(|u| !u.is_empty() && *source == PasswordSource::Vault)
+}
+
+/// Whether a stored user name (possibly `DOMAIN\user`) names `own`.
+fn is_same_user(stored: &str, own: &str) -> bool {
+    let user = rustconn_core::secret::split_down_level(stored)
+        .map_or_else(|| stored.trim().to_string(), |(_, user)| user);
+    user.eq_ignore_ascii_case(own)
+}
+
+/// Applies the connection's identity to a session-cache entry, the cache-side
+/// twin of [`AppState::apply_vault_identity`].
+///
+/// The cache keeps the name the last connect used. When the connection now
+/// carries a different name of its own (see [`own_vault_username`]), that name
+/// wins, and the cached domain, which belonged to the other user, is replaced
+/// by the connection's own (empty when it has none). The password is kept.
+fn reconcile_cached_identity(
+    conn_username: Option<&str>,
+    conn_domain: Option<&str>,
+    source: &PasswordSource,
+    mut cached: CachedCredentials,
+) -> CachedCredentials {
+    let Some(own) = own_vault_username(conn_username, source) else {
+        return cached;
+    };
+    if cached.username.trim().is_empty() {
+        // A password-only entry: the connection supplies the name.
+        cached.username = own.to_string();
+    } else if !is_same_user(&cached.username, own) {
+        cached.username = own.to_string();
+        cached.domain = conn_domain.map(str::trim).unwrap_or_default().to_string();
+    }
+    cached
 }
 
 /// Copies a config file startup could not parse aside before falling back to defaults.
@@ -2851,6 +2919,126 @@ mod tests {
             identity_of(out),
             (Some("alice".to_string()), Some("CORP".to_string()))
         );
+    }
+
+    // The vault entry was saved for user-01 in CORP; the connection now names
+    // user-00 and has no domain. CORP belongs to user-01 and must not apply.
+    #[test]
+    fn another_users_vault_domain_does_not_follow_the_edited_name() {
+        let out = super::AppState::apply_vault_identity(
+            Some("user-00"),
+            None,
+            &PasswordSource::Vault,
+            resolved(Some("user-01"), Some("CORP")),
+        );
+        assert_eq!(identity_of(out), (Some("user-00".to_string()), None));
+    }
+
+    #[test]
+    fn another_users_vault_domain_keeps_the_connections_domain() {
+        let out = super::AppState::apply_vault_identity(
+            Some("user-00"),
+            Some("HOME"),
+            &PasswordSource::Vault,
+            resolved(Some("user-01"), Some("CORP")),
+        );
+        assert_eq!(
+            identity_of(out),
+            (Some("user-00".to_string()), Some("HOME".to_string()))
+        );
+    }
+
+    #[test]
+    fn the_same_users_vault_domain_still_applies() {
+        let out = super::AppState::apply_vault_identity(
+            Some("alice"),
+            None,
+            &PasswordSource::Vault,
+            resolved(Some("Alice"), Some("CORP")),
+        );
+        assert_eq!(
+            identity_of(out),
+            (Some("alice".to_string()), Some("CORP".to_string()))
+        );
+    }
+
+    fn cached(user: &str, domain: &str) -> super::CachedCredentials {
+        super::CachedCredentials::new(
+            user.to_string(),
+            secrecy::SecretString::from("pw".to_string()),
+            domain.to_string(),
+        )
+    }
+
+    // The session cache held user-01 from the last connect; the connection was
+    // edited to user-00. Every cache reader must see user-00, not user-01, and
+    // not user-01's domain.
+    #[test]
+    fn an_edited_user_name_beats_the_cached_one() {
+        use secrecy::ExposeSecret;
+        let out = super::reconcile_cached_identity(
+            Some("user-00"),
+            None,
+            &PasswordSource::Vault,
+            cached("user-01", "CORP"),
+        );
+        assert_eq!(out.username, "user-00");
+        assert_eq!(out.domain, "");
+        assert_eq!(out.password.expose_secret(), "pw");
+
+        let out = super::reconcile_cached_identity(
+            Some("user-00"),
+            Some("HOME"),
+            &PasswordSource::Vault,
+            cached("user-01", "CORP"),
+        );
+        assert_eq!(
+            (out.username.as_str(), out.domain.as_str()),
+            ("user-00", "HOME")
+        );
+    }
+
+    #[test]
+    fn a_cached_entry_for_the_same_user_is_kept() {
+        let out = super::reconcile_cached_identity(
+            Some("alice"),
+            None,
+            &PasswordSource::Vault,
+            cached(r"CORP\Alice", "CORP"),
+        );
+        assert_eq!(
+            (out.username.as_str(), out.domain.as_str()),
+            (r"CORP\Alice", "CORP")
+        );
+    }
+
+    #[test]
+    fn the_cached_name_stands_without_an_own_vault_name() {
+        for (user, source) in [
+            (None, PasswordSource::Vault),
+            (Some("  "), PasswordSource::Vault),
+            (Some("user-00"), PasswordSource::Inherit),
+            (Some("user-00"), PasswordSource::Prompt),
+        ] {
+            let out =
+                super::reconcile_cached_identity(user, None, &source, cached("user-01", "CORP"));
+            assert_eq!(
+                (out.username.as_str(), out.domain.as_str()),
+                ("user-01", "CORP"),
+                "{user:?} {source:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_password_only_cache_entry_takes_the_connections_name() {
+        let out = super::reconcile_cached_identity(
+            Some("user-00"),
+            None,
+            &PasswordSource::Vault,
+            cached("", ""),
+        );
+        assert_eq!(out.username, "user-00");
     }
 
     // The group-level override on an Inherit connection is applied inside the
