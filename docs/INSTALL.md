@@ -566,6 +566,7 @@ ciscobinary.openh264.org so the fix is reachable without reading the logs.
 | KeePassXC | `keepassxc-cli` | `keepassxc` package |
 | Passbolt | `go-passbolt-cli` | [passbolt.com](https://www.passbolt.com/) |
 | Pass | `pass` | `pass` package ([passwordstore.org](https://www.passwordstore.org/)) |
+| Proton Pass | `pass-cli` | [protonpass.github.io/pass-cli](https://protonpass.github.io/pass-cli/) |
 
 ### Zero Trust CLI Tools
 

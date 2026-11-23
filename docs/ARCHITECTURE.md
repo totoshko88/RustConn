@@ -819,6 +819,7 @@ pub trait SecretBackend: Send + Sync {
 - `OnePasswordBackend`: 1Password via CLI
 - `PassboltBackend`: Passbolt via CLI (`go-passbolt-cli`)
 - `PassBackend`: Pass (passwordstore.org) via `pass` CLI
+- `ProtonPassBackend`: Proton Pass via `pass-cli` (one login item per connection in a `RustConn` vault)
 
 ### Optional System Keyring Integration
 
@@ -1472,6 +1473,7 @@ rustconn-core/src/
 │   ├── onepassword.rs     # 1Password backend (with keyring storage)
 │   ├── passbolt.rs        # Passbolt backend (with keyring storage)
 │   ├── pass.rs            # Pass (passwordstore.org) backend
+│   ├── proton_pass.rs     # Proton Pass backend (pass-cli)
 │   ├── macos_keychain.rs  # macOS Keychain backend (Security.framework)
 │   ├── encrypted_file.rs  # App-managed AES-256-GCM file (no keyring needed)
 │   ├── portable_encrypted_file.rs # Passphrase-keyed KEK/DEK store (cloud-syncable)
