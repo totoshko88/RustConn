@@ -110,6 +110,18 @@ pub enum ScriptStep {
         /// Script variable receiving the guessed prompt.
         variable: String,
     },
+    /// Renames the running session's tab from a script variable.
+    Caption {
+        /// Script variable holding the new caption.
+        variable: String,
+    },
+    /// Looks up a MAC vendor from the built-in OUI prefix table.
+    Oui {
+        /// Script variable holding the MAC address.
+        mac_var: String,
+        /// Script variable receiving the vendor name.
+        vendor_var: String,
+    },
     /// Sets or clears the output log file for the running script.
     Log {
         /// `Some(path)` starts logging to `path`; `None` stops.
@@ -357,6 +369,9 @@ pub trait ScriptHost {
 
     /// Guesses the current prompt of the session.
     fn get_prompt(&mut self) -> Option<String>;
+
+    /// Renames the running session's tab.
+    fn set_caption(&mut self, title: &str);
 
     /// Shows an input dialog; the answer arrives via
     /// [`ScriptEngine::on_ask_result`]. A `default` is offered as the
@@ -618,6 +633,24 @@ impl ScriptEngine {
                 if let Some(prompt) = host.get_prompt() {
                     self.set_var(variable, prompt);
                 }
+                self.advance();
+            }
+            ScriptStep::Caption { variable } => {
+                let caption = self.variable_value(&variable);
+                // A tab title must stay on one line and fit in a tab.
+                let caption = caption.trim().chars().take(80).collect::<String>();
+                if !caption.is_empty() {
+                    host.set_caption(&caption);
+                }
+                self.advance();
+            }
+            ScriptStep::Oui {
+                mac_var,
+                vendor_var,
+            } => {
+                let mac = self.variable_value(&mac_var);
+                let vendor = crate::oui::lookup(&mac).unwrap_or("Vendor not found");
+                self.set_var(vendor_var, vendor.to_string());
                 self.advance();
             }
             ScriptStep::Log { path } => {
@@ -1495,6 +1528,18 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
             let variable = var_name(&arg(1)?);
             Ok(ScriptStep::GetPrompt { variable })
         }
+        "caption" => {
+            let variable = var_name(&arg(1)?);
+            Ok(ScriptStep::Caption { variable })
+        }
+        "oui" => {
+            let mac_var = var_name(&arg(1)?);
+            let vendor_var = var_name(&arg(2)?);
+            Ok(ScriptStep::Oui {
+                mac_var,
+                vendor_var,
+            })
+        }
         "log" => {
             let rest = unquote(&line["log".len()..]);
             let path = if rest.is_empty() { None } else { Some(rest) };
@@ -2139,6 +2184,9 @@ mod tests {
         }
         fn get_prompt(&mut self) -> Option<String> {
             self.prompt.clone()
+        }
+        fn set_caption(&mut self, title: &str) {
+            self.events.push(format!("caption:{title}"));
         }
         fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>) {
             self.events

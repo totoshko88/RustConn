@@ -944,6 +944,9 @@ mod tests {
         fn get_prompt(&mut self) -> Option<String> {
             self.prompt.clone()
         }
+        fn set_caption(&mut self, title: &str) {
+            self.events.push(format!("caption:{title}"));
+        }
         fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>) {
             self.events
                 .push(format!("ask:{prompt}:{echo}:{}", default.unwrap_or("")));
@@ -2429,5 +2432,165 @@ mod tests {
                 "{id}"
             );
         }
+    }
+
+    /// Drives one of the new terminal examples up to its first question.
+    fn at_first_question(id: &str) -> (ScriptEngine, Recorder) {
+        let mut host = Recorder {
+            events: Vec::new(),
+            prompt: Some("SW1#".to_string()),
+        };
+        let mut engine = ScriptEngine::parse(example(id)).unwrap_or_else(|e| panic!("{id}: {e}"));
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "SW1# ");
+        feed(&mut engine, &mut host, "SW1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask, "{id}");
+        (engine, host)
+    }
+
+    #[test]
+    fn tdr_example_rejects_an_invalid_interface() {
+        let (mut engine, mut host) = at_first_question("example-cisco-tdr-cable-test");
+        engine.on_ask_result(Some("Gi0/1; rm -rf /".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.contains("test cable-diagnostics")),
+            "an invalid interface never reaches the device"
+        );
+    }
+
+    #[test]
+    fn erase_example_requires_both_confirmations() {
+        let (mut engine, mut host) = at_first_question("example-cisco-erase-device");
+        engine.on_ask_result(Some("SW1".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        engine.on_ask_result(Some("no".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        for destructive in ["write erase", "delete /force", "reload"] {
+            assert!(
+                !host
+                    .events
+                    .iter()
+                    .any(|e| e.starts_with("send:") && e.contains(destructive)),
+                "{destructive} must not be sent without confirmation"
+            );
+        }
+    }
+
+    #[test]
+    fn rename_tab_example_sets_the_caption() {
+        let mut host = Recorder {
+            events: Vec::new(),
+            prompt: Some("SW1#".to_string()),
+        };
+        let mut engine = ScriptEngine::parse(example("example-cisco-rename-tab")).unwrap();
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "SW1# ");
+        assert!(
+            host.events.iter().any(|e| e == "caption:SW1"),
+            "the hostname from the prompt becomes the tab caption"
+        );
+    }
+
+    #[test]
+    fn global_config_stays_in_check_mode_without_apply() {
+        let mut host = Recorder {
+            events: Vec::new(),
+            prompt: Some("SW1#".to_string()),
+        };
+        let mut engine = ScriptEngine::parse(example("example-cisco-global-config")).unwrap();
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "SW1# ");
+        feed(&mut engine, &mut host, "SW1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        engine.on_ask_result(Some("logging host 10.0.0.1".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        engine.on_ask_result(Some("cancel".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("configure terminal")),
+            "check mode must not configure the device"
+        );
+    }
+
+    #[test]
+    fn global_config_applies_and_saves_only_after_confirmations() {
+        let mut host = Recorder {
+            events: Vec::new(),
+            prompt: Some("SW1#".to_string()),
+        };
+        let mut engine = ScriptEngine::parse(example("example-cisco-global-config")).unwrap();
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "SW1# ");
+        feed(&mut engine, &mut host, "SW1# ");
+        engine.on_ask_result(Some("logging host 10.0.0.1".to_string()));
+        engine.pump(&mut host);
+        engine.on_ask_result(Some("APPLY".to_string()));
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "SW1(config)# ");
+        feed(&mut engine, &mut host, "SW1(config)# ");
+        feed(&mut engine, &mut host, "SW1# ");
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        engine.on_ask_result(Some("YES".to_string()));
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "SW1# ");
+        assert!(engine.is_finished(), "{}", engine.error().unwrap_or(""));
+        for expected in [
+            "send:configure terminal{ENTER}",
+            "send:logging host 10.0.0.1{ENTER}",
+            "send:end{ENTER}",
+            "send:write memory{ENTER}",
+        ] {
+            assert!(
+                host.events.iter().any(|e| e == expected),
+                "missing {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn oui_example_looks_up_a_vendor_offline() {
+        let mut host = Recorder {
+            events: Vec::new(),
+            prompt: None,
+        };
+        let mut engine = ScriptEngine::parse(example("example-oui-lookup")).unwrap();
+        engine.pump(&mut host);
+        assert_eq!(engine.pending(), PendingKind::Ask);
+        engine.on_ask_result(Some("00:11:22:33:44:55".to_string()));
+        engine.pump(&mut host);
+        assert!(
+            host.events
+                .iter()
+                .any(|e| e == "print:Vendor: Cisco Systems"),
+            "the built-in OUI table resolves a known prefix"
+        );
+    }
+
+    #[test]
+    fn command_capture_example_rejects_a_compound_command() {
+        let (mut engine, mut host) = at_first_question("example-cisco-command-capture");
+        engine.on_ask_result(Some("show run; reload".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished());
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("terminal length 0")),
+            "a rejected command never reaches the device"
+        );
+        assert!(!host.events.iter().any(|e| e.starts_with("log:")));
     }
 }

@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **SecureCRT-inspired script examples** — seven new bundled `.rsc` scripts: TDR cable test, command capture, rename-tab from the CLI prompt, offline OUI lookup, and three guarded write scripts (global config, DHCP relay, interface description) that stay in check mode until the literal `APPLY` is typed. `example-cisco-erase-device` is destructive and needs both the hostname and the word `ERASE`. The new `caption` and `oui` verbs, their in-app reference text and tests are included. (`rustconn/src/dialogs/script_examples.rs`, `rustconn-core/src/automation/script.rs`, `rustconn-core/src/oui.rs`, `docs/USER_GUIDE.md`)
+- **Device reports in the CLI** — `rustconn-cli report <kind>` collects one read-only `show` command across selected SSH connections and prints all parsed rows as table, JSON or CSV. It finishes the previously orphaned report command, adds 18 further report kinds (interface stats, next-hop, EIGRP, switchport, merged ARP, MAC-by-VLAN, document-device, six AireOS WLC collectors and BGP peers for Cisco IOS, Huawei VRP and Juniper Junos), and keeps the original 8 parser tests plus new width checks. Real vWLC output is pinned as fixtures. (`rustconn-cli/src/commands/report.rs`, `rustconn-cli/src/commands/exec.rs`, `rustconn-cli/src/cli.rs`, `docs/CLI_REFERENCE.md`)
+
 ## [0.26.1] - 2026-11-23
 
 ### Added

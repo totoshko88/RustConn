@@ -77,6 +77,7 @@ pub mod mc_ssh;
 pub mod models;
 pub mod monitoring;
 pub mod network_scan;
+pub mod oui;
 pub mod password_generator;
 pub mod performance;
 pub mod proc;

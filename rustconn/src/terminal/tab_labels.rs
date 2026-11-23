@@ -231,6 +231,16 @@ impl TerminalNotebook {
         tracing::debug!(session_id = %session_id, group = group_name, color_index, "Tab assigned to group");
     }
 
+    /// Renames one session's tab from a script.
+    ///
+    /// Unlike [`Self::rename_connection_sessions`] this touches only the open
+    /// tab; the saved connection keeps its name, so reconnecting restores the
+    /// original title.
+    pub fn set_session_caption(&self, session_id: Uuid, caption: &str) {
+        let chrome = self.tab_chrome();
+        Self::apply_session_label(&chrome, session_id, caption);
+    }
+
     /// Renames every open session of a connection, returning the ids it touched.
     ///
     /// A connection rename used to leave open sessions showing the old name.

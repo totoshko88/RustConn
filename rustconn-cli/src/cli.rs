@@ -1232,6 +1232,32 @@ pub enum Commands {
         elevated_delay: Option<u32>,
     },
 
+    /// Collect a read-only device report across SSH connections
+    #[cfg(feature = "client-launch")]
+    #[command(about = "Run one read-only `show` command on multiple SSH \
+                       connections and print the parsed rows as one table")]
+    Report {
+        /// Report to collect
+        #[arg(value_enum)]
+        kind: ReportKind,
+
+        /// Target connection names, UUIDs or name prefixes (duplicates collapse)
+        #[arg(value_name = "CONNECTION")]
+        connections: Vec<String>,
+
+        /// Choose targets by tag (used only when no names are given)
+        #[arg(short, long)]
+        tag: Option<String>,
+
+        /// Choose targets by group name (used only when no names are given)
+        #[arg(short, long)]
+        group: Option<String>,
+
+        /// Output format for the collected rows
+        #[arg(long, value_enum)]
+        format: Option<OutputFormat>,
+    },
+
     /// Send Wake-on-LAN magic packet
     #[command(about = "Wake a sleeping machine using Wake-on-LAN")]
     Wol {
@@ -1451,6 +1477,59 @@ pub enum CodecCommands {
         #[arg(long)]
         accept_cisco_license: bool,
     },
+}
+
+/// The device reports `report` knows how to collect.
+///
+/// Each is one read-only `show` command plus a local parser for its output;
+/// the command strings live with the parsers in `commands/report.rs`.
+#[cfg(feature = "client-launch")]
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum ReportKind {
+    /// Device inventory from `show version`
+    Inventory,
+    /// CDP neighbours from `show cdp neighbors detail`
+    Cdp,
+    /// ARP table from `show ip arp`
+    Arp,
+    /// MAC address table from `show mac address-table`
+    Mac,
+    /// VLAN table from `show vlan`
+    Vlan,
+    /// Interface counters from `show interfaces`
+    InterfaceStats,
+    /// Route next-hop summary from `show ip route`
+    NextHop,
+    /// Raw EIGRP topology from `show ip eigrp topology`
+    EigrpTopology,
+    /// EIGRP successor summary from `show ip eigrp topology`
+    EigrpSummary,
+    /// Switchport/MAC/IP mapping from `show interface status` and friends
+    Switchport,
+    /// ARP table merged from several devices (one row per entry)
+    MergedArp,
+    /// Switches that know a MAC in a VLAN range
+    MacsByVlan,
+    /// Device documentation from a list of show commands
+    DocumentDevice,
+    /// AireOS WLC access-point detail
+    AireosApDetail,
+    /// AireOS WLC access-point summary
+    AireosApSummary,
+    /// AireOS WLC authorization lists
+    AireosAuthList,
+    /// AireOS WLC interface detail
+    AireosInterfaceDetail,
+    /// AireOS WLC mobility-group summary
+    AireosMobilityGroup,
+    /// AireOS WLC WLAN/remote-LAN/guest-LAN detail
+    AireosWlanDetail,
+    /// Cisco IOS BGP neighbours from `show ip bgp summary`
+    CiscoBgp,
+    /// Huawei VRP BGP peers from `display bgp peer`
+    HuaweiBgp,
+    /// Juniper Junos BGP peers from `show bgp summary`
+    JuniperBgp,
 }
 
 /// Output format for the list command

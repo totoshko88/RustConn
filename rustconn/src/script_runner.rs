@@ -172,6 +172,10 @@ impl ScriptHost for GuiHost {
         true
     }
 
+    fn set_caption(&mut self, title: &str) {
+        self.notebook.set_session_caption(self.session_id, title);
+    }
+
     fn get_prompt(&mut self) -> Option<String> {
         // Best effort: the terminal's current line, with escape sequences
         // stripped and trailing spaces trimmed.

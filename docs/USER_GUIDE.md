@@ -2948,6 +2948,8 @@ Right-click inside a terminal tab → **Record Script…**, type the commands yo
 | `capture <regex> <var> [<sec>]` | Like `expect`, but store capture group 1 in a variable |
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
+| `caption <var>` | Rename the running session's tab from a script variable (open tab only) |
+| `oui <mac-var> <vendor-var>` | Look up a MAC vendor in the built-in offline OUI prefix table |
 | `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` and `${CWD}`; the file is created owner-only on Unix |
 | `print <text>` | Print an ANSI-coloured message on the terminal |
 | `ask "<prompt>" [hide] [default "<value>"] <var>` | Ask the user for input; `hide` masks it, `default` pre-fills it |
@@ -3235,6 +3237,34 @@ Validated against OpenWrt 25.12.5 (aarch64) on the router named
 **Full language reference**
 
 The same reference is available in the application: **Tools → Scripts… → ⓘ** opens it. It covers the terminal primitives (`send`, `wait`, `expect`, `capture`, `readline`, `getprompt`, `log`, `print`), user interaction (`ask`, `msg`), session management (`start`, `select`, `stop`, `split`, `unsplit`, `totab`, `towindow`), local commands (`run`), control flow (`set`, `goto`, `if_goto`), variable substitution, and the error rules.
+
+**SecureCRT-inspired network examples**
+
+Seven more bundled scripts cover workflows from the SecureCRT collections,
+rewritten in this DSL rather than copied: `example-cisco-tdr-cable-test`
+(runs and captures a TDR diagnostic for one interface),
+`example-cisco-command-capture` (saves one command's transcript),
+`example-cisco-rename-tab` (renames the open tab from the CLI prompt),
+`example-oui-lookup` (offline MAC vendor lookup), and three guarded write
+scripts — `example-cisco-global-config`, `example-cisco-dhcp-relay-update`
+and `example-cisco-interface-description`. The write scripts stay in check
+mode until you type the literal `APPLY`, write an audit transcript, and never
+save the device configuration without a second confirmation. They are **not**
+for production gear: verify them on a lab switch first.
+`example-cisco-erase-device` is destructive: it requires the exact hostname
+and a literal `ERASE` before erasing the startup configuration and reloading.
+None of these scripts is attached to auto-run by default.
+
+For structured, multi-device reports use the CLI instead:
+`rustconn-cli report <kind>` runs one read-only `show` command on the selected
+SSH connections and prints the parsed rows as a table, JSON or CSV. Kinds
+include `inventory`, `cdp`, `arp`, `mac`, `vlan`, `interface-stats`,
+`next-hop`, `eigrp-topology`, `eigrp-summary`, `switchport`, `merged-arp`,
+`macs-by-vlan`, `document-device`, and six `aireos-*` WLC collectors. Use
+`--tag`/`--group` or name connections directly; see `docs/CLI_REFERENCE.md`.
+Reports need key-based SSH (stdin is closed, so a password prompt fails) and
+Cisco-style command output; parsers ignore lines they do not recognise rather
+than guessing.
 
 **Deleting scripts**
 
