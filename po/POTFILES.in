@@ -99,6 +99,7 @@ rustconn/src/dialogs/settings/terminal_tab.rs
 rustconn/src/dialogs/settings/clients_tab.rs
 rustconn/src/dialogs/settings/cloud_sync_tab.rs
 rustconn/src/dialogs/settings/secrets_tab/mod.rs
+rustconn/src/dialogs/settings/secrets_tab/proton_login.rs
 rustconn/src/dialogs/settings/secrets_tab/detection.rs
 rustconn/src/dialogs/settings/ssh_agent_tab.rs
 rustconn/src/dialogs/settings/logging_tab.rs

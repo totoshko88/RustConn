@@ -634,7 +634,7 @@ fn detect_pass(
 ///
 /// `find_in_path` also searches the sandbox CLI directory, where the Flatpak
 /// Components dialog installs `pass-cli`.
-fn detect_proton_pass() -> (Option<String>, Option<(String, &'static str)>) {
+pub(super) fn detect_proton_pass() -> (Option<String>, Option<(String, &'static str)>) {
     let Some(pass_cli) = rustconn_core::which::find_in_path("pass-cli") else {
         return (None, None);
     };

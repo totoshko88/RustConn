@@ -2,6 +2,7 @@
 
 pub(crate) mod detection;
 mod keyring;
+mod proton_login;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -1727,6 +1728,15 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     {
         let status_label = proton_pass_status_label.clone();
         proton_pass_signin_button.connect_clicked(move |button| {
+            // In a sandbox the login must run inside it, where the backend reads
+            // the session; host terminals are out of reach there anyway.
+            if rustconn_core::is_sandboxed() {
+                match rustconn_core::which::find_in_path("pass-cli") {
+                    Some(pass_cli) => proton_login::present(button, &pass_cli, &status_label),
+                    None => update_status_label(&status_label, &i18n("Not installed"), "error"),
+                }
+                return;
+            }
             button.set_sensitive(false);
             // The web login prints a URL and waits for the browser flow, so it
             // needs a terminal the user can see.
