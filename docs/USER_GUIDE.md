@@ -2950,7 +2950,7 @@ Right-click inside a terminal tab → **Record Script…**, type the commands yo
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
 | `caption <var>` | Rename the running session's tab from a script variable (open tab only) |
-| `oui <mac-var> <vendor-var>` | Look up a MAC vendor in the built-in offline OUI prefix table |
+| `oui <mac-var> <vendor-var>` | Look up a MAC vendor in the built-in offline OUI table (full IEEE MA-L listing) |
 | `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` and `${CWD}`; the file is created owner-only on Unix |
 | `print <text>` | Print an ANSI-coloured message on the terminal |
 | `ask "<prompt>" [hide] [default "<value>"] <var>` | Ask the user for input; `hide` masks it, `default` pre-fills it |
@@ -3241,11 +3241,13 @@ The same reference is available in the application: **Tools → Scripts… → �
 
 **SecureCRT-inspired network examples**
 
-Seven more bundled scripts cover workflows from the SecureCRT collections,
+Ten more bundled scripts cover workflows from the SecureCRT collections,
 rewritten in this DSL rather than copied: `example-cisco-tdr-cable-test`
 (runs and captures a TDR diagnostic for one interface),
 `example-cisco-command-capture` (saves one command's transcript),
 `example-cisco-rename-tab` (renames the open tab from the CLI prompt),
+`example-cisco-bgp-summary`, `example-huawei-bgp-peers` and
+`example-juniper-bgp-summary` (read-only BGP peer transcripts),
 `example-oui-lookup` (offline MAC vendor lookup), and three guarded write
 scripts — `example-cisco-global-config`, `example-cisco-dhcp-relay-update`
 and `example-cisco-interface-description`. The write scripts stay in check
@@ -3261,7 +3263,8 @@ For structured, multi-device reports use the CLI instead:
 SSH connections and prints the parsed rows as a table, JSON or CSV. Kinds
 include `inventory`, `cdp`, `arp`, `mac`, `vlan`, `interface-stats`,
 `next-hop`, `eigrp-topology`, `eigrp-summary`, `switchport`, `merged-arp`,
-`macs-by-vlan`, `document-device`, and six `aireos-*` WLC collectors. Use
+`macs-by-vlan`, `document-device`, six `aireos-*` WLC collectors, and the
+BGP collectors `cisco-bgp`, `huawei-bgp` and `juniper-bgp`. Use
 `--tag`/`--group` or name connections directly; see `docs/CLI_REFERENCE.md`.
 Reports need key-based SSH (stdin is closed, so a password prompt fails) and
 Cisco-style command output; parsers ignore lines they do not recognise rather

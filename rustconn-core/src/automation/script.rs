@@ -362,10 +362,15 @@ pub trait ScriptHost {
 
     /// Sets or clears the script's output log file.
     ///
-    /// Returns `false` when `Some(path)` could not be opened; the script then
-    /// stops instead of pretending the capture was written. Clearing the log
-    /// (`None`) always succeeds.
-    fn set_log(&mut self, path: Option<&str>) -> bool;
+    /// `tail` is the held-back last line of the log being closed (see
+    /// [`ScriptEngine::flush_log_output`]); the host writes it into the old
+    /// file before switching. Returns `false` when `Some(path)` could not be
+    /// opened; the script then stops instead of pretending the capture was
+    /// written. Clearing the log (`None`) always succeeds.
+    ///
+    /// The engine calls this while it is mutably borrowed, so a host must not
+    /// call back into the engine from here.
+    fn set_log(&mut self, path: Option<&str>, tail: &[u8]) -> bool;
 
     /// Guesses the current prompt of the session.
     fn get_prompt(&mut self) -> Option<String>;
@@ -664,7 +669,8 @@ impl ScriptEngine {
                     },
                     None => None,
                 };
-                if host.set_log(path.as_deref()) {
+                let tail = self.flush_log_output();
+                if host.set_log(path.as_deref(), &tail) {
                     self.advance();
                 } else {
                     let path = path.unwrap_or_default();
@@ -2169,6 +2175,8 @@ mod tests {
         events: Vec<String>,
         prompt: Option<String>,
         log_fails: bool,
+        /// Tail bytes handed to each `set_log` call.
+        log_tails: Vec<Vec<u8>>,
     }
 
     impl ScriptHost for FakeHost {
@@ -2178,8 +2186,9 @@ mod tests {
         fn print_message(&mut self, text: &str) {
             self.events.push(format!("print:{text}"));
         }
-        fn set_log(&mut self, path: Option<&str>) -> bool {
+        fn set_log(&mut self, path: Option<&str>, tail: &[u8]) -> bool {
             self.events.push(format!("log:{}", path.unwrap_or("")));
+            self.log_tails.push(tail.to_vec());
             path.is_none() || !self.log_fails
         }
         fn get_prompt(&mut self) -> Option<String> {
@@ -2832,6 +2841,23 @@ mod tests {
         log.extend(engine.filter_log_output(&bytes[1..]));
         log.extend(engine.flush_log_output());
         assert_eq!(String::from_utf8(log).unwrap(), "ж\n");
+    }
+
+    /// The tail held back by the pager filter goes to the log being closed;
+    /// the host must not reach back into the engine for it (that panics while
+    /// the engine is mutably borrowed).
+    #[test]
+    fn closing_the_log_hands_the_held_back_tail_to_the_host() {
+        let mut engine =
+            ScriptEngine::parse("pager \"---- More ----\"\nlog \"out.log\"\nwait 1\nlog\n")
+                .unwrap();
+        let mut host = FakeHost::default();
+        engine.pump(&mut host);
+        // The last, unterminated line is held back for the pager filter.
+        let _ = engine.filter_log_output(b"line1\r\nline2");
+        engine.on_timer();
+        engine.pump(&mut host);
+        assert_eq!(host.log_tails[1], b"line2");
     }
 
     /// Without `pager` the log is a byte-for-byte copy.

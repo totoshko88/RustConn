@@ -27,6 +27,10 @@ extend-exclude = [
     # Vendored xterm.js (minified, one line) and its CSS and licence. Upstream
     # owns the spelling; see the README in that directory.
     "rustconn-core/src/session/share_assets/",
+    # Generated vendor data (scripts/gen-oui-table.py, IEEE MA-L listing).
+    # Vendor names carry upstream spellings and abbreviations that are not
+    # ours to correct.
+    "rustconn-core/src/oui_data.rs",
 ]
 
 [default.extend-words]

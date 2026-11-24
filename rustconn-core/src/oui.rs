@@ -1,56 +1,14 @@
-//! Small offline OUI → vendor lookup for `.rsc` scripts.
+//! Offline OUI → vendor lookup for `.rsc` scripts.
 //!
-//! The original SecureCRT helper reads Wireshark's `manuf.txt`. Shipping that
-//! file would add a data dependency and a licence question, so this table
-//! holds the common prefixes seen on network gear. It is deliberately small:
-//! an unknown prefix reports "Vendor not found" rather than guessing.
+//! The original SecureCRT helper reads Wireshark's `manuf.txt`, which is
+//! GPLv2, so the table is generated from the IEEE MA-L public listing
+//! instead — factual registry data with no licence question. The table is
+//! the full listing: "Vendor not found" means IEEE has no such 24-bit OUI.
 //!
-//! shortcut: ~40 hard-coded prefixes; replace with a generated table from a
-//! licensed OUI data set if broad coverage becomes a requirement.
+//! shortcut: MA-L only; the 28/36-bit MA-M/MA-S/IAB blocks need mask
+//! matching, add them to `oui_data.rs` if lookups start missing them.
 
-/// A prefix (hex nibbles) and the vendor it identifies.
-const PREFIXES: &[(&str, &str)] = &[
-    ("000C29", "VMware"),
-    ("001122", "Cisco Systems"),
-    ("00155D", "Microsoft"),
-    ("001A4B", "Cisco Systems"),
-    ("001B21", "Cisco Systems"),
-    ("001DB2", "Cisco Systems"),
-    ("002155", "Cisco Systems"),
-    ("0026CB", "Cisco Systems"),
-    ("003067", "Cisco Systems"),
-    ("005056", "Cisco Systems"),
-    ("00A0C9", "Cisco Systems"),
-    ("00B0C0", "Hewlett Packard"),
-    ("001708", "Hewlett Packard"),
-    ("0026B0", "Hewlett Packard"),
-    ("00306E", "Hewlett Packard"),
-    ("001B78", "Dell"),
-    ("001EC9", "Dell"),
-    ("0024E8", "Dell"),
-    ("0010DB", "Juniper Networks"),
-    ("0026F0", "Juniper Networks"),
-    ("001CF0", "Arista Networks"),
-    ("0022F0", "Arista Networks"),
-    ("001647", "Arista Networks"),
-    ("000B86", "Huawei"),
-    ("00188A", "Huawei"),
-    ("002568", "Huawei"),
-    ("001DAC", "Huawei"),
-    ("000FE2", "H3C"),
-    ("001D7D", "H3C"),
-    ("002389", "H3C"),
-    ("00E0FC", "Intel"),
-    ("001320", "Intel"),
-    ("001B21FF", "Cisco Systems (long prefix example)"),
-    ("3C22FB", "Apple"),
-    ("A4D18C", "Apple"),
-    ("F0C1F1", "Apple"),
-    ("B827EB", "Raspberry Pi Foundation"),
-    ("D83ADD", "Raspberry Pi Foundation"),
-    ("525400", "QEMU"),
-    ("080027", "Oracle VirtualBox"),
-];
+use crate::oui_data::MA_L;
 
 /// Normalizes a MAC to twelve uppercase hex digits.
 ///
@@ -66,14 +24,16 @@ fn normalize(mac: &str) -> Option<String> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(rustconn_core::oui::lookup("00:11:22:33:44:55"), Some("Cisco Systems"));
+/// assert_eq!(
+///     rustconn_core::oui::lookup("00:21:55:33:44:55"),
+///     Some("Cisco Systems, Inc")
+/// );
 /// assert_eq!(rustconn_core::oui::lookup("not a mac"), None);
 /// ```
 #[must_use]
 pub fn lookup(mac: &str) -> Option<&'static str> {
     let normalized = normalize(mac)?;
-    PREFIXES
-        .iter()
+    MA_L.iter()
         .filter(|(prefix, _)| normalized.starts_with(prefix))
         .max_by_key(|(prefix, _)| prefix.len())
         .map(|(_, vendor)| *vendor)
@@ -86,12 +46,12 @@ mod tests {
     #[test]
     fn accepts_the_three_common_mac_formats() {
         for mac in [
-            "0011.2233.4455",
-            "00:11:22:33:44:55",
-            "00-11-22-33-44-55",
-            "001122334455",
+            "0021.5533.4455",
+            "00:21:55:33:44:55",
+            "00-21-55-33-44-55",
+            "002155334455",
         ] {
-            assert_eq!(lookup(mac), Some("Cisco Systems"), "{mac}");
+            assert_eq!(lookup(mac), Some("Cisco Systems, Inc"), "{mac}");
         }
     }
 
@@ -103,10 +63,10 @@ mod tests {
     }
 
     #[test]
-    fn longest_prefix_wins() {
-        assert_eq!(
-            lookup("00:1B:21:FF:00:00"),
-            Some("Cisco Systems (long prefix example)")
-        );
+    fn reports_the_official_registrant_and_skips_local_addresses() {
+        // VirtualBox's OUI belongs to its real registrant, not a product name.
+        assert_eq!(lookup("08:00:27:00:00:00"), Some("PCS Systemtechnik GmbH"));
+        // Locally administered addresses carry no OUI.
+        assert_eq!(lookup("02:00:5E:00:00:01"), None);
     }
 }

@@ -8,8 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **SecureCRT-inspired script examples** — seven new bundled `.rsc` scripts: TDR cable test, command capture, rename-tab from the CLI prompt, offline OUI lookup, and three guarded write scripts (global config, DHCP relay, interface description) that stay in check mode until the literal `APPLY` is typed. `example-cisco-erase-device` is destructive and needs both the hostname and the word `ERASE`. The new `caption` and `oui` verbs, their in-app reference text and tests are included. (`rustconn/src/dialogs/script_examples.rs`, `rustconn-core/src/automation/script.rs`, `rustconn-core/src/oui.rs`, `docs/USER_GUIDE.md`)
+- **SecureCRT-inspired script examples** — ten new bundled `.rsc` scripts: TDR cable test, command capture, rename-tab from the CLI prompt, three read-only BGP peer captures (Cisco IOS, Huawei VRP, Juniper Junos), offline OUI lookup, and three guarded write scripts (global config, DHCP relay, interface description) that stay in check mode until the literal `APPLY` is typed. `example-cisco-erase-device` is destructive and needs both the hostname and the word `ERASE`. The new `caption` and `oui` verbs, their in-app reference text and tests are included. (`rustconn/src/dialogs/script_examples.rs`, `rustconn-core/src/automation/script.rs`, `rustconn-core/src/oui.rs`, `docs/USER_GUIDE.md`)
 - **Device reports in the CLI** — `rustconn-cli report <kind>` collects one read-only `show` command across selected SSH connections and prints all parsed rows as table, JSON or CSV. It finishes the previously orphaned report command, adds 18 further report kinds (interface stats, next-hop, EIGRP, switchport, merged ARP, MAC-by-VLAN, document-device, six AireOS WLC collectors and BGP peers for Cisco IOS, Huawei VRP and Juniper Junos), and keeps the original 8 parser tests plus new width checks. Real vWLC output is pinned as fixtures. (`rustconn-cli/src/commands/report.rs`, `rustconn-cli/src/commands/exec.rs`, `rustconn-cli/src/cli.rs`, `docs/CLI_REFERENCE.md`)
+
+### Changed
+
+- **Full offline OUI table** — the `oui` script verb now resolves every MAC against the complete IEEE MA-L listing (40 555 assignments, generated from <https://standards-oui.ieee.org/oui/oui.csv> by `scripts/gen-oui-table.py`) instead of ~40 hand-picked prefixes. Vendor names are the registrants' own spellings, so lookups can change: VirtualBox's OUI now reports "PCS Systemtechnik GmbH", and 28/36-bit MA-M/MA-S/IAB blocks still need mask matching. (`rustconn-core/src/oui_data.rs`, `rustconn-core/src/oui.rs`, `scripts/gen-oui-table.py`)
+
+### Fixed
+
+- **Script logging aborted the app with "RefCell already borrowed"** — every script that used `log` (the save-config examples, command capture, the BGP captures) asked the engine for its held-back last log line from inside a host callback, while `pump` still held the engine's mutable borrow, so the process aborted. The engine now flushes that line itself and passes the bytes to `set_log`, which no longer touches the engine. (`rustconn-core/src/automation/script.rs`, `rustconn/src/script_runner.rs`)
 
 ## [0.26.3] - 2026-11-24
 

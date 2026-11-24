@@ -73,8 +73,8 @@ caption <variable>
     characters.
 
 oui <mac-variable> <vendor-variable>
-    Look up the vendor of a MAC address in the built-in OUI prefix table and
-    store the result. The table is small and offline, so an unknown prefix
+    Look up the vendor of a MAC address in the built-in offline OUI table
+    (the full IEEE MA-L listing) and store the result. An unassigned prefix
     stores "Vendor not found". MACs may use dot, colon, dash or unseparated
     notation.
 

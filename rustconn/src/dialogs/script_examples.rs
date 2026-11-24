@@ -510,8 +510,29 @@ print "Huawei OLT provision script finished."
         "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>\\s]*$/ device 10\ncaption device\nprint \"Tab renamed to $device\"\ngoto done\n\n:config_mode\nmsg \"Leave configuration mode with end, then start this script again.\" ok\n\n:done\nprint \"Rename-tab script finished.\"\n",
     ),
     (
+        "example-cisco-bgp-summary",
+        // Read-only BGP peer check for IOS. The same shape works on other
+        // vendors by changing the read command: `display bgp peer` on Huawei
+        // VRP and `show bgp summary` on Junos. Parsed, multi-device BGP rows
+        // are the CLI's job (`rustconn-cli report cisco-bgp`).
+        "getprompt prompt\nif_goto $prompt /\\(config/ config_mode\nsend \"{ENTER}\"\ncapture /([A-Za-z0-9][A-Za-z0-9._-]*)[#>]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([#>])\\s*$/ mode 10\nif_goto $mode /^#$/ privileged\nmsg \"This script needs privileged EXEC mode (the prompt ends in the hash sign). Run enable, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in EXEC mode. Leave configuration mode with end, then start it again.\" ok\ngoto done\n\n:privileged\nset file ${CWD}/cisco-bgp-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the BGP peer summary to '${file}'? Type yes, no, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nif_goto $answer /(?i)^\\s*(n|no)\\s*$/ cancel\nset file $answer\n\n:save\nsend \"terminal length 0{ENTER}\"\nexpect \"/[#>]\\s*$/\" 15\nlog $file\nprint \"Capturing the BGP peer summary for ${device}...\"\nsend \"show ip bgp summary{ENTER}\"\nexpect \"/[#>]\\s*$/\" 60\nlog\nprint \"BGP summary saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Cisco BGP summary script finished.\"\n",
+    ),
+    (
+        "example-huawei-bgp-peers",
+        // Read-only Huawei VRP peer check: `display bgp peer` in user view,
+        // with `screen-length 0 temporary` so a long peer list does not page.
+        // System view `[host]` is refused, as in the Huawei save example.
+        "getprompt prompt\nif_goto $prompt /^\\s*\\[/ config_mode\nsend \"{ENTER}\"\ncapture /<([A-Za-z0-9][A-Za-z0-9._-]*)>\\s*$/ device 10\nset file ${CWD}/huawei-bgp-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the BGP peer summary to '${file}'? Type yes, no, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nif_goto $answer /(?i)^\\s*(n|no)\\s*$/ cancel\nset file $answer\n\n:save\nsend \"screen-length 0 temporary{ENTER}\"\nexpect \"/<[A-Za-z0-9][A-Za-z0-9._-]*>\\s*$/\" 15\nlog $file\nprint \"Capturing the BGP peer summary for ${device}...\"\nsend \"display bgp peer{ENTER}\"\nexpect \"/<[A-Za-z0-9][A-Za-z0-9._-]*>\\s*$/\" 60\nlog\nprint \"BGP summary saved to $file\"\ngoto done\n\n:config_mode\nmsg \"This script must run in user view. Leave system view with return, then start the script again.\" ok\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Huawei BGP summary script finished.\"\n",
+    ),
+    (
+        "example-juniper-bgp-summary",
+        // Read-only Junos peer check: operational mode `user@host>`,
+        // `show bgp summary | no-more` so the pager needs no separate command.
+        "getprompt prompt\nif_goto $prompt /#\\s*$/ config_mode\nsend \"{ENTER}\"\ncapture /@([A-Za-z0-9][A-Za-z0-9._-]*)[>#]\\s*$/ device 10\nsend \"{ENTER}\"\ncapture /([>#])\\s*$/ mode 10\nif_goto $mode /^>$/ operational\nmsg \"This script needs operational mode (the prompt ends in the greater-than sign). Leave configuration mode with exit, then start it again.\" ok\ngoto done\n\n:config_mode\nmsg \"This script must run in operational mode. Commit or discard your changes with exit, then start the script again.\" ok\ngoto done\n\n:operational\nset file ${CWD}/juniper-bgp-${device}-${DATE_Y}${DATE_M}${DATE_D}-${TIME_H}${TIME_M}${TIME_S}.log\nask \"Save the BGP peer summary to '${file}'? Type yes, no, another path, or nothing to cancel:\" answer\nif_goto $answer /(?i)^\\s*yes\\s*$/ save\nif_goto $answer /^\\s*$/ cancel\nif_goto $answer /(?i)^\\s*(n|no)\\s*$/ cancel\nset file $answer\n\n:save\nlog $file\nprint \"Capturing the BGP peer summary for ${device}...\"\nsend \"show bgp summary | no-more{ENTER}\"\nexpect \"/@[A-Za-z0-9][A-Za-z0-9._-]*[>#]\\s*$/\" 60\nlog\nprint \"BGP summary saved to $file\"\ngoto done\n\n:cancel\nprint \"Nothing was saved.\"\n\n:done\nprint \"Juniper BGP summary script finished.\"\n",
+    ),
+    (
         "example-oui-lookup",
-        // Offline vendor lookup from a MAC, using the small built-in prefix
+        // Offline vendor lookup from a MAC, using the built-in IEEE MA-L
         // table. No clipboard or screen scraping: the MAC is typed in.
         "ask \"MAC address to look up:\" mac\nif_goto $mac /^[0-9A-Fa-f:.-]{11,20}$/ found\nmsg \"That does not look like a MAC address.\" ok\ngoto done\n\n:found\noui mac vendor\nprint \"Vendor: $vendor\"\n\n:done\nprint \"OUI lookup finished.\"\n",
     ),

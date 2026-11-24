@@ -937,7 +937,7 @@ mod tests {
         fn print_message(&mut self, text: &str) {
             self.events.push(format!("print:{text}"));
         }
-        fn set_log(&mut self, path: Option<&str>) -> bool {
+        fn set_log(&mut self, path: Option<&str>, _tail: &[u8]) -> bool {
             self.events.push(format!("log:{}", path.unwrap_or("")));
             true
         }
@@ -2568,12 +2568,12 @@ mod tests {
         let mut engine = ScriptEngine::parse(example("example-oui-lookup")).unwrap();
         engine.pump(&mut host);
         assert_eq!(engine.pending(), PendingKind::Ask);
-        engine.on_ask_result(Some("00:11:22:33:44:55".to_string()));
+        engine.on_ask_result(Some("00:21:55:33:44:55".to_string()));
         engine.pump(&mut host);
         assert!(
             host.events
                 .iter()
-                .any(|e| e == "print:Vendor: Cisco Systems"),
+                .any(|e| e == "print:Vendor: Cisco Systems, Inc"),
             "the built-in OUI table resolves a known prefix"
         );
     }
