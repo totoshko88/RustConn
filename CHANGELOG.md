@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.26.3] - 2026-11-24
 ### Fixed
 - **Sidebar status stuck on "connecting" when a client is missing or login is refused** — a Telnet, Mosh, Serial or other terminal connection whose client program is not installed (`command not found`) showed the "not installed" banner but left the sidebar row on the connecting icon for good, because a command that never started never exits to mark the row failed. The same happened to an embedded VNC attempt refused with `Authentication failure`. Both now turn the row to the failed icon.
 - **Embedded RDP to a Windows host with NLA never asked for the password** — a connection with no stored password tries without one first, so that a server with its own login screen (xrdp) can show it. A Windows host that requires Network Level Authentication refuses such an attempt with `server requires Enhanced RDP Security with CredSSP`, which ended the connection as failed with no prompt. That refusal now opens the password dialog.
@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - **macOS: protocol client tools documented** — `docs/MACOS_BUILD.md` lists the Homebrew packages for Telnet, FreeRDP, Mosh, TigerVNC and picocom, the `vncviewer` link the TigerVNC cask needs, `evil-winrm` for WinRM through Homebrew's Ruby, and how to build the SPICE viewer `remote-viewer` from the `jeffreywildman/virt-manager` tap, whose upstream download URL is dead.
 - **WinRM: refused local administrator explained** — the user guide says why Windows answers a local administrator other than the built-in one with `WinRMAuthorizationError` (UAC remote restrictions) and how to allow it with `LocalAccountTokenFilterPolicy`. The CLI reference names the Keychain as the `keyring` backend on macOS.
+### Dependencies
+- **hyper 1.12.0 → 1.13.0**
 ## [0.26.2] - 2026-11-23
 
 ### Added

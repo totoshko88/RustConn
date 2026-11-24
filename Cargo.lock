@@ -2348,9 +2348,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c3e324da4c95177d6291d4c8730197c0d1822f8a9766814a4a44fa5ab797c9c"
+checksum = "229c6ff5584df4c6becbfe00567128bac768c8cd32ebc8a8366bd81ed072e8f3"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -4983,7 +4983,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.26.2"
+version = "0.26.3"
 dependencies = [
  "async-channel",
  "chrono",
@@ -5023,7 +5023,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.26.2"
+version = "0.26.3"
 dependencies = [
  "chrono",
  "clap",
@@ -5046,7 +5046,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.26.2"
+version = "0.26.3"
 dependencies = [
  "aes 0.9.4",
  "ar",
@@ -5125,7 +5125,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.26.2"
+version = "0.26.3"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5134,18 +5134,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.26.2"
+version = "0.26.3"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.26.2"
+version = "0.26.3"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-lock-sys"
-version = "0.26.2"
+version = "0.26.3"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5154,7 +5154,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.26.2"
+version = "0.26.3"
 dependencies = [
  "libc",
  "nix",
