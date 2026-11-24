@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.26.2
+Version:        0.26.3
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,12 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Tue Nov 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.3-0
+- Version bump to 0.26.3
+- Fixed: sidebar status no longer stuck on "connecting" for a missing client, a refused VNC login, or Mosh, Serial and Kubernetes sessions; embedded RDP asks for the password when a Windows host requires NLA; auto-reconnect stops on a session that keeps closing and on a refused WinRM sign-in; "Open Settings" from the password-store dialog opens Secrets; client version probes no longer hang for their full timeout
+- Fixed (macOS): Keychain passwords for connections without a domain read back; a missing KeePassXC entry with translated keepassxc-cli messages no longer reported as an unreadable database; rustconn-cli secret status reports the Keychain
+- Documentation: macOS protocol client tools; WinRM local administrator refusal (LocalAccountTokenFilterPolicy)
+- Dependencies: hyper 1.12.0 -> 1.13.0
 * Mon Nov 23 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.2-0
 - Version bump to 0.26.2
 - Added: Proton Pass secret backend (#444) with the Proton Pass CLI in Flatpak Components and an in-app sign-in dialog; rustconn-cli secret --backend proton-pass

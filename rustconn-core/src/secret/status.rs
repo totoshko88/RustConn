@@ -92,6 +92,35 @@ fn push_unlock_args(
     }
 }
 
+/// Whether the database opens with these unlock factors, by exit status alone.
+///
+/// `classify_show_failure` reads `keepassxc-cli`'s stderr, which is only
+/// English where the message locale can be pinned. On macOS Qt takes the UI
+/// language from the system preferences and ignores `LC_MESSAGES`, so a
+/// missing entry is reported in the user's language and lands in
+/// [`ShowFailure::Unusable`]: the connection then reported an unreadable
+/// database instead of prompting for a password. A failed `show` whose
+/// `db-info` succeeds with the same factors is therefore a missing entry.
+///
+/// Not attempted for a YubiKey unlock: the probe would ask for a second touch.
+fn database_opens(
+    cli: &impl KeePassCli,
+    kdbx_path: &Path,
+    db_password: Option<&SecretString>,
+    key_file: Option<&Path>,
+    yubikey_slot: Option<&str>,
+) -> bool {
+    if yubikey_slot.is_some() {
+        return false;
+    }
+    let mut args = vec!["db-info".to_string(), "-q".to_string()];
+    push_unlock_args(&mut args, db_password.is_some(), key_file, None);
+    args.push(kdbx_path.display().to_string());
+    let invocation = Invocation::new("db-info (open probe)", args, InvocationKind::Read, false);
+    cli.run(&invocation, db_password, None)
+        .is_ok_and(|output| output.status.success())
+}
+
 /// Assembles the argv for a `keepassxc-cli add`, without spawning anything.
 ///
 /// Extracted from [`KeePassStatus::save_password_to_kdbx`] so the write path's
@@ -1042,8 +1071,8 @@ Servers/kp353-test\n";
     use secrecy::SecretString;
 
     use super::{
-        Invocation, InvocationKind, KeePassCli, SecretError, SecretResult, push_unlock_args,
-        rename_or_move_in_place, save_in_place,
+        Invocation, InvocationKind, KeePassCli, SecretError, SecretResult, database_opens,
+        push_unlock_args, rename_or_move_in_place, save_in_place,
     };
 
     /// A scripted reply for one `run` call.
@@ -1148,6 +1177,37 @@ Servers/kp353-test\n";
                 stderr: Vec::new(),
             })
         }
+    }
+
+    /// A `db-info` that succeeds means the database opened: the probe behind
+    /// reading a translated macOS "no such entry" as a miss.
+    #[test]
+    fn database_opens_reads_the_probe_exit_status() {
+        let key = std::path::PathBuf::from("/tmp/key.keyx");
+        let opens = FakeCli::with_replies([Reply::ok()]);
+        assert!(database_opens(&opens, &kdbx(), None, Some(&key), None));
+        assert_eq!(opens.verbs(), vec!["db-info".to_string()]);
+        assert!(opens.any_arg_contains("--no-password"));
+
+        let refuses = FakeCli::with_replies([Reply::fail("Invalid credentials")]);
+        assert!(!database_opens(&refuses, &kdbx(), Some(&db()), None, None));
+
+        let times_out = FakeCli::with_replies([Reply::timeout()]);
+        assert!(!database_opens(
+            &times_out,
+            &kdbx(),
+            Some(&db()),
+            None,
+            None
+        ));
+    }
+
+    /// A YubiKey unlock is never probed: it would ask for a second touch.
+    #[test]
+    fn database_opens_skips_a_yubikey_unlock() {
+        let cli = FakeCli::default();
+        assert!(!database_opens(&cli, &kdbx(), None, None, Some("2")));
+        assert!(cli.verbs().is_empty());
     }
 
     fn secret(s: &str) -> SecretString {
@@ -2703,9 +2763,14 @@ impl KeePassStatus {
         // database. Reporting the first for both is what made a corrupt database
         // look like an empty one.
         if let Some(stderr) = unusable {
-            return Err(SecretError::KeePassXC(format!(
-                "Could not read the database: {stderr}"
-            )));
+            if !database_opens(&cli, kdbx_path, db_password, key_file, yubikey_slot) {
+                return Err(SecretError::KeePassXC(format!(
+                    "Could not read the database: {stderr}"
+                )));
+            }
+            tracing::debug!(
+                "get_password: show failed with an unrecognised message but the database opens; treating it as no entry"
+            );
         }
 
         tracing::debug!("get_password: password not found");
@@ -2798,6 +2863,14 @@ impl KeePassStatus {
                 ShowFailure::BadCredentials => Err(SecretError::KeePassXC(
                     "Invalid database password".to_string(),
                 )),
+                ShowFailure::Unusable
+                    if database_opens(&cli, kdbx_path, db_password, key_file, yubikey_slot) =>
+                {
+                    tracing::debug!(
+                        "get_password_exact: show failed with an unrecognised message but the database opens; no entry at '{entry_path}'"
+                    );
+                    Ok(None)
+                }
                 ShowFailure::Unusable => {
                     tracing::warn!(
                         entry_path = %entry_path,

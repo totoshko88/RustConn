@@ -564,6 +564,13 @@ impl MainWindow {
             });
         }
 
+        {
+            let sidebar_for_spawn_failure = sidebar.clone();
+            terminal_notebook.set_on_spawn_failed(move |connection_id| {
+                sidebar_for_spawn_failure
+                    .update_connection_status(&connection_id.to_string(), "failed");
+            });
+        }
         // Set up reconnect callback for VTE sessions
         // When user clicks "Reconnect" in a disconnected tab, reuse the
         // existing terminal tab instead of closing and creating a new one.

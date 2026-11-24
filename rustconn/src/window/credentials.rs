@@ -554,13 +554,19 @@ impl MainWindow {
                                             tracing::info!(
                                                 "User chose to open settings to configure secret backend"
                                             );
+                                            // No session starts, so nothing else
+                                            // clears the row's "connecting" icon.
+                                            sidebar_be.update_connection_status(
+                                                &connection_id.to_string(),
+                                                "",
+                                            );
                                             if let Some(root) = notebook_be.widget().root()
                                                 && let Some(win) =
                                                     root.downcast_ref::<gtk4::Window>()
                                             {
                                                 gtk4::prelude::WidgetExt::activate_action(
                                                     win,
-                                                    "win.settings",
+                                                    "win.settings-secrets",
                                                     None,
                                                 )
                                                 .ok();

@@ -309,6 +309,56 @@ brew install --cask session-manager-plugin
 
 RustConn also checks the official `/usr/local/sessionmanagerplugin/bin` installation path.
 
+### Protocol Client Tools Are Missing
+
+macOS ships none of the external clients below, and RustConn shows the matching
+connection as unavailable until the binary is on `PATH`. Embedded RDP and VNC
+need no extra tool; install these for the external-client modes and the other
+protocols:
+
+```bash
+brew install telnet          # Telnet connections
+brew install freerdp         # sdl-freerdp / xfreerdp, external RDP client
+brew install mosh            # Mosh connections
+brew install --cask tigervnc-viewer   # external VNC client
+sudo ln -sf /Applications/TigerVNC.app/Contents/MacOS/vncviewer /opt/homebrew/bin/vncviewer
+brew install picocom         # Serial connections
+brew install mc              # SFTP via Midnight Commander
+brew install awscli          # AWS SSM (plus session-manager-plugin above)
+brew install kubernetes-cli  # Kubernetes
+```
+
+The TigerVNC cask installs an app bundle, not a command, so the `ln` line puts
+`vncviewer` on `PATH` (drop `sudo` if `/opt/homebrew/bin` is user-writable).
+The `xfreerdp` binary from Homebrew's `freerdp` needs XQuartz
+(`brew install --cask xquartz`) for its window; `sdl-freerdp` does not.
+
+WinRM connections run `evil-winrm`, a Ruby gem with no Homebrew formula. Use
+Homebrew's Ruby, not the system one, and link the gem's launcher onto `PATH`
+(the gem directory follows the Ruby ABI version, `4.0.0` at the time of
+writing):
+
+```bash
+brew install ruby
+/opt/homebrew/opt/ruby/bin/gem install --no-document evil-winrm
+ln -sf /opt/homebrew/lib/ruby/gems/4.0.0/bin/evil-winrm /opt/homebrew/bin/evil-winrm
+```
+
+SPICE needs `remote-viewer` from virt-viewer. Homebrew core has no formula for
+it; it is only available from the third-party tap
+`jeffreywildman/virt-manager`, which Homebrew treats as untrusted by default.
+Its source URL on `releases.pagure.org` returns 404; the identical tarball
+(same SHA-256 as the formula) is on the Debian mirror, so seed Homebrew's
+download cache with it before installing:
+
+```bash
+brew tap jeffreywildman/virt-manager
+brew trust jeffreywildman/virt-manager      # third-party tap, at your own judgement
+curl -sSL -o "$(brew --cache jeffreywildman/virt-manager/virt-viewer)" \
+  https://deb.debian.org/debian/pool/main/v/virt-viewer/virt-viewer_11.0.orig.tar.xz
+brew install jeffreywildman/virt-manager/virt-viewer
+```
+
 ### Sluggish Interface Inside a macOS Virtual Machine
 
 Apple's paravirtualised GPU gives a macOS guest Metal but no accelerated OpenGL, and Homebrew builds `gtk4` with `-Dvulkan=disabled`. GSK's GL renderer therefore falls back to software inside a guest, which shows up as input lag, late frames and stuttering scroll while a core sits busy ([#274](https://github.com/totoshko88/RustConn/issues/274)).

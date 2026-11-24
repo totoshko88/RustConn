@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-23 13:14+0200\n"
+"POT-Creation-Date: 2026-11-23 23:16+0100\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -120,7 +120,7 @@ msgstr "未从密钥环加载 KeePass 密码 — 请在设置中重新输入"
 #: rustconn/src/app.rs:967 rustconn/src/detached_window.rs:492
 #: rustconn/src/dialogs/command_palette.rs:697
 #: rustconn/src/dialogs/settings/mod.rs:245
-#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:410
+#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:424
 #: rustconn/src/split_view/bridge.rs:2303 rustconn/src/window/ui.rs:97
 #: rustconn/src/window/ui.rs:99 rustconn/src/window/ui.rs:339
 msgid "Settings"
@@ -270,13 +270,13 @@ msgstr "{} — RustConn"
 #: rustconn/src/detached_window.rs:157
 #: rustconn/src/embedded_rdp/connection.rs:1785
 #: rustconn/src/embedded_rdp/connection.rs:2762
-#: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
+#: rustconn/src/embedded_rdp/mod.rs:797 rustconn/src/embedded_rdp/mod.rs:2189
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
 #: rustconn/src/session_group_window.rs:1135
-#: rustconn/src/terminal/session_lifecycle.rs:617
-#: rustconn/src/terminal/session_lifecycle.rs:762
-#: rustconn/src/terminal/spawn.rs:150
+#: rustconn/src/terminal/session_lifecycle.rs:636
+#: rustconn/src/terminal/session_lifecycle.rs:781
+#: rustconn/src/terminal/spawn.rs:162
 msgid "Session disconnected"
 msgstr "会话已断开"
 
@@ -367,7 +367,7 @@ msgstr "手动输入密码"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2484 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/construct.rs:806
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/construct.rs:813
 msgid "Open Settings"
 msgstr "打开设置"
 
@@ -528,7 +528,7 @@ msgid "No results"
 msgstr "无结果"
 
 #: rustconn/src/dialogs/command_palette.rs:691
-#: rustconn/src/dialogs/connection_wizard/mod.rs:497
+#: rustconn/src/dialogs/connection_wizard/mod.rs:512
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
 #: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:678
 #: rustconn/src/sidebar_ui.rs:784 rustconn/src/sidebar_ui.rs:1506
@@ -617,8 +617,8 @@ msgid "Join Shared Session…"
 msgstr "加入共享会话…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:648
-#: rustconn/src/terminal/mod.rs:654
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:656
+#: rustconn/src/terminal/mod.rs:662
 msgid "Tab Overview"
 msgstr "标签页概览"
 
@@ -866,7 +866,7 @@ msgid "Send TCP/UDP packets to open firewall before connecting"
 msgstr "连接前发送 TCP/UDP 数据包以打开防火墙"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:521
-#: rustconn/src/dialogs/connection/builders.rs:482
+#: rustconn/src/dialogs/connection/builders.rs:490
 msgid "Invalid format. Use: 7000 8000/tcp 9000/udp"
 msgstr "格式无效。请使用：7000 8000/tcp 9000/udp"
 
@@ -1330,37 +1330,37 @@ msgstr "从此列表中移除"
 msgid "Connection name is required"
 msgstr "需要连接名称"
 
-#: rustconn/src/dialogs/connection/builders.rs:367
+#: rustconn/src/dialogs/connection/builders.rs:375
 msgid "Host is required"
 msgstr "需要主机"
 
-#: rustconn/src/dialogs/connection/builders.rs:372
+#: rustconn/src/dialogs/connection/builders.rs:380
 msgid "Host cannot contain spaces"
 msgstr "主机不能包含空格"
 
-#: rustconn/src/dialogs/connection/builders.rs:382
+#: rustconn/src/dialogs/connection/builders.rs:390
 msgid "Port must be greater than 0"
 msgstr "端口必须大于 0"
 
-#: rustconn/src/dialogs/connection/builders.rs:390
+#: rustconn/src/dialogs/connection/builders.rs:398
 msgid "Device path is required for serial connections"
 msgstr "串行连接需要设备路径"
 
-#: rustconn/src/dialogs/connection/builders.rs:409
+#: rustconn/src/dialogs/connection/builders.rs:417
 msgid "SSH key path is required for public key authentication"
 msgstr "公钥认证需要 SSH 密钥路径"
 
-#: rustconn/src/dialogs/connection/builders.rs:421
+#: rustconn/src/dialogs/connection/builders.rs:429
 msgid ""
 "Password source is 'None' but auth method is Password. Set source to Prompt "
 "or Vault."
 msgstr "密码来源为“无”但认证方式为密码。请将来源设置为提示或密码库。"
 
-#: rustconn/src/dialogs/connection/builders.rs:431
+#: rustconn/src/dialogs/connection/builders.rs:439
 msgid "Pod name is required when Busybox mode is disabled"
 msgstr "禁用 Busybox 模式时需要 Pod 名称"
 
-#: rustconn/src/dialogs/connection/builders.rs:443
+#: rustconn/src/dialogs/connection/builders.rs:451
 msgid ""
 "The KDC address is not valid. Enter a host name, host:port, or a tcp://, "
 "udp://, http:// or https:// address."
@@ -1368,82 +1368,82 @@ msgstr ""
 "KDC 地址无效。请输入主机名、host:port，或 tcp://、udp://、http:// 或 "
 "https:// 地址。"
 
-#: rustconn/src/dialogs/connection/builders.rs:452
+#: rustconn/src/dialogs/connection/builders.rs:460
 msgid ""
 "The monitor numbers are not valid. Enter whole numbers separated by commas, "
 "for example 0,1."
 msgstr "显示器编号无效。请输入以英文逗号分隔的整数，例如 0,1。"
 
-#: rustconn/src/dialogs/connection/builders.rs:461
+#: rustconn/src/dialogs/connection/builders.rs:469
 msgid "MAC address is required when WOL is enabled"
 msgstr "启用 WOL 时需要 MAC 地址"
 
-#: rustconn/src/dialogs/connection/builders.rs:466
+#: rustconn/src/dialogs/connection/builders.rs:474
 msgid "Invalid MAC address format. Use AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF"
 msgstr "MAC 地址格式无效。请使用 AA:BB:CC:DD:EE:FF 或 AA-BB-CC-DD-EE-FF"
 
-#: rustconn/src/dialogs/connection/builders.rs:492
+#: rustconn/src/dialogs/connection/builders.rs:500
 msgid "Both the Rijndael key and the HMAC key are required for fwknop SPA"
 msgstr "fwknop SPA 需要 Rijndael 密钥和 HMAC 密钥"
 
-#: rustconn/src/dialogs/connection/builders.rs:503
+#: rustconn/src/dialogs/connection/builders.rs:511
 msgid "Enter the SOCKS5 proxy as host:port, with any login in its own fields"
 msgstr "请按 主机:端口 的格式输入 SOCKS5 代理，登录信息请填写在各自的字段中"
 
-#: rustconn/src/dialogs/connection/builders.rs:508
+#: rustconn/src/dialogs/connection/builders.rs:516
 msgid "Choose either an SSH tunnel or a SOCKS proxy, not both"
 msgstr "请选择 SSH 隧道或 SOCKS 代理，不能同时使用"
 
-#: rustconn/src/dialogs/connection/builders.rs:516
+#: rustconn/src/dialogs/connection/builders.rs:524
 msgid "A SOCKS5 login needs a proxy, a username and a password variable"
 msgstr "SOCKS5 登录需要代理、用户名和密码变量"
 
-#: rustconn/src/dialogs/connection/builders.rs:524
+#: rustconn/src/dialogs/connection/builders.rs:532
 msgid "Browser command is required when Custom mode is selected"
 msgstr "选择自定义模式时需要浏览器命令"
 
-#: rustconn/src/dialogs/connection/builders.rs:545
+#: rustconn/src/dialogs/connection/builders.rs:553
 msgid "AWS SSM target instance ID is required"
 msgstr "AWS SSM 目标实例 ID 为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:550
+#: rustconn/src/dialogs/connection/builders.rs:558
 msgid "GCP instance name and zone are required"
 msgstr "GCP 实例名称和区域为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:559
+#: rustconn/src/dialogs/connection/builders.rs:567
 msgid ""
 "Azure Bastion resource ID, resource group, and bastion name are required"
 msgstr "Azure Bastion 资源 ID、资源组和堡垒名称为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:565
+#: rustconn/src/dialogs/connection/builders.rs:573
 msgid "Azure VM name and resource group are required"
 msgstr "Azure 虚拟机名称和资源组为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:574
+#: rustconn/src/dialogs/connection/builders.rs:582
 msgid "OCI bastion OCID, target OCID, and target private IP are required"
 msgstr "OCI 堡垒 OCID、目标 OCID 和目标私有 IP 为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:580
+#: rustconn/src/dialogs/connection/builders.rs:588
 msgid "Cloudflare Access hostname is required"
 msgstr "Cloudflare Access 主机名为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:585
+#: rustconn/src/dialogs/connection/builders.rs:593
 msgid "Teleport host is required"
 msgstr "Teleport 主机为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:590
+#: rustconn/src/dialogs/connection/builders.rs:598
 msgid "Tailscale host is required"
 msgstr "Tailscale 主机为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:595
+#: rustconn/src/dialogs/connection/builders.rs:603
 msgid "Boundary target is required"
 msgstr "Boundary 目标为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:600
+#: rustconn/src/dialogs/connection/builders.rs:608
 msgid "Hoop.dev connection name is required"
 msgstr "Hoop.dev 连接名称为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:606
+#: rustconn/src/dialogs/connection/builders.rs:614
 msgid "Command template is required for the Generic provider"
 msgstr "通用提供程序需要命令模板"
 
@@ -1585,7 +1585,7 @@ msgstr "（根）"
 #: rustconn/src/dialogs/connection/vnc.rs:341
 #: rustconn/src/dialogs/connection/winrm.rs:45
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:140
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:720
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:721
 #: rustconn/src/dialogs/settings/network_tab.rs:61
 #: rustconn/src/dialogs/settings/network_tab.rs:64
 #: rustconn/src/dialogs/settings/network_tab.rs:125
@@ -1771,8 +1771,8 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/connection/general_tab.rs:164
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:75
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:111
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:793
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:799
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:794
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:800
 #: rustconn/src/dialogs/export.rs:390 rustconn/src/dialogs/template.rs:568
 #: rustconn/src/dialogs/template.rs:1824 rustconn/src/split_view/bridge.rs:1910
 #: rustconn/src/window/copy_field_actions.rs:79
@@ -2333,7 +2333,7 @@ msgstr "可选"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:131
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:222
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:649
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:650
 msgid "Zero Trust"
 msgstr "零信任"
 
@@ -3699,7 +3699,7 @@ msgstr "与远程同步剪贴板"
 #: rustconn/src/dialogs/connection/spice.rs:179
 #: rustconn/src/dialogs/connection/vnc.rs:131
 #: rustconn/src/dialogs/snippet.rs:237 rustconn/src/dialogs/template.rs:1300
-#: rustconn/src/embedded_rdp/mod.rs:423
+#: rustconn/src/embedded_rdp/mod.rs:437
 msgid "Auto"
 msgstr "自动"
 
@@ -4412,7 +4412,7 @@ msgid "Browse via a SOCKS proxy over the chosen SSH connection"
 msgstr "通过所选 SSH 连接的 SOCKS 代理浏览"
 
 #: rustconn/src/dialogs/connection/web.rs:146
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:805
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:806
 #: rustconn/src/window/copy_field_actions.rs:81
 msgid "Address"
 msgstr "地址"
@@ -4559,7 +4559,7 @@ msgid "AWS Profile"
 msgstr "AWS 配置"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:261
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:761
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:762
 #: rustconn/src/dialogs/template.rs:1592
 msgid "Region"
 msgstr "区域"
@@ -4573,13 +4573,13 @@ msgid "Instance Name"
 msgstr "实例名称"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:282
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:769
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:770
 #: rustconn/src/dialogs/template.rs:1628
 msgid "Zone"
 msgstr "区域"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:285
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:771
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:772
 #: rustconn/src/dialogs/template.rs:1640
 msgid "Project"
 msgstr "项目"
@@ -4595,14 +4595,14 @@ msgstr "目标资源 ID"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:307
 #: rustconn/src/dialogs/connection/zerotrust.rs:331
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:777
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:785
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:778
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
 #: rustconn/src/dialogs/template.rs:1676 rustconn/src/dialogs/template.rs:1724
 msgid "Resource Group"
 msgstr "资源组"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:311
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:779
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:780
 #: rustconn/src/dialogs/template.rs:1688
 msgid "Bastion Name"
 msgstr "Bastion 名称"
@@ -4612,7 +4612,7 @@ msgid "Connect via Azure AD authentication"
 msgstr "通过 Azure AD 身份验证连接"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:327
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:783
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:784
 #: rustconn/src/dialogs/template.rs:1712
 msgid "VM Name"
 msgstr "VM 名称"
@@ -4653,7 +4653,7 @@ msgid "Connect via Cloudflare Zero Trust"
 msgstr "通过 Cloudflare Zero Trust 连接"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:400
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:789
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:790
 #: rustconn/src/dialogs/template.rs:1800 rustconn/src/monitoring.rs:357
 msgid "Hostname"
 msgstr "主机名"
@@ -4667,7 +4667,7 @@ msgid "Node Name"
 msgstr "节点名称"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:419
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:795
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:796
 #: rustconn/src/dialogs/template.rs:1836
 msgid "Cluster"
 msgstr "集群"
@@ -4686,8 +4686,8 @@ msgid "Connect via Boundary proxy"
 msgstr "通过 Boundary 代理连接"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:453
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:759
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:803
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:760
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:804
 #: rustconn/src/dialogs/template.rs:1884
 msgid "Target ID"
 msgstr "目标 ID"
@@ -4701,13 +4701,13 @@ msgid "Connect via Hoop.dev zero-trust gateway"
 msgstr "通过 Hoop.dev 零信任网关连接"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:475
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:809
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:810
 #: rustconn/src/dialogs/template.rs:1920
 msgid "Connection Name"
 msgstr "连接名称"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:479
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:811
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:812
 #: rustconn/src/dialogs/template.rs:1932
 msgid "Gateway URL"
 msgstr "网关 URL"
@@ -4830,8 +4830,8 @@ msgid "Leave empty for first container"
 msgstr "留空以使用第一个容器"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:227
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:700
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:714
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:701
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:715
 msgid "Custom Command"
 msgstr "自定义命令"
 
@@ -4858,52 +4858,52 @@ msgstr "模板"
 msgid "Connection Details"
 msgstr "连接详情"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:587
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:588
 msgid "Uses SSH for handshake, then switches to UDP"
 msgstr "使用 SSH 进行握手，然后切换到 UDP"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:591
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:592
 msgid "File browser over SSH connection"
 msgstr "通过 SSH 连接浏览文件"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:685
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:686
 msgid "{} Connection"
 msgstr "{} 连接"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:763
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:764
 msgid "Profile"
 msgstr "配置文件"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:767
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:768
 #: rustconn/src/dialogs/template.rs:1616
 msgid "Instance"
 msgstr "实例"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:775
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:776
 msgid "Resource ID"
 msgstr "资源 ID"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1085
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1086
 msgid "More…"
 msgstr "更多…"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1093
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1098
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1094
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1099
 msgid "Browse all predefined templates"
 msgstr "浏览所有预定义模板"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1149
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1150
 msgid "Your Templates"
 msgstr "您的模板"
 
-#: rustconn/src/dialogs/connection_wizard/mod.rs:607
+#: rustconn/src/dialogs/connection_wizard/mod.rs:622
 #: rustconn/src/window/connection_dialogs.rs:205
 #: rustconn/src/window/connection_dialogs.rs:351
 #: rustconn/src/window/templates.rs:484
 msgid "Error Creating Connection"
 msgstr "创建连接错误"
 
-#: rustconn/src/dialogs/connection_wizard/mod.rs:900
+#: rustconn/src/dialogs/connection_wizard/mod.rs:919
 msgid "Duplicate Connection"
 msgstr "复制连接"
 
@@ -4944,7 +4944,7 @@ msgstr "便携文件口令"
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
-#: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
+#: rustconn/src/embedded_rdp/mod.rs:608 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
 msgid "Copy"
 msgstr "复制"
@@ -4953,7 +4953,7 @@ msgstr "复制"
 #: rustconn/src/dialogs/key_setup.rs:628
 #: rustconn/src/dialogs/network_scan.rs:268 rustconn/src/dialogs/script.rs:265
 #: rustconn/src/session_group_window.rs:522
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:918
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/construct.rs:925
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "停止"
@@ -7265,7 +7265,7 @@ msgstr "错误"
 
 #: rustconn/src/dialogs/script.rs:109 rustconn/src/dialogs/script.rs:139
 #: rustconn/src/dialogs/script.rs:142 rustconn/src/dialogs/script.rs:176
-#: rustconn/src/embedded_rdp/mod.rs:429 rustconn/src/embedded_rdp/mod.rs:1146
+#: rustconn/src/embedded_rdp/mod.rs:443 rustconn/src/embedded_rdp/mod.rs:1160
 #: rustconn/src/window/ui.rs:294
 msgid "Scripts"
 msgstr "脚本"
@@ -7305,7 +7305,7 @@ msgstr "脚本 ID"
 msgid "Select or create a script."
 msgstr "请选择或创建一个脚本。"
 
-#: rustconn/src/dialogs/script.rs:256 rustconn/src/embedded_rdp/mod.rs:1378
+#: rustconn/src/dialogs/script.rs:256 rustconn/src/embedded_rdp/mod.rs:1392
 #: rustconn/src/window/remote_script.rs:399
 #: rustconn/src/window/remote_script.rs:617 rustconn/src/window/snippets.rs:113
 msgid "Run"
@@ -7534,7 +7534,7 @@ msgid "Download H.264 codec?"
 msgstr "下载 H.264 编解码器？"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:451
-#: rustconn/src/embedded_rdp/mod.rs:1747
+#: rustconn/src/embedded_rdp/mod.rs:1761
 #: rustconn/src/window/network_tools/remote_edit.rs:137
 msgid "Downloading…"
 msgstr "下载中…"
@@ -8147,7 +8147,7 @@ msgstr "未登录"
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:775
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:901
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:924
-#: rustconn/src/dialogs/settings/secrets_tab/proton_login.rs:174
+#: rustconn/src/dialogs/settings/secrets_tab/proton_login.rs:195
 msgid "Error checking status"
 msgstr "检查状态时出错"
 
@@ -8349,7 +8349,7 @@ msgstr "把你已有的密码从一个存储复制到另一个，例如复制到
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1633
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1701
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2614
-#: rustconn/src/dialogs/settings/secrets_tab/proton_login.rs:163
+#: rustconn/src/dialogs/settings/secrets_tab/proton_login.rs:184
 msgid "Detecting…"
 msgstr "检测中…"
 
@@ -9891,7 +9891,7 @@ msgstr "聚焦终端"
 msgid "Command Palette (Commands)"
 msgstr "命令面板（命令）"
 
-#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:602
+#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:616
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:303
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
@@ -10080,11 +10080,11 @@ msgstr "目标"
 msgid "Where this snippet can be executed"
 msgstr "此代码片段可执行的位置"
 
-#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:424
+#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:438
 msgid "Clipboard (fast)"
 msgstr "剪贴板（快速）"
 
-#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:425
+#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:439
 msgid "Autotype (reliable)"
 msgstr "自动输入（可靠）"
 
@@ -11525,7 +11525,7 @@ msgid ""
 msgstr "嵌入式客户端不支持麦克风重定向。改用 FreeRDP。"
 
 #: rustconn/src/embedded_rdp/connection.rs:867
-#: rustconn/src/embedded_rdp/connection.rs:2999
+#: rustconn/src/embedded_rdp/connection.rs:3015
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr "连接已取消，因为服务器要求使用旧版 RDP 安全协议。"
 
@@ -11570,42 +11570,42 @@ msgstr ""
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr "连接已丢失。正在重连（第 {} 次，共 {} 次）…"
 
-#: rustconn/src/embedded_rdp/connection.rs:3036
+#: rustconn/src/embedded_rdp/connection.rs:3052
 msgid "Could not prepare the external RDP compatibility client."
 msgstr "无法准备外部 RDP 兼容客户端。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3047
+#: rustconn/src/embedded_rdp/connection.rs:3063
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "使用外部 RDP 客户端（服务器需要 RDS 授权）"
 
-#: rustconn/src/embedded_rdp/connection.rs:3049
+#: rustconn/src/embedded_rdp/connection.rs:3065
 msgid "Using external RDP client (server incompatible)"
 msgstr "使用外部 RDP 客户端（服务器不兼容）"
 
-#: rustconn/src/embedded_rdp/connection.rs:3067
-#: rustconn/src/embedded_rdp/connection.rs:3653
+#: rustconn/src/embedded_rdp/connection.rs:3083
+#: rustconn/src/embedded_rdp/connection.rs:3669
 msgid "The external RDP client could not be started."
 msgstr "无法启动外部 RDP 客户端。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3105
+#: rustconn/src/embedded_rdp/connection.rs:3121
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr "无法启动外部 RDP 客户端。请安装 FreeRDP 3 后重试。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3186
+#: rustconn/src/embedded_rdp/connection.rs:3202
 msgid "TLS connection failed. The server may not support this security level."
 msgstr "TLS 连接失败。服务器可能不支持此安全级别。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3190
+#: rustconn/src/embedded_rdp/connection.rs:3206
 msgid "Connection refused. Check host and port."
 msgstr "连接被拒绝。请检查主机和端口。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3193
+#: rustconn/src/embedded_rdp/connection.rs:3209
 #: rustconn/src/embedded_web/mod.rs:653
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "连接超时。请检查主机是否可达。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3214
+#: rustconn/src/embedded_rdp/connection.rs:3230
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -11617,7 +11617,7 @@ msgstr ""
 "到 6.7.90 或更高版本，或在服务器上设置 ExtSecurity=0（FreeRDP issue "
 "#13567）。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3219
+#: rustconn/src/embedded_rdp/connection.rs:3235
 msgid ""
 "Account restrictions refused this sign-in. Protected Users members cannot "
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
@@ -11625,39 +11625,39 @@ msgstr ""
 "账户限制拒绝了此次登录。Protected Users 成员无法使用 NTLM：请在连接的 RDP 设"
 "置中开启 Kerberos 身份验证。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3222
+#: rustconn/src/embedded_rdp/connection.rs:3238
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr "身份验证失败：账户限制阻止了此次登录。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3225
+#: rustconn/src/embedded_rdp/connection.rs:3241
 msgid "Authentication failed: password must be changed before first login."
 msgstr "身份验证失败：首次登录前必须更改密码。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3227
+#: rustconn/src/embedded_rdp/connection.rs:3243
 msgid "Authentication failed: account is disabled."
 msgstr "身份验证失败：账户已禁用。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3228
+#: rustconn/src/embedded_rdp/connection.rs:3244
 msgid "Authentication failed: account is locked out."
 msgstr "身份验证失败：账户已锁定。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3229
+#: rustconn/src/embedded_rdp/connection.rs:3245
 msgid "Authentication failed: password has expired."
 msgstr "身份验证失败：密码已过期。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3230
+#: rustconn/src/embedded_rdp/connection.rs:3246
 msgid "Authentication failed: account has expired."
 msgstr "身份验证失败：账户已过期。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3232
+#: rustconn/src/embedded_rdp/connection.rs:3248
 msgid "Authentication failed: account is disabled, locked out or expired."
 msgstr "身份验证失败：账户已禁用、已锁定或已过期。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3235
+#: rustconn/src/embedded_rdp/connection.rs:3251
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr "身份验证失败：用户无权登录此计算机。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3239
+#: rustconn/src/embedded_rdp/connection.rs:3255
 msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
@@ -11665,14 +11665,14 @@ msgstr ""
 "未找到 {} 领域的 Kerberos KDC。请在连接的 RDP 设置中输入 KDC 地址，或将该领域"
 "添加到 /etc/krb5.conf。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3243
-#: rustconn/src/embedded_rdp/connection.rs:3283
+#: rustconn/src/embedded_rdp/connection.rs:3259
+#: rustconn/src/embedded_rdp/connection.rs:3299
 msgid ""
 "Kerberos needs the DNS domain. Enter it in the Domain field, for example "
 "EXAMPLE.COM."
 msgstr "Kerberos 需要 DNS 域。请在“域”字段中输入，例如 EXAMPLE.COM。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3247
+#: rustconn/src/embedded_rdp/connection.rs:3263
 msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
@@ -11680,14 +11680,14 @@ msgstr ""
 "无法连接到 Kerberos KDC。请在连接的 RDP 设置中，将域控制器的名称或 IP 地址作"
 "为 KDC 地址输入。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3250
+#: rustconn/src/embedded_rdp/connection.rs:3266
 msgid ""
 "Kerberos sign-in failed: this computer's clock differs from the domain's by "
 "more than five minutes. Synchronize the clock and try again."
 msgstr ""
 "Kerberos 登录失败：此计算机的时钟与域时钟相差超过五分钟。请同步时钟后重试。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3253
+#: rustconn/src/embedded_rdp/connection.rs:3269
 msgid ""
 "The domain does not know this server by the name in Host. Connect by the "
 "server's DNS name, as registered in the domain."
@@ -11695,27 +11695,27 @@ msgstr ""
 "域无法通过 Host 中的名称识别此服务器。请使用服务器在域中注册的 DNS 名称进行连"
 "接。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3255
+#: rustconn/src/embedded_rdp/connection.rs:3271
 msgid "NLA authentication failed. Check username and password."
 msgstr "NLA 身份验证失败。请检查用户名和密码。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3277
+#: rustconn/src/embedded_rdp/connection.rs:3293
 msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
 msgstr "Kerberos 需要服务器的 DNS 名称。通过 IP 地址或 SSH 隧道连接会失败。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3280
+#: rustconn/src/embedded_rdp/connection.rs:3296
 msgid ""
 "Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
 "name."
 msgstr "Kerberos 需要 DNS 域，例如 EXAMPLE.COM，而非短域名。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3680
+#: rustconn/src/embedded_rdp/connection.rs:3696
 msgid "RDP session will open in an external window"
 msgstr "RDP 会话将在外部窗口中打开"
 
-#: rustconn/src/embedded_rdp/connection.rs:3709
+#: rustconn/src/embedded_rdp/connection.rs:3725
 msgid "Failed to start FreeRDP: {}"
 msgstr "无法启动 FreeRDP：{}"
 
@@ -11723,163 +11723,167 @@ msgstr "无法启动 FreeRDP：{}"
 msgid "File drag disabled: {}"
 msgstr "文件拖放已禁用：{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:409
+#: rustconn/src/embedded_rdp/mod.rs:83
+msgid "The server requires a password to sign in."
+msgstr "服务器需要密码才能登录。"
+
+#: rustconn/src/embedded_rdp/mod.rs:423
 msgid "Task Manager"
 msgstr "任务管理器"
 
-#: rustconn/src/embedded_rdp/mod.rs:411
+#: rustconn/src/embedded_rdp/mod.rs:425
 msgid "Registry Editor"
 msgstr "注册表编辑器"
 
-#: rustconn/src/embedded_rdp/mod.rs:412
+#: rustconn/src/embedded_rdp/mod.rs:426
 msgid "Device Manager"
 msgstr "设备管理器"
 
-#: rustconn/src/embedded_rdp/mod.rs:413
+#: rustconn/src/embedded_rdp/mod.rs:427
 msgid "Event Viewer"
 msgstr "事件查看器"
 
-#: rustconn/src/embedded_rdp/mod.rs:414
+#: rustconn/src/embedded_rdp/mod.rs:428
 msgid "Services"
 msgstr "服务"
 
-#: rustconn/src/embedded_rdp/mod.rs:415
+#: rustconn/src/embedded_rdp/mod.rs:429
 msgid "Disk Management"
 msgstr "磁盘管理"
 
-#: rustconn/src/embedded_rdp/mod.rs:416
+#: rustconn/src/embedded_rdp/mod.rs:430
 msgid "Resource Monitor"
 msgstr "资源监视器"
 
-#: rustconn/src/embedded_rdp/mod.rs:417
+#: rustconn/src/embedded_rdp/mod.rs:431
 msgid "Computer Management"
 msgstr "计算机管理"
 
-#: rustconn/src/embedded_rdp/mod.rs:419
+#: rustconn/src/embedded_rdp/mod.rs:433
 msgid "Auto (Windows tools shown)"
 msgstr "自动（显示 Windows 工具）"
 
-#: rustconn/src/embedded_rdp/mod.rs:420
+#: rustconn/src/embedded_rdp/mod.rs:434
 msgid "Windows"
 msgstr "Windows"
 
-#: rustconn/src/embedded_rdp/mod.rs:421
+#: rustconn/src/embedded_rdp/mod.rs:435
 msgid "Linux (hide Windows tools)"
 msgstr "Linux（隐藏 Windows 工具）"
 
-#: rustconn/src/embedded_rdp/mod.rs:427 rustconn/src/embedded_rdp/mod.rs:1129
+#: rustconn/src/embedded_rdp/mod.rs:441 rustconn/src/embedded_rdp/mod.rs:1143
 msgid "Shell Launchers"
 msgstr "Shell 启动器"
 
-#: rustconn/src/embedded_rdp/mod.rs:431 rustconn/src/embedded_rdp/mod.rs:1124
+#: rustconn/src/embedded_rdp/mod.rs:445 rustconn/src/embedded_rdp/mod.rs:1138
 msgid "PowerShell (Admin)"
 msgstr "PowerShell（管理员）"
 
-#: rustconn/src/embedded_rdp/mod.rs:432 rustconn/src/embedded_rdp/mod.rs:1128
+#: rustconn/src/embedded_rdp/mod.rs:446 rustconn/src/embedded_rdp/mod.rs:1142
 msgid "CMD (Admin)"
 msgstr "CMD（管理员）"
 
-#: rustconn/src/embedded_rdp/mod.rs:575 rustconn/src/embedded_rdp/mod.rs:577
+#: rustconn/src/embedded_rdp/mod.rs:589 rustconn/src/embedded_rdp/mod.rs:591
 msgid "Fit resolution to window"
 msgstr "使远程桌面适应窗口大小"
 
-#: rustconn/src/embedded_rdp/mod.rs:596 rustconn/src/embedded_vnc/ui.rs:53
+#: rustconn/src/embedded_rdp/mod.rs:610 rustconn/src/embedded_vnc/ui.rs:53
 msgid "Copy remote clipboard to local (waiting for remote data…)"
 msgstr "将远程剪贴板复制到本地（正在等待远程数据…）"
 
-#: rustconn/src/embedded_rdp/mod.rs:603 rustconn/src/embedded_vnc/ui.rs:63
+#: rustconn/src/embedded_rdp/mod.rs:617 rustconn/src/embedded_vnc/ui.rs:63
 msgid "Paste from local clipboard to remote session"
 msgstr "将本地剪贴板粘贴到远程会话"
 
-#: rustconn/src/embedded_rdp/mod.rs:608 rustconn/src/embedded_rdp/mod.rs:613
+#: rustconn/src/embedded_rdp/mod.rs:622 rustconn/src/embedded_rdp/mod.rs:627
 msgid "Autotype"
 msgstr "自动输入"
 
-#: rustconn/src/embedded_rdp/mod.rs:610
+#: rustconn/src/embedded_rdp/mod.rs:624
 msgid "Send text as keystrokes (bypasses paste restrictions)"
 msgstr "以按键方式发送文本（绕过粘贴限制）"
 
-#: rustconn/src/embedded_rdp/mod.rs:617
+#: rustconn/src/embedded_rdp/mod.rs:631
 msgid "Type Clipboard"
 msgstr "输入剪贴板"
 
-#: rustconn/src/embedded_rdp/mod.rs:620
+#: rustconn/src/embedded_rdp/mod.rs:634
 msgid "Type Text…"
 msgstr "输入文本…"
 
-#: rustconn/src/embedded_rdp/mod.rs:634
+#: rustconn/src/embedded_rdp/mod.rs:648
 msgid "Run PowerShell script on remote"
 msgstr "在远程运行 PowerShell 脚本"
 
-#: rustconn/src/embedded_rdp/mod.rs:637
+#: rustconn/src/embedded_rdp/mod.rs:651
 msgid "Run script on remote"
 msgstr "在远程运行脚本"
 
-#: rustconn/src/embedded_rdp/mod.rs:652 rustconn/src/embedded_vnc/ui.rs:73
+#: rustconn/src/embedded_rdp/mod.rs:666 rustconn/src/embedded_vnc/ui.rs:73
 msgid "Ctrl+Alt+Del"
 msgstr "Ctrl+Alt+Del"
 
-#: rustconn/src/embedded_rdp/mod.rs:660 rustconn/src/embedded_vnc/ui.rs:79
+#: rustconn/src/embedded_rdp/mod.rs:674 rustconn/src/embedded_vnc/ui.rs:79
 msgid "Send Ctrl+Alt+Del to remote session"
 msgstr "向远程会话发送 Ctrl+Alt+Del"
 
-#: rustconn/src/embedded_rdp/mod.rs:666 rustconn/src/embedded_rdp/mod.rs:669
+#: rustconn/src/embedded_rdp/mod.rs:680 rustconn/src/embedded_rdp/mod.rs:683
 msgid "Windows admin tools"
 msgstr "Windows 管理工具"
 
-#: rustconn/src/embedded_rdp/mod.rs:693
+#: rustconn/src/embedded_rdp/mod.rs:707
 msgid "Save Files"
 msgstr "保存文件"
 
-#: rustconn/src/embedded_rdp/mod.rs:696
+#: rustconn/src/embedded_rdp/mod.rs:710
 msgid "Save files from remote clipboard"
 msgstr "从远程剪贴板保存文件"
 
-#: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
+#: rustconn/src/embedded_rdp/mod.rs:800 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:193 rustconn/src/terminal/config.rs:428
-#: rustconn/src/terminal/session_lifecycle.rs:797
-#: rustconn/src/terminal/spawn.rs:178 rustconn/src/terminal/tab_menu.rs:1278
+#: rustconn/src/terminal/session_lifecycle.rs:816
+#: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1278
 msgid "Reconnect"
 msgstr "重连"
 
-#: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/session_lifecycle.rs:799
-#: rustconn/src/terminal/spawn.rs:180
+#: rustconn/src/embedded_rdp/mod.rs:802 rustconn/src/embedded_vnc/ui.rs:151
+#: rustconn/src/terminal/session_lifecycle.rs:818
+#: rustconn/src/terminal/spawn.rs:192
 msgid "Reconnect to this session"
 msgstr "重新连接到此会话"
 
-#: rustconn/src/embedded_rdp/mod.rs:956
+#: rustconn/src/embedded_rdp/mod.rs:970
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr "启用剪贴板共享以将文件发送到远程会话"
 
-#: rustconn/src/embedded_rdp/mod.rs:1044
+#: rustconn/src/embedded_rdp/mod.rs:1058
 msgid ""
 "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
 "paste"
 msgstr "已复制 {} 个文件到远程剪贴板 — 在会话中按 Ctrl+V 粘贴"
 
-#: rustconn/src/embedded_rdp/mod.rs:1122
+#: rustconn/src/embedded_rdp/mod.rs:1136
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1127
+#: rustconn/src/embedded_rdp/mod.rs:1141
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1221 rustconn/src/embedded_rdp/mod.rs:1292
-#: rustconn/src/embedded_rdp/mod.rs:1570
+#: rustconn/src/embedded_rdp/mod.rs:1235 rustconn/src/embedded_rdp/mod.rs:1306
+#: rustconn/src/embedded_rdp/mod.rs:1584
 msgid "Channel not ready"
 msgstr "通道未就绪"
 
-#: rustconn/src/embedded_rdp/mod.rs:1266 rustconn/src/embedded_rdp/mod.rs:1319
+#: rustconn/src/embedded_rdp/mod.rs:1280 rustconn/src/embedded_rdp/mod.rs:1333
 msgid "Script sent"
 msgstr "脚本已发送"
 
-#: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1379 rustconn/src/window/snippets.rs:108
 msgid "Execute Snippet?"
 msgstr "运行代码片段？"
 
-#: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1386 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -11889,15 +11893,15 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1632
+#: rustconn/src/embedded_rdp/mod.rs:1646
 msgid "Select folder to save files"
 msgstr "选择保存文件的文件夹"
 
-#: rustconn/src/embedded_rdp/mod.rs:1765
+#: rustconn/src/embedded_rdp/mod.rs:1779
 msgid "Downloading files…"
 msgstr "正在下载文件…"
 
-#: rustconn/src/embedded_rdp/mod.rs:2160
+#: rustconn/src/embedded_rdp/mod.rs:2174
 msgid "Connection may have been lost while the computer slept"
 msgstr "计算机睡眠期间连接可能已断开"
 
@@ -12987,7 +12991,7 @@ msgstr "选择要显示的标签页"
 msgid "Save Selection as Snippet…"
 msgstr "将选中内容保存为代码片段…"
 
-#: rustconn/src/terminal/mod.rs:667 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:675 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "欢迎"
 
@@ -13059,7 +13063,7 @@ msgid "Press Enter again to reconnect"
 msgstr "再次按 Enter 重新连接"
 
 #: rustconn/src/terminal/session_lifecycle.rs:331
-#: rustconn/src/terminal/session_lifecycle.rs:786
+#: rustconn/src/terminal/session_lifecycle.rs:805
 msgid "Press R to reconnect, Q to close"
 msgstr "按 R 重新连接，按 Q 关闭"
 
@@ -13067,46 +13071,46 @@ msgstr "按 R 重新连接，按 Q 关闭"
 msgid "Reconnected at {}"
 msgstr "已于 {} 重新连接"
 
-#: rustconn/src/terminal/session_lifecycle.rs:772
+#: rustconn/src/terminal/session_lifecycle.rs:791
 msgid ""
 "Press R to reconnect, Q to close, or Enter twice for the suggested action"
 msgstr "按 R 重新连接，按 Q 关闭，或按两次 Enter 执行建议的操作"
 
-#: rustconn/src/terminal/session_lifecycle.rs:791
-#: rustconn/src/terminal/session_lifecycle.rs:946
+#: rustconn/src/terminal/session_lifecycle.rs:810
+#: rustconn/src/terminal/session_lifecycle.rs:965
 msgid "Auto-reconnecting…"
 msgstr "正在自动重连…"
 
-#: rustconn/src/terminal/session_lifecycle.rs:986
-#: rustconn/src/terminal/session_lifecycle.rs:996
+#: rustconn/src/terminal/session_lifecycle.rs:1005
+#: rustconn/src/terminal/session_lifecycle.rs:1015
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "自动重新连接（第 {}/{} 次）"
 
-#: rustconn/src/terminal/session_lifecycle.rs:1164
+#: rustconn/src/terminal/session_lifecycle.rs:1183
 msgid "Sign-in expired"
 msgstr "登录已过期"
 
-#: rustconn/src/terminal/session_lifecycle.rs:1173
+#: rustconn/src/terminal/session_lifecycle.rs:1192
 msgid "Log In to {}"
 msgstr "登录到 {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:1177
+#: rustconn/src/terminal/session_lifecycle.rs:1196
 msgid "Run “{}” to sign in again in the browser"
 msgstr "运行“{}”以在浏览器中重新登录"
 
-#: rustconn/src/terminal/spawn.rs:172
+#: rustconn/src/terminal/spawn.rs:184
 msgid "Command not found: {}"
 msgstr "命令未找到：{}"
 
-#: rustconn/src/terminal/spawn.rs:174
+#: rustconn/src/terminal/spawn.rs:186
 msgid "Failed to start '{}'"
 msgstr "无法启动 '{}'"
 
-#: rustconn/src/terminal/spawn.rs:196
+#: rustconn/src/terminal/spawn.rs:208
 msgid "'{}' is not installed"
 msgstr "'{}' 未安装"
 
-#: rustconn/src/terminal/spawn.rs:199
+#: rustconn/src/terminal/spawn.rs:211
 msgid "Failed to start '{}': {}"
 msgstr "无法启动 '{}': {}"
 
@@ -13541,7 +13545,7 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "跳板主机不可用"
 
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:788
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:820
 #: rustconn/src/window/session_start.rs:1079
 #: rustconn/src/window/session_start.rs:1145
 msgid "Connect Anyway"
@@ -13750,25 +13754,25 @@ msgstr "已保存 {} 个导入的凭据（共 {} 个）— 请检查密钥后端
 msgid "Could not store imported credentials in the secret backend"
 msgstr "无法将导入的凭据保存到密钥后端"
 
-#: rustconn/src/window/construct.rs:782 rustconn/src/window/construct.rs:793
+#: rustconn/src/window/construct.rs:789 rustconn/src/window/construct.rs:800
 msgid "Dismiss"
 msgstr "忽略"
 
-#: rustconn/src/window/construct.rs:825
+#: rustconn/src/window/construct.rs:832
 msgid "Open Log"
 msgstr "打开日志"
 
-#: rustconn/src/window/construct.rs:828
+#: rustconn/src/window/construct.rs:835
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
 msgstr "RustConn 上次运行时意外关闭。崩溃日志已保存在本地。"
 
-#: rustconn/src/window/construct.rs:853
+#: rustconn/src/window/construct.rs:860
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "无法打开崩溃日志。它保存在 {}"
 
-#: rustconn/src/window/construct.rs:882
+#: rustconn/src/window/construct.rs:889
 msgid "Touch your hardware key to unlock the password database"
 msgstr "轻触您的硬件密钥以解锁密码数据库"
 
@@ -15307,7 +15311,7 @@ msgstr "跳板机不可达，正在通过“{}”连接"
 msgid "No jump host responded, trying ‘{}’"
 msgstr "没有跳板机响应，正在尝试“{}”"
 
-#: rustconn/src/window/protocols.rs:1476 rustconn/src/window/rdp_vnc.rs:1593
+#: rustconn/src/window/protocols.rs:1476 rustconn/src/window/rdp_vnc.rs:1625
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "未找到 VNC 查看器。请安装 TigerVNC 或 Remmina。"
 
@@ -15370,11 +15374,11 @@ msgstr "警告：SSH 代理套接字 {}：{}"
 msgid "SSH tunnel failed: {}"
 msgstr "SSH 隧道失败：{}"
 
-#: rustconn/src/window/rdp_vnc.rs:784
+#: rustconn/src/window/rdp_vnc.rs:816
 msgid "Use Legacy RDP Security?"
 msgstr "使用旧版 RDP 安全协议？"
 
-#: rustconn/src/window/rdp_vnc.rs:786
+#: rustconn/src/window/rdp_vnc.rs:818
 msgid ""
 "This server only supports Standard RDP Security, which is weaker than TLS or "
 "Network Level Authentication. Continue with the external RDP client?"
@@ -15382,11 +15386,11 @@ msgstr ""
 "此服务器仅支持标准 RDP 安全协议，其安全性低于 TLS 或网络级别身份验证。是否继"
 "续使用外部 RDP 客户端？"
 
-#: rustconn/src/window/rdp_vnc.rs:817 rustconn/src/window/rdp_vnc.rs:1125
+#: rustconn/src/window/rdp_vnc.rs:849 rustconn/src/window/rdp_vnc.rs:1157
 msgid "Certificate changed"
 msgstr "证书已更改"
 
-#: rustconn/src/window/rdp_vnc.rs:819 rustconn/src/window/rdp_vnc.rs:1127
+#: rustconn/src/window/rdp_vnc.rs:851 rustconn/src/window/rdp_vnc.rs:1159
 msgid "Accept new certificate"
 msgstr "接受新证书"
 
@@ -15678,7 +15682,7 @@ msgstr "命令完成：{}"
 msgid "Command failed with status {}: {}"
 msgstr "命令失败，状态 {}：{}"
 
-#: rustconn/src/window/session_lifecycle.rs:1316
+#: rustconn/src/window/session_lifecycle.rs:1349
 msgid ""
 "Sign in again in the browser. The session reconnects when the login finishes."
 msgstr "请在浏览器中重新登录。登录完成后会话将自动重新连接。"

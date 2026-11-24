@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.26.2** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.26.3** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -441,6 +441,7 @@ A WinRM connection opens a PowerShell session on a Windows machine in a terminal
 
 - Windows has to have WinRM enabled (`Enable-PSRemoting` on the machine). The default port is 5985. Turn on **Use HTTPS** for an encrypted connection, usually port 5986, and set the port to match.
 - Set **Username**, and **Domain** for a domain account. An account already written as `DOMAIN\user` or `user@domain` is left as it is.
+- A local administrator other than the built-in `Administrator` is refused with `WinRM::WinRMAuthorizationError`: UAC remote restrictions strip its admin token over the network. Allow it on the Windows machine with `New-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -PropertyType DWord -Force`, or use a domain account. RustConn treats that refusal as a failed sign-in and does not reconnect automatically.
 - A saved password is typed at the client's own prompt, so it never appears on a command line, and **Custom Arguments** refuses `-p`, `-H`, `--password` and `--hash` in every form the client accepts: abbreviated (`--pass`), with the value attached (`-pSECRET`, `--hash=…`) or inside a group of short options (`-np`). A short option with its value attached that happens to contain one of these letters is refused too: `-uHank` reads as `-u` plus `-H`, so write it as `-u Hank`. With no saved password, type it in the terminal.
 - A **Jump Host** (or [fallback jump hosts](#fallback-jump-hosts)) reaches the machine through an SSH tunnel.
 - To run PowerShell scripts on the machine, see [Run Local Script](#run-local-script).

@@ -778,7 +778,13 @@ const VERSION_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_sec
 /// Gets version information from a binary with a timeout
 fn get_version(binary: &str, args: &[&str]) -> Option<String> {
     let mut cmd = Command::new(binary);
+    // stdin closed: an inherited terminal made `telnet` (no version flag, so it
+    // opens its own prompt) and GTK/X11 clients such as `remote-viewer` and
+    // `xfreerdp` block reading it — a background process reading its tty is
+    // stopped — and every probe ran into the full timeout instead of the
+    // fraction of a second it takes.
     cmd.args(args)
+        .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 

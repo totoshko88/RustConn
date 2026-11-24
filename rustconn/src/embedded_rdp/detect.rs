@@ -131,8 +131,11 @@ fn probe_freerdp_version_with_timeout(
         return None;
     }
     let (program, args) = version_probe_command(binary);
+    // stdin closed, as for every version probe: a client launched from a
+    // terminal otherwise inherits it and can block reading it.
     let mut child = Command::new(program)
         .args(args)
+        .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -259,6 +262,7 @@ fn command_succeeds_with_timeout(
     }
     let Ok(mut child) = Command::new(program)
         .args(args)
+        .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
