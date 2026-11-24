@@ -564,10 +564,37 @@ impl MainWindow {
                     overlay_split_view_clone.clone(),
                     session_bridges_clone.clone(),
                     header_title_clone.clone(),
+                    false,
                 );
             }
         });
         window.add_action(&settings_action);
+        // Settings opened on the Secrets page, for "could not read the password" dialogs
+        let settings_secrets_action = gio::SimpleAction::new("settings-secrets", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let notebook_clone = notebook.clone();
+        let monitoring_clone = self.monitoring.clone();
+        let sidebar_clone = sidebar.clone();
+        let overlay_split_view_clone = self.overlay_split_view.clone();
+        let session_bridges_clone = self.session_split_bridges.clone();
+        let header_title_clone = self.header_title.clone();
+        settings_secrets_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                Self::show_settings_dialog(
+                    win.upcast_ref(),
+                    state_clone.clone(),
+                    notebook_clone.clone(),
+                    monitoring_clone.clone(),
+                    sidebar_clone.clone(),
+                    overlay_split_view_clone.clone(),
+                    session_bridges_clone.clone(),
+                    header_title_clone.clone(),
+                    true,
+                );
+            }
+        });
+        window.add_action(&settings_secrets_action);
 
         // Flatpak Components action - only functional in Flatpak environment
         let flatpak_components_action = gio::SimpleAction::new("flatpak-components", None);

@@ -144,6 +144,18 @@ impl TerminalNotebook {
         error: &pty_spawn::SpawnError,
     ) {
         let not_found = error.is_not_found();
+        // A command that never started leaves no child to exit, so the sidebar
+        // would stay on "connecting" for good; report the failure here.
+        let failed_connection = self
+            .session_info
+            .borrow()
+            .get(&session_id)
+            .map(|i| i.connection_id);
+        if let Some(connection_id) = failed_connection
+            && let Some(ref cb) = *self.on_spawn_failed.borrow()
+        {
+            cb(connection_id);
+        }
 
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             page.set_indicator_icon(Some(&gio::ThemedIcon::new("network-offline-symbolic")));

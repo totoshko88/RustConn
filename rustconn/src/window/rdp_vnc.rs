@@ -722,7 +722,39 @@ fn start_embedded_rdp_session(
     // Connect error callback — shows specific error message as toast
     let notebook_for_error = notebook.clone();
     let state_for_error = state.clone();
+    let split_view_for_error = split_view.clone();
+    let sidebar_for_error = sidebar.clone();
     embedded_widget.connect_error(move |error_msg| {
+        // The server requires NLA and this attempt had no password (password
+        // source "None" tries without one first): ask for it rather than fail.
+        // Deferred to idle so the dialog is not opened from inside the
+        // widget's own error dispatch.
+        if crate::embedded_rdp::is_credentials_required_message(error_msg) {
+            let state = state_for_error.clone();
+            let notebook = notebook_for_error.clone();
+            let split_view = split_view_for_error.clone();
+            let sidebar = sidebar_for_error.clone();
+            glib::idle_add_local_once(move || {
+                let Some(window) = notebook
+                    .widget()
+                    .ancestor(gtk4::Window::static_type())
+                    .and_then(|w| w.downcast::<gtk4::Window>().ok())
+                else {
+                    return;
+                };
+                sidebar.update_connection_status(&connection_id.to_string(), "connecting");
+                start_rdp_with_password_dialog_observed(
+                    state,
+                    notebook,
+                    split_view,
+                    sidebar,
+                    connection_id,
+                    &window,
+                    None,
+                );
+            });
+            return;
+        }
         if let Some(window) = notebook_for_error
             .widget()
             .ancestor(gtk4::Window::static_type())
@@ -1654,6 +1686,9 @@ fn start_vnc_session_internal(
                 // have been refused, so the retry reads the vault again
                 // instead of the cached password (issue #351).
                 crate::state::forget_cached_credentials(&state_for_callback, connection_id);
+                // No session ever opened, so no disconnect will clear the
+                // sidebar's "connecting" status: mark the attempt failed here.
+                sidebar_for_state.update_connection_status(&connection_id.to_string(), "failed");
             }
             if vnc_state == crate::session::SessionState::Connected {
                 was_ever_connected.set(true);

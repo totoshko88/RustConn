@@ -2997,6 +2997,16 @@ pub fn start_serial_connection(
 
     // Spawn picocom
     notebook.spawn_serial(session_id, &command);
+    // --- Status detection: mark the sidebar "connected" once the client is
+    // established, as the Telnet connect and every in-place reconnect already
+    // did. Without it the row stayed on the connecting icon for the whole
+    // session; only the recording detector was armed here.
+    {
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, StatusClient::Other, move || {
+            sidebar.increment_session_count(&connection_id.to_string(), session_id);
+        });
+    }
 
     // --- Automatic login (issue #254) ---
     // A serial console is the same situation as Telnet: whatever is on the
@@ -3190,6 +3200,16 @@ pub fn start_kubernetes_connection(
     // under Flatpak (Flatpak Components), so no host wrapper is needed.
     let argv: Vec<&str> = command.iter().map(String::as_str).collect();
     notebook.spawn_command(session_id, &argv, None, None, None);
+    // --- Status detection: mark the sidebar "connected" once the client is
+    // established, as the Telnet connect and every in-place reconnect already
+    // did. Without it the row stayed on the connecting icon for the whole
+    // session; only the recording detector was armed here.
+    {
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, StatusClient::Other, move || {
+            sidebar.increment_session_count(&connection_id.to_string(), session_id);
+        });
+    }
 
     // --- Auto-recording for Kubernetes ---
     if conn.session_recording_enabled {
@@ -3427,6 +3447,17 @@ fn start_mosh_connection_internal(
     // Spawn mosh — uses exec (no shell wrapper needed)
     let argv: Vec<&str> = command.iter().map(String::as_str).collect();
     notebook.spawn_command(session_id, &argv, None, None, None);
+    // --- Status detection: mark the sidebar "connected" once the client is
+    // established (mosh-client takes over the alternate screen,
+    // which `connection_established` counts as established), as the Telnet connect and every in-place reconnect already
+    // did. Without it the row stayed on the connecting icon for the whole
+    // session; only the recording detector was armed here.
+    {
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, StatusClient::Other, move || {
+            sidebar.increment_session_count(&connection_id.to_string(), session_id);
+        });
+    }
 
     // --- Auto-recording for MOSH ---
     if conn.session_recording_enabled {

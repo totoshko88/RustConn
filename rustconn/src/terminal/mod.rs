@@ -281,6 +281,10 @@ pub struct TerminalNotebook {
     tab_group_manager: Rc<RefCell<TabGroupManager>>,
     /// Callback for reconnect button clicks (session_id, connection_id)
     on_reconnect: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
+    /// Callback run with the connection ID when a session's command could not
+    /// be started (missing client binary, PTY failure). Such a session has no
+    /// process, so no `child-exited` ever follows to mark it failed.
+    on_spawn_failed: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     /// Callback for the reconnect banner's cloud login button
     /// (session_id, connection_id, login command).
     on_cloud_login: CloudLoginCallback,
@@ -512,6 +516,10 @@ pub struct TerminalNotebook {
     /// so a network change or a resume from sleep honours it instead of
     /// re-running the login by itself.
     auto_reconnect_eligible: Rc<RefCell<std::collections::HashSet<Uuid>>>,
+    /// Consecutive in-place reconnects per session whose process ended
+    /// quickly (`rustconn_core::connection::next_short_lived_streak`); stops
+    /// auto-reconnect against a host that answers but keeps closing.
+    short_lived_reconnects: Rc<RefCell<HashMap<Uuid, u32>>>,
     /// SSH tunnels for jump-host connections (RDP, VNC, SPICE, Telnet).
     /// Killed automatically when the tab is closed.
     ssh_tunnels: Rc<RefCell<HashMap<Uuid, rustconn_core::ssh_tunnel::SshTunnel>>>,
@@ -688,6 +696,7 @@ impl TerminalNotebook {
             split_session_colors: Rc::new(RefCell::new(HashMap::new())),
             tab_group_manager: Rc::new(RefCell::new(TabGroupManager::new())),
             on_reconnect: Rc::new(RefCell::new(None)),
+            on_spawn_failed: Rc::new(RefCell::new(None)),
             on_cloud_login: Rc::new(RefCell::new(None)),
             split_pane_box_provider: Rc::new(RefCell::new(None)),
             focused_session_provider: Rc::new(RefCell::new(None)),
@@ -735,6 +744,7 @@ impl TerminalNotebook {
             remote_recordings: RefCell::new(HashMap::new()),
             poll_cancel_tokens: Rc::new(RefCell::new(HashMap::new())),
             auto_reconnect_eligible: Rc::new(RefCell::new(std::collections::HashSet::new())),
+            short_lived_reconnects: Rc::new(RefCell::new(HashMap::new())),
             ssh_tunnels: Rc::new(RefCell::new(HashMap::new())),
             activity_coordinator: Rc::new(RefCell::new(None)),
             tab_containers: Rc::new(RefCell::new(HashMap::new())),
@@ -787,6 +797,7 @@ impl TerminalNotebook {
         let on_session_ended = Rc::clone(&self.on_session_ended);
         let vte_child_pids = self.vte_child_pids.clone();
         let auto_reconnect_on_close = Rc::clone(&self.auto_reconnect_eligible);
+        let short_lived_on_close = Rc::clone(&self.short_lived_reconnects);
         let child_exited_on_close = Rc::clone(&self.child_exited_handlers);
         let show_welcome_on_close = self.show_welcome.clone();
         let disconnected_on_close = Rc::clone(&self.disconnected_sessions);
@@ -1005,6 +1016,7 @@ impl TerminalNotebook {
                 output_filters_on_close.borrow_mut().remove(&session_id);
                 commit_forwarded_on_close.borrow_mut().remove(&session_id);
                 auto_reconnect_on_close.borrow_mut().remove(&session_id);
+                short_lived_on_close.borrow_mut().remove(&session_id);
                 // The widget goes with the tab, so the handlers die with it —
                 // this only keeps the map from growing for the app's lifetime.
                 child_exited_on_close

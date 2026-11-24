@@ -116,6 +116,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.26.3" date="2026-11-24">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.3</url>
+      <description>
+        <p>Version 0.26.3 - connection status and macOS fixes:</p>
+        <ul>
+          <li>The sidebar no longer stays on the connecting icon for a missing client, a refused VNC login, or Mosh, Serial and Kubernetes sessions.</li>
+          <li>Embedded RDP asks for the password when a Windows host requires Network Level Authentication.</li>
+          <li>Automatic reconnection stops on a session that keeps closing and on a refused WinRM sign-in.</li>
+          <li>On macOS, Keychain and KeePassXC passwords are read correctly.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.26.2" date="2026-11-23">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.2</url>
       <description>

@@ -37,7 +37,9 @@ pub use detection::{
     detect_waypipe, freerdp_launch_order, is_wayland_session, resolve_freerdp_client,
     resolve_vnc_viewer,
 };
-pub use exit_cause::{STARTUP_FAILURE_WINDOW_SECS, ssh_exit_is_auth_failure};
+pub use exit_cause::{
+    STARTUP_FAILURE_WINDOW_SECS, ssh_exit_is_auth_failure, winrm_exit_is_auth_failure,
+};
 pub use freerdp::{
     FreeRdpConfig, FreeRdpSizing, build_freerdp_args, contains_freerdp_secret_field,
     extract_geometry_from_args, filter_extra_args, freerdp_kerberos_arg,
