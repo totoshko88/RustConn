@@ -655,8 +655,9 @@ impl EmbeddedRdpWidget {
         let view_only_button = ToggleButton::with_label(&i18n("View Only"));
         view_only_button.add_css_class("flat");
         view_only_button.add_css_class("accent");
-        view_only_button
-            .set_tooltip_text(Some(&i18n("Observe only: block keyboard, mouse and paste")));
+        view_only_button.set_tooltip_text(Some(&i18n(
+            "Observe only: block all input to the remote session",
+        )));
         view_only_button.update_property(&[gtk4::accessible::Property::Label(&i18n("View Only"))]);
         toolbar.append(&view_only_button);
 
