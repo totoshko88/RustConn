@@ -107,14 +107,10 @@ impl KeePassTarget {
         connection: &rustconn_core::models::Connection,
         groups: &[rustconn_core::models::ConnectionGroup],
     ) -> Self {
-        let base = rustconn_core::secret::KeePassHierarchy::build_entry_path(connection, groups);
-        let entry_key = format!(
-            "{} ({})",
-            base.strip_prefix("RustConn/").unwrap_or(&base),
-            connection.protocol.as_str().to_lowercase()
-        );
         Self {
-            entry_key,
+            entry_key: rustconn_core::secret::KeePassHierarchy::build_entry_name(
+                connection, groups,
+            ),
             database_override: rustconn_core::secret::resolve_kdbx_path_override(
                 connection, groups,
             ),
