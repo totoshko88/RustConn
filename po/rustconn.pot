@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: rustconn 0.26.3\n"
+"Project-Id-Version: rustconn 0.26.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 00:15+0700\n"
+"POT-Creation-Date: 2026-11-25 20:16+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -262,7 +262,7 @@ msgstr ""
 #: rustconn/src/embedded_rdp/connection.rs:2780
 #: rustconn/src/embedded_rdp/mod.rs:822 rustconn/src/embedded_rdp/mod.rs:2310
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
-#: rustconn/src/embedded_vnc/ui.rs:158
+#: rustconn/src/embedded_vnc/ui.rs:159
 #: rustconn/src/session_group_window.rs:1135
 #: rustconn/src/terminal/session_lifecycle.rs:636
 #: rustconn/src/terminal/session_lifecycle.rs:781
@@ -2038,8 +2038,8 @@ msgstr ""
 #: rustconn/src/dialogs/connection/dialog/rows.rs:323
 #: rustconn/src/window/edit_group.rs:2257
 msgid ""
-"Response to send when pattern matches. Use ${password}, ${username}, or "
-"${VAR_NAME} for variables."
+"Response to send when pattern matches. Use ${password}, ${username}, or $"
+"{VAR_NAME} for variables."
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:331
@@ -5187,7 +5187,7 @@ msgstr ""
 msgid "Skipped"
 msgstr ""
 
-#: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:500
+#: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:504
 msgid "Warnings ({}):"
 msgstr ""
 
@@ -5262,8 +5262,8 @@ msgstr ""
 msgid "Export complete"
 msgstr ""
 
-#: rustconn/src/dialogs/export.rs:1151 rustconn/src/dialogs/import/mod.rs:621
-#: rustconn/src/dialogs/import/mod.rs:952
+#: rustconn/src/dialogs/export.rs:1151 rustconn/src/dialogs/import/mod.rs:625
+#: rustconn/src/dialogs/import/mod.rs:956
 #: rustconn/src/dialogs/import/sources.rs:353
 #: rustconn/src/dialogs/import/sources.rs:445
 #: rustconn/src/dialogs/import/sources.rs:541
@@ -5579,38 +5579,44 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/dialogs/import/mod.rs:456
-msgid "Group {} has no name. It was imported as it is; give it a name."
+msgid ""
+"Connection '{}' uses an SSH tunnel that could not be imported as a jump "
+"host. It was imported without it; set a jump host before connecting."
 msgstr ""
 
 #: rustconn/src/dialogs/import/mod.rs:460
+msgid "Group {} has no name. It was imported as it is; give it a name."
+msgstr ""
+
+#: rustconn/src/dialogs/import/mod.rs:464
 msgid ""
 "Snippet {} has no name or no command. It was imported as it is; complete it "
 "before running."
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:474
+#: rustconn/src/dialogs/import/mod.rs:478
 msgid "Imported connections:"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:487
+#: rustconn/src/dialogs/import/mod.rs:491
 msgid "Skipped {} entries:"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:513
+#: rustconn/src/dialogs/import/mod.rs:517
 msgid "Errors ({}):"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:521
+#: rustconn/src/dialogs/import/mod.rs:525
 msgid "No connections found in the selected source."
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:594
-#: rustconn/src/dialogs/import/mod.rs:708
-#: rustconn/src/dialogs/import/mod.rs:1065
-#: rustconn/src/dialogs/import/mod.rs:1083
-#: rustconn/src/dialogs/import/mod.rs:1101
-#: rustconn/src/dialogs/import/mod.rs:1119
-#: rustconn/src/dialogs/import/mod.rs:1137
+#: rustconn/src/dialogs/import/mod.rs:598
+#: rustconn/src/dialogs/import/mod.rs:712
+#: rustconn/src/dialogs/import/mod.rs:1069
+#: rustconn/src/dialogs/import/mod.rs:1087
+#: rustconn/src/dialogs/import/mod.rs:1105
+#: rustconn/src/dialogs/import/mod.rs:1123
+#: rustconn/src/dialogs/import/mod.rs:1141
 #: rustconn/src/dialogs/import/sources.rs:322
 #: rustconn/src/dialogs/import/sources.rs:415
 #: rustconn/src/dialogs/import/sources.rs:511
@@ -5627,17 +5633,17 @@ msgstr ""
 msgid "Importing from {}…"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:611
-#: rustconn/src/dialogs/import/mod.rs:941
-#: rustconn/src/dialogs/import/mod.rs:1159
+#: rustconn/src/dialogs/import/mod.rs:615
+#: rustconn/src/dialogs/import/mod.rs:945
+#: rustconn/src/dialogs/import/mod.rs:1163
 msgid "Import complete"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:1053
+#: rustconn/src/dialogs/import/mod.rs:1057
 msgid "Starting import from {}…"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:1147
+#: rustconn/src/dialogs/import/mod.rs:1151
 msgid "Querying libvirt daemon…"
 msgstr ""
 
@@ -5911,7 +5917,7 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:706
-#: rustconn/src/window/connection_dialogs.rs:1084
+#: rustconn/src/window/connection_dialogs.rs:1091
 msgid "Import Failed"
 msgstr ""
 
@@ -7063,7 +7069,7 @@ msgstr ""
 #: rustconn/src/dialogs/workspace.rs:304
 #: rustconn/src/sidebar/saved_searches.rs:265 rustconn/src/sidebar_ui.rs:700
 #: rustconn/src/smart_folder_ui.rs:416 rustconn/src/smart_folder_ui.rs:476
-#: rustconn/src/window/clusters.rs:623 rustconn/src/window/edit_actions.rs:579
+#: rustconn/src/window/clusters.rs:631 rustconn/src/window/edit_actions.rs:579
 #: rustconn/src/window/key_setup.rs:1023 rustconn/src/window/operations.rs:174
 #: rustconn/src/window/smart_folders.rs:173 rustconn/src/window/snippets.rs:413
 #: rustconn/src/window/snippets.rs:503 rustconn/src/window/templates.rs:151
@@ -7113,7 +7119,7 @@ msgstr ""
 #: rustconn/src/dialogs/recording.rs:828 rustconn/src/dialogs/recording.rs:840
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:307 rustconn/src/toast.rs:110
 #: rustconn/src/toast.rs:344 rustconn/src/toast.rs:374
-#: rustconn/src/window/clusters.rs:589
+#: rustconn/src/window/clusters.rs:596
 #: rustconn/src/window/connection_dialogs.rs:939
 #: rustconn/src/window/edit_dialogs.rs:414
 #: rustconn/src/window/edit_dialogs.rs:518
@@ -8010,7 +8016,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:917
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:921
-#: rustconn/src/embedded_vnc/ui.rs:336
+#: rustconn/src/embedded_vnc/ui.rs:337
 msgid "Not configured"
 msgstr ""
 
@@ -8716,7 +8722,7 @@ msgid "Checking… touch your YubiKey when it blinks"
 msgstr ""
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2909
-#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:356
+#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:357
 #: rustconn/src/sidebar/view.rs:883
 msgid "Connected"
 msgstr ""
@@ -10109,6 +10115,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/template.rs:1142 rustconn/src/embedded_rdp/mod.rs:655
 #: rustconn/src/embedded_rdp/mod.rs:661 rustconn/src/embedded_vnc/ui.rs:86
+#: rustconn/src/embedded_vnc/ui.rs:92
 msgid "View Only"
 msgstr ""
 
@@ -10777,8 +10784,8 @@ msgstr ""
 
 #: rustconn/src/dialogs/variables.rs:171
 msgid ""
-"Define variables that can be used in connections                  with "
-"${variable_name} syntax"
+"Define variables that can be used in connections                  with $"
+"{variable_name} syntax"
 msgstr ""
 
 #: rustconn/src/dialogs/variables.rs:233
@@ -11025,7 +11032,7 @@ msgstr ""
 msgid "{} connections"
 msgstr ""
 
-#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:352
+#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:353
 #: rustconn/src/session/vnc.rs:175 rustconn/src/session/vnc.rs:243
 msgid "Connecting…"
 msgstr ""
@@ -11172,17 +11179,17 @@ msgid "No text to type"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/clipboard.rs:84
-#: rustconn/src/embedded_vnc/ui.rs:767
+#: rustconn/src/embedded_vnc/ui.rs:768
 msgid "Copied {} chars"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/clipboard.rs:92
-#: rustconn/src/embedded_vnc/ui.rs:743
+#: rustconn/src/embedded_vnc/ui.rs:744
 msgid "No remote clipboard data"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/clipboard.rs:202
-#: rustconn/src/embedded_vnc/ui.rs:825
+#: rustconn/src/embedded_vnc/ui.rs:826
 msgid "Pasted {} chars"
 msgstr ""
 
@@ -11555,7 +11562,7 @@ msgid "Type Text…"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:659 rustconn/src/embedded_vnc/ui.rs:90
-msgid "Observe only: block keyboard, mouse and paste"
+msgid "Observe only: block all input to the remote session"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:673
@@ -11586,14 +11593,14 @@ msgstr ""
 msgid "Save files from remote clipboard"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/mod.rs:825 rustconn/src/embedded_vnc/ui.rs:161
+#: rustconn/src/embedded_rdp/mod.rs:825 rustconn/src/embedded_vnc/ui.rs:162
 #: rustconn/src/split_view/adapter.rs:193 rustconn/src/terminal/config.rs:428
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1278
 msgid "Reconnect"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/mod.rs:827 rustconn/src/embedded_vnc/ui.rs:163
+#: rustconn/src/embedded_rdp/mod.rs:827 rustconn/src/embedded_vnc/ui.rs:164
 #: rustconn/src/terminal/session_lifecycle.rs:818
 #: rustconn/src/terminal/spawn.rs:192
 msgid "Reconnect to this session"
@@ -11740,17 +11747,17 @@ msgstr ""
 msgid "Using external viewer (unsupported encryption)"
 msgstr ""
 
-#: rustconn/src/embedded_vnc/ui.rs:351 rustconn/src/embedded_web/mod.rs:373
+#: rustconn/src/embedded_vnc/ui.rs:352 rustconn/src/embedded_web/mod.rs:373
 #: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
 msgid "Disconnected"
 msgstr ""
 
-#: rustconn/src/embedded_vnc/ui.rs:354 rustconn/src/session/vnc.rs:330
+#: rustconn/src/embedded_vnc/ui.rs:355 rustconn/src/session/vnc.rs:330
 msgid "Session running in external window"
 msgstr ""
 
-#: rustconn/src/embedded_vnc/ui.rs:357 rustconn/src/session/vnc.rs:177
+#: rustconn/src/embedded_vnc/ui.rs:358 rustconn/src/session/vnc.rs:177
 #: rustconn/src/session/vnc.rs:202
 msgid "Connection error"
 msgstr ""
@@ -12637,7 +12644,7 @@ msgid "Basic Information"
 msgstr ""
 
 #: rustconn/src/split_view/bridge.rs:2130
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:5
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Manage remote connections easily"
 msgstr ""
 
@@ -13110,9 +13117,9 @@ msgstr ""
 
 #: rustconn/src/vault_ops.rs:285
 msgid ""
-"The system keyring is not accessible. Run: sudo snap connect rustconn:"
-"password-manager-service — or open Settings, then Secrets, and choose "
-"another backend."
+"The system keyring is not accessible. Run: sudo snap connect "
+"rustconn:password-manager-service — or open Settings, then Secrets, and "
+"choose another backend."
 msgstr ""
 
 #: rustconn/src/vault_ops.rs:289
@@ -13221,7 +13228,7 @@ msgstr ""
 msgid "Error Creating Cluster"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:218 rustconn/src/window/clusters.rs:582
+#: rustconn/src/window/clusters.rs:218 rustconn/src/window/clusters.rs:590
 msgid "Failed to save cluster: {}"
 msgstr ""
 
@@ -13271,29 +13278,29 @@ msgstr ""
 msgid "Connect Anyway"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:581
+#: rustconn/src/window/clusters.rs:589
 msgid "Error Updating Cluster"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:590
+#: rustconn/src/window/clusters.rs:597
 msgid "Could not access application state"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:618
+#: rustconn/src/window/clusters.rs:626
 msgid "Delete Cluster?"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:620
+#: rustconn/src/window/clusters.rs:628
 msgid ""
 "Are you sure you want to delete the cluster '{}'?\n"
 "This will not delete the connections in the cluster."
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:643
+#: rustconn/src/window/clusters.rs:651
 msgid "Error Deleting Cluster"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:644
+#: rustconn/src/window/clusters.rs:652
 msgid "Failed to delete cluster: {}"
 msgstr ""
 
@@ -13304,8 +13311,8 @@ msgstr ""
 #: rustconn/src/window/connection_actions.rs:216
 msgid ""
 "Sync directory is not configured. In Flatpak, grant filesystem access first: "
-"flatpak override --user --filesystem=/path/to/sync io.github.totoshko88."
-"RustConn"
+"flatpak override --user --filesystem=/path/to/sync "
+"io.github.totoshko88.RustConn"
 msgstr ""
 
 #: rustconn/src/window/connection_actions.rs:222
@@ -13442,27 +13449,27 @@ msgstr ""
 msgid "Import All"
 msgstr ""
 
-#: rustconn/src/window/connection_dialogs.rs:1070
+#: rustconn/src/window/connection_dialogs.rs:1077
 msgid "Imported {} connections and {} snippets to '{}' group"
 msgstr ""
 
-#: rustconn/src/window/connection_dialogs.rs:1075
+#: rustconn/src/window/connection_dialogs.rs:1082
 msgid "Imported {} connections to '{}' group"
 msgstr ""
 
-#: rustconn/src/window/connection_dialogs.rs:1108
+#: rustconn/src/window/connection_dialogs.rs:1115
 msgid "Storing {} imported credentials…"
 msgstr ""
 
-#: rustconn/src/window/connection_dialogs.rs:1119
+#: rustconn/src/window/connection_dialogs.rs:1126
 msgid "Stored {} imported credentials"
 msgstr ""
 
-#: rustconn/src/window/connection_dialogs.rs:1130
+#: rustconn/src/window/connection_dialogs.rs:1137
 msgid "Stored {} of {} imported credentials — check the secret backend"
 msgstr ""
 
-#: rustconn/src/window/connection_dialogs.rs:1140
+#: rustconn/src/window/connection_dialogs.rs:1147
 msgid "Could not store imported credentials in the secret backend"
 msgstr ""
 
@@ -13695,7 +13702,8 @@ msgstr ""
 #: rustconn/src/window/edit_actions.rs:1582
 #: rustconn/src/window/edit_actions.rs:1841
 #: rustconn/src/window/edit_actions.rs:1950
-#: rustconn/src/window/protocols.rs:2387
+#: rustconn/src/window/protocols.rs:1463 rustconn/src/window/protocols.rs:1532
+#: rustconn/src/window/protocols.rs:2505
 msgid "Could not open the SSH tunnel: {}"
 msgstr ""
 
@@ -14543,10 +14551,10 @@ msgstr ""
 #: rustconn/src/window/network_tools/share.rs:369
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
-"servers run by Google (stun.l.google.com) and Cloudflare (stun.cloudflare."
-"com) for this computer's public address and port. Those companies see this "
-"computer's IP address. No terminal data is sent to them. Without the lookup, "
-"the link works only on your local network."
+"servers run by Google (stun.l.google.com) and Cloudflare "
+"(stun.cloudflare.com) for this computer's public address and port. Those "
+"companies see this computer's IP address. No terminal data is sent to them. "
+"Without the lookup, the link works only on your local network."
 msgstr ""
 
 #: rustconn/src/window/network_tools/share.rs:375
@@ -14961,53 +14969,53 @@ msgstr ""
 msgid "No jump host responded, trying ‘{}’"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:1476 rustconn/src/window/rdp_vnc.rs:1625
+#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1625
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:1818
+#: rustconn/src/window/protocols.rs:1936
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2052 rustconn/src/window/protocols.rs:2791
+#: rustconn/src/window/protocols.rs:2170 rustconn/src/window/protocols.rs:2935
 msgid "Invalid variable: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2312
+#: rustconn/src/window/protocols.rs:2430
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
-"PATH of your login shell on the host (set in ~/.profile, not only in ~/."
-"bashrc)."
+"PATH of your login shell on the host (set in ~/.profile, not only in "
+"~/.bashrc)."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2316
+#: rustconn/src/window/protocols.rs:2434
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2319
+#: rustconn/src/window/protocols.rs:2437
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2711
+#: rustconn/src/window/protocols.rs:2855
 msgid "Invalid config: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2897
+#: rustconn/src/window/protocols.rs:3041
 msgid "Install picocom for Serial connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3083
+#: rustconn/src/window/protocols.rs:3227
 msgid "Install kubectl for Kubernetes connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3101
+#: rustconn/src/window/protocols.rs:3245
 msgid "Configure pod and container for Kubernetes"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3341
+#: rustconn/src/window/protocols.rs:3485
 msgid "Install mosh for MOSH connections"
 msgstr ""
 
@@ -15779,16 +15787,14 @@ msgstr ""
 msgid "Failed to save workspace"
 msgstr ""
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
 msgid "RustConn"
 msgstr ""
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
 msgid "Connection Manager"
 msgstr ""
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:12
-msgid ""
-"ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;"
-"kubernetes;k8s;serial;sftp;"
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
+msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr ""
