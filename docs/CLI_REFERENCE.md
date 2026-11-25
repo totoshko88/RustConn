@@ -1259,6 +1259,50 @@ rustconn-cli monitor metrics "Server" --format json  # JSON output
 
 ---
 
+## Device Reports
+
+`rustconn-cli report <kind> [CONNECTION…] [--tag TAG] [--group GROUP] [--format table|json|csv]`
+runs one read-only `show` command on every selected SSH connection, parses
+each host's output into rows and prints all hosts as one document. The first
+column is always `connection`. Available kinds:
+
+| Kind | Command | Rows |
+|------|---------|------|
+| `inventory` | `show version` | version, model, serial, uptime |
+| `cdp` | `show cdp neighbors detail` | device id, local/remote port, platform, IP |
+| `arp` / `merged-arp` | `show ip arp` | protocol, address, age, hardware address, type, interface |
+| `mac` / `macs-by-vlan` | `show mac address-table` | VLAN, MAC, type, ports |
+| `vlan` | `show vlan` | VLAN, name, status, ports |
+| `interface-stats` | `show interfaces` | interface, status, input/output rate, input errors, CRC, output errors |
+| `next-hop` | `show ip route` | next hop, route count, protocols |
+| `eigrp-topology` / `eigrp-summary` | `show ip eigrp topology` | network/successor/FD, or successor/network count |
+| `switchport` | `show interface status` | port, name, status, VLAN |
+| `document-device` | `show version` | same fields as `inventory` |
+| `aireos-ap-detail`, `aireos-ap-summary` | `show ap summary` | AP name, slots, model, MAC, location |
+| `aireos-auth-list` | `show auth-list` | setting, value (dotted AireOS key/value output) |
+| `aireos-interface-detail` | `show interface summary` | interface, port, VLAN, IP, type |
+| `aireos-mobility-group` | `show mobility summary` | member MAC, IP, group, multicast IP, status |
+| `aireos-wlan-detail` | `show wlan summary` | WLAN id, profile, SSID, status, interface |
+| `cisco-bgp` | `show ip bgp summary` | neighbor, remote AS, uptime, state/prefix count |
+| `huawei-bgp` | `display bgp peer` | peer, remote AS, uptime, state |
+| `juniper-bgp` | `show bgp summary` | peer, remote AS, uptime, state/prefix counts |
+
+```bash
+rustconn-cli report inventory --tag core --format csv
+rustconn-cli report cdp SW1 SW2
+rustconn-cli report next-hop --group branch --format json
+```
+
+A host whose command fails is named on stderr (unless `--quiet`) and skipped;
+the remaining rows are still printed. The command uses the connection's own
+SSH options and runs with stdin closed, so **password prompts cannot be
+answered** — use key/agent authentication. There is no per-host timeout; do
+not use a target whose command may hang. Output that does not look like a
+known table is ignored, never half-parsed. The AireOS collectors assume AireOS
+`show … summary` tables; they have not been verified against a WLC.
+
+---
+
 ## Shell Completions
 
 Install tab completions for your shell:

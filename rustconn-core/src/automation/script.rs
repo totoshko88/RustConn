@@ -110,6 +110,18 @@ pub enum ScriptStep {
         /// Script variable receiving the guessed prompt.
         variable: String,
     },
+    /// Renames the running session's tab from a script variable.
+    Caption {
+        /// Script variable holding the new caption.
+        variable: String,
+    },
+    /// Looks up a MAC vendor from the built-in OUI prefix table.
+    Oui {
+        /// Script variable holding the MAC address.
+        mac_var: String,
+        /// Script variable receiving the vendor name.
+        vendor_var: String,
+    },
     /// Sets or clears the output log file for the running script.
     Log {
         /// `Some(path)` starts logging to `path`; `None` stops.
@@ -350,13 +362,21 @@ pub trait ScriptHost {
 
     /// Sets or clears the script's output log file.
     ///
-    /// Returns `false` when `Some(path)` could not be opened; the script then
-    /// stops instead of pretending the capture was written. Clearing the log
-    /// (`None`) always succeeds.
-    fn set_log(&mut self, path: Option<&str>) -> bool;
+    /// `tail` is the held-back last line of the log being closed (see
+    /// [`ScriptEngine::flush_log_output`]); the host writes it into the old
+    /// file before switching. Returns `false` when `Some(path)` could not be
+    /// opened; the script then stops instead of pretending the capture was
+    /// written. Clearing the log (`None`) always succeeds.
+    ///
+    /// The engine calls this while it is mutably borrowed, so a host must not
+    /// call back into the engine from here.
+    fn set_log(&mut self, path: Option<&str>, tail: &[u8]) -> bool;
 
     /// Guesses the current prompt of the session.
     fn get_prompt(&mut self) -> Option<String>;
+
+    /// Renames the running session's tab.
+    fn set_caption(&mut self, title: &str);
 
     /// Shows an input dialog; the answer arrives via
     /// [`ScriptEngine::on_ask_result`]. A `default` is offered as the
@@ -620,6 +640,24 @@ impl ScriptEngine {
                 }
                 self.advance();
             }
+            ScriptStep::Caption { variable } => {
+                let caption = self.variable_value(&variable);
+                // A tab title must stay on one line and fit in a tab.
+                let caption = caption.trim().chars().take(80).collect::<String>();
+                if !caption.is_empty() {
+                    host.set_caption(&caption);
+                }
+                self.advance();
+            }
+            ScriptStep::Oui {
+                mac_var,
+                vendor_var,
+            } => {
+                let mac = self.variable_value(&mac_var);
+                let vendor = crate::oui::lookup(&mac).unwrap_or("Vendor not found");
+                self.set_var(vendor_var, vendor.to_string());
+                self.advance();
+            }
             ScriptStep::Log { path } => {
                 let path = match path {
                     Some(path) => match self.substitute_for_log(&path) {
@@ -631,7 +669,8 @@ impl ScriptEngine {
                     },
                     None => None,
                 };
-                if host.set_log(path.as_deref()) {
+                let tail = self.flush_log_output();
+                if host.set_log(path.as_deref(), &tail) {
                     self.advance();
                 } else {
                     let path = path.unwrap_or_default();
@@ -1495,6 +1534,18 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
             let variable = var_name(&arg(1)?);
             Ok(ScriptStep::GetPrompt { variable })
         }
+        "caption" => {
+            let variable = var_name(&arg(1)?);
+            Ok(ScriptStep::Caption { variable })
+        }
+        "oui" => {
+            let mac_var = var_name(&arg(1)?);
+            let vendor_var = var_name(&arg(2)?);
+            Ok(ScriptStep::Oui {
+                mac_var,
+                vendor_var,
+            })
+        }
         "log" => {
             let rest = unquote(&line["log".len()..]);
             let path = if rest.is_empty() { None } else { Some(rest) };
@@ -2124,6 +2175,8 @@ mod tests {
         events: Vec<String>,
         prompt: Option<String>,
         log_fails: bool,
+        /// Tail bytes handed to each `set_log` call.
+        log_tails: Vec<Vec<u8>>,
     }
 
     impl ScriptHost for FakeHost {
@@ -2133,12 +2186,16 @@ mod tests {
         fn print_message(&mut self, text: &str) {
             self.events.push(format!("print:{text}"));
         }
-        fn set_log(&mut self, path: Option<&str>) -> bool {
+        fn set_log(&mut self, path: Option<&str>, tail: &[u8]) -> bool {
             self.events.push(format!("log:{}", path.unwrap_or("")));
+            self.log_tails.push(tail.to_vec());
             path.is_none() || !self.log_fails
         }
         fn get_prompt(&mut self) -> Option<String> {
             self.prompt.clone()
+        }
+        fn set_caption(&mut self, title: &str) {
+            self.events.push(format!("caption:{title}"));
         }
         fn ask(&mut self, prompt: &str, echo: bool, default: Option<&str>) {
             self.events
@@ -2784,6 +2841,23 @@ mod tests {
         log.extend(engine.filter_log_output(&bytes[1..]));
         log.extend(engine.flush_log_output());
         assert_eq!(String::from_utf8(log).unwrap(), "ж\n");
+    }
+
+    /// The tail held back by the pager filter goes to the log being closed;
+    /// the host must not reach back into the engine for it (that panics while
+    /// the engine is mutably borrowed).
+    #[test]
+    fn closing_the_log_hands_the_held_back_tail_to_the_host() {
+        let mut engine =
+            ScriptEngine::parse("pager \"---- More ----\"\nlog \"out.log\"\nwait 1\nlog\n")
+                .unwrap();
+        let mut host = FakeHost::default();
+        engine.pump(&mut host);
+        // The last, unterminated line is held back for the pager filter.
+        let _ = engine.filter_log_output(b"line1\r\nline2");
+        engine.on_timer();
+        engine.pump(&mut host);
+        assert_eq!(host.log_tails[1], b"line2");
     }
 
     /// Without `pager` the log is a byte-for-byte copy.

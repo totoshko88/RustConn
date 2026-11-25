@@ -66,6 +66,18 @@ getprompt <variable>
     best-effort read of what is on screen, so it fails on dynamic or
     menu-driven prompts.
 
+caption <variable>
+    Rename the current session's tab to the value of `variable`. Only the open
+    tab changes: the saved connection keeps its name, and reconnecting
+    restores it. Empty values are ignored; the title is trimmed to 80
+    characters.
+
+oui <mac-variable> <vendor-variable>
+    Look up the vendor of a MAC address in the built-in offline OUI table
+    (the full IEEE MA-L listing) and store the result. An unassigned prefix
+    stores "Vendor not found". MACs may use dot, colon, dash or unseparated
+    notation.
+
 log [<file-path>]
     Start appending the session output to a file. With no argument, logging
     stops. The file is written locally with owner-only permissions on Unix.

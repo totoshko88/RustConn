@@ -149,12 +149,13 @@ impl ScriptHost for GuiHost {
             .feed_local_output(self.session_id, msg.as_bytes());
     }
 
-    fn set_log(&mut self, path: Option<&str>) -> bool {
-        // Flush the held-back last line into the log being closed.
-        let tail = self.engine.borrow_mut().flush_log_output();
+    fn set_log(&mut self, path: Option<&str>, tail: &[u8]) -> bool {
+        // `pump` holds the engine's mutable borrow while host methods run, so
+        // the engine hands the held-back last line over instead of this host
+        // borrowing it here (that panicked with "RefCell already borrowed").
         let mut writer = self.log_writer.borrow_mut();
         if let Some(file) = writer.as_mut() {
-            let _ = file.write_all(&tail);
+            let _ = file.write_all(tail);
         }
         *writer = match path {
             Some(path) => {
@@ -170,6 +171,10 @@ impl ScriptHost for GuiHost {
             None => None,
         };
         true
+    }
+
+    fn set_caption(&mut self, title: &str) {
+        self.notebook.set_session_caption(self.session_id, title);
     }
 
     fn get_prompt(&mut self) -> Option<String> {

@@ -10,6 +10,8 @@ mod connect;
 mod delete;
 mod duplicate;
 mod dynamic_folder;
+#[cfg(feature = "client-launch")]
+mod exec;
 mod export_import;
 mod group;
 mod history;
@@ -19,6 +21,8 @@ mod monitor;
 mod move_cmd;
 mod pin;
 mod recording;
+#[cfg(feature = "client-launch")]
+mod report;
 mod run_script;
 #[cfg(any(feature = "secret-management", feature = "keepass-verify"))]
 mod secret;
@@ -321,6 +325,22 @@ pub fn dispatch(
                 },
             )
         }
+        #[cfg(feature = "client-launch")]
+        Commands::Report {
+            kind,
+            connections,
+            tag,
+            group,
+            format,
+        } => report::cmd_report(
+            config_path,
+            kind,
+            &connections,
+            group.as_deref(),
+            tag.as_deref(),
+            format,
+            quiet,
+        ),
         Commands::Export {
             format,
             output,
