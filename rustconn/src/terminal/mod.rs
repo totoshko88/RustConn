@@ -326,6 +326,12 @@ pub struct TerminalNotebook {
     /// connection id. Wired by the window, which owns the connection data
     /// (issue #357).
     tab_connection_menu: Rc<RefCell<Option<tab_menu::TabConnectionMenuProvider>>>,
+    /// Resolves the custom icon for the tab bar (an emoji/Unicode glyph or a
+    /// GTK icon name — see `Connection::icon`) by connection id, so a tab shows
+    /// the same mark as its sidebar row. Wired by the window, which owns the
+    /// connection data, like `tab_connection_menu`; `None` keeps the protocol
+    /// icon, which is what quick/local sessions without a saved connection get.
+    connection_icon: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<String>>>>>,
     /// Whether keyboard passthrough is on; mirrors `win.toggle-passthrough`.
     keyboard_passthrough: Rc<std::cell::Cell<bool>>,
     /// Whether to automatically capture system shortcuts (Alt+Tab, Super)
@@ -704,6 +710,7 @@ impl TerminalNotebook {
             on_tab_broadcast_toggle: Rc::new(RefCell::new(None)),
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),
+            connection_icon: Rc::new(RefCell::new(None)),
             keyboard_passthrough: Rc::new(std::cell::Cell::new(false)),
             auto_capture_shortcuts: Rc::new(std::cell::Cell::new(true)),
             focused_viewer: Rc::new(RefCell::new(None)),

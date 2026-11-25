@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Script logging aborted the app with "RefCell already borrowed"** — every script that used `log` (the save-config examples, command capture, the BGP captures) asked the engine for its held-back last log line from inside a host callback, while `pump` still held the engine's mutable borrow, so the process aborted. The engine now flushes that line itself and passes the bytes to `set_log`, which no longer touches the engine. (`rustconn-core/src/automation/script.rs`, `rustconn/src/script_runner.rs`)
+- **Connection tabs ignored the custom icon set in the connection's settings** — a saved connection carries an optional custom icon (an emoji/Unicode glyph or a GTK icon name) that the sidebar row already drew, but every session tab — terminal, VNC, RDP, web and external viewer, in the main window, a split restore and a detached group window alike — still showed the protocol icon. The tabs now render the same mark the sidebar row does: the glyph is drawn as text, the icon name is resolved through the active theme and drawn in full colour, and a connection without an icon (or with one the theme lacks) keeps its protocol icon as before. (`rustconn/src/icon_render.rs`, `rustconn/src/terminal/mod.rs`, `rustconn/src/terminal/session_lifecycle.rs`, `rustconn/src/terminal/tab_lifecycle.rs`, `rustconn/src/session_group_window.rs`, `rustconn/src/window/construct.rs`, `rustconn/src/window/detach_actions.rs`)
 
 ## [0.26.3] - 2026-11-24
 
