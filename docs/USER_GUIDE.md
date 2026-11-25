@@ -2950,7 +2950,7 @@ Right-click inside a terminal tab → **Record Script…**, type the commands yo
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
 | `caption <var>` | Rename the running session's tab from a script variable (open tab only) |
-| `oui <mac-var> <vendor-var>` | Look up a MAC vendor in the built-in offline OUI table (full IEEE MA-L listing) |
+| `oui <mac-var> <vendor-var>` | Look up a MAC vendor in the built-in offline OUI table (full IEEE MA-L listing; source: IEEE Registration Authority) |
 | `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` and `${CWD}`; the file is created owner-only on Unix |
 | `print <text>` | Print an ANSI-coloured message on the terminal |
 | `ask "<prompt>" [hide] [default "<value>"] <var>` | Ask the user for input; `hide` masks it, `default` pre-fills it |

@@ -2,8 +2,8 @@
 //!
 //! The original SecureCRT helper reads Wireshark's `manuf.txt`, which is
 //! GPLv2, so the table is generated from the IEEE MA-L public listing
-//! instead — factual registry data with no licence question. The table is
-//! the full listing: "Vendor not found" means IEEE has no such 24-bit OUI.
+//! instead (source: IEEE Registration Authority). The table is the full
+//! listing: "Vendor not found" means IEEE has no such 24-bit OUI.
 //!
 //! shortcut: MA-L only; the 28/36-bit MA-M/MA-S/IAB blocks need mask
 //! matching, add them to `oui_data.rs` if lookups start missing them.
@@ -19,7 +19,7 @@ fn normalize(mac: &str) -> Option<String> {
     (hex.len() == 12).then_some(hex.to_ascii_uppercase())
 }
 
-/// Returns the vendor for `mac`, preferring the longest matching prefix.
+/// Returns the vendor registered for the first 24 bits of `mac`.
 ///
 /// # Examples
 ///
@@ -33,10 +33,10 @@ fn normalize(mac: &str) -> Option<String> {
 #[must_use]
 pub fn lookup(mac: &str) -> Option<&'static str> {
     let normalized = normalize(mac)?;
-    MA_L.iter()
-        .filter(|(prefix, _)| normalized.starts_with(prefix))
-        .max_by_key(|(prefix, _)| prefix.len())
-        .map(|(_, vendor)| *vendor)
+    let prefix = &normalized[..6];
+    MA_L.binary_search_by_key(&prefix, |(p, _)| p)
+        .ok()
+        .map(|i| MA_L[i].1)
 }
 
 #[cfg(test)]
@@ -53,6 +53,17 @@ mod tests {
         ] {
             assert_eq!(lookup(mac), Some("Cisco Systems, Inc"), "{mac}");
         }
+    }
+
+    #[test]
+    fn the_table_is_strictly_increasing_so_binary_search_is_valid() {
+        assert!(MA_L.windows(2).all(|w| w[0].0 < w[1].0));
+        assert!(MA_L.iter().all(|(p, _)| p.len() == 6));
+    }
+
+    #[test]
+    fn a_prefix_with_several_registrants_resolves_to_one_name() {
+        assert_eq!(lookup("08:00:30:00:00:00"), Some("CERN"));
     }
 
     #[test]

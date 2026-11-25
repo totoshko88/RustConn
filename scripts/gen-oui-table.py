@@ -4,13 +4,14 @@
     curl -fsSL -o /tmp/oui.csv https://standards-oui.ieee.org/oui/oui.csv
     python3 scripts/gen-oui-table.py /tmp/oui.csv
 
-The listing is factual registry data (no licence text in the file; Debian
-ships the same data as `ieee-data`). Only MA-L 24-bit OUIs are taken: MA-M,
+Source: IEEE Registration Authority, MA-L public listing. The fetch date in
+the generated header is today's date. Only MA-L 24-bit OUIs are taken: MA-M,
 MA-S and IAB blocks are 28/36-bit and need mask matching the lookup does
 not have yet.
 """
 
 import csv
+import datetime
 import sys
 import unicodedata
 
@@ -20,9 +21,9 @@ HEADER = """\
 //!
 //! Regenerate with `scripts/gen-oui-table.py` from the IEEE MA-L public
 //! listing (<https://standards-oui.ieee.org/oui/oui.csv>, fetched {date},
-//! {count} assignments). The listing is factual registry data — no licence
-//! text in the file, and the same data has shipped in Debian's `ieee-data`
-//! for years. Vendor spellings are upstream's own.
+//! {count} assignments). Source: IEEE Registration Authority, MA-L public
+//! listing. Vendor spellings are upstream's own. A prefix registered more
+//! than once keeps its first name in sorted order.
 
 /// Every MA-L (24-bit OUI) assignment as `(prefix, vendor)` pairs,
 /// sorted by prefix.
@@ -56,8 +57,12 @@ def main() -> None:
                 continue
             rows.append((prefix, name.replace("\\", "\\\\").replace('"', '\\"')))
     rows.sort()
+    unique: dict[str, str] = {}
+    for prefix, name in rows:
+        unique.setdefault(prefix, name)
+    rows = sorted(unique.items())
     with open(OUT, "w", encoding="utf-8") as out:
-        out.write(HEADER.format(date="2026-11-24", count=len(rows)))
+        out.write(HEADER.format(date=datetime.date.today().isoformat(), count=len(rows)))
         for prefix, name in rows:
             out.write(f'    ("{prefix}", "{name}"),\n')
         out.write("];\n")
