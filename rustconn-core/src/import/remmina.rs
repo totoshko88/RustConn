@@ -158,7 +158,7 @@ impl RemminaImporter {
         };
 
         // Extract connection details
-        if let Some((mut connection, group_path)) =
+        if let Some((mut connection, group_path, mut bastion)) =
             self.convert_to_connection(remmina_section, source_path, &mut result)
         {
             // Assign group if present
@@ -167,6 +167,14 @@ impl RemminaImporter {
             {
                 let group_id = Self::get_or_create_group(path, group_map, &mut result);
                 connection.group_id = Some(group_id);
+                // The bastion belongs to the profile it tunnels for.
+                if let Some(ref mut b) = bastion {
+                    b.group_id = Some(group_id);
+                }
+            }
+            // Add the bastion first so the profile keeps its name as the target.
+            if let Some(b) = bastion {
+                result.add_connection(b);
             }
             result.add_connection(connection);
         }
@@ -225,7 +233,7 @@ impl RemminaImporter {
         config: &HashMap<String, String>,
         source_path: &str,
         result: &mut ImportResult,
-    ) -> Option<(Connection, Option<String>)> {
+    ) -> Option<(Connection, Option<String>, Option<Connection>)> {
         // Get protocol
         let protocol = config.get("protocol").map(|s| s.to_uppercase());
 
@@ -407,8 +415,87 @@ impl RemminaImporter {
             connection.password_source = PasswordSource::Vault;
         }
 
-        // Return connection and group name for later processing
-        Some((connection, config.get("group").cloned()))
+        // Remmina's "Enable SSH tunnel" for RDP/VNC/SPICE profiles: the tunnel is
+        // a property of the target session, not of SSH, so import it as a bastion
+        // SSH connection and link it as the Jump Host. Without this the profile's
+        // ssh_tunnel_* fields were dropped and the imported entry dialed the
+        // target directly (issue #450).
+        let ssh_tunnel_enabled = config
+            .get("ssh_tunnel")
+            .is_some_and(|v| v == "1" || v.to_lowercase() == "yes" || v.to_lowercase() == "true");
+        let bastion = if matches!(protocol.as_deref(), Some("RDP" | "VNC" | "SPICE"))
+            && ssh_tunnel_enabled
+            && let Some(bastion_server) = config
+                .get("ssh_tunnel_server")
+                .filter(|s| !s.is_empty())
+                .cloned()
+                .or_else(|| config.get("server").cloned())
+        {
+            let (bastion_host, bastion_parsed_port) = parse_host_port(&bastion_server);
+            let bastion_port = config
+                .get("ssh_tunnel_port")
+                .and_then(|p| p.parse().ok())
+                .or(bastion_parsed_port)
+                .unwrap_or(22);
+            let auth_method = match config
+                .get("ssh_tunnel_auth")
+                .map(std::string::String::as_str)
+            {
+                Some("2" | "publickey") => SshAuthMethod::PublicKey,
+                Some("3" | "agent") => SshAuthMethod::Agent,
+                _ => SshAuthMethod::Password,
+            };
+            let key_path = config
+                .get("ssh_tunnel_privatekey")
+                .filter(|s| !s.is_empty())
+                .map(|p| PathBuf::from(shellexpand::tilde(p).into_owned()));
+
+            let mut bastion = Connection::new_ssh(
+                format!("{} (SSH tunnel)", connection.name),
+                bastion_host,
+                bastion_port,
+            );
+            if let Some(username) = config.get("ssh_tunnel_username").filter(|s| !s.is_empty()) {
+                bastion.username = Some(username.clone());
+            }
+            if let ProtocolConfig::Ssh(cfg) = &mut bastion.protocol_config {
+                cfg.auth_method = auth_method.clone();
+                cfg.key_path = key_path;
+                // The tunnel options Remmina lists under the tunnel section.
+                cfg.agent_forwarding = config
+                    .get("ssh_tunnel_agent")
+                    .is_some_and(|v| v == "1" || v.to_lowercase() == "yes");
+                cfg.x11_forwarding = config
+                    .get("ssh_tunnel_x11")
+                    .is_some_and(|v| v == "1" || v.to_lowercase() == "yes");
+                cfg.compression = config
+                    .get("ssh_compression")
+                    .is_some_and(|v| v == "1" || v.to_lowercase() == "yes");
+            }
+            // Remmina keeps the tunnel password in the same per-profile keyring
+            // entry as the session password, so the lookup above already holds it.
+            if auth_method == SshAuthMethod::Password
+                && self.import_passwords
+                && let Some(password) = Self::get_password_from_keyring(source_path)
+            {
+                bastion.password_source = PasswordSource::Vault;
+                let creds = Credentials {
+                    password: Some(password),
+                    ..Credentials::with_username(bastion.username.clone().unwrap_or_default())
+                };
+                result.add_credentials(bastion.id, creds);
+            }
+
+            // Link the bastion as the target's Jump Host so the connect path
+            // tunnels exactly as the profile did in Remmina.
+            connection.set_jump_host_id(bastion.id);
+            Some(bastion)
+        } else {
+            None
+        };
+
+        // Return connection, group name and optional bastion for later processing
+        Some((connection, config.get("group").cloned(), bastion))
     }
 
     /// Gets or creates a group from the group map, handling nested paths like "Folder/Subfolder"

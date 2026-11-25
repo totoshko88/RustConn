@@ -702,6 +702,118 @@ fn test_importers_handle_empty_input() {
 }
 
 // ============================================================================
+// Remmina SSH tunnel import tests (issue #450)
+// ============================================================================
+
+#[test]
+fn remmina_rdp_with_ssh_tunnel_imports_bastion_jump_host() {
+    let remmina_importer = RemminaImporter::new();
+    let mut group_map = std::collections::HashMap::new();
+    let content = "[remmina]\n\
+        name=Win Box\n\
+        protocol=RDP\n\
+        server=10.0.0.5\n\
+        username=dev\n\
+        ssh_tunnel=1\n\
+        ssh_tunnel_server=192.168.1.10:2222\n\
+        ssh_tunnel_username=ops\n\
+        ssh_tunnel_auth=2\n\
+        ssh_tunnel_privatekey=/home/ops/.ssh/id_bastion\n";
+    let result = remmina_importer.parse_remmina_file(content, "winbox.remmina", &mut group_map);
+
+    assert_eq!(result.connections.len(), 2, "target plus bastion");
+    let target = result
+        .connections
+        .iter()
+        .find(|c| c.name == "Win Box")
+        .expect("the profile itself is imported");
+    let bastion = result
+        .connections
+        .iter()
+        .find(|c| c.name == "Win Box (SSH tunnel)")
+        .expect("a bastion connection is created");
+
+    // The tunnel settings became the bastion.
+    assert_eq!(bastion.host, "192.168.1.10");
+    assert_eq!(bastion.port, 2222);
+    assert_eq!(bastion.username.as_deref(), Some("ops"));
+    match &bastion.protocol_config {
+        rustconn_core::models::ProtocolConfig::Ssh(cfg) => {
+            assert_eq!(
+                cfg.auth_method,
+                rustconn_core::models::SshAuthMethod::PublicKey
+            );
+            assert_eq!(
+                cfg.key_path.as_deref(),
+                Some(std::path::Path::new("/home/ops/.ssh/id_bastion"))
+            );
+        }
+        other => panic!("bastion should be an SSH connection, got {other:?}"),
+    }
+
+    // The profile is linked to it as its Jump Host.
+    assert_eq!(target.jump_host_id(), Some(bastion.id));
+    assert_eq!(target.host, "10.0.0.5");
+}
+
+#[test]
+fn remmina_vnc_tunnel_without_tunnel_server_falls_back_to_server() {
+    let remmina_importer = RemminaImporter::new();
+    let mut group_map = std::collections::HashMap::new();
+    let content = "[remmina]\n\
+        name=Desk\n\
+        protocol=VNC\n\
+        server=127.0.0.1:9336\n\
+        ssh_tunnel=1\n\
+        ssh_tunnel_username=ops\n\
+        ssh_tunnel_auth=1\n";
+    let result = remmina_importer.parse_remmina_file(content, "desk.remmina", &mut group_map);
+
+    assert_eq!(result.connections.len(), 2);
+    let target = result
+        .connections
+        .iter()
+        .find(|c| c.name == "Desk")
+        .expect("the profile itself is imported");
+    let bastion = result
+        .connections
+        .iter()
+        .find(|c| c.name == "Desk (SSH tunnel)")
+        .expect("a bastion connection is created");
+
+    // Remmina's default tunnel server is the target's own server line.
+    assert_eq!(bastion.host, "127.0.0.1");
+    assert_eq!(bastion.port, 9336);
+    assert_eq!(bastion.username.as_deref(), Some("ops"));
+    match &bastion.protocol_config {
+        rustconn_core::models::ProtocolConfig::Ssh(cfg) => assert_eq!(
+            cfg.auth_method,
+            rustconn_core::models::SshAuthMethod::Password
+        ),
+        other => panic!("bastion should be an SSH connection, got {other:?}"),
+    }
+    assert_eq!(target.jump_host_id(), Some(bastion.id));
+}
+
+#[test]
+fn remmina_profile_without_tunnel_imports_no_bastion() {
+    let remmina_importer = RemminaImporter::new();
+    let mut group_map = std::collections::HashMap::new();
+    let content = "[remmina]\n\
+        name=Plain\n\
+        protocol=RDP\n\
+        server=10.0.0.9\n";
+    let result = remmina_importer.parse_remmina_file(content, "plain.remmina", &mut group_map);
+
+    assert_eq!(result.connections.len(), 1);
+    assert_eq!(
+        result.connections[0].jump_host_id(),
+        None,
+        "a profile without a tunnel keeps no bastion"
+    );
+}
+
+// ============================================================================
 // Performance Tests
 // ============================================================================
 
