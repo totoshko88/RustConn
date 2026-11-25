@@ -410,8 +410,6 @@ impl TerminalNotebook {
         // Add page to TabView — child is the TabPageContainer outer box
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        // Custom icon from the connection's settings (emoji or GTK icon name),
-        // else the protocol icon — the sidebar row makes the same choice.
         page.set_icon(Some(&crate::icon_render::tab_icon(
             &self.connection_icon_for(connection_id),
             Self::get_protocol_icon(protocol),
@@ -562,8 +560,6 @@ impl TerminalNotebook {
         let tab_container = TabPageContainer::single(&container);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        // Custom icon from the connection's settings (emoji or GTK icon name),
-        // else the protocol icon — the sidebar row makes the same choice.
         page.set_icon(Some(&crate::icon_render::tab_icon(
             &self.connection_icon_for(connection_id),
             "video-joined-displays-symbolic",
@@ -642,8 +638,6 @@ impl TerminalNotebook {
         let tab_container = TabPageContainer::single(&container);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        // Custom icon from the connection's settings (emoji or GTK icon name),
-        // else the protocol icon — the sidebar row makes the same choice.
         page.set_icon(Some(&crate::icon_render::tab_icon(
             &self.connection_icon_for(connection_id),
             "computer-symbolic",
@@ -709,8 +703,6 @@ impl TerminalNotebook {
         let tab_container = TabPageContainer::single(&container);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        // Custom icon from the connection's settings (emoji or GTK icon name),
-        // else the protocol icon — the sidebar row makes the same choice.
         page.set_icon(Some(&crate::icon_render::tab_icon(
             &self.connection_icon_for(connection_id),
             "web-browser-symbolic",
@@ -763,8 +755,6 @@ impl TerminalNotebook {
         let tab_container = TabPageContainer::single(widget);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        // Custom icon from the connection's settings (emoji or GTK icon name),
-        // else the protocol icon — the sidebar row makes the same choice.
         page.set_icon(Some(&crate::icon_render::tab_icon(
             &self.connection_icon_for(connection_id),
             Self::get_protocol_icon(protocol),
@@ -927,8 +917,6 @@ impl TerminalNotebook {
         // label — visible only in the tooltip — while still being a member of the
         // group for every operation. Nothing else re-applies it on this path.
         page.set_title(&tab_title(&title, group.as_deref()));
-        // Custom icon from the connection's settings (emoji or GTK icon name),
-        // else the protocol icon — the sidebar row makes the same choice.
         page.set_icon(Some(&crate::icon_render::tab_icon(
             &self.connection_icon_for(connection_id),
             Self::get_protocol_icon(&protocol),

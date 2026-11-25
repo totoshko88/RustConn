@@ -143,6 +143,7 @@ impl MainWindow {
         let window_weak = window.downgrade();
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
+        let notebook_clone = self.terminal_notebook.clone();
         let key_setup_ctx_for_edit = self.key_setup_context(window, state, sidebar);
         edit_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
@@ -150,6 +151,7 @@ impl MainWindow {
                     win.upcast_ref(),
                     &state_clone,
                     &sidebar_clone,
+                    &notebook_clone,
                     &key_setup_ctx_for_edit,
                 );
             }
