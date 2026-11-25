@@ -77,6 +77,7 @@ fn collect(
     let mut failed = 0;
     for (conn, args) in jobs {
         // build_ssh_exec_args always yields at least `ssh -n <dest> <command>`.
+        // No shell is involved and the report command is a fixed string per kind.
         let (program, rest) = (args[0].as_str(), &args[1..]);
         match std::process::Command::new(program)
             .args(rest)
@@ -94,27 +95,29 @@ fn collect(
             }
             Ok(output) => {
                 failed += 1;
-                if !quiet {
-                    eprintln!(
-                        "warning: {}: `{}` failed ({}) — host skipped",
-                        conn.name,
-                        kind.command(),
-                        output.status
-                    );
-                }
+                warn_failed(
+                    quiet,
+                    &conn.name,
+                    &format!("`{}` failed ({})", kind.command(), output.status),
+                );
             }
             Err(e) => {
                 failed += 1;
-                if !quiet {
-                    eprintln!(
-                        "warning: {}: ssh could not start: {e} — host skipped",
-                        conn.name
-                    );
-                }
+                warn_failed(quiet, &conn.name, &format!("ssh could not start: {e}"));
             }
         }
     }
     (rows, failed)
+}
+
+/// Names a failed host on stderr. `--quiet` shortens the line but never hides
+/// which hosts are missing from the data.
+fn warn_failed(quiet: bool, host: &str, reason: &str) {
+    if quiet {
+        eprintln!("failed: {host}");
+    } else {
+        eprintln!("warning: {host}: {reason} — host skipped");
+    }
 }
 
 /// Pads or truncates a parser row so every row matches the header width.

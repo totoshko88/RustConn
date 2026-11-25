@@ -1293,11 +1293,7 @@ rustconn-cli report cdp SW1 SW2
 rustconn-cli report next-hop --group branch --format json
 ```
 
-A host whose command fails is named on stderr (unless `--quiet`) and skipped;
-the remaining rows are still printed. The command uses the connection's own
-SSH options and runs with stdin closed, so **password prompts cannot be
-answered** — use key/agent authentication. There is no per-host timeout; do
-not use a target whose command may hang. Output that does not look like a
+A host whose command fails is named on stderr (with `--quiet` as a short `failed: <name>` line) and skipped; the remaining rows are still printed and the exit code is non-zero. The command uses the connection's own SSH options plus `-o BatchMode=yes -o ConnectTimeout=10` and runs with stdin closed, so **password and passphrase prompts are never shown** — a password-only host is reported as failed; use key/agent authentication. ConnectTimeout bounds only the connection, not the command, so do not use a target whose command may hang. A saved host that starts with `-` is refused. Output that does not look like a
 known table is ignored, never half-parsed. The AireOS collectors assume AireOS
 `show … summary` tables; they have not been verified against a WLC.
 
