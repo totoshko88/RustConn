@@ -114,7 +114,7 @@ fn select_connections<'a>(
         .collect())
 }
 
-/// Builds `ssh -n -o BatchMode=yes -o ConnectTimeout=10 <dest> <command>` using the connection's own SSH options.
+/// Builds `ssh -n -o BatchMode=yes -o ConnectTimeout=10 -- <dest> <command>` using the connection's own SSH options.
 fn build_ssh_exec_args(
     connection: &Connection,
     command: &[String],
@@ -160,6 +160,8 @@ fn build_ssh_exec_args(
     for option in ["-n", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10"] {
         args.push(option.to_string());
     }
+    // `--` ends option parsing, so the destination can never be read as one.
+    args.push("--".to_string());
     args.push(destination);
     args.extend(command.iter().cloned());
     Ok(args)
@@ -180,7 +182,7 @@ mod tests {
         let joined = args.join(" ");
         assert!(joined.contains("-o BatchMode=yes"), "{joined}");
         assert!(joined.contains("-o ConnectTimeout=10"), "{joined}");
-        assert!(joined.ends_with("192.0.2.10 show version"), "{joined}");
+        assert!(joined.ends_with("-- 192.0.2.10 show version"), "{joined}");
     }
 
     #[test]

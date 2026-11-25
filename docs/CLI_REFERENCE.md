@@ -1293,9 +1293,7 @@ rustconn-cli report cdp SW1 SW2
 rustconn-cli report next-hop --group branch --format json
 ```
 
-A host whose command fails is named on stderr (with `--quiet` as a short `failed: <name>` line) and skipped; the remaining rows are still printed and the exit code is non-zero. The command uses the connection's own SSH options plus `-o BatchMode=yes -o ConnectTimeout=10` and runs with stdin closed, so **password and passphrase prompts are never shown** — a password-only host is reported as failed; use key/agent authentication. ConnectTimeout bounds only the connection, not the command, so do not use a target whose command may hang. A saved host that starts with `-` is refused. Output that does not look like a
-known table is ignored, never half-parsed. The AireOS collectors assume AireOS
-`show … summary` tables; they have not been verified against a WLC.
+A host whose command fails is named on stderr (with `--quiet` as a short `failed: <name>` line) and skipped; the remaining rows are still printed and the exit code is non-zero. The command uses the connection's own SSH options plus `-o BatchMode=yes -o ConnectTimeout=10` and runs with stdin closed, so **password and passphrase prompts are never shown**: a password-only host is reported as failed; use key/agent authentication. BatchMode also refuses to ask whether to trust an unknown host key, so a device you have never connected to fails with `Host key verification failed`. Connect to it once with `ssh`, or set `StrictHostKeyChecking=accept-new` in the connection's SSH options, before running a report. ConnectTimeout bounds only the connection, not the command, so do not use a target whose command may hang. A saved host that starts with `-` is refused, and the destination is passed after `--`. Output that does not look like a known table is ignored, never half-parsed. The AireOS collectors assume AireOS `show … summary` tables; they have not been verified against a WLC.
 
 ---
 
