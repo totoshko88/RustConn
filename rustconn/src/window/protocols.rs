@@ -1447,13 +1447,26 @@ fn start_vnc_connection_internal(
     // embedded and the external viewer alike (#450). The tunnel is raised off
     // the GTK thread so a dead jump host cannot freeze the window, so the
     // session is created later and this returns `None`, like the port check.
-    let Some(params) = ssh_tunnel_params_via_jump(
+    let params = match try_ssh_tunnel_params_via_jump(
         state,
         conn,
         host.clone(),
         port,
         rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
-    ) else {
+    ) {
+        Ok(params) => params,
+        Err(reason) => {
+            // Going direct would repeat #450 ("Connection refused").
+            tracing::error!(%connection_id, reason, "Jump host unavailable for VNC");
+            sidebar.update_connection_status(&connection_id.to_string(), "failed");
+            crate::toast::show_error_toast_on_active_window(&i18n_f(
+                "Could not open the SSH tunnel: {}",
+                &[reason],
+            ));
+            return None;
+        }
+    };
+    let Some(params) = params else {
         return launch_vnc_connection(
             state,
             notebook,
@@ -2533,6 +2546,10 @@ fn spawn_winrm(
 }
 
 /// The SSH tunnel that reaches `host:port` through `conn`'s jump host, if any.
+///
+/// A jump host that cannot be read (state busy, jump host gone) also gives
+/// `None`, with a warning; use [`try_ssh_tunnel_params_via_jump`] to tell the
+/// two apart.
 pub(super) fn ssh_tunnel_params_via_jump(
     state: &SharedAppState,
     conn: &rustconn_core::Connection,
@@ -2540,15 +2557,37 @@ pub(super) fn ssh_tunnel_params_via_jump(
     port: u16,
     hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
 ) -> Option<rustconn_core::ssh_tunnel::SshTunnelParams> {
-    let jump_id = resolve_first_hop_id(&*state.try_borrow().ok()?, conn)?;
+    try_ssh_tunnel_params_via_jump(state, conn, host, port, hop_host_keys).unwrap_or_else(
+        |reason| {
+            tracing::warn!(connection = %conn.name, reason, "Jump host not used; connecting directly");
+            None
+        },
+    )
+}
+
+/// Like [`ssh_tunnel_params_via_jump`], but `Ok(None)` means there is no jump
+/// host and `Err` means one is configured and could not be read.
+pub(super) fn try_ssh_tunnel_params_via_jump(
+    state: &SharedAppState,
+    conn: &rustconn_core::Connection,
+    host: String,
+    port: u16,
+    hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
+) -> Result<Option<rustconn_core::ssh_tunnel::SshTunnelParams>, &'static str> {
+    const BUSY: &str = "application state is busy";
+    let Some(jump_id) = resolve_first_hop_id(&*state.try_borrow().map_err(|_| BUSY)?, conn) else {
+        return Ok(None);
+    };
     // Before the route: the hops past the jump host are routed differently
     // when the tunnel sends its password.
     let password = state
         .try_borrow_mut()
         .ok()
         .and_then(|mut s| s.ensure_connection_password(jump_id));
-    let state_ref = state.try_borrow().ok()?;
-    let jump_conn = state_ref.get_connection(jump_id)?;
+    let state_ref = state.try_borrow().map_err(|_| BUSY)?;
+    let jump_conn = state_ref
+        .get_connection(jump_id)
+        .ok_or("jump host connection not found")?;
     let jump_host = jump_conn.username.as_ref().map_or_else(
         || jump_conn.host.clone(),
         |user| format!("{user}@{}", jump_conn.host),
@@ -2561,7 +2600,7 @@ pub(super) fn ssh_tunnel_params_via_jump(
     let extra_args =
         resolve_jump_chain_for_tunnel(&state_ref, jump_conn, password.is_some(), hop_host_keys);
     drop(state_ref);
-    Some(rustconn_core::ssh_tunnel::SshTunnelParams {
+    Ok(Some(rustconn_core::ssh_tunnel::SshTunnelParams {
         jump_host,
         jump_port,
         remote_host: host,
@@ -2570,7 +2609,7 @@ pub(super) fn ssh_tunnel_params_via_jump(
         password,
         extra_args,
         launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
-    })
+    }))
 }
 
 /// Internal function to start Telnet or WinRM connection (after port check).
