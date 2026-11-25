@@ -1434,11 +1434,7 @@ fn start_vnc_connection_internal(
     conn: &rustconn_core::Connection,
     observer: Option<super::types::SessionStartObserver>,
 ) -> Option<Uuid> {
-    use rustconn_core::models::{VncClientMode, WindowMode};
-
-    let conn_name = conn.name.clone();
     let port = conn.port;
-    let window_mode = conn.window_mode;
 
     // Get global variables for substitution (secret values resolved from vault),
     // overlaid with this connection's interactive `@ask:` answers.
@@ -1446,6 +1442,103 @@ fn start_vnc_connection_internal(
 
     // Apply variable substitution to host
     let host = substitute_variables(&conn.host, &global_variables);
+
+    // The jump host (own, group-inherited, failover) is honoured for the
+    // embedded and the external viewer alike (#450). The tunnel is raised off
+    // the GTK thread so a dead jump host cannot freeze the window, so the
+    // session is created later and this returns `None`, like the port check.
+    let Some(params) = ssh_tunnel_params_via_jump(
+        state,
+        conn,
+        host.clone(),
+        port,
+        rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+    ) else {
+        return launch_vnc_connection(
+            state,
+            notebook,
+            sidebar,
+            connection_id,
+            conn,
+            observer,
+            &host,
+            port,
+            None,
+        );
+    };
+
+    let state = state.clone();
+    let notebook = notebook.clone();
+    let sidebar = sidebar.clone();
+    let conn = conn.clone();
+    spawn_blocking_with_callback(
+        move || {
+            let mut tunnel = rustconn_core::ssh_tunnel::create_tunnel(&params)?;
+            rustconn_core::ssh_tunnel::wait_for_tunnel_ready(
+                &mut tunnel,
+                40,
+                std::time::Duration::from_millis(250),
+            )?;
+            rustconn_core::ssh_tunnel::probe_tunnel_remote(
+                &mut tunnel,
+                std::time::Duration::from_secs(5),
+            )?;
+            Ok::<_, rustconn_core::ssh_tunnel::SshTunnelError>(tunnel)
+        },
+        move |result| match result {
+            Ok(tunnel) => {
+                let local_port = tunnel.local_port();
+                tracing::info!(
+                    %connection_id,
+                    local_port,
+                    "SSH tunnel established for VNC connection"
+                );
+                launch_vnc_connection(
+                    &state,
+                    &notebook,
+                    &sidebar,
+                    connection_id,
+                    &conn,
+                    observer,
+                    "127.0.0.1",
+                    local_port,
+                    Some(tunnel),
+                );
+            }
+            Err(error) => {
+                tracing::error!(%error, "SSH tunnel for VNC failed");
+                sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                crate::toast::show_error_toast_on_active_window(&i18n_f(
+                    "Could not open the SSH tunnel: {}",
+                    &[&error.to_string()],
+                ));
+            }
+        },
+    );
+    None
+}
+
+/// Opens the VNC session to `host:port`, which is the tunnel's local end when
+/// `ssh_tunnel` is set. The tunnel closes with the tab.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the tunnel's address and handle arrive after the connection's own launch inputs"
+)]
+fn launch_vnc_connection(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    observer: Option<super::types::SessionStartObserver>,
+    host: &str,
+    port: u16,
+    ssh_tunnel: Option<rustconn_core::ssh_tunnel::SshTunnel>,
+) -> Option<Uuid> {
+    use rustconn_core::models::{VncClientMode, WindowMode};
+
+    let conn_name = conn.name.clone();
+    let window_mode = conn.window_mode;
 
     // Get VNC-specific configuration
     let mut vnc_config = if let rustconn_core::ProtocolConfig::Vnc(config) = &conn.protocol_config {
@@ -1480,7 +1573,7 @@ fn start_vnc_connection_internal(
         };
         let (program, args) = rustconn_core::protocol::VncProtocol::build_external_viewer_command(
             &viewer,
-            &host,
+            host,
             port,
             &vnc_config,
         );
@@ -1492,7 +1585,7 @@ fn start_vnc_connection_internal(
             conn,
             &program,
             &args,
-            None,
+            ssh_tunnel,
         );
         return None;
     }
@@ -1528,6 +1621,11 @@ fn start_vnc_connection_internal(
     // Store history entry ID in session for later use
     if let Some(entry_id) = history_entry_id {
         notebook.set_history_entry_id(session_id, entry_id);
+    }
+
+    // Keep the tunnel alive for the duration of the session
+    if let Some(tunnel) = ssh_tunnel {
+        notebook.store_ssh_tunnel(session_id, tunnel);
     }
 
     // Get the VNC widget and initiate connection with config
@@ -1568,7 +1666,7 @@ fn start_vnc_connection_internal(
 
         // Initiate connection with VNC config (respects client_mode setting)
         if let Err(e) = vnc_widget.connect_with_config(
-            &host,
+            host,
             port,
             password.as_ref().map(|p| p.as_str()),
             &vnc_config,

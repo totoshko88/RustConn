@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **VNC ignored its Jump Host and connected directly (#450)** — a VNC connection started from the launch path that already had its credentials never opened the SSH tunnel, so an address that only exists behind the bastion (such as `127.0.0.1:9336` on the jump host) failed with "Connection refused". The embedded and the external viewer now go through the connection's Jump Host, including a group-inherited one and a fallback, like RDP. The tunnel is opened off the GTK thread, closes with the tab, and a failure shows a toast instead of a silent "failed" status. (`rustconn/src/window/protocols.rs`)
 - **Editing a cluster left the cluster list empty (#451)** — after pressing Save in the cluster editor the list was refreshed while the application state was still mutably borrowed, so the list provider could not read it and showed the empty state. The borrow is now released before the list refreshes, as delete already did. (`rustconn/src/window/clusters.rs`)
 - **Script logging aborted the app with "RefCell already borrowed"** — every script that used `log` (the save-config examples, command capture, the BGP captures) asked the engine for its held-back last log line from inside a host callback, while `pump` still held the engine's mutable borrow, so the process aborted. The engine now flushes that line itself and passes the bytes to `set_log`, which no longer touches the engine. (`rustconn-core/src/automation/script.rs`, `rustconn/src/script_runner.rs`)
 
