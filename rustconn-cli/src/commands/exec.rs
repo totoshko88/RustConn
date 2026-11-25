@@ -114,7 +114,7 @@ fn select_connections<'a>(
         .collect())
 }
 
-/// Builds `ssh -n <dest> <command>` using the connection's own SSH options.
+/// Builds `ssh -n -o BatchMode=yes -o ConnectTimeout=10 -- <dest> <command>` using the connection's own SSH options.
 fn build_ssh_exec_args(
     connection: &Connection,
     command: &[String],
@@ -147,8 +147,47 @@ fn build_ssh_exec_args(
         )));
     };
 
-    args.push("-n".to_string());
+    // A destination that starts with `-` (an imported host such as
+    // `-oProxyCommand=...`) would be parsed by ssh as an option.
+    if destination.starts_with('-') {
+        return Err(CliError::Protocol(format!(
+            "Refusing to run ssh for '{}': the destination '{destination}' starts with '-'.",
+            connection.name
+        )));
+    }
+    // Never prompt: a password-only or unknown-host target fails fast instead
+    // of blocking the whole batch on /dev/tty.
+    for option in ["-n", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10"] {
+        args.push(option.to_string());
+    }
+    // `--` ends option parsing, so the destination can never be read as one.
+    args.push("--".to_string());
     args.push(destination);
     args.extend(command.iter().cloned());
     Ok(args)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ssh(host: &str) -> Connection {
+        Connection::new_ssh("sw".to_string(), host.to_string(), 22)
+    }
+
+    #[test]
+    fn exec_args_are_non_interactive_with_the_destination_last_before_the_command() {
+        let args =
+            build_ssh_exec_args(&ssh("192.0.2.10"), &["show version".to_string()]).expect("args");
+        let joined = args.join(" ");
+        assert!(joined.contains("-o BatchMode=yes"), "{joined}");
+        assert!(joined.contains("-o ConnectTimeout=10"), "{joined}");
+        assert!(joined.ends_with("-- 192.0.2.10 show version"), "{joined}");
+    }
+
+    #[test]
+    fn a_destination_starting_with_a_dash_is_refused() {
+        let result = build_ssh_exec_args(&ssh("-oProxyCommand=x"), &["show version".to_string()]);
+        assert!(matches!(result, Err(CliError::Protocol(_))));
+    }
 }

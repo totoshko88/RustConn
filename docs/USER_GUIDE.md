@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.26.3** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.26.4** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -2950,7 +2950,7 @@ Right-click inside a terminal tab → **Record Script…**, type the commands yo
 | `readline <var> [<sec>]` | Store the next line of output in a variable |
 | `getprompt <var>` | Guess the current prompt (send Enter, diff last line) and store it |
 | `caption <var>` | Rename the running session's tab from a script variable (open tab only) |
-| `oui <mac-var> <vendor-var>` | Look up a MAC vendor in the built-in offline OUI table (full IEEE MA-L listing) |
+| `oui <mac-var> <vendor-var>` | Look up a MAC vendor in the built-in offline OUI table (full IEEE MA-L listing; source: IEEE Registration Authority) |
 | `log [<path>]` | Start/stop writing session output to a file; the path may use `${...}` and `${CWD}`; the file is created owner-only on Unix |
 | `print <text>` | Print an ANSI-coloured message on the terminal |
 | `ask "<prompt>" [hide] [default "<value>"] <var>` | Ask the user for input; `hide` masks it, `default` pre-fills it |
@@ -2964,7 +2964,7 @@ Right-click inside a terminal tab → **Record Script…**, type the commands yo
 | `run "<command>" [<sec>] [out=<var>] [code=<var>]` | Run a local command (secrets scrubbed from its environment); capture stdout/exit code |
 | `set <var> <value>` | Set a script variable (supports `${var}` references) |
 | `goto <label>` | Jump to a label |
-| `if_goto <var> <regex> <label> [else <label>]` | Jump conditionally |
+| `if_goto <var> <regex> <label> [else <label>]` | Jump conditionally. A braced `${name}` in the regex is replaced by that variable's value, regex-escaped, so `/^${device}$/` tests equality |
 
 **Variables**
 
@@ -4537,6 +4537,8 @@ xdg-mime default io.github.totoshko88.RustConn.desktop application/x-virt-viewer
 1. **File > Import > Remmina** → select data directory
 2. Pick the source → Import → check the result page → **Done** (if names already exist, choose **Skip Duplicates** or **Import All**)
 3. Re-enter passwords and verify SSH key paths after import
+
+**SSH tunnel:** an RDP, VNC or SPICE profile with *Enable SSH tunnel* turned on is imported with a **Jump Host**. RustConn creates one SSH connection named `user@host (SSH tunnel)` from the tunnel server, user name and private key file (an empty tunnel server means the profile's own host, port 22) and links the profile to it. Profiles that use the same server, user and port share one SSH connection. The tunnel password is never imported: the SSH connection asks for it on connect. If a tunnel cannot be mapped, for example because the tunnel server has no valid port, the profile is imported without it and the import summary lists a warning.
 
 > **Flatpak ↔ Flatpak:** If both RustConn and Remmina are installed as Flatpaks, the Remmina import button may show "Not Found" because Remmina stores its `.remmina` files inside its own sandbox (`~/.var/app/org.remmina.Remmina/data/remmina/`), which RustConn cannot access by default. See [Flatpak Sandbox Overrides → Remmina Import](#flatpak-sandbox-overrides) below for the fix.
 

@@ -1,10 +1,10 @@
 //! Generated OUI -> vendor table. DO NOT EDIT BY HAND.
 //!
 //! Regenerate with `scripts/gen-oui-table.py` from the IEEE MA-L public
-//! listing (<https://standards-oui.ieee.org/oui/oui.csv>, fetched 2026-11-24,
-//! 40555 assignments). The listing is factual registry data — no licence
-//! text in the file, and the same data has shipped in Debian's `ieee-data`
-//! for years. Vendor spellings are upstream's own.
+//! listing (<https://standards-oui.ieee.org/oui/oui.csv>, fetched 2026-11-25,
+//! 40559 assignments). Source: IEEE Registration Authority, MA-L public
+//! listing. Vendor spellings are upstream's own. A prefix registered more
+//! than once keeps its first name in sorted order.
 
 /// Every MA-L (24-bit OUI) assignment as `(prefix, vendor)` pairs,
 /// sorted by prefix.
@@ -467,7 +467,6 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("0001C6", "Quarry Technologies"),
     ("0001C7", "Cisco Systems, Inc"),
     ("0001C8", "CONRAD CORP."),
-    ("0001C8", "THOMAS CONRAD CORP."),
     ("0001C9", "Cisco Systems, Inc"),
     ("0001CA", "Geocast Network Systems, Inc."),
     ("0001CB", "EVR"),
@@ -13571,8 +13570,6 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("08002E", "METAPHOR COMPUTER SYSTEMS"),
     ("08002F", "PRIME COMPUTER INC."),
     ("080030", "CERN"),
-    ("080030", "NETWORK RESEARCH CORPORATION"),
-    ("080030", "ROYAL MELBOURNE INST OF TECH"),
     ("080031", "LITTLE MACHINES INC."),
     ("080032", "TIGAN INCORPORATED"),
     ("080033", "BAUSCH & LOMB"),
@@ -14176,6 +14173,7 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("0C43F9", "Amazon Technologies Inc."),
     ("0C44C0", "zte corporation"),
     ("0C45BA", "HUAWEI TECHNOLOGIES CO.,LTD"),
+    ("0C45C6", "IEEE Registration Authority"),
     ("0C469D", "MS Sedco"),
     ("0C473D", "Hitron Technologies. Inc"),
     ("0C47A9", "IEEE Registration Authority"),
@@ -20775,6 +20773,7 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("4865EE", "IEEE Registration Authority"),
     ("486834", "Silicon Motion, Inc."),
     ("48684A", "Intel Corporate"),
+    ("4868C6", "NXP Semiconductors Germany GmbH"),
     ("486B2C", "BBK EDUCATIONAL ELECTRONICS CORP.,LTD."),
     ("486B91", "Fleetwood Group Inc."),
     ("486DBB", "Vestel Elektronik San ve Tic. A.S."),
@@ -22584,6 +22583,7 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("58A2B5", "LG Electronics (Mobile Communications)"),
     ("58A2E1", "Mellanox Technologies, Inc."),
     ("58A48E", "PixArt Imaging Inc."),
+    ("58A505", "MeLE Technologies(Shenzhen)Co.,Ltd."),
     ("58A639", "Samsung Electronics Co.,Ltd"),
     ("58A748", "Lytx"),
     ("58A76F", "iD corporation"),
@@ -25001,6 +25001,7 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("703ACB", "Google, Inc."),
     ("703AD8", "Shenzhen Afoundry Electronic Co., Ltd"),
     ("703C03", "RadiAnt Co.,Ltd"),
+    ("703C07", "Dongguan Huayin Electronic Technology Co., Ltd."),
     ("703C39", "SEAWING Kft"),
     ("703C69", "Apple, Inc."),
     ("703D15", "Hangzhou H3C Technologies Co., Limited"),
@@ -30601,6 +30602,7 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("A0C562", "Commscope"),
     ("A0C589", "Intel Corporate"),
     ("A0C5F2", "IEEE Registration Authority"),
+    ("A0C68F", "Extreme Networks, Inc."),
     ("A0C6A5", "Lierda Science & Technology Group Co., Ltd"),
     ("A0C6EC", "ShenZhen ANYK Technology Co.,LTD"),
     ("A0C773", "Chipsea Technologies (Shenzhen) Corp."),
@@ -34564,6 +34566,7 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("C8028F", "Nova Electronics (Shanghai) Co., Ltd."),
     ("C802A6", "Beijing Newmine Technology"),
     ("C803F5", "Ruckus Wireless"),
+    ("C8040C", "Extreme Networks, Inc."),
     ("C8059E", "Hefei Symboltek Co.,Ltd"),
     ("C805A4", "Motorola(Wuhan) Mobility Technologies Communication Co.,Ltd"),
     ("C80718", "TDSi"),
@@ -38384,6 +38387,7 @@ pub(crate) const MA_L: &[(&str, &str)] = &[
     ("E8EF05", "MIND TECH INTERNATIONAL LIMITED"),
     ("E8EF22", "Siemens Numerical Control Ltd., Nanjing"),
     ("E8EF89", "OPMEX Tech."),
+    ("E8F043", "COOSEA GROUP (HK) COMPANY LIMITED"),
     ("E8F085", "HUAWEI TECHNOLOGIES CO.,LTD"),
     ("E8F094", "GD Midea Air-Conditioning Equipment Co.,Ltd."),
     ("E8F0A4", "Antonios A. Chariton"),

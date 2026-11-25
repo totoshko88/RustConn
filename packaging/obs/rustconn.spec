@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.26.3
+Version:        0.26.4
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,12 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Nov 25 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.4-0
+- Version bump to 0.26.4
+- Added: Remmina SSH tunnels import as a linked Jump Host (#449, #450); eleven SecureCRT-inspired script examples (TDR, guarded erase, command capture, BGP peers, OUI lookup, guarded write scripts) with the caption and oui verbs; rustconn-cli report with 17 further report kinds
+- Fixed: VNC honours the connection's Jump Host, embedded and external (#450), and no longer connects directly when the jump host cannot be read; editing a cluster no longer leaves the list empty (#451); scripts that use log no longer abort the app; Skip Duplicates keeps imported profiles linked to the existing bastion
+- Changed: rustconn-cli report runs ssh non-interactively and names failed hosts
+- Dependencies: clap 4.6.9 -> 4.6.10, constant_time_eq 0.6.1 -> 0.6.2, crc32fast 1.5.5 -> 1.5.6, h2 0.4.20 -> 0.4.21, toml 1.2.2 -> 1.2.3, zerocopy 0.8.64 -> 0.8.65, zlib-rs 0.6.8 -> 0.6.9, zstd 0.14.4 -> 0.14.5, zstd-safe 8.3.0 -> 8.4.0, zstd-sys 2.1.3 -> 2.2.0
 * Tue Nov 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.3-0
 - Version bump to 0.26.3
 - Fixed: sidebar status no longer stuck on "connecting" for a missing client, a refused VNC login, or Mosh, Serial and Kubernetes sessions; embedded RDP asks for the password when a Windows host requires NLA; auto-reconnect stops on a session that keeps closing and on a refused WinRM sign-in; "Open Settings" from the password-store dialog opens Secrets; client version probes no longer hang for their full timeout

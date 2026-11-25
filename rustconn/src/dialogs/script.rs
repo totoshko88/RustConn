@@ -2484,6 +2484,33 @@ mod tests {
     }
 
     #[test]
+    fn erase_example_rejects_a_wrong_hostname() {
+        let (mut engine, mut host) = at_first_question("example-cisco-erase-device");
+        engine.on_ask_result(Some("WRONG".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished(), "a wrong hostname ends the script");
+        assert!(
+            !host.events.iter().any(|e| e.starts_with("send:write")
+                || e.starts_with("send:delete")
+                || e.starts_with("send:reload")
+                || e.starts_with("log:")),
+            "nothing is sent for a wrong hostname"
+        );
+    }
+
+    #[test]
+    fn erase_example_accepts_the_real_hostname_then_asks_for_erase() {
+        let (mut engine, mut host) = at_first_question("example-cisco-erase-device");
+        engine.on_ask_result(Some("SW1".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(
+            engine.pending(),
+            PendingKind::Ask,
+            "the ERASE prompt follows"
+        );
+    }
+
+    #[test]
     fn rename_tab_example_sets_the_caption() {
         let mut host = Recorder {
             events: Vec::new(),
@@ -2576,6 +2603,75 @@ mod tests {
                 .any(|e| e == "print:Vendor: Cisco Systems, Inc"),
             "the built-in OUI table resolves a known prefix"
         );
+    }
+
+    fn assert_capture_rejects(input: &str) {
+        let (mut engine, mut host) = at_first_question("example-cisco-command-capture");
+        engine.on_ask_result(Some(input.to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished(), "{input}");
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("terminal length 0")),
+            "{input} must not reach the device"
+        );
+    }
+
+    #[test]
+    fn command_capture_example_accepts_only_show_commands() {
+        for bad in [
+            "reload",
+            "write erase",
+            "configure terminal",
+            "show run | redirect flash:x",
+            "SHOWX",
+        ] {
+            assert_capture_rejects(bad);
+        }
+        let (mut engine, mut host) = at_first_question("example-cisco-command-capture");
+        engine.on_ask_result(Some("show ip route | include 10".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(
+            engine.pending(),
+            PendingKind::Ask,
+            "a show command is accepted"
+        );
+    }
+
+    fn assert_global_config_rejects(input: &str) {
+        let mut host = Recorder {
+            events: Vec::new(),
+            prompt: Some("SW1#".to_string()),
+        };
+        let mut engine = ScriptEngine::parse(example("example-cisco-global-config")).unwrap();
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "SW1# ");
+        feed(&mut engine, &mut host, "SW1# ");
+        engine.on_ask_result(Some(input.to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished(), "{input}");
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("configure terminal")),
+            "{input} must not reach the device"
+        );
+    }
+
+    #[test]
+    fn global_config_example_rejects_do_reload_erase_delete() {
+        for bad in [
+            "do reload",
+            "  DO write erase",
+            "reload in 5",
+            "erase startup-config",
+            "delete flash:x",
+        ] {
+            assert_global_config_rejects(bad);
+        }
     }
 
     #[test]

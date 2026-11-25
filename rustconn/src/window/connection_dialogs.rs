@@ -1010,9 +1010,16 @@ pub fn show_import_dialog(window: &gtk4::Window, state: SharedAppState, sidebar:
             };
             match response {
                 "skip" => {
-                    import_result
-                        .connections
-                        .retain(|c| !duplicate_names.contains(&c.name.to_lowercase()));
+                    let existing: std::collections::HashMap<String, uuid::Uuid> = state2
+                        .try_borrow()
+                        .map(|s| {
+                            s.list_connections()
+                                .into_iter()
+                                .map(|c| (c.name.to_lowercase(), c.id))
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    import_result.skip_existing(&existing);
                     apply_import_result(&window2, &state2, &sidebar2, import_result, &source2);
                 }
                 "all" => {

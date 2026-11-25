@@ -43,6 +43,11 @@ static VARIABLE_REF: LazyLock<Regex> = LazyLock::new(|| {
         .expect("static regex")
 });
 
+/// A braced `${name}` reference inside an `if_goto` pattern. Only the braced
+/// form is substituted there, so `$` stays an end-of-line anchor.
+static PATTERN_VARIABLE_REF: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").expect("static regex"));
+
 /// Built-ins a script may use. `CWD` lets a log path be absolute without a
 /// literal OS path in the script; `ENV_*` stays out, as in `substitute`.
 fn script_builtin(name: &str) -> Option<String> {
@@ -804,6 +809,21 @@ impl ScriptEngine {
                 else_label,
             } => {
                 let value = self.variable_value(&var);
+                // `${name}` in the pattern is replaced by the regex-escaped
+                // value, so `if_goto $typed /^${device}$/ ok` is an equality test.
+                let pattern = PATTERN_VARIABLE_REF
+                    .replace_all(&pattern, |caps: &regex::Captures<'_>| {
+                        let name = &caps[1];
+                        regex::escape(
+                            &self
+                                .variables
+                                .get(name)
+                                .cloned()
+                                .or_else(|| script_builtin(name))
+                                .unwrap_or_default(),
+                        )
+                    })
+                    .into_owned();
                 let matched = self
                     .compiled(&pattern)
                     .is_some_and(|re| re.is_match(&value));
@@ -1693,9 +1713,11 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
             let var = var_name(&arg(1)?);
             let pattern = pattern(&arg(2)?);
             let then_label = arg(3)?;
-            Regex::new(&pattern).map_err(|e| ScriptParseError::InvalidRegex {
-                line: line_no,
-                message: e.to_string(),
+            Regex::new(&PATTERN_VARIABLE_REF.replace_all(&pattern, "x")).map_err(|e| {
+                ScriptParseError::InvalidRegex {
+                    line: line_no,
+                    message: e.to_string(),
+                }
             })?;
             let else_label = match tokens.get(4) {
                 Some(t) if t == "else" => tokens.get(5).cloned(),
@@ -2415,6 +2437,44 @@ mod tests {
         engine.pump(&mut host);
         assert!(engine.is_finished());
         assert_eq!(host.events, vec!["print:no"]);
+    }
+
+    /// Runs `set` lines plus one `if_goto` and reports whether it jumped.
+    fn if_goto_matches(sets: &str, pattern: &str) -> bool {
+        let source = format!(
+            "{sets}if_goto $typed {pattern} yes\nprint no\ngoto end\n:yes\nprint yes\n:end\n"
+        );
+        let mut host = FakeHost::default();
+        run_script(&source, &mut host);
+        host.events == vec!["print:yes"]
+    }
+
+    #[test]
+    fn if_goto_variable_is_escaped_as_a_literal() {
+        let pattern = "/^${device}$/";
+        assert!(if_goto_matches("set device a.b\nset typed a.b\n", pattern));
+        assert!(!if_goto_matches("set device a.b\nset typed axb\n", pattern));
+        assert!(!if_goto_matches("set device a|b\nset typed a\n", pattern));
+    }
+
+    #[test]
+    fn if_goto_unset_variable_is_empty() {
+        let pattern = "/^${nope}$/";
+        // `$typed` is unset too, so both sides are empty.
+        assert!(if_goto_matches("", pattern));
+        assert!(!if_goto_matches("set typed x\n", pattern));
+    }
+
+    #[test]
+    fn if_goto_dollar_stays_an_anchor() {
+        assert!(if_goto_matches("set typed ab\n", "/b$/"));
+        assert!(!if_goto_matches("set typed xa\n", "/b$/"));
+    }
+
+    #[test]
+    fn if_goto_parse_checks_the_pattern_around_variables() {
+        assert!(ScriptEngine::parse("if_goto $a /^${x}$/ l\n:l\n").is_ok());
+        assert!(ScriptEngine::parse("if_goto $a /(${x}/ l\n:l\n").is_err());
     }
 
     #[test]

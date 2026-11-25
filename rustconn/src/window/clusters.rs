@@ -570,25 +570,33 @@ fn edit_cluster(
     let parent_clone = parent.clone();
     dialog.run(move |result| {
         if let Some(updated) = result {
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                match state_mut.update_cluster(updated) {
-                    Ok(()) => {
-                        on_updated();
-                    }
-                    Err(e) => {
-                        alert::show_error(
-                            &parent_clone,
-                            &i18n("Error Updating Cluster"),
-                            &i18n_f("Failed to save cluster: {}", &[&e]),
-                        );
-                    }
-                }
+            // The state borrow must be released before `on_updated` runs: it
+            // refreshes the list through a provider that uses `try_borrow()`
+            // and would otherwise see an empty list (#451).
+            let update_result = if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
+                let res = state_mut.update_cluster(updated);
+                drop(state_mut);
+                Some(res)
             } else {
-                alert::show_error(
-                    &parent_clone,
-                    &i18n("Error"),
-                    &i18n("Could not access application state"),
-                );
+                None
+            };
+
+            match update_result {
+                Some(Ok(())) => on_updated(),
+                Some(Err(e)) => {
+                    alert::show_error(
+                        &parent_clone,
+                        &i18n("Error Updating Cluster"),
+                        &i18n_f("Failed to save cluster: {}", &[&e]),
+                    );
+                }
+                None => {
+                    alert::show_error(
+                        &parent_clone,
+                        &i18n("Error"),
+                        &i18n("Could not access application state"),
+                    );
+                }
             }
         }
     });

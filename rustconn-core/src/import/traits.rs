@@ -168,6 +168,12 @@ pub enum ImportWarning {
         /// Name of the imported connection.
         connection_name: String,
     },
+    /// The source asked for an SSH tunnel that could not be turned into a jump
+    /// host. The connection was imported without it.
+    SshTunnelNotImported {
+        /// Name of the imported connection.
+        connection_name: String,
+    },
     /// An imported group has no name. It was kept as it is.
     GroupNameEmpty {
         /// 1-based position of the group in the import.
@@ -227,6 +233,9 @@ impl ImportWarning {
             Self::JumpHostMissing { .. } => {
                 "Connection '{}' uses a jump host that is not part of this import. It was imported as it is; check its jump host before connecting."
             }
+            Self::SshTunnelNotImported { .. } => {
+                "Connection '{}' uses an SSH tunnel that could not be imported as a jump host. It was imported without it; set a jump host before connecting."
+            }
             Self::GroupNameEmpty { .. } => {
                 "Group {} has no name. It was imported as it is; give it a name."
             }
@@ -267,7 +276,8 @@ impl ImportWarning {
             Self::FtpImportedAsSftp { connection_name }
             | Self::ConnectionHostEmpty { connection_name }
             | Self::ConnectionPortZero { connection_name }
-            | Self::JumpHostMissing { connection_name } => vec![connection_name.clone()],
+            | Self::JumpHostMissing { connection_name }
+            | Self::SshTunnelNotImported { connection_name } => vec![connection_name.clone()],
             Self::ConnectionNameEmpty { position }
             | Self::GroupNameEmpty { position }
             | Self::SnippetIncomplete { position } => vec![position.to_string()],
@@ -347,6 +357,25 @@ impl ImportResult {
             self.skipped.len(),
             self.errors.len()
         )
+    }
+
+    /// Drops the connections whose lowercase name is a key of `existing`
+    /// (name -> id of the connection already saved under it).
+    ///
+    /// A kept connection whose jump host was dropped is re-pointed at the
+    /// existing connection, so a skipped bastion never leaves a dangling link.
+    pub fn skip_existing(&mut self, existing: &HashMap<String, Uuid>) {
+        let remap: HashMap<Uuid, Uuid> = self
+            .connections
+            .iter()
+            .filter_map(|c| Some((c.id, *existing.get(&c.name.to_lowercase())?)))
+            .collect();
+        self.connections.retain(|c| !remap.contains_key(&c.id));
+        for conn in &mut self.connections {
+            if let Some(new_id) = conn.jump_host_id().and_then(|id| remap.get(&id)) {
+                conn.set_jump_host_id(*new_id);
+            }
+        }
     }
 
     /// Adds a connection to the result
@@ -785,5 +814,26 @@ pub trait ImportSource: Send + Sync {
         }
 
         Ok(combined_result)
+    }
+}
+
+#[cfg(test)]
+mod skip_existing_tests {
+    use super::*;
+
+    #[test]
+    fn skipped_bastion_relinks_kept_connection_to_the_existing_one() {
+        let bastion = Connection::new_ssh("root@bastion (SSH tunnel)".into(), "bastion".into(), 22);
+        let mut rdp = Connection::new_rdp("new-rdp".into(), "10.0.0.5".into(), 3389);
+        rdp.set_jump_host_id(bastion.id);
+        let existing_id = Uuid::new_v4();
+        let mut result = ImportResult::new();
+        result.connections = vec![bastion, rdp];
+
+        let existing = HashMap::from([("root@bastion (ssh tunnel)".to_string(), existing_id)]);
+        result.skip_existing(&existing);
+
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.connections[0].jump_host_id(), Some(existing_id));
     }
 }

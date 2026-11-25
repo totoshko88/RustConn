@@ -14,7 +14,7 @@ use uuid::Uuid;
 use zeroize::Zeroizing;
 
 use super::normalize::parse_host_port;
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
+use super::traits::{ImportResult, ImportSource, ImportWarning, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, Credentials, PasswordSource, ProtocolConfig, RdpAudioMode,
@@ -168,10 +168,127 @@ impl RemminaImporter {
                 let group_id = Self::get_or_create_group(path, group_map, &mut result);
                 connection.group_id = Some(group_id);
             }
+            Self::link_ssh_tunnel(remmina_section, &mut connection, group_map, &mut result);
             result.add_connection(connection);
         }
 
         result
+    }
+
+    /// Turns Remmina's "Enable SSH tunnel" into a saved SSH connection and links
+    /// it to `connection` as its jump host (#449, #450).
+    ///
+    /// Remmina builds the tunnel from `ssh_tunnel_server` (empty means the
+    /// connection's own host, `:port` keeps that host on another port),
+    /// `ssh_tunnel_username`, `ssh_tunnel_privatekey` and `ssh_tunnel_auth`.
+    /// `ssh_tunnel_loopback` only picks the local listen address, which RustConn
+    /// chooses itself, so it is not read. The tunnel password is never read: it
+    /// is a secret and the bastion asks for it on connect.
+    ///
+    /// A bastion with the same host, user and port is created once and reused by
+    /// every profile and every file of the same import. `group_map` is the only
+    /// state shared between files, so the bastion ids live in it under a key no
+    /// group name can have (it starts with a NUL byte).
+    ///
+    /// Only RDP, VNC and SPICE carry a jump host; any other protocol with the
+    /// tunnel on, or a tunnel server that cannot be parsed, gets a warning.
+    fn link_ssh_tunnel(
+        config: &HashMap<String, String>,
+        connection: &mut Connection,
+        group_map: &mut HashMap<String, Uuid>,
+        result: &mut ImportResult,
+    ) {
+        let is_on = |key: &str| {
+            config.get(key).is_some_and(|v| {
+                v == "1" || v.eq_ignore_ascii_case("yes") || v.eq_ignore_ascii_case("true")
+            })
+        };
+        if !is_on("ssh_tunnel_enabled") {
+            return;
+        }
+        let warn = |result: &mut ImportResult, connection: &Connection| {
+            result.add_warning(ImportWarning::SshTunnelNotImported {
+                connection_name: connection.name.clone(),
+            });
+        };
+        if !matches!(
+            connection.protocol_config,
+            ProtocolConfig::Rdp(_) | ProtocolConfig::Vnc(_) | ProtocolConfig::Spice(_)
+        ) {
+            warn(result, connection);
+            return;
+        }
+
+        let text = |key: &str| {
+            config
+                .get(key)
+                .map(String::as_str)
+                .map(str::trim)
+                .filter(|v| !v.is_empty())
+        };
+        let server = text("ssh_tunnel_server").unwrap_or("");
+        let (parsed_host, parsed_port) = parse_host_port(server);
+        let host = if parsed_host.is_empty() {
+            connection.host.clone()
+        } else {
+            parsed_host
+        };
+        let port = parsed_port.unwrap_or(22);
+        // `host:abc` is not a port; parse_host_port leaves it inside the host.
+        let bad_port = parsed_port.is_none() && server.contains(':') && !server.starts_with('[');
+        if host.is_empty() || host.chars().any(char::is_whitespace) || bad_port {
+            warn(result, connection);
+            return;
+        }
+        let username = text("ssh_tunnel_username").map(str::to_string);
+        let key_path = text("ssh_tunnel_privatekey")
+            .map(|p| PathBuf::from(shellexpand::tilde(p).into_owned()));
+        // Remmina's identity-file and automatic public-key modes both read a
+        // key; the key file, when named, decides. With none named, a password
+        // mode stays a password and every other mode falls back to the agent.
+        let auth_method = if key_path.is_some() {
+            SshAuthMethod::PublicKey
+        } else if matches!(text("ssh_tunnel_auth"), None | Some("0" | "password")) {
+            SshAuthMethod::Password
+        } else {
+            SshAuthMethod::Agent
+        };
+
+        let key = format!(
+            "\0ssh-tunnel:{}@{}:{port}",
+            username.as_deref().unwrap_or(""),
+            host.to_lowercase()
+        );
+        let bastion_id = if let Some(&id) = group_map.get(&key) {
+            id
+        } else {
+            let label = username
+                .as_ref()
+                .map_or_else(|| host.clone(), |u| format!("{u}@{host}"));
+            let mut bastion = Connection::new(
+                format!("{label} (SSH tunnel)"),
+                host,
+                port,
+                ProtocolConfig::Ssh(SshConfig {
+                    auth_method,
+                    key_path,
+                    ..Default::default()
+                }),
+            );
+            bastion.username = username;
+            bastion.group_id = connection.group_id;
+            let id = bastion.id;
+            group_map.insert(key, id);
+            result.add_connection(bastion);
+            id
+        };
+
+        match &mut connection.protocol_config {
+            ProtocolConfig::Rdp(c) => c.jump_host_id = Some(bastion_id),
+            ProtocolConfig::Vnc(c) => c.jump_host_id = Some(bastion_id),
+            ProtocolConfig::Spice(c) => c.jump_host_id = Some(bastion_id),
+            _ => {}
+        }
     }
 
     /// Parses INI-style content into sections
@@ -877,5 +994,134 @@ group=Production
             result1.connections[0].group_id,
             result2.connections[0].group_id
         );
+    }
+
+    fn jump_id(conn: &Connection) -> Option<Uuid> {
+        match &conn.protocol_config {
+            ProtocolConfig::Rdp(c) => c.jump_host_id,
+            ProtocolConfig::Vnc(c) => c.jump_host_id,
+            ProtocolConfig::Spice(c) => c.jump_host_id,
+            _ => None,
+        }
+    }
+
+    fn import_one(content: &str) -> ImportResult {
+        RemminaImporter::new()
+            .with_password_import(false)
+            .parse_remmina_file(content, "t.remmina", &mut HashMap::new())
+    }
+
+    #[test]
+    fn ssh_tunnel_on_vnc_creates_linked_bastion() {
+        let result = import_one(
+            r"
+[remmina]
+name=Behind bastion
+protocol=VNC
+server=127.0.0.1:9336
+ssh_tunnel_enabled=1
+ssh_tunnel_loopback=1
+ssh_tunnel_server=bastion.example.com:2222
+ssh_tunnel_username=ops
+ssh_tunnel_auth=1
+ssh_tunnel_privatekey=/home/u/.ssh/id_ed25519
+ssh_tunnel_password=SECRET
+",
+        );
+        assert_eq!(result.connections.len(), 2);
+        let vnc = result
+            .connections
+            .iter()
+            .find(|c| matches!(c.protocol_config, ProtocolConfig::Vnc(_)))
+            .unwrap();
+        let bastion = result
+            .connections
+            .iter()
+            .find(|c| matches!(c.protocol_config, ProtocolConfig::Ssh(_)))
+            .unwrap();
+        assert_eq!(jump_id(vnc), Some(bastion.id));
+        assert_eq!(vnc.host, "127.0.0.1");
+        assert_eq!(bastion.host, "bastion.example.com");
+        assert_eq!(bastion.port, 2222);
+        assert_eq!(bastion.username.as_deref(), Some("ops"));
+        let ProtocolConfig::Ssh(ssh) = &bastion.protocol_config else {
+            unreachable!()
+        };
+        assert_eq!(ssh.auth_method, SshAuthMethod::PublicKey);
+        assert_eq!(ssh.key_path, Some(PathBuf::from("/home/u/.ssh/id_ed25519")));
+        // The tunnel password is never imported.
+        assert!(result.credentials.is_empty());
+        assert!(result.warnings.is_empty());
+    }
+
+    #[test]
+    fn empty_tunnel_server_means_the_connection_host_on_port_22() {
+        let result = import_one(
+            "[remmina]\nname=w\nprotocol=RDP\nserver=win.example.com\nssh_tunnel_enabled=1\nssh_tunnel_username=u\n",
+        );
+        let bastion = result
+            .connections
+            .iter()
+            .find(|c| matches!(c.protocol_config, ProtocolConfig::Ssh(_)))
+            .unwrap();
+        assert_eq!(bastion.host, "win.example.com");
+        assert_eq!(bastion.port, 22);
+        let ProtocolConfig::Ssh(ssh) = &bastion.protocol_config else {
+            unreachable!()
+        };
+        assert_eq!(ssh.auth_method, SshAuthMethod::Password);
+    }
+
+    #[test]
+    fn same_bastion_is_reused_across_profiles_and_files() {
+        let importer = RemminaImporter::new().with_password_import(false);
+        let mut group_map = HashMap::new();
+        let tunnel =
+            "ssh_tunnel_enabled=1\nssh_tunnel_server=b.example.com:22\nssh_tunnel_username=u\n";
+        let a = importer.parse_remmina_file(
+            &format!("[remmina]\nname=a\nprotocol=RDP\nserver=10.0.0.1\n{tunnel}"),
+            "a.remmina",
+            &mut group_map,
+        );
+        let b = importer.parse_remmina_file(
+            &format!("[remmina]\nname=b\nprotocol=VNC\nserver=10.0.0.2\n{tunnel}"),
+            "b.remmina",
+            &mut group_map,
+        );
+        assert_eq!(a.connections.len(), 2);
+        assert_eq!(b.connections.len(), 1);
+        let first = jump_id(a.connections.iter().find(|c| c.name == "a").unwrap());
+        assert!(first.is_some());
+        assert_eq!(first, jump_id(&b.connections[0]));
+    }
+
+    #[test]
+    fn tunnel_disabled_or_absent_keeps_the_connection_as_it_was() {
+        for extra in ["", "ssh_tunnel_enabled=0\nssh_tunnel_server=b:22\n"] {
+            let result = import_one(&format!(
+                "[remmina]\nname=a\nprotocol=RDP\nserver=10.0.0.1\n{extra}"
+            ));
+            assert_eq!(result.connections.len(), 1);
+            assert_eq!(jump_id(&result.connections[0]), None);
+            assert!(result.warnings.is_empty());
+        }
+    }
+
+    #[test]
+    fn unmappable_tunnel_warns_and_imports_without_it() {
+        for content in [
+            "[remmina]\nname=a\nprotocol=RDP\nserver=h\nssh_tunnel_enabled=1\nssh_tunnel_server=b:notaport\n",
+            "[remmina]\nname=a\nprotocol=TELNET\nserver=h\nssh_tunnel_enabled=1\n",
+        ] {
+            let result = import_one(content);
+            assert_eq!(result.connections.len(), 1);
+            assert_eq!(jump_id(&result.connections[0]), None);
+            assert_eq!(
+                result.warnings,
+                vec![ImportWarning::SshTunnelNotImported {
+                    connection_name: "a".to_string()
+                }]
+            );
+        }
     }
 }
