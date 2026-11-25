@@ -56,7 +56,74 @@ pub fn tab_icon(custom_icon: &str, protocol_icon: &str) -> gtk4::gio::Icon {
         return glyph_paintable(custom)
             .unwrap_or_else(|| gtk4::gio::ThemedIcon::new(protocol_icon).upcast());
     }
+    // A GTK icon name: load it as a themed *paintable* so the tab bar keeps the
+    // custom icon's own colours — a bare `ThemedIcon` can be painted symbolic
+    // by the tab widget and read as the default icon. When the active theme
+    // cannot resolve the name, fall back to the protocol's symbolic mark.
+    if let Some(paintable) = themed_paintable(custom) {
+        return paintable;
+    }
     gtk4::gio::ThemedIcon::new(theme_icon_or(custom, protocol_icon)).upcast()
+}
+
+/// Resolves `name` in the active icon theme to a full-colour pixbuf.
+///
+/// The tab bar paints `ThemedIcon`s as monochrome symbolic marks, which would
+/// flatten a custom icon's own colours to the default grey; a `Pixbuf` paints
+/// its pixels as authored, so the custom icon keeps them on the tab. `None`
+/// when no display or theme carries the name — the caller then offers its
+/// fallback.
+fn themed_paintable(name: &str) -> Option<gtk4::gio::Icon> {
+    use gtk4::glib::object::Cast;
+
+    // Icon contexts in the theme's own lookup order, including the nested
+    // `scalable/` variants a scalable SVG usually lives in, so a custom `apps/`
+    // icon wins the way the theme would resolve it.
+    const CONTEXTS: [&str; 15] = [
+        "apps",
+        "status",
+        "devices",
+        "actions",
+        "category",
+        "places",
+        "mimetypes",
+        "scalable",
+        "symbolic",
+        "any",
+        "scalable/apps",
+        "scalable/status",
+        "scalable/devices",
+        "scalable/actions",
+        "scalable/any",
+    ];
+    let display = gtk4::gdk::Display::default()?;
+    let theme = gtk4::IconTheme::for_display(&display);
+    if !theme.has_icon(name) {
+        return None;
+    }
+    let theme_name = theme.theme_name();
+    for root in theme.search_path() {
+        // Each search-path root may hold the icon set directly, under `hicolor`,
+        // or under the named theme — the layout varies per distribution.
+        let dirs = std::iter::once(root.clone()).chain(std::iter::once(root.join("hicolor")));
+        let dirs = dirs.chain(
+            std::iter::once(root.join(theme_name.as_str())).filter(|_| !theme_name.is_empty()),
+        );
+        for dir in dirs {
+            for context in CONTEXTS {
+                for ext in ["svg", "png"] {
+                    let file = dir.join(context).join(format!("{name}.{ext}"));
+                    if file.is_file()
+                        && let Ok(pixbuf) =
+                            gtk4::gdk_pixbuf::Pixbuf::from_file_at_scale(&file, 24, 24, true)
+                    {
+                        return Some(pixbuf.upcast());
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Draws a single glyph as a 32×32 paintable for the tab bar.
