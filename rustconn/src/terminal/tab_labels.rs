@@ -270,6 +270,39 @@ impl TerminalNotebook {
         affected
     }
 
+    /// Re-applies the connection's icon to its open sessions after an edit.
+    ///
+    /// A tab applies the icon once, at creation (`icon_render::tab_icon`), so an
+    /// edited icon would wait for the tab to be rebuilt without this. The icon
+    /// counterpart of `rename_connection_sessions`, which does the same for the
+    /// label; returns the number of tabs updated.
+    pub fn refresh_connection_icon(&self, connection_id: Uuid) -> usize {
+        let custom = self.connection_icon_for(connection_id);
+        let affected: Vec<(Uuid, String)> = self
+            .session_info
+            .borrow()
+            .iter()
+            .filter(|(_, info)| info.connection_id == connection_id)
+            .map(|(id, info)| (*id, info.protocol.clone()))
+            .collect();
+        for (session_id, protocol) in &affected {
+            if let Some(page) = self.sessions.borrow().get(session_id) {
+                page.set_icon(Some(&crate::icon_render::tab_icon(
+                    &custom,
+                    Self::get_protocol_icon(protocol),
+                )));
+            }
+        }
+        if !affected.is_empty() {
+            tracing::debug!(
+                connection = %connection_id,
+                sessions = affected.len(),
+                "re-applied the connection icon to open sessions"
+            );
+        }
+        affected.len()
+    }
+
     /// Applies a new label to one session: its metadata, the tab title and the
     /// tooltip.
     ///

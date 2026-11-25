@@ -1237,7 +1237,7 @@ mod moved_split_focus_tests {
             let group = SessionGroupWindow::new(&app, "");
             for &id in ids {
                 let content = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
-                group.add_session(id, connection, "t", "ssh", &content);
+                group.add_session(id, connection, "t", "ssh", "", &content);
             }
             registry.insert_group(Uuid::from_u128(group_id), Rc::clone(&group));
             group

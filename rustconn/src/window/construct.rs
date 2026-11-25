@@ -1264,6 +1264,23 @@ impl MainWindow {
                     };
                     state_ref.get_connection(connection_id).is_some()
                 });
+
+            // The tab bar shows the connection's custom icon (an emoji or GTK
+            // icon name from its settings) the way the sidebar row does; a
+            // connection without one keeps the protocol icon.
+            let state_weak = Rc::downgrade(&main_window.state);
+            main_window
+                .terminal_notebook
+                .set_connection_icon_provider(move |connection_id| {
+                    let state = state_weak.upgrade()?;
+                    let Ok(state_ref) = state.try_borrow() else {
+                        return None;
+                    };
+                    state_ref
+                        .get_connection(connection_id)
+                        .and_then(|connection| connection.icon.clone())
+                        .filter(|icon| !icon.trim().is_empty())
+                });
         }
 
         // Set up recording checker for sidebar context menu

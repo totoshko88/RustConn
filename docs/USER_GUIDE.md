@@ -3469,7 +3469,7 @@ curl -s -k "https://proxmox:8006/api2/json/nodes/pve/qemu" -H "Authorization: PV
 
 ### Custom Icons
 
-Set custom emoji or GTK icon names on connections and groups to visually distinguish them in the sidebar.
+Set custom emoji or GTK icon names on connections and groups to visually distinguish them in the sidebar. The same mark also appears on the connection's session tabs in the tab bar — the glyph is drawn as text, the icon name is resolved through the active theme in full colour, and a connection without an icon (or with one the theme lacks) keeps its protocol icon. Editing the connection's icon updates its open tabs as well.
 
 **Supported Icon Types:**
 

@@ -152,9 +152,16 @@ impl MainWindow {
         window: &adw::ApplicationWindow,
         state: &SharedAppState,
         sidebar: &SharedSidebar,
+        notebook: &SharedNotebook,
         key_setup: &Rc<key_setup::KeySetupContext>,
     ) {
-        edit_dialogs::edit_selected_connection(window.upcast_ref(), state, sidebar, key_setup);
+        edit_dialogs::edit_selected_connection(
+            window.upcast_ref(),
+            state,
+            sidebar,
+            notebook,
+            key_setup,
+        );
     }
 
     /// Renames the selected connection or group

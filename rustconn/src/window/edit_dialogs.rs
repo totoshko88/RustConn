@@ -39,6 +39,7 @@ pub fn edit_selected_connection(
     window: &gtk4::Window,
     state: &SharedAppState,
     sidebar: &SharedSidebar,
+    notebook: &SharedNotebook,
     key_setup: &Rc<super::key_setup::KeySetupContext>,
 ) {
     // Get selected item using sidebar's method (works in both single and multi-selection modes)
@@ -55,7 +56,7 @@ pub fn edit_selected_connection(
         // Edit group - show simple rename dialog
         show_edit_group_dialog(window, state.clone(), sidebar.clone(), id);
     } else {
-        edit_connection_by_id(window, state, sidebar, id, key_setup);
+        edit_connection_by_id(window, state, sidebar, notebook, id, key_setup);
     }
 }
 
@@ -72,6 +73,7 @@ pub fn edit_connection_by_id(
     window: &gtk4::Window,
     state: &SharedAppState,
     sidebar: &SharedSidebar,
+    notebook: &SharedNotebook,
     id: Uuid,
     key_setup: &Rc<super::key_setup::KeySetupContext>,
 ) {
@@ -186,6 +188,8 @@ pub fn edit_connection_by_id(
     // The pre-edit connection, needed to work out whether the edit moved the
     // credential's vault key.
     let old_conn = conn.clone();
+    // Cloned so the `'static` save callback owns it, not the borrowed reference.
+    let notebook = notebook.clone();
     dialog.run(move |result| {
         if let Some(dialog_result) = result {
             let updated_conn = dialog_result.connection;
@@ -293,8 +297,12 @@ pub fn edit_connection_by_id(
                         // Defer sidebar reload to prevent UI freeze
                         let state = state_clone.clone();
                         let sidebar = sidebar_clone.clone();
+                        let notebook = notebook.clone();
                         glib::idle_add_local_once(move || {
                             MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+                            // The sidebar row re-resolves the icon, but an open tab applied
+                            // it at creation — an edited icon would wait for a rebuild.
+                            let _ = notebook.refresh_connection_icon(id);
                         });
                     }
                     Err(e) => {
