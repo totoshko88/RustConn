@@ -125,6 +125,7 @@
           <li>Remmina SSH tunnels are imported as a linked Jump Host.</li>
           <li>Editing a cluster no longer leaves the cluster list empty.</li>
           <li>Eleven new script examples and the rustconn-cli report command with 25 report kinds.</li>
+          <li>Dependencies updated (clap, h2, toml, zstd and others).</li>
         </ul>
       </description>
     </release>
