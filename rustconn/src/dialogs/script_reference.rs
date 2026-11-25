@@ -160,7 +160,9 @@ goto <label>
 
 if_goto <variable> <regex> <label> [else <label>]
     Jump to <label> when the variable's value matches the regular expression,
-    otherwise to the else label, otherwise fall through.
+    otherwise to the else label, otherwise fall through. A braced ${name} in
+    the regex is replaced by that variable's value with regex characters
+    escaped, so `if_goto $typed /^${device}$/ ok` tests two values for equality.
 
 ${name} and $name
     Reference a variable. The value is substituted when the instruction runs.

@@ -43,6 +43,11 @@ static VARIABLE_REF: LazyLock<Regex> = LazyLock::new(|| {
         .expect("static regex")
 });
 
+/// A braced `${name}` reference inside an `if_goto` pattern. Only the braced
+/// form is substituted there, so `$` stays an end-of-line anchor.
+static PATTERN_VARIABLE_REF: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").expect("static regex"));
+
 /// Built-ins a script may use. `CWD` lets a log path be absolute without a
 /// literal OS path in the script; `ENV_*` stays out, as in `substitute`.
 fn script_builtin(name: &str) -> Option<String> {
@@ -804,6 +809,21 @@ impl ScriptEngine {
                 else_label,
             } => {
                 let value = self.variable_value(&var);
+                // `${name}` in the pattern is replaced by the regex-escaped
+                // value, so `if_goto $typed /^${device}$/ ok` is an equality test.
+                let pattern = PATTERN_VARIABLE_REF
+                    .replace_all(&pattern, |caps: &regex::Captures<'_>| {
+                        let name = &caps[1];
+                        regex::escape(
+                            &self
+                                .variables
+                                .get(name)
+                                .cloned()
+                                .or_else(|| script_builtin(name))
+                                .unwrap_or_default(),
+                        )
+                    })
+                    .into_owned();
                 let matched = self
                     .compiled(&pattern)
                     .is_some_and(|re| re.is_match(&value));
@@ -1693,9 +1713,11 @@ fn parse_line(line: &str, line_no: usize) -> Result<ScriptStep, ScriptParseError
             let var = var_name(&arg(1)?);
             let pattern = pattern(&arg(2)?);
             let then_label = arg(3)?;
-            Regex::new(&pattern).map_err(|e| ScriptParseError::InvalidRegex {
-                line: line_no,
-                message: e.to_string(),
+            Regex::new(&PATTERN_VARIABLE_REF.replace_all(&pattern, "x")).map_err(|e| {
+                ScriptParseError::InvalidRegex {
+                    line: line_no,
+                    message: e.to_string(),
+                }
             })?;
             let else_label = match tokens.get(4) {
                 Some(t) if t == "else" => tokens.get(5).cloned(),

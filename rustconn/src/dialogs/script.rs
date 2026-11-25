@@ -2484,6 +2484,33 @@ mod tests {
     }
 
     #[test]
+    fn erase_example_rejects_a_wrong_hostname() {
+        let (mut engine, mut host) = at_first_question("example-cisco-erase-device");
+        engine.on_ask_result(Some("WRONG".to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished(), "a wrong hostname ends the script");
+        assert!(
+            !host.events.iter().any(|e| e.starts_with("send:write")
+                || e.starts_with("send:delete")
+                || e.starts_with("send:reload")
+                || e.starts_with("log:")),
+            "nothing is sent for a wrong hostname"
+        );
+    }
+
+    #[test]
+    fn erase_example_accepts_the_real_hostname_then_asks_for_erase() {
+        let (mut engine, mut host) = at_first_question("example-cisco-erase-device");
+        engine.on_ask_result(Some("SW1".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(
+            engine.pending(),
+            PendingKind::Ask,
+            "the ERASE prompt follows"
+        );
+    }
+
+    #[test]
     fn rename_tab_example_sets_the_caption() {
         let mut host = Recorder {
             events: Vec::new(),

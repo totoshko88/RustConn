@@ -2964,7 +2964,7 @@ Right-click inside a terminal tab → **Record Script…**, type the commands yo
 | `run "<command>" [<sec>] [out=<var>] [code=<var>]` | Run a local command (secrets scrubbed from its environment); capture stdout/exit code |
 | `set <var> <value>` | Set a script variable (supports `${var}` references) |
 | `goto <label>` | Jump to a label |
-| `if_goto <var> <regex> <label> [else <label>]` | Jump conditionally |
+| `if_goto <var> <regex> <label> [else <label>]` | Jump conditionally. A braced `${name}` in the regex is replaced by that variable's value, regex-escaped, so `/^${device}$/` tests equality |
 
 **Variables**
 
