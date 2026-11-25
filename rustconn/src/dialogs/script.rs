@@ -2605,6 +2605,75 @@ mod tests {
         );
     }
 
+    fn assert_capture_rejects(input: &str) {
+        let (mut engine, mut host) = at_first_question("example-cisco-command-capture");
+        engine.on_ask_result(Some(input.to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished(), "{input}");
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("terminal length 0")),
+            "{input} must not reach the device"
+        );
+    }
+
+    #[test]
+    fn command_capture_example_accepts_only_show_commands() {
+        for bad in [
+            "reload",
+            "write erase",
+            "configure terminal",
+            "show run | redirect flash:x",
+            "SHOWX",
+        ] {
+            assert_capture_rejects(bad);
+        }
+        let (mut engine, mut host) = at_first_question("example-cisco-command-capture");
+        engine.on_ask_result(Some("show ip route | include 10".to_string()));
+        engine.pump(&mut host);
+        assert_eq!(
+            engine.pending(),
+            PendingKind::Ask,
+            "a show command is accepted"
+        );
+    }
+
+    fn assert_global_config_rejects(input: &str) {
+        let mut host = Recorder {
+            events: Vec::new(),
+            prompt: Some("SW1#".to_string()),
+        };
+        let mut engine = ScriptEngine::parse(example("example-cisco-global-config")).unwrap();
+        engine.pump(&mut host);
+        feed(&mut engine, &mut host, "SW1# ");
+        feed(&mut engine, &mut host, "SW1# ");
+        engine.on_ask_result(Some(input.to_string()));
+        engine.pump(&mut host);
+        assert!(engine.is_finished(), "{input}");
+        assert!(
+            !host
+                .events
+                .iter()
+                .any(|e| e.starts_with("send:") && e.contains("configure terminal")),
+            "{input} must not reach the device"
+        );
+    }
+
+    #[test]
+    fn global_config_example_rejects_do_reload_erase_delete() {
+        for bad in [
+            "do reload",
+            "  DO write erase",
+            "reload in 5",
+            "erase startup-config",
+            "delete flash:x",
+        ] {
+            assert_global_config_rejects(bad);
+        }
+    }
+
     #[test]
     fn command_capture_example_rejects_a_compound_command() {
         let (mut engine, mut host) = at_first_question("example-cisco-command-capture");
