@@ -2439,6 +2439,44 @@ mod tests {
         assert_eq!(host.events, vec!["print:no"]);
     }
 
+    /// Runs `set` lines plus one `if_goto` and reports whether it jumped.
+    fn if_goto_matches(sets: &str, pattern: &str) -> bool {
+        let source = format!(
+            "{sets}if_goto $typed {pattern} yes\nprint no\ngoto end\n:yes\nprint yes\n:end\n"
+        );
+        let mut host = FakeHost::default();
+        run_script(&source, &mut host);
+        host.events == vec!["print:yes"]
+    }
+
+    #[test]
+    fn if_goto_variable_is_escaped_as_a_literal() {
+        let pattern = "/^${device}$/";
+        assert!(if_goto_matches("set device a.b\nset typed a.b\n", pattern));
+        assert!(!if_goto_matches("set device a.b\nset typed axb\n", pattern));
+        assert!(!if_goto_matches("set device a|b\nset typed a\n", pattern));
+    }
+
+    #[test]
+    fn if_goto_unset_variable_is_empty() {
+        let pattern = "/^${nope}$/";
+        // `$typed` is unset too, so both sides are empty.
+        assert!(if_goto_matches("", pattern));
+        assert!(!if_goto_matches("set typed x\n", pattern));
+    }
+
+    #[test]
+    fn if_goto_dollar_stays_an_anchor() {
+        assert!(if_goto_matches("set typed ab\n", "/b$/"));
+        assert!(!if_goto_matches("set typed xa\n", "/b$/"));
+    }
+
+    #[test]
+    fn if_goto_parse_checks_the_pattern_around_variables() {
+        assert!(ScriptEngine::parse("if_goto $a /^${x}$/ l\n:l\n").is_ok());
+        assert!(ScriptEngine::parse("if_goto $a /(${x}/ l\n:l\n").is_err());
+    }
+
     #[test]
     fn ask_suspends_and_resumes() {
         let mut host = FakeHost::default();
