@@ -19,7 +19,7 @@ use gtk4::{
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
 
-use super::types::{RdpCommand, RdpConnectionState};
+use super::types::RdpCommand;
 
 /// Sends a key event via IronRDP using the fallback chain: keycode → keyval → Unicode.
 ///
@@ -130,7 +130,7 @@ impl super::EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
+            if super::types::input_allowed(embedded, current_state, view_only.get()) {
                 pressed_keys_pressed.borrow_mut().insert(keycode, keyval);
                 if using_ironrdp {
                     send_ironrdp_key(keycode, keyval, true, &ironrdp_tx);
@@ -163,7 +163,7 @@ impl super::EmbeddedRdpWidget {
 
             pressed_keys_released.borrow_mut().remove(&keycode);
 
-            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
+            if super::types::input_allowed(embedded, current_state, view_only.get()) {
                 if using_ironrdp {
                     send_ironrdp_key(keycode, keyval, false, &ironrdp_tx);
                 } else if let Some(ref thread) = *freerdp_thread.borrow() {
@@ -220,7 +220,7 @@ impl super::EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
+            if super::types::input_allowed(embedded, current_state, view_only.get()) {
                 let widget_w = f64::from(*width_motion.borrow());
                 let widget_h = f64::from(*height_motion.borrow());
                 let rdp_w = f64::from(*rdp_width_motion.borrow());
@@ -277,7 +277,7 @@ impl super::EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
+            if super::types::input_allowed(embedded, current_state, view_only.get()) {
                 let button = gesture.current_button();
 
                 let widget_w = f64::from(*width_press.borrow());
@@ -332,7 +332,7 @@ impl super::EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
+            if super::types::input_allowed(embedded, current_state, view_only.get()) {
                 let button = gesture.current_button();
 
                 let widget_w = f64::from(*width_release.borrow());
@@ -384,9 +384,7 @@ impl super::EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded
-                && current_state == RdpConnectionState::Connected
-                && !view_only.get()
+            if super::types::input_allowed(embedded, current_state, view_only.get())
                 && using_ironrdp
                 && let Some(ref tx) = *ironrdp_tx.borrow()
             {
@@ -435,7 +433,7 @@ impl super::EmbeddedRdpWidget {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
+            if super::types::input_allowed(embedded, current_state, view_only.get()) {
                 if let Some(ref thread) = *freerdp_thread.borrow() {
                     let _ = thread.send_command(RdpCommand::KeyEvent {
                         keyval: keyval.into_glib(),
@@ -448,5 +446,44 @@ impl super::EmbeddedRdpWidget {
         });
 
         self.drawing_area.add_controller(key_controller);
+
+        // Expose a "release everything held" hook so turning View Only on while
+        // the operator is mid-press releases the held keys and mouse buttons on
+        // the remote session instead of leaving them stuck (issue #450, review).
+        #[cfg(feature = "rdp-embedded")]
+        {
+            let held_pressed_keys = pressed_keys.clone();
+            let held_button_state = button_state.clone();
+            let held_is_ironrdp = self.is_ironrdp.clone();
+            let held_freerdp = self.freerdp_thread.clone();
+            let held_ironrdp_tx = self.ironrdp_command_tx.clone();
+            *self.release_held_input.borrow_mut() = Some(Box::new(move || {
+                release_all_keys(
+                    &held_pressed_keys,
+                    *held_is_ironrdp.borrow(),
+                    &held_freerdp,
+                    &held_ironrdp_tx,
+                );
+                if *held_button_state.borrow() != 0 {
+                    *held_button_state.borrow_mut() = 0;
+                    if *held_is_ironrdp.borrow() {
+                        if let Some(ref tx) = *held_ironrdp_tx.borrow() {
+                            let _ = tx.send(RdpClientCommand::PointerEvent {
+                                x: 0,
+                                y: 0,
+                                buttons: 0,
+                            });
+                        }
+                    } else if let Some(ref thread) = *held_freerdp.borrow() {
+                        let _ = thread.send_command(RdpCommand::MouseEvent {
+                            x: 0,
+                            y: 0,
+                            button: 0,
+                            pressed: false,
+                        });
+                    }
+                }
+            }));
+        }
     }
 }

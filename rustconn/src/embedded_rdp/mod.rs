@@ -272,6 +272,8 @@ pub struct EmbeddedRdpWidget {
     paste_button: Button,
     /// Ctrl+Alt+Del button
     ctrl_alt_del_button: Button,
+    /// Autotype dropdown (input buttons are disabled while View Only is on)
+    autotype_button: gtk4::MenuButton,
     /// Separator between buttons
     separator: gtk4::Separator,
     /// Drawing area for rendering RDP frames
@@ -356,6 +358,10 @@ pub struct EmbeddedRdpWidget {
     view_only: Rc<Cell<bool>>,
     /// "View Only" toggle in the session toolbar
     view_only_button: ToggleButton,
+    /// Releases any keys/mouse buttons currently held by the operator (set by the
+    /// input handlers), so turning View Only on mid-press doesn't leave them stuck
+    /// down on the remote session.
+    release_held_input: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
     /// Remote clipboard text (received from server via CLIPRDR)
     remote_clipboard_text: Rc<RefCell<Option<String>>>,
     /// Available clipboard formats from server
@@ -649,7 +655,8 @@ impl EmbeddedRdpWidget {
         let view_only_button = ToggleButton::with_label(&i18n("View Only"));
         view_only_button.add_css_class("flat");
         view_only_button.add_css_class("accent");
-        view_only_button.set_tooltip_text(Some(&i18n("Disable keyboard and mouse input")));
+        view_only_button
+            .set_tooltip_text(Some(&i18n("Observe only: block keyboard, mouse and paste")));
         view_only_button.update_property(&[gtk4::accessible::Property::Label(&i18n("View Only"))]);
         toolbar.append(&view_only_button);
 
@@ -847,6 +854,7 @@ impl EmbeddedRdpWidget {
             copy_button: copy_button.clone(),
             paste_button: paste_button.clone(),
             ctrl_alt_del_button: ctrl_alt_del_button.clone(),
+            autotype_button: autotype_button.clone(),
             separator,
             drawing_area,
             cairo_buffer,
@@ -882,6 +890,7 @@ impl EmbeddedRdpWidget {
             keyboard_hook: Rc::new(Cell::new(None)),
             view_only: Rc::new(Cell::new(false)),
             view_only_button: view_only_button.clone(),
+            release_held_input: Rc::new(RefCell::new(None)),
             remote_clipboard_text: Rc::new(RefCell::new(None)),
             remote_clipboard_formats: Rc::new(RefCell::new(Vec::new())),
             #[cfg(feature = "rdp-audio")]
@@ -943,6 +952,7 @@ impl EmbeddedRdpWidget {
             let ironrdp_tx = self.ironrdp_command_tx.clone();
             let state = self.state.clone();
             let is_embedded = self.is_embedded.clone();
+            let view_only = self.view_only.clone();
             let status_label = self.status_label.clone();
             let cb_for_callback = self.file_dnd_circuit_breaker.clone();
             let toast_overlay_ref = self.toast_overlay.clone();
@@ -959,12 +969,14 @@ impl EmbeddedRdpWidget {
                     let current_state = *state.borrow();
                     let embedded = *is_embedded.borrow();
 
-                    if current_state != RdpConnectionState::Connected || !embedded {
+                    // Dropping files announces them into the remote session — the
+                    // operator's own input — so View Only suppresses it too.
+                    if !types::input_allowed(embedded, current_state, view_only.get()) {
                         tracing::debug!(
                             protocol = "rdp",
                             ?current_state,
                             embedded,
-                            "File DnD: not connected or not embedded"
+                            "File DnD: not connected, not embedded, or view-only"
                         );
                         return;
                     }
@@ -1379,8 +1391,20 @@ impl EmbeddedRdpWidget {
                 let confirm_name = snippet.name.clone();
                 let confirm_command = snippet.command.clone();
                 let confirm_parent = self.container.clone();
+                let state = self.state.clone();
+                let is_embedded = self.is_embedded.clone();
+                let view_only = self.view_only.clone();
 
                 action.connect_activate(move |_, _| {
+                    // A snippet types a command into the remote session — the
+                    // operator's own input — so View Only suppresses it.
+                    if !types::input_allowed(
+                        *is_embedded.borrow(),
+                        *state.borrow(),
+                        view_only.get(),
+                    ) {
+                        return;
+                    }
                     if !confirm_before_run {
                         send_script();
                         return;
@@ -1490,12 +1514,30 @@ impl EmbeddedRdpWidget {
         let jiggler = self.jiggler_handles();
         let state = self.state.clone();
         let config = self.config.clone();
+        let release_held = self.release_held_input.clone();
+        // The input buttons reflect the mode (disabled while View Only is on), so
+        // the operator can see at a glance what the toggle is holding.
+        let input_buttons = [
+            self.paste_button.clone().upcast::<gtk4::Widget>(),
+            self.ctrl_alt_del_button.clone().upcast::<gtk4::Widget>(),
+            self.autotype_button.clone().upcast::<gtk4::Widget>(),
+            self.scripts_button.clone().upcast::<gtk4::Widget>(),
+            self.quick_actions_button.clone().upcast::<gtk4::Widget>(),
+        ];
         button.connect_toggled(move |toggle| {
             let active = toggle.is_active();
             view_only.set(active);
+            for widget in &input_buttons {
+                widget.set_sensitive(!active);
+            }
             if active {
                 // Observing only: hold the synthetic keep-alive input too
                 jiggler.stop();
+                // Release any keys / mouse buttons the operator is holding so they
+                // aren't stuck down on the remote session while we observe.
+                if let Some(release) = release_held.borrow().as_ref() {
+                    release();
+                }
             } else if *state.borrow() == RdpConnectionState::Connected
                 && let Some(cfg) = config.borrow().as_ref()
                 && cfg.jiggler_enabled
@@ -1504,18 +1546,6 @@ impl EmbeddedRdpWidget {
             }
             tracing::debug!(view_only = active, "[RDP] View Only toggled");
         });
-    }
-
-    /// Sets view-only mode from outside (the toolbar button does this via
-    /// signal); the input handlers pick it up on their next event.
-    pub fn set_view_only(&self, view_only: bool) {
-        self.view_only.set(view_only);
-    }
-
-    /// The toggle's button, for callers that mirror it into a header.
-    #[must_use]
-    pub fn view_only_button(&self) -> &ToggleButton {
-        &self.view_only_button
     }
 
     /// Registers GIO actions for the Autotype dropdown menu.
@@ -1563,10 +1593,24 @@ impl EmbeddedRdpWidget {
             {
                 let tx = self.ironrdp_command_tx.clone();
                 let action_id = action_def.id;
+                let state = self.state.clone();
+                let is_embedded = self.is_embedded.clone();
+                let view_only = self.view_only.clone();
                 action.connect_activate(move |_, _| {
+                    // Quick actions type hotkeys / run-dialog commands into the
+                    // remote session — the operator's own input — so View Only
+                    // suppresses them too.
+                    let allowed = types::input_allowed(
+                        *is_embedded.borrow(),
+                        *state.borrow(),
+                        view_only.get(),
+                    );
                     let Some(ref sender) = *tx.borrow() else {
                         return;
                     };
+                    if !allowed {
+                        return;
+                    }
                     // Hotkey actions (Task Manager, Settings) are pure modifier
                     // combos — sent as scancodes. Run-dialog actions type their
                     // command via Unicode autotype so they are correct on any
@@ -1628,11 +1672,23 @@ impl EmbeddedRdpWidget {
                 let tx = self.ironrdp_command_tx.clone();
                 let status_label = self.status_label.clone();
                 let cmd = command.to_string();
+                let state = self.state.clone();
+                let is_embedded = self.is_embedded.clone();
+                let view_only = self.view_only.clone();
 
                 action.connect_activate(move |_, _| {
                     let Some(ref sender) = *tx.borrow() else {
                         return;
                     };
+                    // A shell launcher types a command into the remote session —
+                    // the operator's own input — so View Only suppresses it.
+                    if !types::input_allowed(
+                        *is_embedded.borrow(),
+                        *state.borrow(),
+                        view_only.get(),
+                    ) {
+                        return;
+                    }
 
                     // Open Run, type the command via Unicode autotype (layout
                     // independent — issue #184), then press Enter.

@@ -20,6 +20,7 @@
 )]
 
 // Re-export types for external use
+pub(crate) use crate::embedded_vnc_types::input_allowed;
 pub use crate::embedded_vnc_types::{
     EmbeddedVncError, ErrorCallback, FrameCallback, STANDARD_RESOLUTIONS, StateCallback, VncConfig,
     VncConnectionState, find_best_standard_resolution,
@@ -179,20 +180,6 @@ impl EmbeddedVncWidget {
     /// to close or detach a pane.
     pub fn set_toolbar_enabled(&self, enabled: bool) {
         self.toolbar_auto_hide.set_enabled(enabled);
-    }
-
-    /// Sets view-only mode for the current session, flipping keyboard and
-    /// pointer forwarding without a reconnect.
-    ///
-    /// The session's `VncConfig` is the single source of truth: every input
-    /// path (keys, motion, clicks, Ctrl+Alt+Del) reads `view_only` from it at
-    /// event time, so the change is live. The toolbar toggle's active state is
-    /// kept in step so the button mirrors the mode it controls.
-    pub fn set_view_only(&self, view_only: bool) {
-        if let Some(cfg) = self.config.borrow_mut().as_mut() {
-            cfg.view_only = view_only;
-        }
-        self.view_only_button.set_active(view_only);
     }
 
     /// Returns the current connection state

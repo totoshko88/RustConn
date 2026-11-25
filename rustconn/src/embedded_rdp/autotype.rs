@@ -14,7 +14,6 @@ use libadwaita::prelude::*;
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
 
-use super::types::RdpConnectionState;
 use crate::i18n::{i18n, i18n_f};
 
 impl super::EmbeddedRdpWidget {
@@ -29,6 +28,7 @@ impl super::EmbeddedRdpWidget {
         let state = self.state.clone();
         let is_embedded = self.is_embedded.clone();
         let is_ironrdp = self.is_ironrdp.clone();
+        let view_only = self.view_only.clone();
         let status_label = self.status_label.clone();
         let config = self.config.clone();
 
@@ -37,7 +37,12 @@ impl super::EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if current_state != RdpConnectionState::Connected || !embedded || !using_ironrdp {
+            // Autotype types text into the remote session — the operator's own
+            // input — so View Only suppresses it too (the menu stays open so the
+            // mode is visible).
+            if !super::types::input_allowed(embedded, current_state, view_only.get())
+                || !using_ironrdp
+            {
                 tracing::debug!(
                     protocol = "rdp",
                     ?current_state,
@@ -129,6 +134,7 @@ impl super::EmbeddedRdpWidget {
         let state = self.state.clone();
         let is_embedded = self.is_embedded.clone();
         let is_ironrdp = self.is_ironrdp.clone();
+        let view_only = self.view_only.clone();
         let status_label = self.status_label.clone();
         let config = self.config.clone();
 
@@ -137,7 +143,12 @@ impl super::EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if current_state != RdpConnectionState::Connected || !embedded || !using_ironrdp {
+            // Autotype types text into the remote session — the operator's own
+            // input — so View Only suppresses it too (the dialog stays open so the
+            // mode is visible).
+            if !super::types::input_allowed(embedded, current_state, view_only.get())
+                || !using_ironrdp
+            {
                 return;
             }
 
