@@ -116,6 +116,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.26.4" date="2026-11-25">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.4</url>
+      <description>
+        <p>Version 0.26.4 - jump hosts for VNC and Remmina, script examples, device reports:</p>
+        <ul>
+          <li>VNC connections, embedded and external, now go through their Jump Host.</li>
+          <li>Remmina SSH tunnels are imported as a linked Jump Host.</li>
+          <li>Editing a cluster no longer leaves the cluster list empty.</li>
+          <li>Eleven new script examples and the rustconn-cli report command with 25 report kinds.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.26.3" date="2026-11-24">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.3</url>
       <description>

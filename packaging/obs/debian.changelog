@@ -1,3 +1,17 @@
+rustconn (0.26.4-1) unstable; urgency=medium
+  * Version bump to 0.26.4
+  * Added: Remmina SSH tunnels import as a linked Jump Host (#449, #450);
+    eleven SecureCRT-inspired script examples (TDR, guarded erase, command
+    capture, BGP peers, OUI lookup, guarded write scripts) with the caption
+    and oui verbs; rustconn-cli report with 17 further report kinds
+  * Fixed: VNC honours the connection's Jump Host, embedded and external
+    (#450), and no longer connects directly when the jump host cannot be
+    read; editing a cluster no longer leaves the list empty (#451); scripts
+    that use log no longer abort the app; Skip Duplicates keeps imported
+    profiles linked to the existing bastion
+  * Changed: rustconn-cli report runs ssh non-interactively and names failed
+    hosts
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 25 Nov 2026 12:00:00 +0200
 rustconn (0.26.3-1) unstable; urgency=medium
   * Version bump to 0.26.3
   * Fixed: sidebar status no longer stuck on "connecting" for a missing

@@ -1,4 +1,18 @@
 -------------------------------------------------------------------
+Wed Nov 25 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.4
+- Version bump to 0.26.4
+- Added: Remmina SSH tunnels import as a linked Jump Host (#449, #450);
+  eleven SecureCRT-inspired script examples (TDR, guarded erase, command
+  capture, BGP peers, OUI lookup, guarded write scripts) with the caption and
+  oui verbs; rustconn-cli report with 17 further report kinds
+- Fixed: VNC honours the connection's Jump Host, embedded and external (#450),
+  and no longer connects directly when the jump host cannot be read; editing a
+  cluster no longer leaves the list empty (#451); scripts that use log no
+  longer abort the app; Skip Duplicates keeps imported profiles linked to the
+  existing bastion
+- Changed: rustconn-cli report runs ssh non-interactively and names failed
+  hosts
+-------------------------------------------------------------------
 Tue Nov 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.3
 - Version bump to 0.26.3
 - Fixed: sidebar status no longer stuck on "connecting" for a missing client,
