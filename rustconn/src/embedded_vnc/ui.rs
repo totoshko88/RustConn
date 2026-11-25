@@ -86,7 +86,8 @@ impl EmbeddedVncWidget {
         let view_only_button = ToggleButton::with_label(&i18n("View Only"));
         view_only_button.add_css_class("flat");
         view_only_button.add_css_class("accent");
-        view_only_button.set_tooltip_text(Some(&i18n("Disable keyboard and mouse input")));
+        view_only_button
+            .set_tooltip_text(Some(&i18n("Observe only: block keyboard, mouse and paste")));
         toolbar.append(&view_only_button);
 
         // The toolbar is placed in a Revealer inside a GTK Overlay so it
@@ -774,13 +775,18 @@ impl EmbeddedVncWidget {
             let drawing_area = self.drawing_area.clone();
             let state = self.state.clone();
             let is_embedded = self.is_embedded.clone();
+            let config = self.config.clone();
             let status_label = self.status_label.clone();
 
             paste_btn.connect_clicked(move |_| {
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
+                let view_only = config.borrow().as_ref().is_some_and(|c| c.view_only);
 
-                if current_state != VncConnectionState::Connected || !embedded {
+                // Paste types the local clipboard into the remote session — the
+                // operator's own input — so View Only suppresses it (the button
+                // stays enabled so the mode is visible).
+                if !super::input_allowed(embedded, current_state, view_only) {
                     return;
                 }
 
@@ -789,11 +795,17 @@ impl EmbeddedVncWidget {
                 let clipboard = display.clipboard();
                 let tx = command_sender.clone();
                 let status = status_label.clone();
+                // Re-check View Only when the async read completes: the user can
+                // flip the toggle while the clipboard is being read.
+                let config_async = config.clone();
 
                 clipboard.read_text_async(
                     None::<&gtk4::gio::Cancellable>,
                     move |result: Result<Option<glib::GString>, glib::Error>| {
                         if let Ok(Some(text)) = result {
+                            if config_async.borrow().as_ref().is_some_and(|c| c.view_only) {
+                                return;
+                            }
                             // chars().count(), not len(): len() is the UTF-8
                             // byte count, so the log said "chars" while
                             // reporting bytes for any multibyte text. Matches
@@ -841,12 +853,16 @@ impl EmbeddedVncWidget {
         let command_sender = self.command_sender.clone();
         let state = self.state.clone();
         let is_embedded = self.is_embedded.clone();
+        let config = self.config.clone();
 
         button.connect_clicked(move |_| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
+            let view_only = config.borrow().as_ref().is_some_and(|c| c.view_only);
 
-            if current_state != VncConnectionState::Connected || !embedded {
+            // Ctrl+Alt+Del is the operator's own input, so View Only suppresses
+            // it too (the button stays enabled so the mode is visible).
+            if !super::input_allowed(embedded, current_state, view_only) {
                 return;
             }
 
@@ -874,11 +890,20 @@ impl EmbeddedVncWidget {
     /// again would just re-enter this handler.
     fn setup_view_only_button(&self, button: &ToggleButton) {
         let config = self.config.clone();
+        // The input buttons reflect the mode (disabled while View Only is on), so
+        // the operator can see at a glance what the toggle is holding.
+        let input_buttons = [
+            self.paste_button.clone().upcast::<gtk4::Widget>(),
+            self.ctrl_alt_del_button.clone().upcast::<gtk4::Widget>(),
+        ];
 
         button.connect_toggled(move |toggle| {
             let view_only = toggle.is_active();
             if let Some(cfg) = config.borrow_mut().as_mut() {
                 cfg.view_only = view_only;
+            }
+            for widget in &input_buttons {
+                widget.set_sensitive(!view_only);
             }
             tracing::debug!(view_only, "[VNC] View Only toggled");
         });

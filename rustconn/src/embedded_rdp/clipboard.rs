@@ -105,6 +105,7 @@ impl super::EmbeddedRdpWidget {
             let is_ironrdp = self.is_ironrdp.clone();
             let status_label = self.status_label.clone();
             let config = self.config.clone();
+            let view_only = self.view_only.clone();
 
             paste_btn.connect_clicked(move |_| {
                 let current_state = *state.borrow();
@@ -118,7 +119,10 @@ impl super::EmbeddedRdpWidget {
                     return;
                 }
 
-                if current_state != RdpConnectionState::Connected || !embedded {
+                // Paste types the local clipboard into the remote session — the
+                // operator's own input — so View Only suppresses it (the button
+                // stays enabled so the mode is visible).
+                if !super::types::input_allowed(embedded, current_state, view_only.get()) {
                     tracing::debug!(
                         protocol = "rdp",
                         ?current_state,
@@ -243,13 +247,16 @@ impl super::EmbeddedRdpWidget {
             let state = self.state.clone();
             let is_embedded = self.is_embedded.clone();
             let is_ironrdp = self.is_ironrdp.clone();
+            let view_only = self.view_only.clone();
 
             button.connect_clicked(move |_| {
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
                 let using_ironrdp = *is_ironrdp.borrow();
 
-                if current_state != RdpConnectionState::Connected || !embedded {
+                // Ctrl+Alt+Del is the operator's own input, so View Only suppresses
+                // it too (the button stays enabled so the mode is visible).
+                if !super::types::input_allowed(embedded, current_state, view_only.get()) {
                     return;
                 }
 
@@ -273,12 +280,15 @@ impl super::EmbeddedRdpWidget {
             let freerdp_thread = self.freerdp_thread.clone();
             let state = self.state.clone();
             let is_embedded = self.is_embedded.clone();
+            let view_only = self.view_only.clone();
 
             button.connect_clicked(move |_| {
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
 
-                if current_state != RdpConnectionState::Connected || !embedded {
+                // Ctrl+Alt+Del is the operator's own input, so View Only suppresses
+                // it too (the button stays enabled so the mode is visible).
+                if !super::types::input_allowed(embedded, current_state, view_only.get()) {
                     return;
                 }
 

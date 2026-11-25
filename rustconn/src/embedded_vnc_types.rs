@@ -104,6 +104,18 @@ impl std::fmt::Display for VncConnectionState {
     }
 }
 
+/// Whether a user-initiated input command may reach the remote VNC session.
+///
+/// The single gate shared by every input path — the keyboard, mouse and wheel
+/// handlers and the toolbar Paste / Ctrl+Alt+Del buttons — so "View Only"
+/// blocks the same set of channels everywhere instead of each handler
+/// re-deriving it. Not embedded, or not connected, sends nothing; `view_only`
+/// suppresses the operator's own input while inbound clipboard sync is allowed.
+#[must_use]
+pub(crate) fn input_allowed(embedded: bool, state: VncConnectionState, view_only: bool) -> bool {
+    embedded && state == VncConnectionState::Connected && !view_only
+}
+
 /// VNC connection configuration
 #[derive(Debug, Clone, Default)]
 #[expect(
@@ -255,3 +267,24 @@ pub type ErrorCallback = Box<dyn Fn(&str) + 'static>;
 
 /// Callback type for frame update notifications
 pub type FrameCallback = Box<dyn Fn(u32, u32, u32, u32) + 'static>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_allowed_gate() {
+        // Not connected, or not embedded: nothing is sent regardless of view-only.
+        assert!(!input_allowed(
+            true,
+            VncConnectionState::Disconnected,
+            false
+        ));
+        assert!(!input_allowed(true, VncConnectionState::Connecting, false));
+        assert!(!input_allowed(false, VncConnectionState::Connected, false));
+        // Connected + embedded + not view-only: input flows.
+        assert!(input_allowed(true, VncConnectionState::Connected, false));
+        // View Only suppresses the operator's own input.
+        assert!(!input_allowed(true, VncConnectionState::Connected, true));
+    }
+}
