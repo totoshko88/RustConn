@@ -1264,7 +1264,6 @@ impl MainWindow {
                     };
                     state_ref.get_connection(connection_id).is_some()
                 });
-
             // The tab bar shows the connection's custom icon (an emoji or GTK
             // icon name from its settings) the way the sidebar row does; a
             // connection without one keeps the protocol icon.
@@ -1280,6 +1279,21 @@ impl MainWindow {
                         .get_connection(connection_id)
                         .and_then(|connection| connection.icon.clone())
                         .filter(|icon| !icon.trim().is_empty())
+                });
+
+            // **Rename…** on a connection tab offers the connection's own name as
+            // the reset-to-default (an empty label goes back to it).
+            let state_weak = Rc::downgrade(&main_window.state);
+            main_window
+                .terminal_notebook
+                .set_tab_connection_name_provider(move |connection_id| {
+                    let state = state_weak.upgrade()?;
+                    let Ok(state_ref) = state.try_borrow() else {
+                        return None;
+                    };
+                    state_ref
+                        .get_connection(connection_id)
+                        .map(|c| c.name.clone())
                 });
         }
 

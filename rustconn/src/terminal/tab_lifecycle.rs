@@ -916,7 +916,15 @@ impl TerminalNotebook {
         // name, so a tab that came back from a split pane silently lost its group
         // label — visible only in the tooltip — while still being a member of the
         // group for every operation. Nothing else re-applies it on this path.
-        page.set_title(&tab_title(&title, group.as_deref()));
+        // The eye marker is rebuilt from the session's state, not the title text:
+        // a view-only tab that detaches and comes back keeps it.
+        let title = tab_title(&title, group.as_deref());
+        let title = if self.is_view_only_session(session_id) {
+            with_title_marker(&title, VIEW_ONLY_TITLE_MARKER, true, ALL_TITLE_MARKERS)
+        } else {
+            title
+        };
+        page.set_title(&title);
         page.set_icon(Some(&crate::icon_render::tab_icon(
             &self.connection_icon_for(connection_id),
             Self::get_protocol_icon(&protocol),

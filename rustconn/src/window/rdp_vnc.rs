@@ -719,6 +719,13 @@ fn start_embedded_rdp_session(
         crate::embedded_rdp::RdpConnectionState::Connecting => {}
     });
 
+    // Mirror the View Only toggle onto the tab (eye marker) for as long as it
+    // lasts. Not written to the connection, so it is dropped on the next start.
+    let notebook_for_view_only = notebook.clone();
+    embedded_widget.connect_view_only_changed(move |view_only| {
+        notebook_for_view_only.set_view_only_marker(session_id, view_only);
+    });
+
     // Connect error callback — shows specific error message as toast
     let notebook_for_error = notebook.clone();
     let state_for_error = state.clone();
@@ -1720,6 +1727,14 @@ fn start_vnc_session_internal(
             if let Err(e) = widget_for_reconnect.reconnect() {
                 tracing::error!(%e, "VNC reconnect failed");
             }
+        });
+
+        // Mirror the View Only toggle onto the tab (eye marker) for as long as it
+        // lasts. Not written to the connection, so it is dropped on the next
+        // start — the same way the toolbar toggle itself is.
+        let notebook_for_view_only = notebook.clone();
+        vnc_widget.connect_view_only_changed(move |view_only| {
+            notebook_for_view_only.set_view_only_marker(session_id, view_only);
         });
 
         // Initiate connection with VNC config

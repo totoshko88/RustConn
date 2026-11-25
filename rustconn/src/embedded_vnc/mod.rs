@@ -134,6 +134,9 @@ pub struct EmbeddedVncWidget {
     on_frame_update: Rc<RefCell<Option<FrameCallback>>>,
     /// Reconnect callback
     on_reconnect: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
+    /// View Only callback — fired whenever the toggle changes the live session's
+    /// read-only mode, so the host can mirror it (e.g. the tab's eye marker).
+    on_view_only_changed: Rc<RefCell<Option<Box<dyn Fn(bool) + 'static>>>>,
     /// Reconnect banner (shown when disconnected, at bottom of container)
     reconnect_banner: GtkBox,
     /// Reconnect button inside the banner

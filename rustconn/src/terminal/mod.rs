@@ -84,9 +84,10 @@ use libadwaita::prelude::*;
 use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends, RdpKeyboardHook};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
-    BROADCAST_TITLE_MARKER, ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SCRIPT_TITLE_MARKER,
-    SHARED_TITLE_MARKER, SessionWidgetStorage, TerminalSession, group_still_in_use,
-    local_shell_label, regroup_title, tab_title, with_title_marker,
+    ALL_TITLE_MARKERS, BROADCAST_TITLE_MARKER, ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster,
+    SCRIPT_TITLE_MARKER, SHARED_TITLE_MARKER, SessionWidgetStorage, TerminalSession,
+    VIEW_ONLY_TITLE_MARKER, group_still_in_use, leading_marker_run, local_shell_label,
+    regroup_title, tab_title, with_title_marker,
 };
 use uuid::Uuid;
 use vte4::Terminal;
@@ -332,6 +333,7 @@ pub struct TerminalNotebook {
     /// connection data, like `tab_connection_menu`; `None` keeps the protocol
     /// icon, which is what quick/local sessions without a saved connection get.
     connection_icon: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<String>>>>>,
+    tab_connection_name: Rc<RefCell<Option<tab_menu::TabConnectionNameProvider>>>,
     /// Whether keyboard passthrough is on; mirrors `win.toggle-passthrough`.
     keyboard_passthrough: Rc<std::cell::Cell<bool>>,
     /// Whether to automatically capture system shortcuts (Alt+Tab, Super)
@@ -499,6 +501,9 @@ pub struct TerminalNotebook {
     script_recording: Rc<RefCell<Option<script_recorder::ActiveScriptRecording>>>,
     /// Sessions whose output is being shared read-only; drives the tab menu.
     shared_sessions: Rc<RefCell<HashSet<Uuid>>>,
+    /// Sessions in View Only; the tab's eye marker is derived from this set
+    /// rather than from the title text, so a rebuilt title keeps the eye.
+    view_only_sessions: Rc<RefCell<HashSet<Uuid>>>,
     /// Shared script section for terminal context menus. One live model shared
     /// by every terminal, rebuilt when recording starts or stops so the single
     /// item's label can flip between Record and Stop.
@@ -711,6 +716,7 @@ impl TerminalNotebook {
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),
             connection_icon: Rc::new(RefCell::new(None)),
+            tab_connection_name: Rc::new(RefCell::new(None)),
             keyboard_passthrough: Rc::new(std::cell::Cell::new(false)),
             auto_capture_shortcuts: Rc::new(std::cell::Cell::new(true)),
             focused_viewer: Rc::new(RefCell::new(None)),
@@ -743,6 +749,7 @@ impl TerminalNotebook {
             session_highlight_rules: Rc::new(RefCell::new(HashMap::new())),
             script_recording: Rc::new(RefCell::new(None)),
             shared_sessions: Rc::new(RefCell::new(HashSet::new())),
+            view_only_sessions: Rc::new(RefCell::new(HashSet::new())),
             script_menu_section: Rc::new(gio::Menu::new()),
             highlight_overlays: Rc::new(RefCell::new(HashMap::new())),
             session_themes: Rc::new(RefCell::new(HashMap::new())),
