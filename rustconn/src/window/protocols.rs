@@ -1521,6 +1521,13 @@ fn start_vnc_connection_internal(
             Err(error) => {
                 tracing::error!(%error, "SSH tunnel for VNC failed");
                 sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                if let Ok(mut state_mut) = state.try_borrow_mut() {
+                    state_mut.record_connection_attempt_failed(
+                        &conn,
+                        conn.username.as_deref(),
+                        &error.to_string(),
+                    );
+                }
                 crate::toast::show_error_toast_on_active_window(&i18n_f(
                     "Could not open the SSH tunnel: {}",
                     &[&error.to_string()],
