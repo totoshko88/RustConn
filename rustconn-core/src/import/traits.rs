@@ -359,6 +359,25 @@ impl ImportResult {
         )
     }
 
+    /// Drops the connections whose lowercase name is a key of `existing`
+    /// (name -> id of the connection already saved under it).
+    ///
+    /// A kept connection whose jump host was dropped is re-pointed at the
+    /// existing connection, so a skipped bastion never leaves a dangling link.
+    pub fn skip_existing(&mut self, existing: &HashMap<String, Uuid>) {
+        let remap: HashMap<Uuid, Uuid> = self
+            .connections
+            .iter()
+            .filter_map(|c| Some((c.id, *existing.get(&c.name.to_lowercase())?)))
+            .collect();
+        self.connections.retain(|c| !remap.contains_key(&c.id));
+        for conn in &mut self.connections {
+            if let Some(new_id) = conn.jump_host_id().and_then(|id| remap.get(&id)) {
+                conn.set_jump_host_id(*new_id);
+            }
+        }
+    }
+
     /// Adds a connection to the result
     pub fn add_connection(&mut self, connection: Connection) {
         // Warn about imported connections with automation/expect rules (TASK-005)
@@ -795,5 +814,26 @@ pub trait ImportSource: Send + Sync {
         }
 
         Ok(combined_result)
+    }
+}
+
+#[cfg(test)]
+mod skip_existing_tests {
+    use super::*;
+
+    #[test]
+    fn skipped_bastion_relinks_kept_connection_to_the_existing_one() {
+        let bastion = Connection::new_ssh("root@bastion (SSH tunnel)".into(), "bastion".into(), 22);
+        let mut rdp = Connection::new_rdp("new-rdp".into(), "10.0.0.5".into(), 3389);
+        rdp.set_jump_host_id(bastion.id);
+        let existing_id = Uuid::new_v4();
+        let mut result = ImportResult::new();
+        result.connections = vec![bastion, rdp];
+
+        let existing = HashMap::from([("root@bastion (ssh tunnel)".to_string(), existing_id)]);
+        result.skip_existing(&existing);
+
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.connections[0].jump_host_id(), Some(existing_id));
     }
 }
