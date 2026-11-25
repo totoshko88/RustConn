@@ -20,6 +20,7 @@
 )]
 
 // Re-export types for external use
+pub(crate) use crate::embedded_vnc_types::input_allowed;
 pub use crate::embedded_vnc_types::{
     EmbeddedVncError, ErrorCallback, FrameCallback, STANDARD_RESOLUTIONS, StateCallback, VncConfig,
     VncConnectionState, find_best_standard_resolution,
@@ -33,7 +34,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex as StdMutex};
 
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, DrawingArea, Label, glib};
+use gtk4::{Box as GtkBox, Button, DrawingArea, Label, ToggleButton, glib};
 use rustconn_core::vnc_client::is_embedded_vnc_available;
 #[cfg(feature = "vnc-embedded")]
 use rustconn_core::vnc_client::{
@@ -101,6 +102,8 @@ pub struct EmbeddedVncWidget {
     paste_button: Button,
     /// Ctrl+Alt+Del button
     ctrl_alt_del_button: Button,
+    /// View Only toggle — mirrors and edits `VncConfig::view_only` for the live session
+    view_only_button: ToggleButton,
     /// Separator between buttons
     separator: gtk4::Separator,
     /// Drawing area for rendering VNC frames
@@ -212,6 +215,7 @@ impl EmbeddedVncWidget {
         let copy_button = self.copy_button.clone();
         let paste_button = self.paste_button.clone();
         let ctrl_alt_del_button = self.ctrl_alt_del_button.clone();
+        let view_only_button = self.view_only_button.clone();
         let separator = self.separator.clone();
         let toolbar_auto_hide = self.toolbar_auto_hide.clone();
         let drawing_area = self.drawing_area.clone();
@@ -230,6 +234,7 @@ impl EmbeddedVncWidget {
             copy_button.set_visible(!show_reconnect);
             paste_button.set_visible(!show_reconnect);
             ctrl_alt_del_button.set_visible(!show_reconnect);
+            view_only_button.set_visible(!show_reconnect);
             separator.set_visible(!show_reconnect);
 
             // Hide toolbar overlay when disconnected; show briefly when connected.
@@ -338,6 +343,11 @@ impl EmbeddedVncWidget {
     pub fn connect(&self, config: &VncConfig) -> Result<(), EmbeddedVncError> {
         // Store configuration
         *self.config.borrow_mut() = Some(config.clone());
+
+        // Bring the toolbar toggle in step with the config's mode. `set_active`
+        // emits "toggled" only on change, and the handler writes the same value
+        // back into the config just stored, so the two stay consistent.
+        self.view_only_button.set_active(config.view_only);
 
         // Update state
         self.set_state(VncConnectionState::Connecting);

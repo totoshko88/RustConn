@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.5] - Unreleased
+
+### Added
+- **View Only toggle in the embedded VNC and RDP session toolbars** — the floating toolbar next to Copy, Paste and Ctrl+Alt+Del now carries a View Only toggle that switches the operator's own input off and on for the running session without a reconnect, in the embedded VNC and the embedded RDP sessions alike. While active it blocks the keyboard, mouse and wheel, the Paste and Ctrl+Alt+Del buttons, RDP Autotype / quick actions / scripts, the outbound clipboard (inbound clipboard sync is still allowed) and file drag-and-drop, and pauses the RDP jiggler — the input buttons dim so the state is visible. Held keys and mouse buttons are released when the mode turns on, and the toggle is per session: a fresh connection resets it to off, so the VNC View-Only setting from the connection dialog applies on connect and the toggle then takes over in place. (PR #454, contributed by asgitcode-tech; `rustconn/src/embedded_vnc/ui.rs`, `rustconn/src/embedded_vnc/mod.rs`, `rustconn/src/embedded_rdp/mod.rs`, `rustconn/src/embedded_rdp/input.rs`, `rustconn/src/embedded_rdp/clipboard.rs`, `rustconn/src/embedded_rdp/autotype.rs`, `rustconn/src/embedded_rdp/connection.rs`)
+
 ## [0.26.4] - 2026-11-25
 
 ### Added

@@ -89,6 +89,19 @@ impl std::fmt::Display for RdpConnectionState {
     }
 }
 
+/// Whether a user-initiated input command may reach the remote RDP session.
+///
+/// This is the single gate shared by every input path — the keyboard, mouse
+/// and wheel handlers, the toolbar Paste / Ctrl+Alt+Del buttons, Autotype,
+/// quick actions, scripts and the outbound clipboard — so "View Only" blocks
+/// the same set of channels everywhere instead of each handler re-deriving it.
+/// Not embedded, or not connected, sends nothing; `view_only` suppresses the
+/// operator's own input while inbound clipboard sync is still allowed.
+#[must_use]
+pub(crate) fn input_allowed(embedded: bool, state: RdpConnectionState, view_only: bool) -> bool {
+    embedded && state == RdpConnectionState::Connected && !view_only
+}
+
 /// A shared folder for RDP drive redirection
 #[derive(Debug, Clone)]
 pub struct EmbeddedSharedFolder {
@@ -808,6 +821,22 @@ mod tests {
         assert_eq!(RdpConnectionState::Connecting.to_string(), "Connecting");
         assert_eq!(RdpConnectionState::Connected.to_string(), "Connected");
         assert_eq!(RdpConnectionState::Error.to_string(), "Error");
+    }
+
+    #[test]
+    fn test_input_allowed_gate() {
+        // Not connected, or not embedded: nothing is sent regardless of view-only.
+        assert!(!input_allowed(
+            true,
+            RdpConnectionState::Disconnected,
+            false
+        ));
+        assert!(!input_allowed(true, RdpConnectionState::Connecting, false));
+        assert!(!input_allowed(false, RdpConnectionState::Connected, false));
+        // Connected + embedded + not view-only: input flows.
+        assert!(input_allowed(true, RdpConnectionState::Connected, false));
+        // View Only suppresses the operator's own input.
+        assert!(!input_allowed(true, RdpConnectionState::Connected, true));
     }
 
     #[test]

@@ -1460,6 +1460,8 @@ impl super::EmbeddedRdpWidget {
         let is_embedded = self.is_embedded.clone();
         let is_ironrdp = self.is_ironrdp.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
+        let view_only = self.view_only.clone();
+        let view_only_button = self.view_only_button.clone();
         let remote_clipboard_text = self.remote_clipboard_text.clone();
         let remote_clipboard_formats = self.remote_clipboard_formats.clone();
         let copy_button = self.copy_button.clone();
@@ -1946,14 +1948,25 @@ impl super::EmbeddedRdpWidget {
                                     callback(RdpConnectionState::Connected);
                                 }
 
+                                // The View Only toggle is per-session, not per-connection:
+                                // a fresh connection starts observing normally, so
+                                // reset it to off (the toggle's handler keeps the
+                                // jiggler and the input gate in step).
+                                view_only_button.set_active(false);
+
                                 // Arm the mouse jiggler now: embedded mode never
                                 // routes a Connected transition through set_state,
                                 // so this is the only place it can start (#185).
-                                if let Some(interval) = config
-                                    .borrow()
-                                    .as_ref()
-                                    .filter(|c| c.jiggler_enabled)
-                                    .map(|c| c.jiggler_interval_secs)
+                                // A new connection resets to normal input (below),
+                                // so only arm when view-only is off — otherwise a
+                                // reconnect would re-move the cursor while we
+                                // observe.
+                                if !view_only.get()
+                                    && let Some(interval) = config
+                                        .borrow()
+                                        .as_ref()
+                                        .filter(|c| c.jiggler_enabled)
+                                        .map(|c| c.jiggler_interval_secs)
                                 {
                                     jiggler.start(interval);
                                 }
@@ -2086,12 +2099,17 @@ impl super::EmbeddedRdpWidget {
                                 }
                             }
                             RdpClientEvent::ClipboardDataRequest(format) => {
-                                if !clipboard_sharing_enabled(&config) {
+                                // The server asks for our clipboard content — an
+                                // outbound send. In View Only we block outbound
+                                // clipboard (but still allow inbound sync) so the
+                                // observation session can't reach back.
+                                if !clipboard_sharing_enabled(&config) || view_only.get() {
                                     tracing::debug!(
                                         protocol = "rdp",
                                         format_id = format.id,
+                                        view_only = view_only.get(),
                                         "Ignoring server clipboard request — \
-                                         sharing disabled for this profile"
+                                         sharing off or view-only"
                                     );
                                     continue;
                                 }
@@ -3523,6 +3541,8 @@ Open Settings → Connection → Media Codecs to re-download it.",
         // event path sets the state directly, bypassing set_state (#185).
         let jiggler = self.jiggler_handles();
         let jiggler_config = self.config.clone();
+        let view_only = self.view_only.clone();
+        let view_only_button = self.view_only_button.clone();
 
         glib::timeout_add_local(std::time::Duration::from_millis(33), move || {
             // Check if we're still in embedded mode, and still this attempt
@@ -3546,11 +3566,20 @@ Open Settings → Connection → Media Codecs to re-download it.",
                         super::with_callback(&on_state_changed, |callback| {
                             callback(RdpConnectionState::Connected);
                         });
-                        if let Some(interval) = jiggler_config
-                            .borrow()
-                            .as_ref()
-                            .filter(|c| c.jiggler_enabled)
-                            .map(|c| c.jiggler_interval_secs)
+                        // The View Only toggle is per-session, not per-connection:
+                        // a fresh connection starts observing normally, so reset
+                        // it to off (the toggle's handler keeps the jiggler and the
+                        // input gate in step).
+                        view_only_button.set_active(false);
+                        // A new connection resets to normal input (below), so only
+                        // arm when view-only is off — otherwise a reconnect would
+                        // re-move the cursor while we observe.
+                        if !view_only.get()
+                            && let Some(interval) = jiggler_config
+                                .borrow()
+                                .as_ref()
+                                .filter(|c| c.jiggler_enabled)
+                                .map(|c| c.jiggler_interval_secs)
                         {
                             jiggler.start(interval);
                         }
