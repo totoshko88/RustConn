@@ -85,16 +85,14 @@ impl TerminalNotebook {
     /// repeated calls never double it, and a tooltip line is kept in sync so the
     /// membership is discoverable on hover (issue #329).
     pub fn set_broadcast_member_marker(&self, session_id: Uuid, member: bool) {
-        const MARKER: &str = BROADCAST_TITLE_MARKER;
-
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let title = page.title().to_string();
-            let base = title.strip_prefix(MARKER).unwrap_or(&title);
-            if member {
-                page.set_title(&format!("{MARKER}{base}"));
-            } else {
-                page.set_title(base);
-            }
+            page.set_title(&with_title_marker(
+                &title,
+                BROADCAST_TITLE_MARKER,
+                member,
+                ALL_TITLE_MARKERS,
+            ));
 
             let tooltip = page.tooltip().unwrap_or_default().to_string();
             page.set_tooltip(&Self::broadcast_tooltip(&tooltip, member));
@@ -119,11 +117,7 @@ impl TerminalNotebook {
                 &title,
                 SHARED_TITLE_MARKER,
                 shared,
-                &[
-                    BROADCAST_TITLE_MARKER,
-                    SHARED_TITLE_MARKER,
-                    SCRIPT_TITLE_MARKER,
-                ],
+                ALL_TITLE_MARKERS,
             ));
         }
         // The ◉ prefix is a glyph; give assistive technology the meaning too.
@@ -137,6 +131,41 @@ impl TerminalNotebook {
                 terminal.reset_property(gtk4::AccessibleProperty::Description);
             }
         }
+    }
+
+    /// Marks or unmarks a tab as View Only (read-only) while it lasts.
+    ///
+    /// The tab title carries a `👁 ` prefix — added or stripped by the same
+    /// marker machinery as the broadcast and shared markers, so toggling it
+    /// never disturbs them — and reads in the tab strip without a session
+    /// toolbar. It is not written to the connection, so it is dropped on the
+    /// next start, the way the toolbar toggle itself is.
+    pub fn set_view_only_marker(&self, session_id: Uuid, on: bool) {
+        // The state, not the title, is the source of truth for View Only: the
+        // title is rebuilt from `info.name` on a restore or a rename, and the
+        // eye has to come back even then. `view_only_sessions` survives both,
+        // the way `shared_sessions` does for the shared marker.
+        if on {
+            self.view_only_sessions.borrow_mut().insert(session_id);
+        } else {
+            self.view_only_sessions.borrow_mut().remove(&session_id);
+        }
+        if let Some(page) = self.sessions.borrow().get(&session_id) {
+            let title = page.title().to_string();
+            page.set_title(&with_title_marker(
+                &title,
+                VIEW_ONLY_TITLE_MARKER,
+                on,
+                ALL_TITLE_MARKERS,
+            ));
+        }
+    }
+
+    /// Whether a session is currently View Only, from the notebook's state set
+    /// rather than the tab title, so a rebuilt title can re-derive the eye.
+    #[must_use]
+    pub(super) fn is_view_only_session(&self, session_id: Uuid) -> bool {
+        self.view_only_sessions.borrow().contains(&session_id)
     }
 
     /// Re-appends the lines a tooltip mutator lifted out, in their fixed order:
@@ -345,7 +374,15 @@ impl TerminalNotebook {
         let page = chrome.sessions.borrow().get(&session_id).cloned();
         let retitled = page.is_some();
         if let Some(page) = page {
-            page.set_title(&tab_title(label, group.as_deref()));
+            // Replace only the name part of the title: the eye and the other
+            // leading markers the session carries stay through the rename,
+            // instead of being rebuilt out of the name and group alone.
+            let current_title = page.title().to_string();
+            let (_, marker_run) = leading_marker_run(&current_title, ALL_TITLE_MARKERS);
+            page.set_title(&format!(
+                "{marker_run}{}",
+                tab_title(label, group.as_deref())
+            ));
             // A split tab's header, panes and directory lines are put back by
             // the refresh below.
             let old_tooltip = page.tooltip().unwrap_or_default();

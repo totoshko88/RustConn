@@ -75,6 +75,11 @@ pub struct TabMenuState {
 /// can offer **Edit Connection…** only when there is one to edit (issue #357).
 pub(crate) type TabConnectionMenuProvider = Rc<dyn Fn(Uuid) -> bool>;
 
+/// Resolves a connection id to its saved name, so **Rename…** on a connection
+/// tab can offer the connection's own name as the reset-to-default (an empty
+/// label goes back to it rather than leaving the tab untitled).
+pub(crate) type TabConnectionNameProvider = Rc<dyn Fn(Uuid) -> Option<String>>;
+
 /// Reports whether the detach section is offered for a verdict.
 ///
 /// Only an `Allowed` verdict shows "Move to New Window". Every blocking
@@ -177,6 +182,7 @@ impl TerminalNotebook {
         let detach_hooks_for_menu = self.detach_hooks();
         let broadcast_membership_for_menu = self.tab_broadcast_membership.clone();
         let connection_menu_for_menu = self.tab_connection_menu.clone();
+        let connection_name_for_menu = self.tab_connection_name.clone();
         let disconnected_for_menu = self.disconnected_sessions.clone();
         let directional_close_for_menu = self.show_directional_close.clone();
         let split_tab_titles_for_menu = self.split_tab_titles.clone();
@@ -463,6 +469,7 @@ impl TerminalNotebook {
                         old_group.as_deref(),
                         Some(&group_name),
                         &[
+                            VIEW_ONLY_TITLE_MARKER,
                             BROADCAST_TITLE_MARKER,
                             SHARED_TITLE_MARKER,
                             SCRIPT_TITLE_MARKER,
@@ -522,10 +529,11 @@ impl TerminalNotebook {
         });
         action_group.add_action(&set_group_action);
 
-        // "Rename Tab…" action — gives a local shell tab a title of its own.
-        // The label lives on the session, so it reaches the tab chrome, the
+        // "Rename Tab…" action — gives a tab a title of its own. One item serves
+        // both local-shell tabs (which open untitled) and saved-connection tabs;
+        // the label lives on the session, so it reaches the tab chrome, the
         // split pane header and the session-restore snapshot from one place.
-        let rename_label_action = gio::SimpleAction::new("rename-label", None);
+        let rename_label_action = gio::SimpleAction::new("rename-tab-label", None);
         let context_page_rename = context_page.clone();
         let chrome = self.tab_chrome();
 
@@ -540,14 +548,16 @@ impl TerminalNotebook {
             // A split tab is named after its focused pane (issue #421), which
             // may hold a guest rather than the tab's owner. The dialog edits the
             // name the user reads in the tab bar, so it targets that session —
-            // through the same check the menu gate made, so a saved connection
-            // focused since the menu opened is never relabelled from here.
+            // through the same check the menu gate made. A local shell or a
+            // saved connection may be relabelled; the other tab kinds may not.
             let Some(session_id) =
                 super::split_title::rename_tab_target(split_tab_titles, tab_session, |id| {
                     session_info
                         .borrow()
                         .get(&id)
-                        .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
+                        .is_some_and(|i| {
+                            i.protocol == LOCAL_SHELL_PROTOCOL || i.connection_id != Uuid::nil()
+                        })
                 })
             else {
                 return;
@@ -557,11 +567,24 @@ impl TerminalNotebook {
                 .borrow()
                 .get(&session_id)
                 .map_or_else(String::new, |info| info.name.clone());
+            // The reset path reads the tab kind once, outside the commit closure:
+            // a local shell goes back to its default name, a saved connection to
+            // the connection's own name.
+            let (is_local_shell, connection_id) = session_info
+                .borrow()
+                .get(&session_id)
+                .map(|info| {
+                    (
+                        info.protocol == LOCAL_SHELL_PROTOCOL,
+                        info.connection_id,
+                    )
+                })
+                .unwrap_or((true, Uuid::nil()));
 
             let dialog = adw::AlertDialog::builder()
                 .heading(i18n("Rename Tab"))
                 .body(i18n(
-                    "The label names this tab only. Leave it empty to go back to the default name.",
+                    "The label names this tab only. Leave it empty to go back to the tab's own name.",
                 ))
                 .build();
 
@@ -569,7 +592,13 @@ impl TerminalNotebook {
                 .text(&current)
                 .placeholder_text(i18n("Tab name"))
                 .hexpand(true)
+                .max_length(64)
                 .build();
+            // The entry is the dialog's labelled control, so assistive technology
+            // announces it — the placeholder alone is not read when it is filled.
+            entry.update_property(&[gtk4::accessible::Property::Label(
+                &i18n("Tab name"),
+            )]);
             dialog.set_extra_child(Some(&entry));
             dialog.add_response("cancel", &i18n("Cancel"));
             dialog.add_response("apply", &i18n("Apply"));
@@ -581,14 +610,34 @@ impl TerminalNotebook {
             // so it may run again and cannot hand its own captures to the
             // one-shot response handler.
             let chrome_for_apply = chrome.clone();
+            let name_provider = connection_name_for_menu.clone();
 
             // One commit path, reached by the "apply" response and by Enter in
-            // the entry alike. An empty entry resets the title rather than
-            // leaving the tab untitled, which the tab bar cannot show apart
-            // from a broken tab.
+            // the entry alike. An empty entry resets the title to the tab's own
+            // name — the default for a local shell, the connection's saved name
+            // for a connection — rather than leaving the tab untitled, which the
+            // tab bar cannot show apart from a broken tab.
             let commit_entry = entry.clone();
             let commit: Rc<dyn Fn()> = Rc::new(move || {
-                let label = local_shell_label(&commit_entry.text()).to_owned();
+                let text = commit_entry.text().trim().to_string();
+                let label = if text.is_empty() {
+                    if is_local_shell {
+                        local_shell_label("").to_owned()
+                    } else {
+                        name_provider
+                            .borrow()
+                            .as_ref()
+                            .and_then(|p| p(connection_id))
+                            .unwrap_or_else(|| current.clone())
+                    }
+                } else {
+                    text
+                };
+                // If neither a typed label nor a fallback name is available,
+                // keep the tab as it is rather than setting it untitled.
+                if label.trim().is_empty() {
+                    return;
+                }
                 Self::apply_session_label(&chrome_for_apply, session_id, &label);
                 tracing::debug!(session_id = %session_id, label, "Tab relabelled");
             });
@@ -670,6 +719,7 @@ impl TerminalNotebook {
                     old_group.as_deref(),
                     None,
                     &[
+                        VIEW_ONLY_TITLE_MARKER,
                         BROADCAST_TITLE_MARKER,
                         SHARED_TITLE_MARKER,
                         SCRIPT_TITLE_MARKER,
@@ -1288,14 +1338,15 @@ impl TerminalNotebook {
         }
         menu.append_section(None, &pin_section);
 
-        // Label section — offered only for a local shell tab. Every local shell
-        // is titled "Local Shell" until the user says otherwise, so without
-        // this two of them are told apart by nothing but the shell they run.
-        // A tab with a saved connection is renamed by editing that connection,
-        // so an item here would be a second, divergent way to do the same job.
-        if state.is_local_shell {
+        // Label section. Offered for a local shell tab — every local shell is
+        // titled "Local Shell" until the user says otherwise, so without this
+        // two of them are told apart by nothing but the shell they run — and
+        // for a saved-connection tab, where it relabels this tab only (until
+        // the next start), distinct from editing the connection itself. One
+        // item, one dialog, for both.
+        if state.is_local_shell || state.connection.is_some() {
             let label_section = gio::Menu::new();
-            label_section.append(Some(&i18n("Rename Tab…")), Some("tab.rename-label"));
+            label_section.append(Some(&i18n("Rename Tab…")), Some("tab.rename-tab-label"));
             menu.append_section(None, &label_section);
         }
 

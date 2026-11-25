@@ -485,12 +485,22 @@ impl VncSessionWidget {
 
     /// Connects a callback for state changes
     ///
-    /// The callback is invoked whenever the session state changes.
+    /// This callback is invoked whenever the session state changes.
     pub fn connect_state_changed<F>(&self, callback: F)
     where
         F: Fn(SessionState) + 'static,
     {
         *self.state_callback.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Connects a callback for View Only toggle changes (forwards to the
+    /// embedded widget), so the host can mirror the read-only state — e.g. the
+    /// tab's eye marker — without reaching into the widget's config.
+    pub fn connect_view_only_changed<F>(&self, callback: F)
+    where
+        F: Fn(bool) + 'static,
+    {
+        self.embedded_widget.connect_view_only_changed(callback);
     }
 }
 

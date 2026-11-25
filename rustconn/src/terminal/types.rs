@@ -140,6 +140,44 @@ pub const SHARED_TITLE_MARKER: &str = "◉ ";
 
 /// The marker a tab carries while a script recording captures its input.
 pub const SCRIPT_TITLE_MARKER: &str = "⏺ ";
+
+/// The marker a tab carries while View Only is active, so the read-only
+/// session is visible in the tab strip, not just on the session toolbar.
+///
+/// The eye is `U+1F441` with its emoji variation selector: without the selector
+/// some fonts render it as the monochrome text glyph, which reads as a different
+/// marker from the broadcast and shared ones.
+pub const VIEW_ONLY_TITLE_MARKER: &str = "\u{1F441}\u{FE0F} ";
+
+/// Every leading marker a tab title can carry, in one shared list.
+///
+/// One definition, so a marker added or stripped at one site is never left
+/// behind by another: the broadcast and shared paths, the script recorder and
+/// the regroup sites all know about every marker, and the eye — which goes
+/// first — is included at each of them.
+pub const ALL_TITLE_MARKERS: &[&str] = &[
+    VIEW_ONLY_TITLE_MARKER,
+    BROADCAST_TITLE_MARKER,
+    SHARED_TITLE_MARKER,
+    SCRIPT_TITLE_MARKER,
+];
+
+/// Splits `title` into its run of known leading markers and the remainder.
+///
+/// The rename path uses it to replace only the name part of the title, so a
+/// relabel never eats the markers other features put in front of it — the eye,
+/// the broadcast and the shared markers stay through a rename (issue #455).
+#[must_use]
+pub fn leading_marker_run<'a>(title: &'a str, markers: &[&str]) -> (&'a str, String) {
+    let mut rest = title;
+    let mut head = String::new();
+    while let Some(marker) = markers.iter().find(|m| rest.starts_with(**m)) {
+        head.push_str(marker);
+        rest = &rest[marker.len()..];
+    }
+    (rest, head)
+}
+
 /// Adds or removes `marker` in the run of markers at the front of `title`.
 ///
 /// Unlike `strip_prefix`, it finds the marker wherever it sits among the
@@ -220,8 +258,9 @@ pub fn local_shell_label(saved: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        DEFAULT_LOCAL_SHELL_LABEL, group_still_in_use, local_shell_label, regroup_title, tab_title,
-        with_title_marker,
+        ALL_TITLE_MARKERS, BROADCAST_TITLE_MARKER, DEFAULT_LOCAL_SHELL_LABEL, SHARED_TITLE_MARKER,
+        VIEW_ONLY_TITLE_MARKER, group_still_in_use, leading_marker_run, local_shell_label,
+        regroup_title, tab_title, with_title_marker,
     };
 
     #[test]
@@ -251,6 +290,102 @@ mod tests {
         assert_eq!(with_title_marker("⏺ ◉ ⇄ web", "◉ ", false, &m), "⏺ ⇄ web");
         assert_eq!(with_title_marker("⏺ web", "⏺ ", true, &m), "⏺ web");
         assert_eq!(with_title_marker("⏺ web", "⏺ ", false, &m), "web");
+    }
+
+    /// The eye joins the shared marker list, so it sits in each position of the
+    /// run and toggling it never leaves the markers behind it — the regression
+    /// for the eye missing from the broadcast and shared sites (issue #455).
+    #[test]
+    fn the_eye_sits_in_each_position_of_the_marker_run() {
+        assert_eq!(
+            with_title_marker(
+                BROADCAST_TITLE_MARKER,
+                VIEW_ONLY_TITLE_MARKER,
+                true,
+                ALL_TITLE_MARKERS
+            ),
+            "\u{1F441}\u{FE0F} ⇄ "
+        );
+        // Eye first, then toggling the broadcast marker off strips only it.
+        assert_eq!(
+            with_title_marker(
+                "\u{1F441}\u{FE0F} ⇄ web",
+                BROADCAST_TITLE_MARKER,
+                false,
+                ALL_TITLE_MARKERS
+            ),
+            "\u{1F441}\u{FE0F} web"
+        );
+        // The shared marker in front does not hide the eye behind it.
+        assert_eq!(
+            with_title_marker(
+                SHARED_TITLE_MARKER,
+                VIEW_ONLY_TITLE_MARKER,
+                true,
+                ALL_TITLE_MARKERS
+            ),
+            "\u{1F441}\u{FE0F} ◉ "
+        );
+        // Toggling the eye off, with the others still there.
+        assert_eq!(
+            with_title_marker(
+                "\u{1F441}\u{FE0F} ◉ ⇄ web",
+                VIEW_ONLY_TITLE_MARKER,
+                false,
+                ALL_TITLE_MARKERS
+            ),
+            "◉ ⇄ web"
+        );
+        assert_eq!(
+            with_title_marker("web", VIEW_ONLY_TITLE_MARKER, true, ALL_TITLE_MARKERS),
+            "\u{1F441}\u{FE0F} web"
+        );
+    }
+
+    /// `leading_marker_run` peels the marker run off the front and leaves the
+    /// name (and group) part, so a rename can replace only the name.
+    #[test]
+    fn leading_markers_are_peeled_off_the_front_of_the_title() {
+        assert_eq!(
+            leading_marker_run("\u{1F441}\u{FE0F} ⇄ [prod] web", ALL_TITLE_MARKERS),
+            ("[prod] web", "\u{1F441}\u{FE0F} ⇄ ".to_string())
+        );
+        assert_eq!(
+            leading_marker_run("[prod] web", ALL_TITLE_MARKERS),
+            ("[prod] web", String::new())
+        );
+        assert_eq!(
+            leading_marker_run("⇄ ◉ web", ALL_TITLE_MARKERS),
+            ("web", "⇄ ◉ ".to_string())
+        );
+    }
+
+    /// The regroup path knows the eye too: a group change on a view-only tab
+    /// keeps the eye in front and moves only the group label behind it.
+    #[test]
+    fn regroup_keeps_the_eye_in_front_of_the_group() {
+        let m = [
+            VIEW_ONLY_TITLE_MARKER,
+            BROADCAST_TITLE_MARKER,
+            SHARED_TITLE_MARKER,
+        ];
+        assert_eq!(
+            regroup_title("\u{1F441}\u{FE0F} web", None, Some("prod"), &m),
+            "\u{1F441}\u{FE0F} [prod] web"
+        );
+        assert_eq!(
+            regroup_title(
+                "\u{1F441}\u{FE0F} [prod] web",
+                Some("prod"),
+                Some("dev"),
+                &m
+            ),
+            "\u{1F441}\u{FE0F} [dev] web"
+        );
+        assert_eq!(
+            regroup_title("\u{1F441}\u{FE0F} [prod] web", Some("prod"), None, &m),
+            "\u{1F441}\u{FE0F} web"
+        );
     }
     /// The shape the creation paths produce.
     #[test]

@@ -1348,6 +1348,15 @@ impl TerminalNotebook {
             .unwrap_or_default()
     }
 
+    /// Sets the provider that resolves a connection id to its saved name, for
+    /// **Rename…**'s reset-to-default on a connection tab.
+    pub(crate) fn set_tab_connection_name_provider<F>(&self, provider: F)
+    where
+        F: Fn(Uuid) -> Option<String> + 'static,
+    {
+        *self.tab_connection_name.borrow_mut() = Some(Rc::new(provider));
+    }
+
     /// Returns a clone of the reconnect callback reference for use in auto-reconnect polling
     #[must_use]
     pub fn reconnect_callback(&self) -> Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>> {

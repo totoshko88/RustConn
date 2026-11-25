@@ -328,6 +328,9 @@ pub struct EmbeddedRdpWidget {
     on_cert_changed: Rc<RefCell<Option<super::embedded_rdp::types::CertChangedCallback>>>,
     /// Reconnect callback
     on_reconnect: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
+    /// View Only callback — fired whenever the toggle changes the live session's
+    /// read-only mode, so the host can mirror it (e.g. the tab's eye marker).
+    on_view_only_changed: Rc<RefCell<Option<Box<dyn Fn(bool) + 'static>>>>,
     /// Reconnect banner (shown when disconnected, at bottom of container)
     reconnect_banner: GtkBox,
     /// Label inside the reconnect banner, so its wording can state the reason.
@@ -880,6 +883,7 @@ impl EmbeddedRdpWidget {
             on_legacy_security_required: Rc::new(RefCell::new(None)),
             on_cert_changed: Rc::new(RefCell::new(None)),
             on_reconnect: Rc::new(RefCell::new(None)),
+            on_view_only_changed: Rc::new(RefCell::new(None)),
             reconnect_banner,
             reconnect_label,
             reconnect_button,
@@ -1525,6 +1529,7 @@ impl EmbeddedRdpWidget {
             self.scripts_button.clone().upcast::<gtk4::Widget>(),
             self.quick_actions_button.clone().upcast::<gtk4::Widget>(),
         ];
+        let on_view_only_changed = self.on_view_only_changed.clone();
         button.connect_toggled(move |toggle| {
             let active = toggle.is_active();
             view_only.set(active);
@@ -1545,8 +1550,35 @@ impl EmbeddedRdpWidget {
             {
                 jiggler.start(cfg.jiggler_interval_secs);
             }
+            if let Some(callback) = on_view_only_changed.borrow().as_ref() {
+                callback(active);
+            }
             tracing::debug!(view_only = active, "[RDP] View Only toggled");
         });
+    }
+
+    /// Sets view-only mode from outside (the toolbar button does this via
+    /// signal); the input handlers pick it up on their next event.
+    pub fn set_view_only(&self, view_only: bool) {
+        self.view_only.set(view_only);
+    }
+
+    /// Connects a callback for View Only toggle changes.
+    ///
+    /// Fires with the new mode each time the toolbar toggle changes the live
+    /// session's read-only state, so the host can mirror it — e.g. add or drop
+    /// the tab's eye marker without re-reading the widget's state.
+    pub fn connect_view_only_changed<F>(&self, callback: F)
+    where
+        F: Fn(bool) + 'static,
+    {
+        *self.on_view_only_changed.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// The toggle's button, for callers that mirror it into a header.
+    #[must_use]
+    pub fn view_only_button(&self) -> &ToggleButton {
+        &self.view_only_button
     }
 
     /// Registers GIO actions for the Autotype dropdown menu.

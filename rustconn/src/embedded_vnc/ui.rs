@@ -200,6 +200,7 @@ impl EmbeddedVncWidget {
             on_error: Rc::new(RefCell::new(None)),
             on_frame_update: Rc::new(RefCell::new(None)),
             on_reconnect: Rc::new(RefCell::new(None)),
+            on_view_only_changed: Rc::new(RefCell::new(None)),
             reconnect_banner,
             reconnect_button,
             remote_clipboard_text: Rc::new(RefCell::new(None)),
@@ -252,6 +253,18 @@ impl EmbeddedVncWidget {
         F: Fn() + 'static,
     {
         *self.on_reconnect.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Connects a callback for View Only toggle changes.
+    ///
+    /// Fires with the new mode each time the toolbar toggle changes the live
+    /// session's read-only state, so the host can mirror it — e.g. add or drop
+    /// the tab's eye marker without re-reading the config.
+    pub fn connect_view_only_changed<F>(&self, callback: F)
+    where
+        F: Fn(bool) + 'static,
+    {
+        *self.on_view_only_changed.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Sets up the drawing function for the DrawingArea
@@ -898,6 +911,7 @@ impl EmbeddedVncWidget {
             self.paste_button.clone().upcast::<gtk4::Widget>(),
             self.ctrl_alt_del_button.clone().upcast::<gtk4::Widget>(),
         ];
+        let on_view_only_changed = self.on_view_only_changed.clone();
 
         button.connect_toggled(move |toggle| {
             let view_only = toggle.is_active();
@@ -906,6 +920,9 @@ impl EmbeddedVncWidget {
             }
             for widget in &input_buttons {
                 widget.set_sensitive(!view_only);
+            }
+            if let Some(callback) = on_view_only_changed.borrow().as_ref() {
+                callback(view_only);
             }
             tracing::debug!(view_only, "[VNC] View Only toggled");
         });
