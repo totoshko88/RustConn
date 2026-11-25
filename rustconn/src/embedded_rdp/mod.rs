@@ -58,7 +58,7 @@ use std::rc::Rc;
 pub use buffer::CairoBackedBuffer;
 pub use file_dnd::{FileDndCircuitBreaker, LocalFileInfo};
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation, glib};
+use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation, ToggleButton, glib};
 pub use launcher::SafeFreeRdpLauncher;
 pub(crate) use launcher::{StderrLines, StdoutLines};
 #[cfg(feature = "rdp-embedded")]
@@ -350,6 +350,12 @@ pub struct EmbeddedRdpWidget {
     /// (`RdpConfig::keyboard_hook`); read by the notebook on every focus
     /// change, so it may be set after the tab exists.
     keyboard_hook: Rc<Cell<Option<rustconn_core::models::RdpKeyboardHook>>>,
+    /// View-only mode: while set, keyboard and pointer input are suppressed so
+    /// the operator can observe without touching the remote session (the
+    /// embedded VNC toolbar carries the same toggle).
+    view_only: Rc<Cell<bool>>,
+    /// "View Only" toggle in the session toolbar
+    view_only_button: ToggleButton,
     /// Remote clipboard text (received from server via CLIPRDR)
     remote_clipboard_text: Rc<RefCell<Option<String>>>,
     /// Available clipboard formats from server
@@ -636,6 +642,17 @@ impl EmbeddedRdpWidget {
         }
         toolbar.append(&autotype_button);
 
+        // View-only toggle — while active this viewer only observes the remote
+        // session: keyboard, mouse and wheel input are suppressed, so the
+        // operator can watch without touching the session (the embedded VNC
+        // toolbar carries the same toggle).
+        let view_only_button = ToggleButton::with_label(&i18n("View Only"));
+        view_only_button.add_css_class("flat");
+        view_only_button.add_css_class("accent");
+        view_only_button.set_tooltip_text(Some(&i18n("Disable keyboard and mouse input")));
+        view_only_button.update_property(&[gtk4::accessible::Property::Label(&i18n("View Only"))]);
+        toolbar.append(&view_only_button);
+
         // Hidden buttons for autotype actions (signal handlers attached later)
         let type_clipboard_button = Button::new();
         type_clipboard_button.set_visible(false);
@@ -863,6 +880,8 @@ impl EmbeddedRdpWidget {
             #[cfg(feature = "rdp-embedded")]
             refused_shared_folders: Rc::new(RefCell::new(std::collections::HashSet::new())),
             keyboard_hook: Rc::new(Cell::new(None)),
+            view_only: Rc::new(Cell::new(false)),
+            view_only_button: view_only_button.clone(),
             remote_clipboard_text: Rc::new(RefCell::new(None)),
             remote_clipboard_formats: Rc::new(RefCell::new(Vec::new())),
             #[cfg(feature = "rdp-audio")]
@@ -900,6 +919,7 @@ impl EmbeddedRdpWidget {
         #[cfg(feature = "rdp-embedded")]
         widget.setup_autotype_dialog_button(&type_text_button);
         widget.setup_autotype_actions(&type_clipboard_button, &type_text_button);
+        widget.setup_view_only_button(&view_only_button);
         widget.setup_quick_actions();
         widget.setup_script_actions();
         widget.setup_reconnect_button();
@@ -1456,6 +1476,48 @@ impl EmbeddedRdpWidget {
         self.keyboard_hook.clone()
     }
 
+    /// Wires the toolbar "View Only" toggle.
+    ///
+    /// While active, the input handlers suppress keyboard, mouse and wheel
+    /// input to the remote session (they read [`Self::view_only`]), and the
+    /// idle mouse jiggler is stopped so no synthetic keep-alive input keeps
+    /// arriving either.
+    fn setup_view_only_button(&self, button: &ToggleButton) {
+        let view_only = self.view_only.clone();
+        // The jiggler handles own their copies of the shared state, so the
+        // toggle can arm/disarm the keep-alive without borrowing the widget
+        // into a `'static` closure.
+        let jiggler = self.jiggler_handles();
+        let state = self.state.clone();
+        let config = self.config.clone();
+        button.connect_toggled(move |toggle| {
+            let active = toggle.is_active();
+            view_only.set(active);
+            if active {
+                // Observing only: hold the synthetic keep-alive input too
+                jiggler.stop();
+            } else if *state.borrow() == RdpConnectionState::Connected
+                && let Some(cfg) = config.borrow().as_ref()
+                && cfg.jiggler_enabled
+            {
+                jiggler.start(cfg.jiggler_interval_secs);
+            }
+            tracing::debug!(view_only = active, "[RDP] View Only toggled");
+        });
+    }
+
+    /// Sets view-only mode from outside (the toolbar button does this via
+    /// signal); the input handlers pick it up on their next event.
+    pub fn set_view_only(&self, view_only: bool) {
+        self.view_only.set(view_only);
+    }
+
+    /// The toggle's button, for callers that mirror it into a header.
+    #[must_use]
+    pub fn view_only_button(&self) -> &ToggleButton {
+        &self.view_only_button
+    }
+
     /// Registers GIO actions for the Autotype dropdown menu.
     ///
     /// Maps `rdp-autotype.type-clipboard` and `rdp-autotype.type-text` actions
@@ -1869,6 +1931,7 @@ impl EmbeddedRdpWidget {
         let reconnect_banner = self.reconnect_banner.clone();
         let copy_button = self.copy_button.clone();
         let paste_button = self.paste_button.clone();
+        let view_only_button = self.view_only_button.clone();
         let ctrl_alt_del_button = self.ctrl_alt_del_button.clone();
         let separator = self.separator.clone();
         let toolbar_auto_hide = self.toolbar_auto_hide.clone();
@@ -1886,6 +1949,7 @@ impl EmbeddedRdpWidget {
             // When disconnected, hide toolbar buttons
             copy_button.set_visible(!show_reconnect);
             paste_button.set_visible(!show_reconnect);
+            view_only_button.set_visible(!show_reconnect);
             ctrl_alt_del_button.set_visible(!show_reconnect);
             separator.set_visible(!show_reconnect);
 

@@ -123,13 +123,14 @@ impl super::EmbeddedRdpWidget {
         let pressed_keys: Rc<RefCell<HashMap<u32, gdk::Key>>> =
             Rc::new(RefCell::new(HashMap::new()));
         let pressed_keys_pressed = pressed_keys.clone();
+        let view_only = self.view_only.clone();
 
         key_controller.connect_key_pressed(move |_controller, keyval, keycode, _modifier| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected {
+            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
                 pressed_keys_pressed.borrow_mut().insert(keycode, keyval);
                 if using_ironrdp {
                     send_ironrdp_key(keycode, keyval, true, &ironrdp_tx);
@@ -153,6 +154,7 @@ impl super::EmbeddedRdpWidget {
         let freerdp_thread = self.freerdp_thread.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
         let pressed_keys_released = pressed_keys.clone();
+        let view_only = self.view_only.clone();
 
         key_controller.connect_key_released(move |_controller, keyval, keycode, _modifier| {
             let current_state = *state.borrow();
@@ -161,7 +163,7 @@ impl super::EmbeddedRdpWidget {
 
             pressed_keys_released.borrow_mut().remove(&keycode);
 
-            if embedded && current_state == RdpConnectionState::Connected {
+            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
                 if using_ironrdp {
                     send_ironrdp_key(keycode, keyval, false, &ironrdp_tx);
                 } else if let Some(ref thread) = *freerdp_thread.borrow() {
@@ -211,12 +213,14 @@ impl super::EmbeddedRdpWidget {
         let rdp_width_motion = self.rdp_width.clone();
         let rdp_height_motion = self.rdp_height.clone();
 
+        let view_only = self.view_only.clone();
+
         motion_controller.connect_motion(move |_controller, x, y| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected {
+            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
                 let widget_w = f64::from(*width_motion.borrow());
                 let widget_h = f64::from(*height_motion.borrow());
                 let rdp_w = f64::from(*rdp_width_motion.borrow());
@@ -263,6 +267,8 @@ impl super::EmbeddedRdpWidget {
         let rdp_height_press = self.rdp_height.clone();
         let drawing_area_press = self.drawing_area.clone();
 
+        let view_only = self.view_only.clone();
+
         click_controller.connect_pressed(move |gesture, _n_press, x, y| {
             // Grab focus on click to receive keyboard events
             drawing_area_press.grab_focus();
@@ -271,7 +277,7 @@ impl super::EmbeddedRdpWidget {
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected {
+            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
                 let button = gesture.current_button();
 
                 let widget_w = f64::from(*width_press.borrow());
@@ -319,12 +325,14 @@ impl super::EmbeddedRdpWidget {
         let rdp_width_release = self.rdp_width.clone();
         let rdp_height_release = self.rdp_height.clone();
 
+        let view_only = self.view_only.clone();
+
         click_controller.connect_released(move |gesture, _n_press, x, y| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected {
+            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
                 let button = gesture.current_button();
 
                 let widget_w = f64::from(*width_release.borrow());
@@ -369,6 +377,8 @@ impl super::EmbeddedRdpWidget {
         let is_ironrdp = self.is_ironrdp.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
 
+        let view_only = self.view_only.clone();
+
         scroll_controller.connect_scroll(move |controller, dx, dy| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
@@ -376,6 +386,7 @@ impl super::EmbeddedRdpWidget {
 
             if embedded
                 && current_state == RdpConnectionState::Connected
+                && !view_only.get()
                 && using_ironrdp
                 && let Some(ref tx) = *ironrdp_tx.borrow()
             {
@@ -418,11 +429,13 @@ impl super::EmbeddedRdpWidget {
         let is_embedded = self.is_embedded.clone();
         let freerdp_thread = self.freerdp_thread.clone();
 
+        let view_only = self.view_only.clone();
+
         key_controller.connect_key_pressed(move |_controller, keyval, _keycode, _modifier| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
 
-            if embedded && current_state == RdpConnectionState::Connected {
+            if embedded && current_state == RdpConnectionState::Connected && !view_only.get() {
                 if let Some(ref thread) = *freerdp_thread.borrow() {
                     let _ = thread.send_command(RdpCommand::KeyEvent {
                         keyval: keyval.into_glib(),
