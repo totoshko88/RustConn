@@ -1464,6 +1464,98 @@ fn start_vnc_connection_internal(
         );
     }
 
+    // --- SSH tunnel for jump host ---
+    //
+    // Three-tier resolution, as for RDP, the rdp_vnc.rs VNC path and SPICE and
+    // for the same reason (#301): a Jump Host set on a group or in Preferences →
+    // Network applies to VNC exactly as it does to SSH. Reading the picker's
+    // field off `vnc_config` — or not tunnelling at all, as this launch path did
+    // — dropped the hop and the client dialed the target directly (issue #450).
+    let (effective_host, effective_port, ssh_tunnel) = if let Ok(state_ref) = state.try_borrow()
+        && let Some(jump_id) = resolve_first_hop_id(&state_ref, conn)
+        && let Some(jump_conn) = state_ref.get_connection(jump_id)
+    {
+        let mut jump_dest = jump_conn.host.clone();
+        if let Some(user) = &jump_conn.username {
+            jump_dest = format!("{user}@{jump_dest}");
+        }
+        let jump_port = jump_conn.port;
+        // Resolve key path via inheritance (connection → group → parent group → root)
+        let groups: Vec<rustconn_core::models::ConnectionGroup> = state_ref.list_groups_owned();
+        let identity_file = ssh_inheritance::resolve_ssh_key_path(jump_conn, &groups)
+            .and_then(|p| rustconn_core::resolve_key_path(&p))
+            .map(|p| p.to_string_lossy().to_string());
+
+        let jump_password = state_ref
+            .get_cached_credentials(jump_id)
+            .filter(|c| {
+                use secrecy::ExposeSecret;
+                !c.password.expose_secret().is_empty()
+            })
+            .map(|c| c.password.clone());
+        // Resolve recursive jump host chain (e.g. jump_conn itself needs a jump host)
+        let extra_args = resolve_jump_chain_for_tunnel(
+            &state_ref,
+            jump_conn,
+            jump_password.is_some(),
+            rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+        );
+
+        let params = rustconn_core::ssh_tunnel::SshTunnelParams {
+            jump_host: jump_dest,
+            jump_port,
+            remote_host: host.clone(),
+            remote_port: port,
+            identity_file,
+            password: jump_password,
+            extra_args,
+            launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
+        };
+
+        drop(state_ref);
+
+        match rustconn_core::ssh_tunnel::create_tunnel(&params) {
+            Ok(mut tunnel) => {
+                let local_port = tunnel.local_port();
+                tracing::info!(
+                    %connection_id,
+                    local_port,
+                    "SSH tunnel established for VNC connection"
+                );
+                // Wait for tunnel to accept connections
+                if let Err(e) = rustconn_core::ssh_tunnel::wait_for_tunnel_ready(
+                    &mut tunnel,
+                    40,
+                    std::time::Duration::from_millis(250),
+                ) {
+                    tracing::error!(%e, "SSH tunnel not ready for VNC");
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    return None;
+                }
+
+                // Verify remote VNC port is reachable through the tunnel
+                if let Err(e) = rustconn_core::ssh_tunnel::probe_tunnel_remote(
+                    &mut tunnel,
+                    std::time::Duration::from_secs(5),
+                ) {
+                    tracing::error!(%e, "Remote VNC port unreachable through SSH tunnel");
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    return None;
+                }
+
+                ("127.0.0.1".to_string(), local_port, Some(tunnel))
+            }
+            Err(e) => {
+                tracing::error!(%e, "Failed to create SSH tunnel for VNC");
+                sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                return None;
+            }
+        }
+    } else {
+        // No bastion resolved at any tier — the common case, not worth a warning.
+        (host, port, None)
+    };
+
     // Issue #209: an external-viewer VNC session gets no notebook tab. Spawn the
     // viewer and register it so the sidebar surfaces it without a dead tab
     // (R1.1). The password is handled by the viewer, never on the command line.
@@ -1480,8 +1572,8 @@ fn start_vnc_connection_internal(
         };
         let (program, args) = rustconn_core::protocol::VncProtocol::build_external_viewer_command(
             &viewer,
-            &host,
-            port,
+            &effective_host,
+            effective_port,
             &vnc_config,
         );
         spawn_and_register_external_viewer(
@@ -1492,7 +1584,7 @@ fn start_vnc_connection_internal(
             conn,
             &program,
             &args,
-            None,
+            ssh_tunnel,
         );
         return None;
     }
@@ -1528,6 +1620,11 @@ fn start_vnc_connection_internal(
     // Store history entry ID in session for later use
     if let Some(entry_id) = history_entry_id {
         notebook.set_history_entry_id(session_id, entry_id);
+    }
+
+    // Store SSH tunnel so it stays alive for the duration of the session
+    if let Some(tunnel) = ssh_tunnel {
+        notebook.store_ssh_tunnel(session_id, tunnel);
     }
 
     // Get the VNC widget and initiate connection with config
@@ -1568,8 +1665,8 @@ fn start_vnc_connection_internal(
 
         // Initiate connection with VNC config (respects client_mode setting)
         if let Err(e) = vnc_widget.connect_with_config(
-            &host,
-            port,
+            &effective_host,
+            effective_port,
             password.as_ref().map(|p| p.as_str()),
             &vnc_config,
         ) {
