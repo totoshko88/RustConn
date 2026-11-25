@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Editing a cluster left the cluster list empty (#451)** — after pressing Save in the cluster editor the list was refreshed while the application state was still mutably borrowed, so the list provider could not read it and showed the empty state. The borrow is now released before the list refreshes, as delete already did. (`rustconn/src/window/clusters.rs`)
 - **Script logging aborted the app with "RefCell already borrowed"** — every script that used `log` (the save-config examples, command capture, the BGP captures) asked the engine for its held-back last log line from inside a host callback, while `pump` still held the engine's mutable borrow, so the process aborted. The engine now flushes that line itself and passes the bytes to `set_log`, which no longer touches the engine. (`rustconn-core/src/automation/script.rs`, `rustconn/src/script_runner.rs`)
 
+### Dependencies
+- **clap 4.6.9 → 4.6.10**, **constant_time_eq 0.6.1 → 0.6.2**, **crc32fast 1.5.5 → 1.5.6**, **h2 0.4.20 → 0.4.21**, **toml 1.2.2 → 1.2.3**, **zerocopy 0.8.64 → 0.8.65**, **zlib-rs 0.6.8 → 0.6.9**, **zstd 0.14.4 → 0.14.5**, **zstd-safe 8.3.0 → 8.4.0**, **zstd-sys 2.1.3 → 2.2.0** (bundles zstd 1.6.0)
+
 ## [0.26.3] - 2026-11-24
 
 ### Fixed
