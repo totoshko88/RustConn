@@ -452,6 +452,10 @@ impl ImportDialog {
                 "Connection '{}' uses a jump host that is not part of this import. It was imported as it is; check its jump host before connecting.",
                 &[connection_name],
             ),
+            ImportWarning::SshTunnelNotImported { connection_name } => i18n_f(
+                "Connection '{}' uses an SSH tunnel that could not be imported as a jump host. It was imported without it; set a jump host before connecting.",
+                &[connection_name],
+            ),
             ImportWarning::GroupNameEmpty { position } => i18n_f(
                 "Group {} has no name. It was imported as it is; give it a name.",
                 &[&position.to_string()],
@@ -1351,6 +1355,9 @@ mod tests {
                 connection_name: "a".to_string(),
             },
             ImportWarning::JumpHostMissing {
+                connection_name: "a".to_string(),
+            },
+            ImportWarning::SshTunnelNotImported {
                 connection_name: "a".to_string(),
             },
             ImportWarning::GroupNameEmpty { position: 1 },

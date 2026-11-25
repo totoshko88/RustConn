@@ -168,6 +168,12 @@ pub enum ImportWarning {
         /// Name of the imported connection.
         connection_name: String,
     },
+    /// The source asked for an SSH tunnel that could not be turned into a jump
+    /// host. The connection was imported without it.
+    SshTunnelNotImported {
+        /// Name of the imported connection.
+        connection_name: String,
+    },
     /// An imported group has no name. It was kept as it is.
     GroupNameEmpty {
         /// 1-based position of the group in the import.
@@ -227,6 +233,9 @@ impl ImportWarning {
             Self::JumpHostMissing { .. } => {
                 "Connection '{}' uses a jump host that is not part of this import. It was imported as it is; check its jump host before connecting."
             }
+            Self::SshTunnelNotImported { .. } => {
+                "Connection '{}' uses an SSH tunnel that could not be imported as a jump host. It was imported without it; set a jump host before connecting."
+            }
             Self::GroupNameEmpty { .. } => {
                 "Group {} has no name. It was imported as it is; give it a name."
             }
@@ -267,7 +276,8 @@ impl ImportWarning {
             Self::FtpImportedAsSftp { connection_name }
             | Self::ConnectionHostEmpty { connection_name }
             | Self::ConnectionPortZero { connection_name }
-            | Self::JumpHostMissing { connection_name } => vec![connection_name.clone()],
+            | Self::JumpHostMissing { connection_name }
+            | Self::SshTunnelNotImported { connection_name } => vec![connection_name.clone()],
             Self::ConnectionNameEmpty { position }
             | Self::GroupNameEmpty { position }
             | Self::SnippetIncomplete { position } => vec![position.to_string()],

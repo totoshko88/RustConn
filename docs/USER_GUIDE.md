@@ -4538,6 +4538,8 @@ xdg-mime default io.github.totoshko88.RustConn.desktop application/x-virt-viewer
 2. Pick the source → Import → check the result page → **Done** (if names already exist, choose **Skip Duplicates** or **Import All**)
 3. Re-enter passwords and verify SSH key paths after import
 
+**SSH tunnel:** an RDP, VNC or SPICE profile with *Enable SSH tunnel* turned on is imported with a **Jump Host**. RustConn creates one SSH connection named `user@host (SSH tunnel)` from the tunnel server, user name and private key file (an empty tunnel server means the profile's own host, port 22) and links the profile to it. Profiles that use the same server, user and port share one SSH connection. The tunnel password is never imported: the SSH connection asks for it on connect. If a tunnel cannot be mapped, for example because the tunnel server has no valid port, the profile is imported without it and the import summary lists a warning.
+
 > **Flatpak ↔ Flatpak:** If both RustConn and Remmina are installed as Flatpaks, the Remmina import button may show "Not Found" because Remmina stores its `.remmina` files inside its own sandbox (`~/.var/app/org.remmina.Remmina/data/remmina/`), which RustConn cannot access by default. See [Flatpak Sandbox Overrides → Remmina Import](#flatpak-sandbox-overrides) below for the fix.
 
 #### From MobaXterm
