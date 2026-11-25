@@ -11,7 +11,7 @@ use std::rc::Rc;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, DrawingArea, EventControllerKey, EventControllerMotion, GestureClick,
-    Label, Orientation, gdk, glib,
+    Label, Orientation, ToggleButton, gdk, glib,
 };
 
 #[cfg(feature = "vnc-embedded")]
@@ -78,6 +78,16 @@ impl EmbeddedVncWidget {
         ctrl_alt_del_button.add_css_class("accent");
         ctrl_alt_del_button.set_tooltip_text(Some(&i18n("Send Ctrl+Alt+Del to remote session")));
         toolbar.append(&ctrl_alt_del_button);
+
+        // View Only toggle — flips keyboard and pointer forwarding for the live
+        // session. Every input path reads `VncConfig::view_only` at event time,
+        // so the mode takes effect without a reconnect; `connect()` mirrors the
+        // config's flag into the button's active state.
+        let view_only_button = ToggleButton::with_label(&i18n("View Only"));
+        view_only_button.add_css_class("flat");
+        view_only_button.add_css_class("accent");
+        view_only_button.set_tooltip_text(Some(&i18n("Disable keyboard and mouse input")));
+        toolbar.append(&view_only_button);
 
         // The toolbar is placed in a Revealer inside a GTK Overlay so it
         // floats over the DrawingArea without consuming vertical space. This
@@ -171,6 +181,7 @@ impl EmbeddedVncWidget {
             copy_button: copy_button.clone(),
             paste_button: paste_button.clone(),
             ctrl_alt_del_button: ctrl_alt_del_button.clone(),
+            view_only_button: view_only_button.clone(),
             separator,
             drawing_area,
             cairo_buffer,
@@ -200,6 +211,7 @@ impl EmbeddedVncWidget {
         widget.setup_resize_handler();
         widget.setup_clipboard_buttons(&copy_button, &paste_button);
         widget.setup_ctrl_alt_del_button(&ctrl_alt_del_button);
+        widget.setup_view_only_button(&view_only_button);
         widget.setup_reconnect_button();
         widget.setup_visibility_handler();
 
@@ -851,6 +863,25 @@ impl EmbeddedVncWidget {
     #[cfg(not(feature = "vnc-embedded"))]
     fn setup_ctrl_alt_del_button(&self, _button: &Button) {
         // No-op when vnc-embedded feature is disabled
+    }
+
+    /// Sets up the View Only toggle handler
+    ///
+    /// The button's active state is the user's view of `VncConfig::view_only`;
+    /// writing the flag back into the config is what makes it live, because the
+    /// key, motion, click and Ctrl+Alt+Del paths all read `view_only` at event
+    /// time. No `set_active` here: the click already moved it, and emitting it
+    /// again would just re-enter this handler.
+    fn setup_view_only_button(&self, button: &ToggleButton) {
+        let config = self.config.clone();
+
+        button.connect_toggled(move |toggle| {
+            let view_only = toggle.is_active();
+            if let Some(cfg) = config.borrow_mut().as_mut() {
+                cfg.view_only = view_only;
+            }
+            tracing::debug!(view_only, "[VNC] View Only toggled");
+        });
     }
 }
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.26.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-23 23:16+0100\n"
+"POT-Creation-Date: 2026-11-25 15:02+0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -262,7 +262,7 @@ msgstr ""
 #: rustconn/src/embedded_rdp/connection.rs:2762
 #: rustconn/src/embedded_rdp/mod.rs:797 rustconn/src/embedded_rdp/mod.rs:2189
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
-#: rustconn/src/embedded_vnc/ui.rs:146
+#: rustconn/src/embedded_vnc/ui.rs:156
 #: rustconn/src/session_group_window.rs:1135
 #: rustconn/src/terminal/session_lifecycle.rs:636
 #: rustconn/src/terminal/session_lifecycle.rs:781
@@ -387,7 +387,7 @@ msgstr ""
 #: rustconn/src/dialogs/connection/advanced_tab.rs:916
 #: rustconn/src/dialogs/connection/general_tab.rs:104
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:107
-#: rustconn/src/dialogs/export.rs:384 rustconn/src/dialogs/settings/mod.rs:2043
+#: rustconn/src/dialogs/export.rs:384 rustconn/src/dialogs/settings/mod.rs:2051
 #: rustconn/src/dialogs/smart_folder.rs:122 rustconn/src/dialogs/snippet.rs:193
 #: rustconn/src/dialogs/template.rs:531
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:78
@@ -1020,7 +1020,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:929
 #: rustconn/src/dialogs/connection/advanced_tab.rs:933
-#: rustconn/src/dialogs/settings/mod.rs:2063
+#: rustconn/src/dialogs/settings/mod.rs:2071
 msgid "Pattern (regex)"
 msgstr ""
 
@@ -1032,22 +1032,22 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:977
 #: rustconn/src/dialogs/connection/advanced_tab.rs:980
-#: rustconn/src/dialogs/settings/mod.rs:2007
-#: rustconn/src/dialogs/settings/mod.rs:2009
+#: rustconn/src/dialogs/settings/mod.rs:2015
+#: rustconn/src/dialogs/settings/mod.rs:2017
 msgid "Enable rule"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:985
 #: rustconn/src/dialogs/connection/dialog/rows.rs:288
 #: rustconn/src/dialogs/connection/dialog/rows.rs:290
-#: rustconn/src/dialogs/settings/mod.rs:2024
+#: rustconn/src/dialogs/settings/mod.rs:2032
 #: rustconn/src/window/edit_group.rs:2222
 #: rustconn/src/window/edit_group.rs:2224
 msgid "Delete rule"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:989
-#: rustconn/src/dialogs/settings/mod.rs:2028
+#: rustconn/src/dialogs/settings/mod.rs:2036
 msgid "Delete highlight rule"
 msgstr ""
 
@@ -2038,8 +2038,8 @@ msgstr ""
 #: rustconn/src/dialogs/connection/dialog/rows.rs:323
 #: rustconn/src/window/edit_group.rs:2257
 msgid ""
-"Response to send when pattern matches. Use ${password}, ${username}, or $"
-"{VAR_NAME} for variables."
+"Response to send when pattern matches. Use ${password}, ${username}, or "
+"${VAR_NAME} for variables."
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:331
@@ -4247,7 +4247,7 @@ msgid "View-Only Mode"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/vnc.rs:242
-#: rustconn/src/dialogs/template.rs:1143
+#: rustconn/src/dialogs/template.rs:1143 rustconn/src/embedded_vnc/ui.rs:89
 msgid "Disable keyboard and mouse input"
 msgstr ""
 
@@ -7769,11 +7769,11 @@ msgid ""
 "in both fields."
 msgstr ""
 
-#: rustconn/src/dialogs/settings/mod.rs:1990
+#: rustconn/src/dialogs/settings/mod.rs:1998
 msgid "Untitled rule"
 msgstr ""
 
-#: rustconn/src/dialogs/settings/mod.rs:2070
+#: rustconn/src/dialogs/settings/mod.rs:2078
 msgid ""
 "Regular expression, for example (?i)\\bINFO\\b. Set the colour in the fields "
 "below."
@@ -8010,7 +8010,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:917
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:921
-#: rustconn/src/embedded_vnc/ui.rs:322
+#: rustconn/src/embedded_vnc/ui.rs:334
 msgid "Not configured"
 msgstr ""
 
@@ -8716,7 +8716,7 @@ msgid "Checking… touch your YubiKey when it blinks"
 msgstr ""
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2909
-#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:342
+#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:354
 #: rustconn/src/sidebar/view.rs:883
 msgid "Connected"
 msgstr ""
@@ -10107,7 +10107,7 @@ msgstr ""
 msgid "0 (lowest) to 9 (best quality)"
 msgstr ""
 
-#: rustconn/src/dialogs/template.rs:1142
+#: rustconn/src/dialogs/template.rs:1142 rustconn/src/embedded_vnc/ui.rs:86
 msgid "View Only"
 msgstr ""
 
@@ -10776,8 +10776,8 @@ msgstr ""
 
 #: rustconn/src/dialogs/variables.rs:171
 msgid ""
-"Define variables that can be used in connections                  with $"
-"{variable_name} syntax"
+"Define variables that can be used in connections                  with "
+"${variable_name} syntax"
 msgstr ""
 
 #: rustconn/src/dialogs/variables.rs:233
@@ -11024,7 +11024,7 @@ msgstr ""
 msgid "{} connections"
 msgstr ""
 
-#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:338
+#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:350
 #: rustconn/src/session/vnc.rs:175 rustconn/src/session/vnc.rs:243
 msgid "Connecting…"
 msgstr ""
@@ -11171,17 +11171,17 @@ msgid "No text to type"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/clipboard.rs:84
-#: rustconn/src/embedded_vnc/ui.rs:753
+#: rustconn/src/embedded_vnc/ui.rs:765
 msgid "Copied {} chars"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/clipboard.rs:92
-#: rustconn/src/embedded_vnc/ui.rs:729
+#: rustconn/src/embedded_vnc/ui.rs:741
 msgid "No remote clipboard data"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/clipboard.rs:198
-#: rustconn/src/embedded_vnc/ui.rs:800
+#: rustconn/src/embedded_vnc/ui.rs:812
 msgid "Pasted {} chars"
 msgstr ""
 
@@ -11581,14 +11581,14 @@ msgstr ""
 msgid "Save files from remote clipboard"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/mod.rs:800 rustconn/src/embedded_vnc/ui.rs:149
+#: rustconn/src/embedded_rdp/mod.rs:800 rustconn/src/embedded_vnc/ui.rs:159
 #: rustconn/src/split_view/adapter.rs:193 rustconn/src/terminal/config.rs:428
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1278
 msgid "Reconnect"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/mod.rs:802 rustconn/src/embedded_vnc/ui.rs:151
+#: rustconn/src/embedded_rdp/mod.rs:802 rustconn/src/embedded_vnc/ui.rs:161
 #: rustconn/src/terminal/session_lifecycle.rs:818
 #: rustconn/src/terminal/spawn.rs:192
 msgid "Reconnect to this session"
@@ -11645,7 +11645,7 @@ msgid "Connection may have been lost while the computer slept"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/polling_handlers.rs:172
-#: rustconn/src/embedded_vnc/mod.rs:688 rustconn/src/embedded_vnc/ui.rs:56
+#: rustconn/src/embedded_vnc/mod.rs:711 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr ""
 
@@ -11725,27 +11725,27 @@ msgstr ""
 msgid "Show session toolbar"
 msgstr ""
 
-#: rustconn/src/embedded_vnc/mod.rs:576
+#: rustconn/src/embedded_vnc/mod.rs:599
 msgid ""
 "VNC encryption not supported. Install TigerVNC and enable 'Accept "
 "Certificate'."
 msgstr ""
 
-#: rustconn/src/embedded_vnc/mod.rs:651
+#: rustconn/src/embedded_vnc/mod.rs:674
 msgid "Using external viewer (unsupported encryption)"
 msgstr ""
 
-#: rustconn/src/embedded_vnc/ui.rs:337 rustconn/src/embedded_web/mod.rs:373
+#: rustconn/src/embedded_vnc/ui.rs:349 rustconn/src/embedded_web/mod.rs:373
 #: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
 msgid "Disconnected"
 msgstr ""
 
-#: rustconn/src/embedded_vnc/ui.rs:340 rustconn/src/session/vnc.rs:330
+#: rustconn/src/embedded_vnc/ui.rs:352 rustconn/src/session/vnc.rs:330
 msgid "Session running in external window"
 msgstr ""
 
-#: rustconn/src/embedded_vnc/ui.rs:343 rustconn/src/session/vnc.rs:177
+#: rustconn/src/embedded_vnc/ui.rs:355 rustconn/src/session/vnc.rs:177
 #: rustconn/src/session/vnc.rs:202
 msgid "Connection error"
 msgstr ""
@@ -12632,7 +12632,7 @@ msgid "Basic Information"
 msgstr ""
 
 #: rustconn/src/split_view/bridge.rs:2130
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:5
 msgid "Manage remote connections easily"
 msgstr ""
 
@@ -13073,7 +13073,7 @@ msgstr ""
 msgid "{} Active Session(s)"
 msgstr ""
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/settings_glue.rs:396
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/settings_glue.rs:400
 msgid "Passphrase Does Not Open the Portable File"
 msgstr ""
 
@@ -13105,9 +13105,9 @@ msgstr ""
 
 #: rustconn/src/vault_ops.rs:285
 msgid ""
-"The system keyring is not accessible. Run: sudo snap connect "
-"rustconn:password-manager-service — or open Settings, then Secrets, and "
-"choose another backend."
+"The system keyring is not accessible. Run: sudo snap connect rustconn:"
+"password-manager-service — or open Settings, then Secrets, and choose "
+"another backend."
 msgstr ""
 
 #: rustconn/src/vault_ops.rs:289
@@ -13299,8 +13299,8 @@ msgstr ""
 #: rustconn/src/window/connection_actions.rs:216
 msgid ""
 "Sync directory is not configured. In Flatpak, grant filesystem access first: "
-"flatpak override --user --filesystem=/path/to/sync "
-"io.github.totoshko88.RustConn"
+"flatpak override --user --filesystem=/path/to/sync io.github.totoshko88."
+"RustConn"
 msgstr ""
 
 #: rustconn/src/window/connection_actions.rs:222
@@ -13520,12 +13520,12 @@ msgstr ""
 msgid "Failed to save variable to vault: {}"
 msgstr ""
 
-#: rustconn/src/window/credentials.rs:610
+#: rustconn/src/window/credentials.rs:616
 msgid "Vault entry not found for '{}'. You will be prompted for a password."
 msgstr ""
 
-#: rustconn/src/window/credentials.rs:1067
-#: rustconn/src/window/credentials.rs:1303
+#: rustconn/src/window/credentials.rs:1073
+#: rustconn/src/window/credentials.rs:1309
 #: rustconn/src/window/edit_actions.rs:2514
 msgid "Connection failed. Host unreachable."
 msgstr ""
@@ -13690,7 +13690,7 @@ msgstr ""
 #: rustconn/src/window/edit_actions.rs:1582
 #: rustconn/src/window/edit_actions.rs:1841
 #: rustconn/src/window/edit_actions.rs:1950
-#: rustconn/src/window/protocols.rs:2387
+#: rustconn/src/window/protocols.rs:2484
 msgid "Could not open the SSH tunnel: {}"
 msgstr ""
 
@@ -14538,10 +14538,10 @@ msgstr ""
 #: rustconn/src/window/network_tools/share.rs:369
 msgid ""
 "To build a link that works over the internet, RustConn can ask public STUN "
-"servers run by Google (stun.l.google.com) and Cloudflare "
-"(stun.cloudflare.com) for this computer's public address and port. Those "
-"companies see this computer's IP address. No terminal data is sent to them. "
-"Without the lookup, the link works only on your local network."
+"servers run by Google (stun.l.google.com) and Cloudflare (stun.cloudflare."
+"com) for this computer's public address and port. Those companies see this "
+"computer's IP address. No terminal data is sent to them. Without the lookup, "
+"the link works only on your local network."
 msgstr ""
 
 #: rustconn/src/window/network_tools/share.rs:375
@@ -14956,53 +14956,53 @@ msgstr ""
 msgid "No jump host responded, trying ‘{}’"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:1476 rustconn/src/window/rdp_vnc.rs:1625
+#: rustconn/src/window/protocols.rs:1568 rustconn/src/window/rdp_vnc.rs:1625
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:1818
+#: rustconn/src/window/protocols.rs:1915
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2052 rustconn/src/window/protocols.rs:2791
+#: rustconn/src/window/protocols.rs:2149 rustconn/src/window/protocols.rs:2888
 msgid "Invalid variable: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2312
+#: rustconn/src/window/protocols.rs:2409
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
-"PATH of your login shell on the host (set in ~/.profile, not only in "
-"~/.bashrc)."
+"PATH of your login shell on the host (set in ~/.profile, not only in ~/."
+"bashrc)."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2316
+#: rustconn/src/window/protocols.rs:2413
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2319
+#: rustconn/src/window/protocols.rs:2416
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2711
+#: rustconn/src/window/protocols.rs:2808
 msgid "Invalid config: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2897
+#: rustconn/src/window/protocols.rs:2994
 msgid "Install picocom for Serial connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3073
+#: rustconn/src/window/protocols.rs:3180
 msgid "Install kubectl for Kubernetes connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3091
+#: rustconn/src/window/protocols.rs:3198
 msgid "Configure pod and container for Kubernetes"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3321
+#: rustconn/src/window/protocols.rs:3438
 msgid "Install mosh for MOSH connections"
 msgstr ""
 
@@ -15312,7 +15312,7 @@ msgstr ""
 msgid "Command failed with status {}: {}"
 msgstr ""
 
-#: rustconn/src/window/session_lifecycle.rs:1349
+#: rustconn/src/window/session_lifecycle.rs:1376
 msgid ""
 "Sign in again in the browser. The session reconnects when the login finishes."
 msgstr ""
@@ -15450,15 +15450,15 @@ msgstr ""
 msgid "Append newline (press Enter)"
 msgstr ""
 
-#: rustconn/src/window/settings_glue.rs:180
+#: rustconn/src/window/settings_glue.rs:184
 msgid "Settings saved"
 msgstr ""
 
-#: rustconn/src/window/settings_glue.rs:217
+#: rustconn/src/window/settings_glue.rs:221
 msgid "Passphrase Not Saved on This Computer"
 msgstr ""
 
-#: rustconn/src/window/settings_glue.rs:219
+#: rustconn/src/window/settings_glue.rs:223
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -15466,18 +15466,18 @@ msgid ""
 "directory."
 msgstr ""
 
-#: rustconn/src/window/settings_glue.rs:265
+#: rustconn/src/window/settings_glue.rs:269
 msgid "Credentials Not Saved to Keyring"
 msgstr ""
 
-#: rustconn/src/window/settings_glue.rs:267
+#: rustconn/src/window/settings_glue.rs:271
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
 "service is running and unlocked, then save the settings again."
 msgstr ""
 
-#: rustconn/src/window/settings_glue.rs:398
+#: rustconn/src/window/settings_glue.rs:402
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -15774,14 +15774,16 @@ msgstr ""
 msgid "Failed to save workspace"
 msgstr ""
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:2
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
 msgid "RustConn"
 msgstr ""
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Connection Manager"
 msgstr ""
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
-msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:12
+msgid ""
+"ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;"
+"kubernetes;k8s;serial;sftp;"
 msgstr ""
