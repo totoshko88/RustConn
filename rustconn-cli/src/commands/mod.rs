@@ -369,12 +369,18 @@ pub fn dispatch(
             output,
             csv_delimiter,
             csv_fields,
+            group,
+            tag,
         } => export_import::cmd_export(
             config_path,
             format,
             &output,
             csv_delimiter.as_deref(),
             csv_fields.as_deref(),
+            &export_import::ExportSelection {
+                group: group.as_deref(),
+                tag: tag.as_deref(),
+            },
         ),
         Commands::Import {
             format,

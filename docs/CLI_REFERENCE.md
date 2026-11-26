@@ -770,7 +770,7 @@ mode (opening the SFTP location in Dolphin/Nautilus/`xdg-open`) requires the
 ### export — Export connections
 
 ```bash
-rustconn-cli export -f <format> -o <path> [--csv-delimiter <delim>] [--csv-fields <fields>]
+rustconn-cli export -f <format> -o <path> [--group <NAME|UUID>] [--tag <TAG>] [--csv-delimiter <delim>] [--csv-fields <fields>]
 ```
 
 ```bash
@@ -786,7 +786,18 @@ rustconn-cli export -f rdp-file -o ~/rdp-exports/
 rustconn-cli export -f csv -o connections.csv
 rustconn-cli export -f csv -o connections.csv --csv-delimiter semicolon
 rustconn-cli export -f csv -o connections.csv --csv-fields "name,host,port,protocol"
+rustconn-cli export -f ssh-config -o prod.conf --group Production   # A group and its subgroups
+rustconn-cli export -f ansible -o db.yml --tag db                   # Connections tagged db
 ```
+
+`--group` selects the connections in a group and its subgroups, `--tag` those with
+a tag (case-insensitive); both together select connections that match both. A
+selection that matches nothing is an error, so the output file is not replaced by
+an empty export. Groups, templates and the other data of a `native` archive are
+exported whole.
+
+A format that cannot hold some connections skips them and prints one line,
+`Skipped N connection(s) not supported by <format>`; `-v` lists them one by one.
 
 | Format | Description |
 |--------|-------------|

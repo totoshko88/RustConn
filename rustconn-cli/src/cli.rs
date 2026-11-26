@@ -670,6 +670,14 @@ pub enum Commands {
         /// CSV fields to include (comma-separated list of field names) — only for CSV format
         #[arg(long, value_name = "FIELDS")]
         csv_fields: Option<String>,
+
+        /// Export only the connections in this group and its subgroups
+        #[arg(long, value_name = "NAME|UUID")]
+        group: Option<String>,
+
+        /// Export only the connections with this tag (case-insensitive)
+        #[arg(long, value_name = "TAG")]
+        tag: Option<String>,
     },
 
     /// Import connections from external format

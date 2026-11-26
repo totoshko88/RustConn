@@ -2101,3 +2101,140 @@ fn rename_and_tag_flags_match_the_other_commands() {
         stderr_str(&out)
     );
 }
+
+/// Two groups, `prod` and its subgroup `eu`, with SSH and VNC connections.
+fn export_fixture(dir: &std::path::Path) {
+    add_ok(&["group", "create", "--name", "prod"], dir);
+    add_ok(
+        &["group", "create", "--name", "eu", "--parent", "prod"],
+        dir,
+    );
+    add_ok(
+        &[
+            "add", "--name", "a", "-H", "a.lan", "--group", "prod", "--tags", "db",
+        ],
+        dir,
+    );
+    add_ok(&["add", "--name", "b", "-H", "b.lan", "--group", "eu"], dir);
+    add_ok(&["add", "--name", "c", "-H", "c.lan", "--tags", "db"], dir);
+    add_ok(
+        &[
+            "add", "--name", "v1", "-H", "v1.lan", "-P", "vnc", "--group", "prod",
+        ],
+        dir,
+    );
+    add_ok(
+        &[
+            "add", "--name", "v2", "-H", "v2.lan", "-P", "vnc", "--group", "eu",
+        ],
+        dir,
+    );
+}
+
+/// M4: one summary line for the connections the format cannot hold, the
+/// details under `-v`; `--group` takes the subgroups along.
+#[test]
+fn export_sums_up_what_it_skipped() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    export_fixture(dir);
+    let file = dir.join("prod.conf");
+    let file_arg = file.to_str().expect("utf-8 path");
+    let out = run_cli(
+        &[
+            "export",
+            "-f",
+            "ssh-config",
+            "-o",
+            file_arg,
+            "--group",
+            "prod",
+        ],
+        Some(dir),
+    );
+    assert!(out.status.success(), "{}", stderr_str(&out));
+    let written = std::fs::read_to_string(&file).expect("export written");
+    assert!(
+        written.contains("a.lan") && written.contains("b.lan"),
+        "{written}"
+    );
+    assert!(!written.contains("c.lan"), "{written}");
+    let stderr = stderr_str(&out);
+    assert_eq!(
+        stderr
+            .matches("Skipped 2 connection(s) not supported by")
+            .count(),
+        1,
+        "{stderr}"
+    );
+    assert!(!stderr.contains("'v1'"), "details only under -v: {stderr}");
+
+    let out = run_cli(
+        &[
+            "-v",
+            "export",
+            "-f",
+            "ssh-config",
+            "-o",
+            file_arg,
+            "--group",
+            "prod",
+        ],
+        Some(dir),
+    );
+    assert!(stderr_str(&out).contains("'v1'"), "{}", stderr_str(&out));
+}
+
+/// M4: `export --tag`, both selections together, and a selection of nothing.
+#[test]
+fn export_selects_by_tag() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    export_fixture(dir);
+    let file = dir.join("db.conf");
+    let file_arg = file.to_str().expect("utf-8 path");
+    let out = run_cli(
+        &["export", "-f", "ssh-config", "-o", file_arg, "--tag", "DB"],
+        Some(dir),
+    );
+    assert!(out.status.success(), "{}", stderr_str(&out));
+    let written = std::fs::read_to_string(&file).expect("export written");
+    assert!(
+        written.contains("a.lan") && written.contains("c.lan"),
+        "{written}"
+    );
+    assert!(!written.contains("b.lan"), "{written}");
+
+    let out = run_cli(
+        &[
+            "export",
+            "-f",
+            "ssh-config",
+            "-o",
+            file_arg,
+            "--group",
+            "eu",
+            "--tag",
+            "db",
+        ],
+        Some(dir),
+    );
+    assert!(!out.status.success(), "an empty selection is an error");
+    let out = run_cli(
+        &[
+            "export",
+            "-f",
+            "ssh-config",
+            "-o",
+            file_arg,
+            "--group",
+            "nope",
+        ],
+        Some(dir),
+    );
+    assert!(
+        stderr_str(&out).contains("Group not found"),
+        "{}",
+        stderr_str(&out)
+    );
+}
