@@ -13,6 +13,14 @@
 //! serial or Kubernetes session names a file on the *remote* machine, and
 //! opening the same string locally would open the wrong file — one the remote
 //! side gets to choose.
+//!
+//! The press is claimed in the capture phase whenever Ctrl (⌘) is held over a
+//! link, so in an app that reports the mouse — mc, vim with `mouse=a`, tmux
+//! with `mouse on`, htop — a Ctrl+click on link text opens the link and is not
+//! forwarded to the app. Clicks anywhere else still reach it, and Shift+drag
+//! still selects text past the app's mouse reporting, as in any VTE terminal.
+//! `vte4` has no getter for the mouse-tracking mode, so this cannot be skipped
+//! only while an app is tracking.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -24,6 +32,7 @@ use libadwaita as adw;
 use vte4::Terminal;
 use vte4::prelude::*;
 
+use super::PCRE2_MULTILINE;
 use crate::i18n::i18n;
 
 thread_local! {
@@ -35,12 +44,41 @@ thread_local! {
     static ENABLED: Cell<bool> = const { Cell::new(false) };
 }
 
-/// Records whether links may open.
+/// A terminal with link opening installed, and the tag of its link regex
+/// while one is registered with VTE.
+struct Registered {
+    terminal: glib::WeakRef<Terminal>,
+    tag: Rc<Cell<Option<i32>>>,
+}
+
+thread_local! {
+    /// Every terminal [`setup_link_opening`] ran on, so a settings change can
+    /// add or remove its link regex.
+    static REGISTERED: RefCell<Vec<Registered>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Records whether links may open, and adds or removes `terminal`'s link
+/// regex to match: with **Allow hyperlinks** off, printed URLs neither
+/// underline nor take the pointer cursor.
 ///
 /// Called from `configure_terminal_with_settings`, which the settings dialog
-/// re-runs on save, so already-open sessions follow the change.
-pub(super) fn set_enabled(enabled: bool) {
+/// re-runs on save for every open terminal, so already-open sessions follow
+/// the change.
+pub(super) fn set_enabled(terminal: &Terminal, enabled: bool) {
     ENABLED.with(|flag| flag.set(enabled));
+    // ponytail: linear scan over the open terminals, a handful per window;
+    // index by widget if sessions ever number in the hundreds.
+    let tag = REGISTERED.with(|registered| {
+        let mut registered = registered.borrow_mut();
+        registered.retain(|entry| entry.terminal.upgrade().is_some());
+        registered
+            .iter()
+            .find(|entry| entry.terminal.upgrade().as_ref() == Some(terminal))
+            .map(|entry| Rc::clone(&entry.tag))
+    });
+    if let Some(tag) = tag {
+        sync_link_match(terminal, &tag, enabled);
+    }
 }
 
 /// Whether links may open.
@@ -48,19 +86,14 @@ fn enabled() -> bool {
     ENABLED.with(Cell::get)
 }
 
-/// PCRE2 multiline compile flag — required by VTE's `match_add_regex()`.
-const PCRE2_MULTILINE: u32 = 0x0000_0400;
-
-/// Plain-text URLs: scheme plus non-space run.
-///
-// ponytail: trailing sentence punctuation (`. , > )`) stays in the match and
-// reaches the browser; trim end characters in [`link_at`] if users hit it.
-const URL_PATTERN: &str = r"(?:https?|ftp)://[^\s]+";
+/// Plain-text URLs: scheme (any case) plus non-space run. Trailing sentence
+/// punctuation is trimmed after the match, in [`resolve_link`].
+const URL_PATTERN: &str = r"(?i:https?)://[^\s]+";
 
 /// Whether the event's modifier state opens a link: Ctrl on Linux, on macOS
 /// either ⌘ or Ctrl — ⌘ is what Terminal.app and iTerm use, and GTK's macOS
-/// backend may deliver a Ctrl+click as the emulated
-/// right-click, which never reaches the primary-button gesture at all.
+/// backend may deliver a Ctrl+click as the emulated right-click, which never
+/// reaches the primary-button gesture at all.
 fn modifier_held(state: gdk::ModifierType) -> bool {
     if cfg!(target_os = "macos") {
         state.intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SUPER_MASK)
@@ -77,16 +110,17 @@ fn modifier_held(state: gdk::ModifierType) -> bool {
 /// *release* of the primary button, and only when press and release resolve
 /// to the same link, so a Ctrl+drag that ends on a link does not open it.
 pub(super) fn setup_link_opening(terminal: &Terminal) {
-    for pattern in [URL_PATTERN] {
-        match vte4::Regex::for_match(pattern, PCRE2_MULTILINE) {
-            Ok(regex) => {
-                let tag = terminal.match_add_regex(&regex, 0);
-                terminal.match_set_cursor_name(tag, "pointer");
-            }
-            Err(error) => tracing::warn!(%error, "link regex rejected by VTE"),
-        }
-    }
+    let tag: Rc<Cell<Option<i32>>> = Rc::default();
+    sync_link_match(terminal, &tag, enabled());
+    REGISTERED.with(|registered| {
+        registered.borrow_mut().push(Registered {
+            terminal: terminal.downgrade(),
+            tag: Rc::clone(&tag),
+        });
+    });
 
+    let tag_pressed = Rc::clone(&tag);
+    let tag_released = tag;
     let term_pressed = terminal.clone();
     let term_released = terminal.clone();
     // The link the claimed press landed on; release opens it only if it
@@ -100,7 +134,7 @@ pub(super) fn setup_link_opening(terminal: &Terminal) {
         if !enabled() || !modifier_held(state) {
             return;
         }
-        let Some(link) = link_at(&term_pressed, x, y) else {
+        let Some(link) = link_at(&term_pressed, tag_pressed.get(), x, y) else {
             return;
         };
         tracing::debug!(x, y, "link press claimed");
@@ -114,7 +148,7 @@ pub(super) fn setup_link_opening(terminal: &Terminal) {
         if n_press != 1 || !enabled() || !modifier_held(gesture.current_event_state()) {
             return;
         }
-        if link_at(&term_released, x, y).as_ref() != Some(&pressed_link) {
+        if link_at(&term_released, tag_released.get(), x, y).as_ref() != Some(&pressed_link) {
             return;
         }
         open_link(&term_released, &pressed_link);
@@ -126,6 +160,31 @@ pub(super) fn setup_link_opening(terminal: &Terminal) {
         terminal.set_tooltip_text(terminal.hyperlink_hover_uri().as_deref());
     });
     terminal.add_controller(click);
+}
+
+/// Registers `terminal`'s link regex when enabled and none is registered,
+/// removes it when disabled.
+///
+// ponytail: a regex re-added after a toggle sits behind the highlight-rule
+// regexes, and VTE reports the first registered match at a cell, so a URL
+// containing a highlighted word opens only off that word until the session is
+// reopened; re-register the highlight regexes after this one if users hit it.
+fn sync_link_match(terminal: &Terminal, tag: &Cell<Option<i32>>, enabled: bool) {
+    match (enabled, tag.get()) {
+        (true, None) => match vte4::Regex::for_match(URL_PATTERN, PCRE2_MULTILINE) {
+            Ok(regex) => {
+                let added = terminal.match_add_regex(&regex, 0);
+                terminal.match_set_cursor_name(added, "pointer");
+                tag.set(Some(added));
+            }
+            Err(error) => tracing::warn!(%error, "link regex rejected by VTE"),
+        },
+        (false, Some(registered)) => {
+            terminal.match_remove(registered);
+            tag.set(None);
+        }
+        _ => {}
+    }
 }
 
 /// The click gesture for links: primary button only, so Ctrl+right-click
@@ -163,9 +222,11 @@ impl Link {
     }
 }
 
-/// The link under the point.
-fn link_at(terminal: &Terminal, x: f64, y: f64) -> Option<Link> {
-    let printed = terminal.check_match_at(x, y).0;
+/// The link under the point. `link_tag` is the terminal's link regex tag: a
+/// match from any other regex (a highlight rule's) is not a link.
+fn link_at(terminal: &Terminal, link_tag: Option<i32>, x: f64, y: f64) -> Option<Link> {
+    let (printed, hit) = terminal.check_match_at(x, y);
+    let printed = printed.filter(|_| link_tag == Some(hit));
     let target = terminal.check_hyperlink_at(x, y);
     resolve_link(printed.as_deref(), target.as_deref())
 }
@@ -174,14 +235,38 @@ fn link_at(terminal: &Terminal, x: f64, y: f64) -> Option<Link> {
 /// OSC 8 target there. An OSC 8 target wins, since it is what the browser
 /// would get; it opens directly only when the printed text under the pointer
 /// is that same URL. VTE does not expose a hyperlink's label span, so that
-/// printed match stands in for the label.
+/// printed match stands in for the label. A printed URL loses trailing
+/// sentence punctuation (`https://example.com/page).` opens `…/page`).
 fn resolve_link(printed: Option<&str>, target: Option<&str>) -> Option<Link> {
+    let printed = printed.map(trim_trailing_punctuation);
     match (printed, target) {
         (Some(printed), Some(target)) if printed == target => Some(Link::Shown(target.to_owned())),
         (_, Some(target)) => Some(Link::Hidden(target.to_owned())),
         (Some(printed), None) => Some(Link::Shown(printed.to_owned())),
         (None, None) => None,
     }
+}
+
+/// `url` without the punctuation a sentence puts after it. A closing
+/// bracket stays when it closes one opened inside the URL
+/// (`https://en.wikipedia.org/wiki/Rust_(programming_language)`).
+fn trim_trailing_punctuation(url: &str) -> &str {
+    let mut url = url;
+    while let Some(last) = url.chars().last() {
+        let unbalanced = |open: char| url.matches(open).count() < url.matches(last).count();
+        let trailing = match last {
+            '.' | ',' | ';' | ':' | '!' | '?' | '\'' | '"' | '>' => true,
+            ')' => unbalanced('('),
+            ']' => unbalanced('['),
+            '}' => unbalanced('{'),
+            _ => false,
+        };
+        if !trailing {
+            break;
+        }
+        url = &url[..url.len() - last.len_utf8()];
+    }
+    url
 }
 
 /// True for a web link GLib and the browser agree on.
@@ -195,15 +280,16 @@ fn resolve_link(printed: Option<&str>, target: Option<&str>) -> Option<Link> {
 ///   host than the browser opens — the same trick, seen rather than parsed;
 /// - control characters (ESC sequences, CR/LF) have no place in a browser
 ///   argument;
-/// - everything off the web schemes — `ssh:`, `javascript:`, `data:`,
-///   `file:` — stays closed.
+/// - everything off the web schemes — `ftp:`, `ssh:`, `javascript:`,
+///   `data:`, `file:` — stays closed. The scheme compares case-blind, so
+///   `HTTPS://` opens like `https://`.
 fn is_openable_link(uri: &str) -> bool {
     if uri.contains('\\') || uri.chars().any(char::is_control) {
         return false;
     }
     glib::Uri::parse(uri, glib::UriFlags::NONE).is_ok_and(|u| {
         u.userinfo().is_none()
-            && matches!(u.scheme().as_str(), "http" | "https" | "ftp")
+            && matches!(u.scheme().to_ascii_lowercase().as_str(), "http" | "https")
             && u.host().is_some_and(|h| !h.is_empty())
     })
 }
@@ -214,7 +300,16 @@ fn is_openable_link(uri: &str) -> bool {
 fn open_link(terminal: &Terminal, link: &Link) {
     let uri = link.uri();
     if !is_openable_link(uri) {
-        tracing::warn!(%uri, "refused to open a non-web link");
+        // The URI stays out of the log: a refused link may carry userinfo,
+        // a password included.
+        tracing::warn!("refused to open a link that is not a plain http(s) URL");
+        if let Some(window) = terminal.root().and_downcast::<gtk4::Window>() {
+            crate::toast::show_toast_on_window(
+                &window,
+                &i18n("Link not opened: only plain http and https links can be opened"),
+                crate::toast::ToastType::Warning,
+            );
+        }
         return;
     }
     match link {
@@ -259,8 +354,9 @@ fn launch_uri(terminal: &Terminal, uri: &str) {
 #[cfg(test)]
 mod tests {
     use super::{
-        Link, PCRE2_MULTILINE, URL_PATTERN, is_openable_link, link_click_gesture, modifier_held,
-        resolve_link, setup_link_opening,
+        Link, PCRE2_MULTILINE, REGISTERED, URL_PATTERN, is_openable_link, link_at,
+        link_click_gesture, modifier_held, resolve_link, set_enabled, setup_link_opening,
+        trim_trailing_punctuation,
     };
     use gtk4::gdk;
     use gtk4::prelude::*;
@@ -271,7 +367,8 @@ mod tests {
     fn only_web_links_open() {
         assert!(is_openable_link("https://example.com/a?b=1"));
         assert!(is_openable_link("http://example.com/"));
-        assert!(is_openable_link("ftp://example.com/pub/"));
+        assert!(is_openable_link("HTTPS://Example.com/"));
+        assert!(!is_openable_link("ftp://example.com/pub/"));
         assert!(!is_openable_link("javascript:alert(1)"));
         assert!(!is_openable_link("data:text/html;base64,AAAA"));
         assert!(!is_openable_link("ssh://git@host/repo"));
@@ -323,6 +420,32 @@ mod tests {
         );
     }
 
+    /// Sentence punctuation after a printed URL is not part of it; brackets
+    /// the URL opened itself are.
+    #[test]
+    fn trailing_punctuation_is_trimmed() {
+        assert_eq!(
+            trim_trailing_punctuation("https://example.com/page)."),
+            "https://example.com/page"
+        );
+        assert_eq!(
+            trim_trailing_punctuation("https://example.com/a,"),
+            "https://example.com/a"
+        );
+        assert_eq!(
+            trim_trailing_punctuation("https://en.wikipedia.org/wiki/Rust_(language)"),
+            "https://en.wikipedia.org/wiki/Rust_(language)"
+        );
+        assert_eq!(
+            trim_trailing_punctuation("https://example.com/"),
+            "https://example.com/"
+        );
+        assert_eq!(
+            resolve_link(Some("https://example.com/page)."), None),
+            Some(Link::Shown("https://example.com/page".to_owned()))
+        );
+    }
+
     /// Only the primary button opens links: a gesture on every button (GTK's
     /// default, button 0) claimed Ctrl+right-click and Ctrl+middle-click over
     /// a link, so the context menu never appeared and paste was lost.
@@ -341,16 +464,16 @@ mod tests {
     /// underlines or opens, and nothing else in the module would notice.
     #[test]
     fn the_link_regexes_compile() {
-        for pattern in [URL_PATTERN] {
-            assert!(vte4::Regex::for_match(pattern, PCRE2_MULTILINE).is_ok());
-        }
+        assert!(vte4::Regex::for_match(URL_PATTERN, PCRE2_MULTILINE).is_ok());
     }
 
-    /// The registered regexes match at the pixels of what was fed: this is
-    /// the check that catches a pattern VTE accepts but that matches
-    /// nothing, which the compile check above cannot see. Cell size is not
-    /// bound by `vte4` 0.10, so the sweep steps over the printed tokens' own
-    /// pixels — hundreds of px wide at any font.
+    /// The link regex matches at the pixels of what was fed, a click inside
+    /// the path part of a URL resolves to the whole URL, and turning
+    /// **Allow hyperlinks** off and on removes and re-adds the regex. This is
+    /// the check that catches a pattern VTE accepts but that matches nothing,
+    /// which the compile check above cannot see. Cell size is not bound by
+    /// `vte4` 0.10, so the sweep steps over the printed tokens' own pixels —
+    /// hundreds of px wide at any font.
     #[test]
     #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact terminal::link_open::tests::the_link_regexes_match_where_they_were_fed`"]
     fn the_link_regexes_match_where_they_were_fed() {
@@ -365,8 +488,10 @@ mod tests {
                 std::thread::sleep(std::time::Duration::from_millis(10));
             }
         };
+        let url = "https://example.com/rustconn";
         let terminal = Terminal::new();
         setup_link_opening(&terminal);
+        set_enabled(&terminal, true);
         let host = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         host.append(&terminal);
         let window = gtk4::Window::builder()
@@ -379,17 +504,40 @@ mod tests {
         // `feed()` queues the bytes; VTE parses them on a later main-loop pass.
         pump(300);
 
-        let mut found = std::collections::HashSet::new();
+        // The rightmost pixel that matches sits on the URL's last character,
+        // inside its path part.
+        let mut rightmost = None;
         for x in (0..600).step_by(2) {
             for y in (0..60).step_by(2) {
-                if let Some(uri) = terminal.check_match_at(f64::from(x), f64::from(y)).0 {
-                    found.insert(uri.to_string());
+                let (x, y) = (f64::from(x), f64::from(y));
+                if terminal.check_match_at(x, y).0.as_deref() == Some(url) {
+                    rightmost = Some((x, y));
                 }
             }
         }
-        assert!(
-            found.contains("https://example.com/rustconn"),
-            "the URL never resolved; found {found:?}"
+        let Some((x, y)) = rightmost else {
+            panic!("the URL never resolved");
+        };
+        let tag = REGISTERED.with(|registered| {
+            registered
+                .borrow()
+                .iter()
+                .find(|entry| entry.terminal.upgrade().as_ref() == Some(&terminal))
+                .and_then(|entry| entry.tag.get())
+        });
+        assert!(tag.is_some(), "no link regex registered while enabled");
+        assert_eq!(
+            link_at(&terminal, tag, x, y),
+            Some(Link::Shown(url.to_owned()))
         );
+
+        set_enabled(&terminal, false);
+        assert_eq!(
+            terminal.check_match_at(x, y).0,
+            None,
+            "regex kept while off"
+        );
+        set_enabled(&terminal, true);
+        assert_eq!(terminal.check_match_at(x, y).0.as_deref(), Some(url));
     }
 }
