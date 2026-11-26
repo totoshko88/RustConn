@@ -12,16 +12,18 @@
 //! GUI-free and unit-tested, and can be overridden per connection or per
 //! group for devices with unusual wording (issue #254).
 //!
-//! Nothing is ever typed twice: each stage of the sequence fires once. A
-//! device that re-prompts after a rejected credential is left to the user, so
-//! a wrong stored password cannot walk an account into a lockout.
+//! Nothing is ever typed twice: each stage of the sequence fires once
+//! ([`LoginSequence`]). A device that re-prompts after a rejected credential
+//! is left to the user, so a wrong stored password cannot walk an account into
+//! a lockout; the server's echo of the account name on the prompt line just
+//! answered is not a re-prompt.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use gtk4::glib;
-use rustconn_core::{LoginPrompt, LoginPromptMatcher};
+use rustconn_core::{LoginAction, LoginPromptMatcher, LoginSequence};
 use secrecy::SecretString;
 use uuid::Uuid;
 
@@ -78,17 +80,6 @@ impl LoginAutofill {
     }
 }
 
-/// Which credential the watcher is still waiting to send.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Stage {
-    /// Waiting for the username prompt.
-    Username,
-    /// Waiting for the password prompt.
-    Password,
-    /// Everything that could be sent has been sent.
-    Done,
-}
-
 /// Starts watching `session_id` for login prompts and types the credentials.
 ///
 /// Subscribes to both `contents-changed` and `cursor-moved` and additionally
@@ -115,14 +106,13 @@ pub(crate) fn install_login_autofill(
         deadline_secs,
     } = spec;
 
-    // Skip straight to the password stage when there is no username to send:
-    // that is the SSH case, and also a device that only asks for a password.
-    let initial = if username.is_some() {
-        Stage::Username
-    } else {
-        Stage::Password
-    };
-    let stage = Rc::new(Cell::new(initial));
+    let send_username = username.is_some();
+    // The sequencing (which prompt gets what, once, and when to stop) lives in
+    // `LoginSequence`, GUI-free and unit-tested in rustconn-core.
+    let sequence = Rc::new(RefCell::new(LoginSequence::new(
+        username,
+        password.is_some(),
+    )));
 
     let deadline = deadline_secs
         .map(|s| Duration::from_secs(u64::from(s)))
@@ -131,43 +121,45 @@ pub(crate) fn install_login_autofill(
     tracing::info!(
         protocol,
         %session_id,
-        send_username = username.is_some(),
+        send_username,
         send_password = password.is_some(),
         custom_prompts = !matcher.is_default(),
         "Credentials available; will auto-fill on login prompt"
     );
 
     // One detect-and-send step, shared by the two signals and the timer. The
-    // stage is read first, so a stage can never fire twice no matter who calls.
+    // sequence returns each action at most once, so nothing fires twice no
+    // matter who calls.
     let step = {
         let notebook = notebook.clone();
-        let stage = stage.clone();
+        let sequence = sequence.clone();
         Rc::new(move || {
-            if stage.get() == Stage::Done {
+            if sequence.borrow().is_done() {
                 return;
             }
             let Some(line) = notebook.get_cursor_line_text(session_id) else {
                 return;
             };
-            let Some(prompt) = matcher.classify(&line) else {
-                return;
+            // Decide under a short borrow and release it before typing, so a
+            // signal VTE emits while we feed the child cannot re-enter a
+            // borrowed sequence.
+            let (action, user) = {
+                let mut seq = sequence.borrow_mut();
+                let action = seq.step(&matcher, &line);
+                (action, seq.username().map(str::to_owned))
             };
 
-            match (stage.get(), prompt) {
-                (Stage::Username, LoginPrompt::Username) => {
-                    if let Some(ref user) = username {
+            match action {
+                Some(LoginAction::SendUsername) => {
+                    if let Some(user) = user {
                         notebook.send_text_to_session(session_id, &format!("{user}\n"));
                         tracing::info!(protocol, "Username prompt detected; account name sent");
                     }
-                    stage.set(if password.is_some() {
-                        Stage::Password
-                    } else {
-                        Stage::Done
-                    });
                 }
-                // The device went straight to the password (or the account name
-                // travelled with the command line, as `telnet -l user` does).
-                (Stage::Username | Stage::Password, LoginPrompt::Password) => {
+                // The device asked for the password, after the name or straight
+                // away (the account name may have travelled with the command
+                // line, as `telnet -l user` does).
+                Some(LoginAction::SendPassword) => {
                     if let Some(ref secret) = password {
                         use secrecy::ExposeSecret;
                         // Zeroizing so the plaintext is wiped as soon as VTE has
@@ -177,20 +169,19 @@ pub(crate) fn install_login_autofill(
                         notebook.send_text_to_session(session_id, &input);
                         tracing::info!(protocol, "Password prompt detected; password sent");
                     }
-                    stage.set(Stage::Done);
                 }
-                // A username prompt while waiting for the password means the
+                // A new login prompt while waiting for the password means the
                 // device rejected the credentials and started over. Stop here
                 // and let the user decide — retrying automatically is how an
-                // account gets locked out.
-                (Stage::Password, LoginPrompt::Username) => {
+                // account gets locked out. The echo of our own answer on the
+                // prompt line does not count (`LoginSequence::step`).
+                Some(LoginAction::Stop) => {
                     tracing::info!(
                         protocol,
                         "Login prompt repeated after credentials were sent; auto-fill stopped"
                     );
-                    stage.set(Stage::Done);
                 }
-                (Stage::Done, _) => {}
+                None => {}
             }
         })
     };
@@ -209,11 +200,11 @@ pub(crate) fn install_login_autofill(
     // in flight is moot.
     {
         let step = step.clone();
-        let stage = stage.clone();
+        let sequence = sequence.clone();
         let notebook = notebook.clone();
         let last_activity = last_activity.clone();
         glib::timeout_add_local(POLL_INTERVAL, move || {
-            if stage.get() == Stage::Done {
+            if sequence.borrow().is_done() {
                 return glib::ControlFlow::Break;
             }
             // The tab was closed or the child exited — stop burning wake-ups.
@@ -229,7 +220,7 @@ pub(crate) fn install_login_autofill(
                     %session_id,
                     "Absolute timeout; stopping login auto-fill"
                 );
-                stage.set(Stage::Done);
+                sequence.borrow_mut().finish();
                 return glib::ControlFlow::Break;
             }
             if last_activity.get().elapsed() >= deadline {
@@ -238,11 +229,11 @@ pub(crate) fn install_login_autofill(
                     %session_id,
                     "Terminal idle past the auto-fill window with no login prompt; giving up"
                 );
-                stage.set(Stage::Done);
+                sequence.borrow_mut().finish();
                 return glib::ControlFlow::Break;
             }
             step();
-            if stage.get() == Stage::Done {
+            if sequence.borrow().is_done() {
                 glib::ControlFlow::Break
             } else {
                 glib::ControlFlow::Continue
