@@ -459,12 +459,12 @@ mod protocol_parse_tests {
         }
     }
 
-    /// I4: `add -H https://3.254.125.5:9090 -P web` stored and printed 443 and
-    /// announced `https://3.254.125.5:9090:443`.
+    /// I4: `add -H https://203.0.113.10:9090 -P web` stored and printed 443 and
+    /// announced `https://203.0.113.10:9090:443`.
     #[test]
     fn a_web_port_comes_from_its_url() {
         use rustconn_core::models::{Connection, ProtocolConfig, WebConfig};
-        assert_eq!(super::web_port("https://3.254.125.5:9090", 443), 9090);
+        assert_eq!(super::web_port("https://203.0.113.10:9090", 443), 9090);
         assert_eq!(super::web_port("https://example.com/app", 8080), 443);
         assert_eq!(super::web_port("http://example.com", 443), 80);
         assert_eq!(super::web_port("example.com:8443", 443), 8443);
@@ -473,11 +473,11 @@ mod protocol_parse_tests {
         // A connection saved with the wrong port shows the URL's.
         let web = Connection::new(
             "w".into(),
-            "https://3.254.125.5:9090".into(),
+            "https://203.0.113.10:9090".into(),
             443,
             ProtocolConfig::Web(WebConfig::default()),
         );
         assert_eq!(super::effective_port(&web), Some(9090));
-        assert_eq!(super::display_endpoint(&web), "https://3.254.125.5:9090");
+        assert_eq!(super::display_endpoint(&web), "https://203.0.113.10:9090");
     }
 }

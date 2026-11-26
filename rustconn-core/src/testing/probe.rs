@@ -725,7 +725,7 @@ mod tests {
         let network = NetworkSettings::default();
         let web = Connection::new(
             "cockpit".into(),
-            "https://3.254.125.5:9090/system".into(),
+            "https://203.0.113.10:9090/system".into(),
             443,
             ProtocolConfig::Web(WebConfig::default()),
         );
@@ -733,7 +733,7 @@ mod tests {
         assert_eq!(
             plan,
             ProbePlan::Tcp {
-                host: "3.254.125.5".into(),
+                host: "203.0.113.10".into(),
                 port: 9090,
                 ssh_banner: false
             }
@@ -882,7 +882,7 @@ mod tests {
         let ssm = ZeroTrustConfig {
             provider: ZeroTrustProvider::AwsSsm,
             provider_config: ZeroTrustProviderConfig::AwsSsm(AwsSsmConfig {
-                target: "i-00c38404623d15faf".into(),
+                target: "i-0123456789abcdef0".into(),
                 profile: "lab".into(),
                 region: Some("eu-west-1".into()),
             }),
@@ -890,7 +890,7 @@ mod tests {
         };
         let conn = Connection::new(
             "ssm".into(),
-            "i-00c38404623d15faf".into(),
+            "i-0123456789abcdef0".into(),
             22,
             ProtocolConfig::ZeroTrust(ssm),
         );
@@ -899,7 +899,7 @@ mod tests {
         };
         assert_eq!(
             args.join(" "),
-            "ssm describe-instance-information --filters Key=InstanceIds,Values=i-00c38404623d15faf \
+            "ssm describe-instance-information --filters Key=InstanceIds,Values=i-0123456789abcdef0 \
              --query InstanceInformationList[0].PingStatus --output text --profile lab --region eu-west-1"
         );
         let other = ZeroTrustConfig {

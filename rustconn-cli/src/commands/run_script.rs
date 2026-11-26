@@ -1405,7 +1405,7 @@ mod tests {
     #[test]
     fn only_an_unknown_host_key_gets_the_accept_new_hint() {
         assert!(super::is_unknown_host_key(
-            "No ED25519 host key is known for 172.31.6.28 and you have requested strict checking."
+            "No ED25519 host key is known for 10.0.0.5 and you have requested strict checking."
         ));
         assert!(!super::is_unknown_host_key("Host key verification failed."));
         assert!(!super::is_unknown_host_key(

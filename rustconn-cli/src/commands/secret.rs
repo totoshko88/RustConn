@@ -1926,10 +1926,10 @@ mod store_message_tests {
         assert_eq!(super::entry_url(&ssh), "ssh://10.0.0.5:2222");
         let web = Connection::new(
             "w".into(),
-            "https://3.254.125.5:9090".into(),
+            "https://203.0.113.10:9090".into(),
             443,
             ProtocolConfig::Web(WebConfig::default()),
         );
-        assert_eq!(super::entry_url(&web), "https://3.254.125.5:9090");
+        assert_eq!(super::entry_url(&web), "https://203.0.113.10:9090");
     }
 }

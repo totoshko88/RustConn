@@ -1988,13 +1988,13 @@ fn a_web_connection_takes_its_port_from_the_url() {
             "--name",
             "cockpit",
             "-H",
-            "https://3.254.125.5:9090",
+            "https://203.0.113.10:9090",
             "-P",
             "web",
         ],
         dir,
     );
-    assert!(stdout.contains(" https://3.254.125.5:9090)"), "{stdout}");
+    assert!(stdout.contains(" https://203.0.113.10:9090)"), "{stdout}");
     assert!(!stdout.contains(":9090:"), "{stdout}");
     assert_eq!(load_connection(dir, "cockpit").port, 9090);
     assert_eq!(show_json(dir, "cockpit")["port"], 9090);
