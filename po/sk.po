@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 01:32+0200\n"
+"POT-Creation-Date: 2026-11-26 11:20+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -120,7 +120,7 @@ msgstr ""
 #: rustconn/src/app.rs:967 rustconn/src/detached_window.rs:492
 #: rustconn/src/dialogs/command_palette.rs:697
 #: rustconn/src/dialogs/settings/mod.rs:245
-#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:439
+#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:467
 #: rustconn/src/split_view/bridge.rs:2317 rustconn/src/window/ui.rs:97
 #: rustconn/src/window/ui.rs:99 rustconn/src/window/ui.rs:339
 msgid "Settings"
@@ -279,7 +279,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/detached_window.rs:157
 #: rustconn/src/embedded_rdp/connection.rs:1787
 #: rustconn/src/embedded_rdp/connection.rs:2780
-#: rustconn/src/embedded_rdp/mod.rs:825 rustconn/src/embedded_rdp/mod.rs:2330
+#: rustconn/src/embedded_rdp/mod.rs:853 rustconn/src/embedded_rdp/mod.rs:2358
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:159
 #: rustconn/src/session_group_window.rs:1138
@@ -3801,7 +3801,7 @@ msgstr "Synchronizovať schránku so vzdialeným"
 #: rustconn/src/dialogs/connection/spice.rs:179
 #: rustconn/src/dialogs/connection/vnc.rs:131
 #: rustconn/src/dialogs/snippet.rs:237 rustconn/src/dialogs/template.rs:1300
-#: rustconn/src/embedded_rdp/mod.rs:452
+#: rustconn/src/embedded_rdp/mod.rs:480
 msgid "Auto"
 msgstr "Auto"
 
@@ -5080,7 +5080,7 @@ msgstr "Prístupová fráza prenosného súboru"
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
-#: rustconn/src/embedded_rdp/mod.rs:623 rustconn/src/embedded_vnc/ui.rs:51
+#: rustconn/src/embedded_rdp/mod.rs:651 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
 msgid "Copy"
 msgstr "Kopírovať"
@@ -7490,7 +7490,7 @@ msgstr "Chyba"
 
 #: rustconn/src/dialogs/script.rs:109 rustconn/src/dialogs/script.rs:139
 #: rustconn/src/dialogs/script.rs:142 rustconn/src/dialogs/script.rs:176
-#: rustconn/src/embedded_rdp/mod.rs:458 rustconn/src/embedded_rdp/mod.rs:1197
+#: rustconn/src/embedded_rdp/mod.rs:486 rustconn/src/embedded_rdp/mod.rs:1225
 #: rustconn/src/window/ui.rs:294
 msgid "Scripts"
 msgstr "Skripty"
@@ -7530,7 +7530,7 @@ msgstr "ID skriptu"
 msgid "Select or create a script."
 msgstr "Vyberte alebo vytvorte skript."
 
-#: rustconn/src/dialogs/script.rs:256 rustconn/src/embedded_rdp/mod.rs:1441
+#: rustconn/src/dialogs/script.rs:256 rustconn/src/embedded_rdp/mod.rs:1469
 #: rustconn/src/window/remote_script.rs:399
 #: rustconn/src/window/remote_script.rs:617 rustconn/src/window/snippets.rs:113
 msgid "Run"
@@ -7762,7 +7762,7 @@ msgid "Download H.264 codec?"
 msgstr "Stiahnuť kodek H.264?"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:451
-#: rustconn/src/embedded_rdp/mod.rs:1900
+#: rustconn/src/embedded_rdp/mod.rs:1928
 #: rustconn/src/window/network_tools/remote_edit.rs:137
 msgid "Downloading…"
 msgstr "Sťahovanie…"
@@ -10205,7 +10205,7 @@ msgstr "Prejsť na terminál"
 msgid "Command Palette (Commands)"
 msgstr "Paleta príkazov (príkazy)"
 
-#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:631
+#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:659
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:303
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
@@ -10394,11 +10394,11 @@ msgstr "Cieľ"
 msgid "Where this snippet can be executed"
 msgstr "Kde je možné tento úryvok spustiť"
 
-#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:453
+#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:481
 msgid "Clipboard (fast)"
 msgstr "Schránka (rýchle)"
 
-#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:454
+#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:482
 msgid "Autotype (reliable)"
 msgstr "Automatické písanie (spoľahlivé)"
 
@@ -10629,8 +10629,8 @@ msgstr "Úroveň kvality"
 msgid "0 (lowest) to 9 (best quality)"
 msgstr "0 (najnižšia) do 9 (najlepšia kvalita)"
 
-#: rustconn/src/dialogs/template.rs:1142 rustconn/src/embedded_rdp/mod.rs:658
-#: rustconn/src/embedded_rdp/mod.rs:664 rustconn/src/embedded_vnc/ui.rs:86
+#: rustconn/src/dialogs/template.rs:1142 rustconn/src/embedded_rdp/mod.rs:686
+#: rustconn/src/embedded_rdp/mod.rs:692 rustconn/src/embedded_vnc/ui.rs:86
 #: rustconn/src/embedded_vnc/ui.rs:92 rustconn/src/split_view/adapter.rs:1078
 msgid "View Only"
 msgstr "Iba zobrazenie"
@@ -11887,7 +11887,7 @@ msgstr ""
 "použije FreeRDP."
 
 #: rustconn/src/embedded_rdp/connection.rs:867
-#: rustconn/src/embedded_rdp/connection.rs:3033
+#: rustconn/src/embedded_rdp/connection.rs:3042
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr ""
 "Pripojenie bolo zrušené, pretože server vyžaduje zastarané zabezpečenie RDP."
@@ -11933,47 +11933,206 @@ msgstr ""
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr "Spojenie sa stratilo. Opätovné pripájanie (pokus {} z {})…"
 
-#: rustconn/src/embedded_rdp/connection.rs:3070
+#: rustconn/src/embedded_rdp/connection.rs:3079
 msgid "Could not prepare the external RDP compatibility client."
 msgstr ""
 "Nepodarilo sa pripraviť externého klienta RDP na zabezpečenie kompatibility."
 
-#: rustconn/src/embedded_rdp/connection.rs:3081
+#: rustconn/src/embedded_rdp/connection.rs:3093
+msgid ""
+"The server offers only legacy RDP security, so the session opened in the "
+"external RDP client. To open it here, turn on TLS on the server, for example "
+"security_layer=tls in xrdp.ini."
+msgstr ""
+"Server ponúka iba zastarané zabezpečenie RDP, preto sa relácia otvorila v "
+"externom RDP klientovi. Ak ju chcete otvárať tu, zapnite na serveri TLS, "
+"napríklad security_layer=tls v xrdp.ini."
+
+#: rustconn/src/embedded_rdp/connection.rs:3096
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "Používa sa externý RDP klient (server vyžaduje licencovanie RDS)"
 
-#: rustconn/src/embedded_rdp/connection.rs:3083
+#: rustconn/src/embedded_rdp/connection.rs:3098
 msgid "Using external RDP client (server incompatible)"
 msgstr "Používa sa externý RDP klient (server nekompatibilný)"
 
-#: rustconn/src/embedded_rdp/connection.rs:3101
-#: rustconn/src/embedded_rdp/connection.rs:3698
+#: rustconn/src/embedded_rdp/connection.rs:3116
+#: rustconn/src/embedded_rdp/connection.rs:3721
 msgid "The external RDP client could not be started."
 msgstr "Externého klienta RDP sa nepodarilo spustiť."
 
-#: rustconn/src/embedded_rdp/connection.rs:3139
+#: rustconn/src/embedded_rdp/connection.rs:3154
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Externého klienta RDP sa nepodarilo spustiť. Nainštalujte FreeRDP 3 a skúste "
 "to znova."
 
-#: rustconn/src/embedded_rdp/connection.rs:3220
+#: rustconn/src/embedded_rdp/connection.rs:3236
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "Pripojenie TLS zlyhalo. Server nemusí podporovať túto úroveň zabezpečenia."
 
-#: rustconn/src/embedded_rdp/connection.rs:3224
+#: rustconn/src/embedded_rdp/connection.rs:3240
 msgid "Connection refused. Check host and port."
 msgstr "Pripojenie odmietnuté. Skontrolujte hostiteľa a port."
 
-#: rustconn/src/embedded_rdp/connection.rs:3227
+#: rustconn/src/embedded_rdp/connection.rs:3243
 #: rustconn/src/embedded_web/mod.rs:653
 msgid "Connection timed out. Check that the host is reachable."
 msgstr ""
 "Časový limit pripojenia vypršal. Skontrolujte, či je hostiteľ dostupný."
 
-#: rustconn/src/embedded_rdp/connection.rs:3248
+#: rustconn/src/embedded_rdp/connection.rs:3270
+msgid ""
+"Account restrictions refused this sign-in. Protected Users members cannot "
+"use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
+msgstr ""
+"Obmedzenia účtu toto prihlásenie odmietli. Členovia skupiny Protected Users "
+"nemôžu používať NTLM: zapnite overovanie Kerberos v nastaveniach RDP daného "
+"pripojenia."
+
+#: rustconn/src/embedded_rdp/connection.rs:3273
+msgid "Authentication failed: account restrictions prevent this login."
+msgstr "Overenie zlyhalo: obmedzenia účtu bránia prihláseniu."
+
+#: rustconn/src/embedded_rdp/connection.rs:3276
+msgid ""
+"The password must be changed before the first sign-in. Change it or ask the "
+"server administrator to reset it, then connect again."
+msgstr ""
+"Heslo je potrebné zmeniť pred prvým prihlásením. Zmeňte ho alebo požiadajte "
+"správcu servera o jeho obnovenie a potom sa pripojte znova."
+
+#: rustconn/src/embedded_rdp/connection.rs:3279
+msgid "The account is disabled. Ask the server administrator to enable it."
+msgstr "Účet je zakázaný. Požiadajte správcu servera o jeho povolenie."
+
+#: rustconn/src/embedded_rdp/connection.rs:3282
+msgid ""
+"The account is locked out after too many failed sign-ins. Wait for the "
+"lockout to end or ask the server administrator to unlock it."
+msgstr ""
+"Účet je po príliš mnohých neúspešných prihláseniach uzamknutý. Počkajte na "
+"koniec uzamknutia alebo požiadajte správcu servera o jeho odomknutie."
+
+#: rustconn/src/embedded_rdp/connection.rs:3285
+msgid ""
+"The password has expired. Change it or ask the server administrator to reset "
+"it, then connect again."
+msgstr ""
+"Platnosť hesla vypršala. Zmeňte ho alebo požiadajte správcu servera o jeho "
+"obnovenie a potom sa pripojte znova."
+
+#: rustconn/src/embedded_rdp/connection.rs:3287
+msgid "Authentication failed: account has expired."
+msgstr "Overenie zlyhalo: platnosť účtu vypršala."
+
+#: rustconn/src/embedded_rdp/connection.rs:3289
+msgid "Authentication failed: account is disabled, locked out or expired."
+msgstr ""
+"Overenie zlyhalo: účet je zakázaný, uzamknutý alebo mu vypršala platnosť."
+
+#: rustconn/src/embedded_rdp/connection.rs:3292
+msgid "Authentication failed: user is not allowed to log on to this computer."
+msgstr ""
+"Overenie zlyhalo: používateľ nemá oprávnenie prihlásiť sa na tomto počítači."
+
+#: rustconn/src/embedded_rdp/connection.rs:3296
+msgid ""
+"No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
+"connection's RDP settings or add the realm to /etc/krb5.conf."
+msgstr ""
+"Pre oblasť {} sa nenašiel žiadny Kerberos KDC. Zadajte adresu KDC v "
+"nastaveniach RDP daného pripojenia alebo pridajte oblasť do /etc/krb5.conf."
+
+#: rustconn/src/embedded_rdp/connection.rs:3300
+#: rustconn/src/embedded_rdp/connection.rs:3340
+msgid ""
+"Kerberos needs the DNS domain. Enter it in the Domain field, for example "
+"EXAMPLE.COM."
+msgstr ""
+"Kerberos potrebuje doménu DNS. Zadajte ju do poľa Doména, napríklad "
+"EXAMPLE.COM."
+
+#: rustconn/src/embedded_rdp/connection.rs:3304
+msgid ""
+"Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
+"address as the KDC Address in the connection's RDP settings."
+msgstr ""
+"Kerberos KDC nie je dostupný. Zadajte názov alebo IP adresu radiča domény "
+"ako adresu KDC v nastaveniach RDP daného pripojenia."
+
+#: rustconn/src/embedded_rdp/connection.rs:3307
+msgid ""
+"Kerberos sign-in failed: this computer's clock differs from the domain's by "
+"more than five minutes. Synchronize the clock and try again."
+msgstr ""
+"Prihlásenie cez Kerberos zlyhalo: hodiny tohto počítača sa líšia od hodín "
+"domény o viac ako päť minút. Synchronizujte hodiny a skúste to znova."
+
+#: rustconn/src/embedded_rdp/connection.rs:3310
+msgid ""
+"The domain does not know this server by the name in Host. Connect by the "
+"server's DNS name, as registered in the domain."
+msgstr ""
+"Doména nepozná tento server pod názvom uvedeným v poli Hostiteľ. Pripojte sa "
+"pomocou názvu servera v DNS tak, ako je zaregistrovaný v doméne."
+
+#: rustconn/src/embedded_rdp/connection.rs:3312
+msgid "NLA authentication failed. Check username and password."
+msgstr "Overenie NLA zlyhalo. Skontrolujte meno používateľa a heslo."
+
+#: rustconn/src/embedded_rdp/connection.rs:3334
+msgid ""
+"Kerberos needs the server's DNS name. Connecting by IP address or through an "
+"SSH tunnel fails."
+msgstr ""
+"Kerberos potrebuje názov servera v DNS. Pripojenie cez IP adresu alebo cez "
+"tunel SSH zlyhá."
+
+#: rustconn/src/embedded_rdp/connection.rs:3337
+msgid ""
+"Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
+"name."
+msgstr ""
+"Kerberos potrebuje doménu DNS, napríklad EXAMPLE.COM, nie krátky názov "
+"domény."
+
+#: rustconn/src/embedded_rdp/connection.rs:3748
+msgid "RDP session will open in an external window"
+msgstr "Relácia RDP sa otvorí v externom okne"
+
+#: rustconn/src/embedded_rdp/connection.rs:3777
+msgid "Failed to start FreeRDP: {}"
+msgstr "Nepodarilo sa spustiť FreeRDP: {}"
+
+#: rustconn/src/embedded_rdp/file_dnd.rs:225
+msgid "File drag disabled: {}"
+msgstr "Ťahanie súborov zakázané: {}"
+
+#: rustconn/src/embedded_rdp/mod.rs:83
+msgid "The server requires a password to sign in."
+msgstr "Server vyžaduje na prihlásenie heslo."
+
+#: rustconn/src/embedded_rdp/mod.rs:101
+msgid "The user name or password is incorrect. Check them and try again."
+msgstr ""
+"Používateľské meno alebo heslo je nesprávne. Skontrolujte ich a skúste to "
+"znova."
+
+#: rustconn/src/embedded_rdp/mod.rs:104
+msgid ""
+"The user name or password is incorrect. Check them and try again. If the "
+"server is KDE KRdp and they are correct, set Server OS to Linux in the "
+"connection's RDP settings or update KRdp to 6.7.90 or newer."
+msgstr ""
+"Používateľské meno alebo heslo je nesprávne. Skontrolujte ich a skúste to "
+"znova. Ak je server KDE KRdp a údaje sú správne, nastavte v nastaveniach RDP "
+"pripojenia OS servera na Linux alebo aktualizujte KRdp na verziu 6.7.90 "
+"alebo novšiu."
+
+#: rustconn/src/embedded_rdp/mod.rs:107
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -11986,265 +12145,145 @@ msgstr ""
 "na 6.7.90 alebo novšiu, alebo nastavte na serveri ExtSecurity=0 (FreeRDP "
 "issue #13567)."
 
-#: rustconn/src/embedded_rdp/connection.rs:3253
-msgid ""
-"Account restrictions refused this sign-in. Protected Users members cannot "
-"use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
-msgstr ""
-"Obmedzenia účtu toto prihlásenie odmietli. Členovia skupiny Protected Users "
-"nemôžu používať NTLM: zapnite overovanie Kerberos v nastaveniach RDP daného "
-"pripojenia."
-
-#: rustconn/src/embedded_rdp/connection.rs:3256
-msgid "Authentication failed: account restrictions prevent this login."
-msgstr "Overenie zlyhalo: obmedzenia účtu bránia prihláseniu."
-
-#: rustconn/src/embedded_rdp/connection.rs:3259
-msgid "Authentication failed: password must be changed before first login."
-msgstr "Overenie zlyhalo: heslo je potrebné zmeniť pred prvým prihlásením."
-
-#: rustconn/src/embedded_rdp/connection.rs:3261
-msgid "Authentication failed: account is disabled."
-msgstr "Overenie zlyhalo: účet je zakázaný."
-
-#: rustconn/src/embedded_rdp/connection.rs:3262
-msgid "Authentication failed: account is locked out."
-msgstr "Overenie zlyhalo: účet je uzamknutý."
-
-#: rustconn/src/embedded_rdp/connection.rs:3263
-msgid "Authentication failed: password has expired."
-msgstr "Overenie zlyhalo: platnosť hesla vypršala."
-
-#: rustconn/src/embedded_rdp/connection.rs:3264
-msgid "Authentication failed: account has expired."
-msgstr "Overenie zlyhalo: platnosť účtu vypršala."
-
-#: rustconn/src/embedded_rdp/connection.rs:3266
-msgid "Authentication failed: account is disabled, locked out or expired."
-msgstr ""
-"Overenie zlyhalo: účet je zakázaný, uzamknutý alebo mu vypršala platnosť."
-
-#: rustconn/src/embedded_rdp/connection.rs:3269
-msgid "Authentication failed: user is not allowed to log on to this computer."
-msgstr ""
-"Overenie zlyhalo: používateľ nemá oprávnenie prihlásiť sa na tomto počítači."
-
-#: rustconn/src/embedded_rdp/connection.rs:3273
-msgid ""
-"No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
-"connection's RDP settings or add the realm to /etc/krb5.conf."
-msgstr ""
-"Pre oblasť {} sa nenašiel žiadny Kerberos KDC. Zadajte adresu KDC v "
-"nastaveniach RDP daného pripojenia alebo pridajte oblasť do /etc/krb5.conf."
-
-#: rustconn/src/embedded_rdp/connection.rs:3277
-#: rustconn/src/embedded_rdp/connection.rs:3317
-msgid ""
-"Kerberos needs the DNS domain. Enter it in the Domain field, for example "
-"EXAMPLE.COM."
-msgstr ""
-"Kerberos potrebuje doménu DNS. Zadajte ju do poľa Doména, napríklad "
-"EXAMPLE.COM."
-
-#: rustconn/src/embedded_rdp/connection.rs:3281
-msgid ""
-"Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
-"address as the KDC Address in the connection's RDP settings."
-msgstr ""
-"Kerberos KDC nie je dostupný. Zadajte názov alebo IP adresu radiča domény "
-"ako adresu KDC v nastaveniach RDP daného pripojenia."
-
-#: rustconn/src/embedded_rdp/connection.rs:3284
-msgid ""
-"Kerberos sign-in failed: this computer's clock differs from the domain's by "
-"more than five minutes. Synchronize the clock and try again."
-msgstr ""
-"Prihlásenie cez Kerberos zlyhalo: hodiny tohto počítača sa líšia od hodín "
-"domény o viac ako päť minút. Synchronizujte hodiny a skúste to znova."
-
-#: rustconn/src/embedded_rdp/connection.rs:3287
-msgid ""
-"The domain does not know this server by the name in Host. Connect by the "
-"server's DNS name, as registered in the domain."
-msgstr ""
-"Doména nepozná tento server pod názvom uvedeným v poli Hostiteľ. Pripojte sa "
-"pomocou názvu servera v DNS tak, ako je zaregistrovaný v doméne."
-
-#: rustconn/src/embedded_rdp/connection.rs:3289
-msgid "NLA authentication failed. Check username and password."
-msgstr "Overenie NLA zlyhalo. Skontrolujte meno používateľa a heslo."
-
-#: rustconn/src/embedded_rdp/connection.rs:3311
-msgid ""
-"Kerberos needs the server's DNS name. Connecting by IP address or through an "
-"SSH tunnel fails."
-msgstr ""
-"Kerberos potrebuje názov servera v DNS. Pripojenie cez IP adresu alebo cez "
-"tunel SSH zlyhá."
-
-#: rustconn/src/embedded_rdp/connection.rs:3314
-msgid ""
-"Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
-"name."
-msgstr ""
-"Kerberos potrebuje doménu DNS, napríklad EXAMPLE.COM, nie krátky názov "
-"domény."
-
-#: rustconn/src/embedded_rdp/connection.rs:3725
-msgid "RDP session will open in an external window"
-msgstr "Relácia RDP sa otvorí v externom okne"
-
-#: rustconn/src/embedded_rdp/connection.rs:3754
-msgid "Failed to start FreeRDP: {}"
-msgstr "Nepodarilo sa spustiť FreeRDP: {}"
-
-#: rustconn/src/embedded_rdp/file_dnd.rs:225
-msgid "File drag disabled: {}"
-msgstr "Ťahanie súborov zakázané: {}"
-
-#: rustconn/src/embedded_rdp/mod.rs:83
-msgid "The server requires a password to sign in."
-msgstr "Server vyžaduje na prihlásenie heslo."
-
-#: rustconn/src/embedded_rdp/mod.rs:438
+#: rustconn/src/embedded_rdp/mod.rs:466
 msgid "Task Manager"
 msgstr "Správca úloh"
 
-#: rustconn/src/embedded_rdp/mod.rs:440
+#: rustconn/src/embedded_rdp/mod.rs:468
 msgid "Registry Editor"
 msgstr "Editor databázy registrov"
 
-#: rustconn/src/embedded_rdp/mod.rs:441
+#: rustconn/src/embedded_rdp/mod.rs:469
 msgid "Device Manager"
 msgstr "Správca zariadení"
 
-#: rustconn/src/embedded_rdp/mod.rs:442
+#: rustconn/src/embedded_rdp/mod.rs:470
 msgid "Event Viewer"
 msgstr "Prehliadač udalostí"
 
-#: rustconn/src/embedded_rdp/mod.rs:443
+#: rustconn/src/embedded_rdp/mod.rs:471
 msgid "Services"
 msgstr "Služby"
 
-#: rustconn/src/embedded_rdp/mod.rs:444
+#: rustconn/src/embedded_rdp/mod.rs:472
 msgid "Disk Management"
 msgstr "Správa diskov"
 
-#: rustconn/src/embedded_rdp/mod.rs:445
+#: rustconn/src/embedded_rdp/mod.rs:473
 msgid "Resource Monitor"
 msgstr "Monitor zdrojov"
 
-#: rustconn/src/embedded_rdp/mod.rs:446
+#: rustconn/src/embedded_rdp/mod.rs:474
 msgid "Computer Management"
 msgstr "Správa počítača"
 
-#: rustconn/src/embedded_rdp/mod.rs:448
+#: rustconn/src/embedded_rdp/mod.rs:476
 msgid "Auto (Windows tools shown)"
 msgstr "Automaticky (nástroje Windows zobrazené)"
 
-#: rustconn/src/embedded_rdp/mod.rs:449
+#: rustconn/src/embedded_rdp/mod.rs:477
 msgid "Windows"
 msgstr "Windows"
 
-#: rustconn/src/embedded_rdp/mod.rs:450
+#: rustconn/src/embedded_rdp/mod.rs:478
 msgid "Linux (hide Windows tools)"
 msgstr "Linux (nástroje Windows skryté)"
 
-#: rustconn/src/embedded_rdp/mod.rs:456 rustconn/src/embedded_rdp/mod.rs:1180
+#: rustconn/src/embedded_rdp/mod.rs:484 rustconn/src/embedded_rdp/mod.rs:1208
 msgid "Shell Launchers"
 msgstr "Spúšťače shellu"
 
-#: rustconn/src/embedded_rdp/mod.rs:460 rustconn/src/embedded_rdp/mod.rs:1175
+#: rustconn/src/embedded_rdp/mod.rs:488 rustconn/src/embedded_rdp/mod.rs:1203
 msgid "PowerShell (Admin)"
 msgstr "PowerShell (Admin)"
 
-#: rustconn/src/embedded_rdp/mod.rs:461 rustconn/src/embedded_rdp/mod.rs:1179
+#: rustconn/src/embedded_rdp/mod.rs:489 rustconn/src/embedded_rdp/mod.rs:1207
 msgid "CMD (Admin)"
 msgstr "CMD (Admin)"
 
-#: rustconn/src/embedded_rdp/mod.rs:604 rustconn/src/embedded_rdp/mod.rs:606
+#: rustconn/src/embedded_rdp/mod.rs:632 rustconn/src/embedded_rdp/mod.rs:634
 msgid "Fit resolution to window"
 msgstr "Prispôsobiť vzdialenú plochu veľkosti okna"
 
-#: rustconn/src/embedded_rdp/mod.rs:625 rustconn/src/embedded_vnc/ui.rs:53
+#: rustconn/src/embedded_rdp/mod.rs:653 rustconn/src/embedded_vnc/ui.rs:53
 msgid "Copy remote clipboard to local (waiting for remote data…)"
 msgstr ""
 "Kopírovať vzdialenú schránku do lokálnej (čakanie na vzdialené "
 "dáta…)Kopírovať vzdialenú schránku do miestnej (čakanie na dáta…)Kopírovať "
 "vzdialenú schránku do miestnej (čakanie na vzdialené dáta…)"
 
-#: rustconn/src/embedded_rdp/mod.rs:632 rustconn/src/embedded_vnc/ui.rs:63
+#: rustconn/src/embedded_rdp/mod.rs:660 rustconn/src/embedded_vnc/ui.rs:63
 msgid "Paste from local clipboard to remote session"
 msgstr "Prilepiť z miestnej schránky do vzdialenej relácie"
 
-#: rustconn/src/embedded_rdp/mod.rs:637 rustconn/src/embedded_rdp/mod.rs:642
+#: rustconn/src/embedded_rdp/mod.rs:665 rustconn/src/embedded_rdp/mod.rs:670
 msgid "Autotype"
 msgstr "Automatické písanie"
 
-#: rustconn/src/embedded_rdp/mod.rs:639
+#: rustconn/src/embedded_rdp/mod.rs:667
 msgid "Send text as keystrokes (bypasses paste restrictions)"
 msgstr "Odoslať text ako stlačenia klávesov (obchádza obmedzenia vkladania)"
 
-#: rustconn/src/embedded_rdp/mod.rs:646
+#: rustconn/src/embedded_rdp/mod.rs:674
 msgid "Type Clipboard"
 msgstr "Zadať schránku"
 
-#: rustconn/src/embedded_rdp/mod.rs:649
+#: rustconn/src/embedded_rdp/mod.rs:677
 msgid "Type Text…"
 msgstr "Zadať text…"
 
-#: rustconn/src/embedded_rdp/mod.rs:662 rustconn/src/embedded_vnc/ui.rs:90
+#: rustconn/src/embedded_rdp/mod.rs:690 rustconn/src/embedded_vnc/ui.rs:90
 msgid "Observe only: block all input to the remote session"
 msgstr "Iba sledovanie: blokovať všetok vstup do vzdialenej relácie"
 
-#: rustconn/src/embedded_rdp/mod.rs:676
+#: rustconn/src/embedded_rdp/mod.rs:704
 msgid "Run PowerShell script on remote"
 msgstr "Spustiť PowerShell skript na vzdialenom počítači"
 
-#: rustconn/src/embedded_rdp/mod.rs:679
+#: rustconn/src/embedded_rdp/mod.rs:707
 msgid "Run script on remote"
 msgstr "Spustiť skript na vzdialenom počítači"
 
-#: rustconn/src/embedded_rdp/mod.rs:694 rustconn/src/embedded_vnc/ui.rs:73
+#: rustconn/src/embedded_rdp/mod.rs:722 rustconn/src/embedded_vnc/ui.rs:73
 msgid "Ctrl+Alt+Del"
 msgstr "Ctrl+Alt+Del"
 
-#: rustconn/src/embedded_rdp/mod.rs:702 rustconn/src/embedded_vnc/ui.rs:79
+#: rustconn/src/embedded_rdp/mod.rs:730 rustconn/src/embedded_vnc/ui.rs:79
 msgid "Send Ctrl+Alt+Del to remote session"
 msgstr "Odoslať Ctrl+Alt+Del do vzdialenej relácie"
 
-#: rustconn/src/embedded_rdp/mod.rs:708 rustconn/src/embedded_rdp/mod.rs:711
+#: rustconn/src/embedded_rdp/mod.rs:736 rustconn/src/embedded_rdp/mod.rs:739
 msgid "Windows admin tools"
 msgstr "Nástroje správy Windows"
 
-#: rustconn/src/embedded_rdp/mod.rs:735
+#: rustconn/src/embedded_rdp/mod.rs:763
 msgid "Save Files"
 msgstr "Uložiť súbory"
 
-#: rustconn/src/embedded_rdp/mod.rs:738
+#: rustconn/src/embedded_rdp/mod.rs:766
 msgid "Save files from remote clipboard"
 msgstr "Uložiť súbory zo vzdialenej schránky"
 
-#: rustconn/src/embedded_rdp/mod.rs:828 rustconn/src/embedded_vnc/ui.rs:162
+#: rustconn/src/embedded_rdp/mod.rs:856 rustconn/src/embedded_vnc/ui.rs:162
 #: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:428
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1334
 msgid "Reconnect"
 msgstr "Znovu pripojiť"
 
-#: rustconn/src/embedded_rdp/mod.rs:830 rustconn/src/embedded_vnc/ui.rs:164
+#: rustconn/src/embedded_rdp/mod.rs:858 rustconn/src/embedded_vnc/ui.rs:164
 #: rustconn/src/terminal/session_lifecycle.rs:818
 #: rustconn/src/terminal/spawn.rs:192
 msgid "Reconnect to this session"
 msgstr "Znovu pripojiť k tejto relácii"
 
-#: rustconn/src/embedded_rdp/mod.rs:1007
+#: rustconn/src/embedded_rdp/mod.rs:1035
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr ""
 "Zapnite zdieľanie schránky, aby ste mohli posielať súbory do vzdialenej "
 "relácie"
 
-#: rustconn/src/embedded_rdp/mod.rs:1095
+#: rustconn/src/embedded_rdp/mod.rs:1123
 msgid ""
 "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
 "paste"
@@ -12252,28 +12291,28 @@ msgstr ""
 "{} súbor(ov) skopírovaných do vzdialenej schránky — vlož stlačením Ctrl+V v "
 "relácii"
 
-#: rustconn/src/embedded_rdp/mod.rs:1173
+#: rustconn/src/embedded_rdp/mod.rs:1201
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1178
+#: rustconn/src/embedded_rdp/mod.rs:1206
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1272 rustconn/src/embedded_rdp/mod.rs:1343
-#: rustconn/src/embedded_rdp/mod.rs:1723
+#: rustconn/src/embedded_rdp/mod.rs:1300 rustconn/src/embedded_rdp/mod.rs:1371
+#: rustconn/src/embedded_rdp/mod.rs:1751
 msgid "Channel not ready"
 msgstr "Kanál nie je pripravený"
 
-#: rustconn/src/embedded_rdp/mod.rs:1317 rustconn/src/embedded_rdp/mod.rs:1370
+#: rustconn/src/embedded_rdp/mod.rs:1345 rustconn/src/embedded_rdp/mod.rs:1398
 msgid "Script sent"
 msgstr "Skript odoslaný"
 
-#: rustconn/src/embedded_rdp/mod.rs:1428 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1456 rustconn/src/window/snippets.rs:108
 msgid "Execute Snippet?"
 msgstr "Spustiť úryvok?"
 
-#: rustconn/src/embedded_rdp/mod.rs:1435 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1463 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -12283,15 +12322,15 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1785
+#: rustconn/src/embedded_rdp/mod.rs:1813
 msgid "Select folder to save files"
 msgstr "Vybrať priečinok na uloženie súborov"
 
-#: rustconn/src/embedded_rdp/mod.rs:1918
+#: rustconn/src/embedded_rdp/mod.rs:1946
 msgid "Downloading files…"
 msgstr "Sťahovanie súborov…"
 
-#: rustconn/src/embedded_rdp/mod.rs:2315
+#: rustconn/src/embedded_rdp/mod.rs:2343
 msgid "Connection may have been lost while the computer slept"
 msgstr "Pripojenie sa mohlo prerušiť, kým bol počítač uspaný"
 
@@ -13977,7 +14016,7 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Medzihostiteľ nie je dostupný"
 
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:827
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:854
 #: rustconn/src/window/session_start.rs:1079
 #: rustconn/src/window/session_start.rs:1145
 msgid "Connect Anyway"
@@ -15823,7 +15862,7 @@ msgstr "Prestupný hostiteľ je nedostupný, pripája sa cez „{}“"
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Žiadny prestupný hostiteľ neodpovedal, skúša sa „{}“"
 
-#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1632
+#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1659
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr ""
 "Nenašiel sa žiadny prehliadač VNC. Nainštalujte TigerVNC alebo Remmina."
@@ -15890,11 +15929,11 @@ msgstr "Upozornenie: socket agenta SSH {}: {}"
 msgid "SSH tunnel failed: {}"
 msgstr "SSH tunel zlyhal: {}"
 
-#: rustconn/src/window/rdp_vnc.rs:823
+#: rustconn/src/window/rdp_vnc.rs:850
 msgid "Use Legacy RDP Security?"
 msgstr "Použiť zastarané zabezpečenie RDP?"
 
-#: rustconn/src/window/rdp_vnc.rs:825
+#: rustconn/src/window/rdp_vnc.rs:852
 msgid ""
 "This server only supports Standard RDP Security, which is weaker than TLS or "
 "Network Level Authentication. Continue with the external RDP client?"
@@ -15902,11 +15941,11 @@ msgstr ""
 "Tento server podporuje iba štandardné zabezpečenie RDP, ktoré je slabšie ako "
 "TLS alebo overenie na úrovni siete. Pokračovať pomocou externého klienta RDP?"
 
-#: rustconn/src/window/rdp_vnc.rs:856 rustconn/src/window/rdp_vnc.rs:1164
+#: rustconn/src/window/rdp_vnc.rs:883 rustconn/src/window/rdp_vnc.rs:1191
 msgid "Certificate changed"
 msgstr "Certifikát sa zmenil"
 
-#: rustconn/src/window/rdp_vnc.rs:858 rustconn/src/window/rdp_vnc.rs:1166
+#: rustconn/src/window/rdp_vnc.rs:885 rustconn/src/window/rdp_vnc.rs:1193
 msgid "Accept new certificate"
 msgstr "Prijať nový certifikát"
 
@@ -16732,6 +16771,18 @@ msgstr "Správca pripojení"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;pripojenie;terminál;vzdialený;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Authentication failed: password must be changed before first login."
+#~ msgstr "Overenie zlyhalo: heslo je potrebné zmeniť pred prvým prihlásením."
+
+#~ msgid "Authentication failed: account is disabled."
+#~ msgstr "Overenie zlyhalo: účet je zakázaný."
+
+#~ msgid "Authentication failed: account is locked out."
+#~ msgstr "Overenie zlyhalo: účet je uzamknutý."
+
+#~ msgid "Authentication failed: password has expired."
+#~ msgstr "Overenie zlyhalo: platnosť hesla vypršala."
 
 #~ msgid ""
 #~ "The label names this tab only. Leave it empty to go back to the default "

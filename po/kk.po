@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 01:32+0200\n"
+"POT-Creation-Date: 2026-11-26 11:20+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Kazakh\n"
@@ -121,7 +121,7 @@ msgstr ""
 #: rustconn/src/app.rs:967 rustconn/src/detached_window.rs:492
 #: rustconn/src/dialogs/command_palette.rs:697
 #: rustconn/src/dialogs/settings/mod.rs:245
-#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:439
+#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/embedded_rdp/mod.rs:467
 #: rustconn/src/split_view/bridge.rs:2317 rustconn/src/window/ui.rs:97
 #: rustconn/src/window/ui.rs:99 rustconn/src/window/ui.rs:339
 msgid "Settings"
@@ -280,7 +280,7 @@ msgstr "{} — RustConn"
 #: rustconn/src/detached_window.rs:157
 #: rustconn/src/embedded_rdp/connection.rs:1787
 #: rustconn/src/embedded_rdp/connection.rs:2780
-#: rustconn/src/embedded_rdp/mod.rs:825 rustconn/src/embedded_rdp/mod.rs:2330
+#: rustconn/src/embedded_rdp/mod.rs:853 rustconn/src/embedded_rdp/mod.rs:2358
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:159
 #: rustconn/src/session_group_window.rs:1138
@@ -3796,7 +3796,7 @@ msgstr "Алмасу буферін қашықтағымен синхронда�
 #: rustconn/src/dialogs/connection/spice.rs:179
 #: rustconn/src/dialogs/connection/vnc.rs:131
 #: rustconn/src/dialogs/snippet.rs:237 rustconn/src/dialogs/template.rs:1300
-#: rustconn/src/embedded_rdp/mod.rs:452
+#: rustconn/src/embedded_rdp/mod.rs:480
 msgid "Auto"
 msgstr "Auto"
 
@@ -5074,7 +5074,7 @@ msgstr "Тасымалды файлдың құпия тіркесі"
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
-#: rustconn/src/embedded_rdp/mod.rs:623 rustconn/src/embedded_vnc/ui.rs:51
+#: rustconn/src/embedded_rdp/mod.rs:651 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
 msgid "Copy"
 msgstr "Көшіру"
@@ -7480,7 +7480,7 @@ msgstr "Қате"
 
 #: rustconn/src/dialogs/script.rs:109 rustconn/src/dialogs/script.rs:139
 #: rustconn/src/dialogs/script.rs:142 rustconn/src/dialogs/script.rs:176
-#: rustconn/src/embedded_rdp/mod.rs:458 rustconn/src/embedded_rdp/mod.rs:1197
+#: rustconn/src/embedded_rdp/mod.rs:486 rustconn/src/embedded_rdp/mod.rs:1225
 #: rustconn/src/window/ui.rs:294
 msgid "Scripts"
 msgstr "Скрипттер"
@@ -7520,7 +7520,7 @@ msgstr "Скрипт идентификаторы"
 msgid "Select or create a script."
 msgstr "Скриптті таңдаңыз немесе жасаңыз."
 
-#: rustconn/src/dialogs/script.rs:256 rustconn/src/embedded_rdp/mod.rs:1441
+#: rustconn/src/dialogs/script.rs:256 rustconn/src/embedded_rdp/mod.rs:1469
 #: rustconn/src/window/remote_script.rs:399
 #: rustconn/src/window/remote_script.rs:617 rustconn/src/window/snippets.rs:113
 msgid "Run"
@@ -7752,7 +7752,7 @@ msgid "Download H.264 codec?"
 msgstr "H.264 кодегін жүктеп алу керек пе?"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:451
-#: rustconn/src/embedded_rdp/mod.rs:1900
+#: rustconn/src/embedded_rdp/mod.rs:1928
 #: rustconn/src/window/network_tools/remote_edit.rs:137
 msgid "Downloading…"
 msgstr "Жүктелуде…"
@@ -10198,7 +10198,7 @@ msgstr "Терминалға өту"
 msgid "Command Palette (Commands)"
 msgstr "Пәрмен палитрасы (пәрмендер)"
 
-#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:631
+#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:659
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:303
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
@@ -10387,11 +10387,11 @@ msgstr "Мақсат"
 msgid "Where this snippet can be executed"
 msgstr "Бұл фрагментті қайда орындауға болады"
 
-#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:453
+#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:481
 msgid "Clipboard (fast)"
 msgstr "Алмасу буфері (жылдам)"
 
-#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:454
+#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:482
 msgid "Autotype (reliable)"
 msgstr "Автотерме (сенімді)"
 
@@ -10621,8 +10621,8 @@ msgstr "Сапа деңгейі"
 msgid "0 (lowest) to 9 (best quality)"
 msgstr "0 (ең төмен) - 9 (ең жақсы сапа)"
 
-#: rustconn/src/dialogs/template.rs:1142 rustconn/src/embedded_rdp/mod.rs:658
-#: rustconn/src/embedded_rdp/mod.rs:664 rustconn/src/embedded_vnc/ui.rs:86
+#: rustconn/src/dialogs/template.rs:1142 rustconn/src/embedded_rdp/mod.rs:686
+#: rustconn/src/embedded_rdp/mod.rs:692 rustconn/src/embedded_vnc/ui.rs:86
 #: rustconn/src/embedded_vnc/ui.rs:92 rustconn/src/split_view/adapter.rs:1078
 msgid "View Only"
 msgstr "Тек көру"
@@ -11882,7 +11882,7 @@ msgstr ""
 "FreeRDP пайдаланылуда."
 
 #: rustconn/src/embedded_rdp/connection.rs:867
-#: rustconn/src/embedded_rdp/connection.rs:3033
+#: rustconn/src/embedded_rdp/connection.rs:3042
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr ""
 "Сервер ескірген RDP қауіпсіздігін талап ететіндіктен, қосылымнан бас "
@@ -11929,45 +11929,205 @@ msgstr ""
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr "Байланыс жоғалды. Қайта қосылуда ({} / {} әрекет)…"
 
-#: rustconn/src/embedded_rdp/connection.rs:3070
+#: rustconn/src/embedded_rdp/connection.rs:3079
 msgid "Could not prepare the external RDP compatibility client."
 msgstr "Үйлесімділікке арналған сыртқы RDP клиентін дайындау мүмкін болмады."
 
-#: rustconn/src/embedded_rdp/connection.rs:3081
+#: rustconn/src/embedded_rdp/connection.rs:3093
+msgid ""
+"The server offers only legacy RDP security, so the session opened in the "
+"external RDP client. To open it here, turn on TLS on the server, for example "
+"security_layer=tls in xrdp.ini."
+msgstr ""
+"Сервер тек ескірген RDP қауіпсіздігін ұсынады, сондықтан сеанс сыртқы RDP "
+"клиентінде ашылды. Оны осында ашу үшін серверде TLS қосыңыз, мысалы xrdp.ini "
+"ішінде security_layer=tls."
+
+#: rustconn/src/embedded_rdp/connection.rs:3096
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr ""
 "Сыртқы RDP клиенті пайдаланылуда (сервер RDS лицензиялауын талап етеді)"
 
-#: rustconn/src/embedded_rdp/connection.rs:3083
+#: rustconn/src/embedded_rdp/connection.rs:3098
 msgid "Using external RDP client (server incompatible)"
 msgstr "Сыртқы RDP клиенті пайдаланылуда (сервер сәйкес емес)"
 
-#: rustconn/src/embedded_rdp/connection.rs:3101
-#: rustconn/src/embedded_rdp/connection.rs:3698
+#: rustconn/src/embedded_rdp/connection.rs:3116
+#: rustconn/src/embedded_rdp/connection.rs:3721
 msgid "The external RDP client could not be started."
 msgstr "Сыртқы RDP клиентін іске қосу мүмкін болмады."
 
-#: rustconn/src/embedded_rdp/connection.rs:3139
+#: rustconn/src/embedded_rdp/connection.rs:3154
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Сыртқы RDP клиентін іске қосу мүмкін болмады. FreeRDP 3 орнатып, қайта "
 "көріңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:3220
+#: rustconn/src/embedded_rdp/connection.rs:3236
 msgid "TLS connection failed. The server may not support this security level."
 msgstr "TLS қосылымы сәтсіз. Сервер бұл қауіпсіздік деңгейін қолдамауы мүмкін."
 
-#: rustconn/src/embedded_rdp/connection.rs:3224
+#: rustconn/src/embedded_rdp/connection.rs:3240
 msgid "Connection refused. Check host and port."
 msgstr "Қосылым қабылданбады. Хост пен портты тексеріңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:3227
+#: rustconn/src/embedded_rdp/connection.rs:3243
 #: rustconn/src/embedded_web/mod.rs:653
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Қосылым уақыты бітті. Хосттың қолжетімді екенін тексеріңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:3248
+#: rustconn/src/embedded_rdp/connection.rs:3270
+msgid ""
+"Account restrictions refused this sign-in. Protected Users members cannot "
+"use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
+msgstr ""
+"Тіркелгі шектеулері бұл кіруден бас тартты. Protected Users мүшелері NTLM "
+"пайдалана алмайды: қосылымның RDP параметрлерінде Kerberos аутентификациясын "
+"қосыңыз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3273
+msgid "Authentication failed: account restrictions prevent this login."
+msgstr "Аутентификация сәтсіз: тіркелгі шектеулері кіруге жол бермейді."
+
+#: rustconn/src/embedded_rdp/connection.rs:3276
+msgid ""
+"The password must be changed before the first sign-in. Change it or ask the "
+"server administrator to reset it, then connect again."
+msgstr ""
+"Алғашқы кіру алдында құпиясөзді өзгерту керек. Оны өзгертіңіз немесе сервер "
+"әкімшісінен оны қалпына келтіруді сұраңыз, содан кейін қайта қосылыңыз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3279
+msgid "The account is disabled. Ask the server administrator to enable it."
+msgstr "Тіркелгі өшірілген. Сервер әкімшісінен оны қосуды сұраңыз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3282
+msgid ""
+"The account is locked out after too many failed sign-ins. Wait for the "
+"lockout to end or ask the server administrator to unlock it."
+msgstr ""
+"Тым көп сәтсіз кіру әрекетінен кейін тіркелгі құлыпталды. Құлыптың аяқталуын "
+"күтіңіз немесе сервер әкімшісінен оны құлыптан босатуды сұраңыз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3285
+msgid ""
+"The password has expired. Change it or ask the server administrator to reset "
+"it, then connect again."
+msgstr ""
+"Құпиясөздің мерзімі өтті. Оны өзгертіңіз немесе сервер әкімшісінен оны "
+"қалпына келтіруді сұраңыз, содан кейін қайта қосылыңыз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3287
+msgid "Authentication failed: account has expired."
+msgstr "Аутентификация сәтсіз: тіркелгінің мерзімі өтті."
+
+#: rustconn/src/embedded_rdp/connection.rs:3289
+msgid "Authentication failed: account is disabled, locked out or expired."
+msgstr ""
+"Аутентификация сәтсіз аяқталды: тіркелгі өшірілген, құлыпталған немесе "
+"мерзімі өткен."
+
+#: rustconn/src/embedded_rdp/connection.rs:3292
+msgid "Authentication failed: user is not allowed to log on to this computer."
+msgstr ""
+"Аутентификация сәтсіз: пайдаланушыға бұл компьютерге кіруге рұқсат жоқ."
+
+#: rustconn/src/embedded_rdp/connection.rs:3296
+msgid ""
+"No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
+"connection's RDP settings or add the realm to /etc/krb5.conf."
+msgstr ""
+"{} саласы үшін Kerberos KDC табылмады. Қосылымның RDP параметрлерінде KDC "
+"мекенжайын енгізіңіз немесе саланы /etc/krb5.conf файлына қосыңыз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3300
+#: rustconn/src/embedded_rdp/connection.rs:3340
+msgid ""
+"Kerberos needs the DNS domain. Enter it in the Domain field, for example "
+"EXAMPLE.COM."
+msgstr ""
+"Kerberos үшін DNS домені қажет. Оны Домен өрісіне енгізіңіз, мысалы "
+"EXAMPLE.COM."
+
+#: rustconn/src/embedded_rdp/connection.rs:3304
+msgid ""
+"Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
+"address as the KDC Address in the connection's RDP settings."
+msgstr ""
+"Kerberos KDC-ге қол жеткізу мүмкін болмады. Қосылымның RDP параметрлерінде "
+"KDC мекенжайы ретінде домен контроллерінің атауын немесе IP мекенжайын "
+"енгізіңіз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3307
+msgid ""
+"Kerberos sign-in failed: this computer's clock differs from the domain's by "
+"more than five minutes. Synchronize the clock and try again."
+msgstr ""
+"Kerberos кіруі сәтсіз аяқталды: бұл компьютердің сағаты доменнің сағатынан "
+"бес минуттан артық ерекшеленеді. Сағатты синхрондап, қайталап көріңіз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3310
+msgid ""
+"The domain does not know this server by the name in Host. Connect by the "
+"server's DNS name, as registered in the domain."
+msgstr ""
+"Домен бұл серверді Host өрісіндегі атауы бойынша танымайды. Доменде "
+"тіркелгендей, сервердің DNS атауы бойынша қосылыңыз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3312
+msgid "NLA authentication failed. Check username and password."
+msgstr ""
+"NLA аутентификациясы сәтсіз. Пайдаланушы аты мен құпия сөзді тексеріңіз."
+
+#: rustconn/src/embedded_rdp/connection.rs:3334
+msgid ""
+"Kerberos needs the server's DNS name. Connecting by IP address or through an "
+"SSH tunnel fails."
+msgstr ""
+"Kerberos үшін сервердің DNS атауы қажет. IP мекенжайы бойынша немесе SSH "
+"туннелі арқылы қосылу сәтсіз аяқталады."
+
+#: rustconn/src/embedded_rdp/connection.rs:3337
+msgid ""
+"Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
+"name."
+msgstr ""
+"Kerberos үшін DNS домені қажет, мысалы EXAMPLE.COM, қысқа домен атауы емес."
+
+#: rustconn/src/embedded_rdp/connection.rs:3748
+msgid "RDP session will open in an external window"
+msgstr "RDP сеансы сыртқы терезеде ашылады"
+
+#: rustconn/src/embedded_rdp/connection.rs:3777
+msgid "Failed to start FreeRDP: {}"
+msgstr "FreeRDP іске қосу мүмкін болмады: {}"
+
+#: rustconn/src/embedded_rdp/file_dnd.rs:225
+msgid "File drag disabled: {}"
+msgstr "Файлды сүйреу өшірілген: {}"
+
+#: rustconn/src/embedded_rdp/mod.rs:83
+msgid "The server requires a password to sign in."
+msgstr "Кіру үшін сервер құпиясөзді талап етеді."
+
+#: rustconn/src/embedded_rdp/mod.rs:101
+msgid "The user name or password is incorrect. Check them and try again."
+msgstr ""
+"Пайдаланушы аты немесе құпиясөз қате. Оларды тексеріп, қайталап көріңіз."
+
+#: rustconn/src/embedded_rdp/mod.rs:104
+msgid ""
+"The user name or password is incorrect. Check them and try again. If the "
+"server is KDE KRdp and they are correct, set Server OS to Linux in the "
+"connection's RDP settings or update KRdp to 6.7.90 or newer."
+msgstr ""
+"Пайдаланушы аты немесе құпиясөз қате. Оларды тексеріп, қайталап көріңіз. "
+"Сервер KDE KRdp болса және деректер дұрыс болса, қосылымның RDP "
+"параметрлерінде Сервердің ОЖ мәнін Linux етіп орнатыңыз немесе KRdp-ні "
+"6.7.90 не жаңарақ нұсқаға жаңартыңыз."
+
+#: rustconn/src/embedded_rdp/mod.rs:107
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -11980,189 +12140,67 @@ msgstr ""
 "KRdp нұсқасын 6.7.90 немесе одан жаңасына жаңартыңыз немесе серверде "
 "ExtSecurity=0 орнатыңыз (FreeRDP issue #13567)."
 
-#: rustconn/src/embedded_rdp/connection.rs:3253
-msgid ""
-"Account restrictions refused this sign-in. Protected Users members cannot "
-"use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
-msgstr ""
-"Тіркелгі шектеулері бұл кіруден бас тартты. Protected Users мүшелері NTLM "
-"пайдалана алмайды: қосылымның RDP параметрлерінде Kerberos аутентификациясын "
-"қосыңыз."
-
-#: rustconn/src/embedded_rdp/connection.rs:3256
-msgid "Authentication failed: account restrictions prevent this login."
-msgstr "Аутентификация сәтсіз: тіркелгі шектеулері кіруге жол бермейді."
-
-#: rustconn/src/embedded_rdp/connection.rs:3259
-msgid "Authentication failed: password must be changed before first login."
-msgstr "Аутентификация сәтсіз: алғашқы кіру алдында құпиясөзді өзгерту керек."
-
-#: rustconn/src/embedded_rdp/connection.rs:3261
-msgid "Authentication failed: account is disabled."
-msgstr "Аутентификация сәтсіз: тіркелгі өшірілген."
-
-#: rustconn/src/embedded_rdp/connection.rs:3262
-msgid "Authentication failed: account is locked out."
-msgstr "Аутентификация сәтсіз: тіркелгі құлыпталған."
-
-#: rustconn/src/embedded_rdp/connection.rs:3263
-msgid "Authentication failed: password has expired."
-msgstr "Аутентификация сәтсіз: құпия сөздің мерзімі өтті."
-
-#: rustconn/src/embedded_rdp/connection.rs:3264
-msgid "Authentication failed: account has expired."
-msgstr "Аутентификация сәтсіз: тіркелгінің мерзімі өтті."
-
-#: rustconn/src/embedded_rdp/connection.rs:3266
-msgid "Authentication failed: account is disabled, locked out or expired."
-msgstr ""
-"Аутентификация сәтсіз аяқталды: тіркелгі өшірілген, құлыпталған немесе "
-"мерзімі өткен."
-
-#: rustconn/src/embedded_rdp/connection.rs:3269
-msgid "Authentication failed: user is not allowed to log on to this computer."
-msgstr ""
-"Аутентификация сәтсіз: пайдаланушыға бұл компьютерге кіруге рұқсат жоқ."
-
-#: rustconn/src/embedded_rdp/connection.rs:3273
-msgid ""
-"No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
-"connection's RDP settings or add the realm to /etc/krb5.conf."
-msgstr ""
-"{} саласы үшін Kerberos KDC табылмады. Қосылымның RDP параметрлерінде KDC "
-"мекенжайын енгізіңіз немесе саланы /etc/krb5.conf файлына қосыңыз."
-
-#: rustconn/src/embedded_rdp/connection.rs:3277
-#: rustconn/src/embedded_rdp/connection.rs:3317
-msgid ""
-"Kerberos needs the DNS domain. Enter it in the Domain field, for example "
-"EXAMPLE.COM."
-msgstr ""
-"Kerberos үшін DNS домені қажет. Оны Домен өрісіне енгізіңіз, мысалы "
-"EXAMPLE.COM."
-
-#: rustconn/src/embedded_rdp/connection.rs:3281
-msgid ""
-"Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
-"address as the KDC Address in the connection's RDP settings."
-msgstr ""
-"Kerberos KDC-ге қол жеткізу мүмкін болмады. Қосылымның RDP параметрлерінде "
-"KDC мекенжайы ретінде домен контроллерінің атауын немесе IP мекенжайын "
-"енгізіңіз."
-
-#: rustconn/src/embedded_rdp/connection.rs:3284
-msgid ""
-"Kerberos sign-in failed: this computer's clock differs from the domain's by "
-"more than five minutes. Synchronize the clock and try again."
-msgstr ""
-"Kerberos кіруі сәтсіз аяқталды: бұл компьютердің сағаты доменнің сағатынан "
-"бес минуттан артық ерекшеленеді. Сағатты синхрондап, қайталап көріңіз."
-
-#: rustconn/src/embedded_rdp/connection.rs:3287
-msgid ""
-"The domain does not know this server by the name in Host. Connect by the "
-"server's DNS name, as registered in the domain."
-msgstr ""
-"Домен бұл серверді Host өрісіндегі атауы бойынша танымайды. Доменде "
-"тіркелгендей, сервердің DNS атауы бойынша қосылыңыз."
-
-#: rustconn/src/embedded_rdp/connection.rs:3289
-msgid "NLA authentication failed. Check username and password."
-msgstr ""
-"NLA аутентификациясы сәтсіз. Пайдаланушы аты мен құпия сөзді тексеріңіз."
-
-#: rustconn/src/embedded_rdp/connection.rs:3311
-msgid ""
-"Kerberos needs the server's DNS name. Connecting by IP address or through an "
-"SSH tunnel fails."
-msgstr ""
-"Kerberos үшін сервердің DNS атауы қажет. IP мекенжайы бойынша немесе SSH "
-"туннелі арқылы қосылу сәтсіз аяқталады."
-
-#: rustconn/src/embedded_rdp/connection.rs:3314
-msgid ""
-"Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
-"name."
-msgstr ""
-"Kerberos үшін DNS домені қажет, мысалы EXAMPLE.COM, қысқа домен атауы емес."
-
-#: rustconn/src/embedded_rdp/connection.rs:3725
-msgid "RDP session will open in an external window"
-msgstr "RDP сеансы сыртқы терезеде ашылады"
-
-#: rustconn/src/embedded_rdp/connection.rs:3754
-msgid "Failed to start FreeRDP: {}"
-msgstr "FreeRDP іске қосу мүмкін болмады: {}"
-
-#: rustconn/src/embedded_rdp/file_dnd.rs:225
-msgid "File drag disabled: {}"
-msgstr "Файлды сүйреу өшірілген: {}"
-
-#: rustconn/src/embedded_rdp/mod.rs:83
-msgid "The server requires a password to sign in."
-msgstr "Кіру үшін сервер құпиясөзді талап етеді."
-
-#: rustconn/src/embedded_rdp/mod.rs:438
+#: rustconn/src/embedded_rdp/mod.rs:466
 msgid "Task Manager"
 msgstr "Тапсырмалар реттеушісі"
 
-#: rustconn/src/embedded_rdp/mod.rs:440
+#: rustconn/src/embedded_rdp/mod.rs:468
 msgid "Registry Editor"
 msgstr "Тізілім редакторы"
 
-#: rustconn/src/embedded_rdp/mod.rs:441
+#: rustconn/src/embedded_rdp/mod.rs:469
 msgid "Device Manager"
 msgstr "Құрылғы менеджері"
 
-#: rustconn/src/embedded_rdp/mod.rs:442
+#: rustconn/src/embedded_rdp/mod.rs:470
 msgid "Event Viewer"
 msgstr "Оқиғалар көрушісі"
 
-#: rustconn/src/embedded_rdp/mod.rs:443
+#: rustconn/src/embedded_rdp/mod.rs:471
 msgid "Services"
 msgstr "Қызметтер"
 
-#: rustconn/src/embedded_rdp/mod.rs:444
+#: rustconn/src/embedded_rdp/mod.rs:472
 msgid "Disk Management"
 msgstr "Дискілерді басқару"
 
-#: rustconn/src/embedded_rdp/mod.rs:445
+#: rustconn/src/embedded_rdp/mod.rs:473
 msgid "Resource Monitor"
 msgstr "Ресурстар мониторы"
 
-#: rustconn/src/embedded_rdp/mod.rs:446
+#: rustconn/src/embedded_rdp/mod.rs:474
 msgid "Computer Management"
 msgstr "Компьютерді басқару"
 
-#: rustconn/src/embedded_rdp/mod.rs:448
+#: rustconn/src/embedded_rdp/mod.rs:476
 msgid "Auto (Windows tools shown)"
 msgstr "Авто (Windows құралдары көрсетіледі)"
 
-#: rustconn/src/embedded_rdp/mod.rs:449
+#: rustconn/src/embedded_rdp/mod.rs:477
 msgid "Windows"
 msgstr "Windows"
 
-#: rustconn/src/embedded_rdp/mod.rs:450
+#: rustconn/src/embedded_rdp/mod.rs:478
 msgid "Linux (hide Windows tools)"
 msgstr "Linux (Windows құралдары жасырылады)"
 
-#: rustconn/src/embedded_rdp/mod.rs:456 rustconn/src/embedded_rdp/mod.rs:1180
+#: rustconn/src/embedded_rdp/mod.rs:484 rustconn/src/embedded_rdp/mod.rs:1208
 msgid "Shell Launchers"
 msgstr "Shell іске қосқыштары"
 
-#: rustconn/src/embedded_rdp/mod.rs:460 rustconn/src/embedded_rdp/mod.rs:1175
+#: rustconn/src/embedded_rdp/mod.rs:488 rustconn/src/embedded_rdp/mod.rs:1203
 msgid "PowerShell (Admin)"
 msgstr "PowerShell (Әкімші)"
 
-#: rustconn/src/embedded_rdp/mod.rs:461 rustconn/src/embedded_rdp/mod.rs:1179
+#: rustconn/src/embedded_rdp/mod.rs:489 rustconn/src/embedded_rdp/mod.rs:1207
 msgid "CMD (Admin)"
 msgstr "CMD (Әкімші)"
 
-#: rustconn/src/embedded_rdp/mod.rs:604 rustconn/src/embedded_rdp/mod.rs:606
+#: rustconn/src/embedded_rdp/mod.rs:632 rustconn/src/embedded_rdp/mod.rs:634
 msgid "Fit resolution to window"
 msgstr "Қашықтағы жұмыс үстелін терезе өлшеміне сәйкестендіру"
 
-#: rustconn/src/embedded_rdp/mod.rs:625 rustconn/src/embedded_vnc/ui.rs:53
+#: rustconn/src/embedded_rdp/mod.rs:653 rustconn/src/embedded_vnc/ui.rs:53
 msgid "Copy remote clipboard to local (waiting for remote data…)"
 msgstr ""
 "Қашықтағы алмасу буферін жергіліктіге көшіру (қашықтағы деректерді "
@@ -12170,105 +12208,105 @@ msgstr ""
 "күту…)Қашықтағы алмасу буферін жергіліктіге көшіру (қашықтағы деректер "
 "күтілуде…)"
 
-#: rustconn/src/embedded_rdp/mod.rs:632 rustconn/src/embedded_vnc/ui.rs:63
+#: rustconn/src/embedded_rdp/mod.rs:660 rustconn/src/embedded_vnc/ui.rs:63
 msgid "Paste from local clipboard to remote session"
 msgstr "Жергілікті алмасу буферінен қашықтағы сеансқа қою"
 
-#: rustconn/src/embedded_rdp/mod.rs:637 rustconn/src/embedded_rdp/mod.rs:642
+#: rustconn/src/embedded_rdp/mod.rs:665 rustconn/src/embedded_rdp/mod.rs:670
 msgid "Autotype"
 msgstr "Автотеру"
 
-#: rustconn/src/embedded_rdp/mod.rs:639
+#: rustconn/src/embedded_rdp/mod.rs:667
 msgid "Send text as keystrokes (bypasses paste restrictions)"
 msgstr "Мәтінді пернелер ретінде жіберу (қою шектеулерін айналып өтеді)"
 
-#: rustconn/src/embedded_rdp/mod.rs:646
+#: rustconn/src/embedded_rdp/mod.rs:674
 msgid "Type Clipboard"
 msgstr "Буферді теру"
 
-#: rustconn/src/embedded_rdp/mod.rs:649
+#: rustconn/src/embedded_rdp/mod.rs:677
 msgid "Type Text…"
 msgstr "Мәтін теру…"
 
-#: rustconn/src/embedded_rdp/mod.rs:662 rustconn/src/embedded_vnc/ui.rs:90
+#: rustconn/src/embedded_rdp/mod.rs:690 rustconn/src/embedded_vnc/ui.rs:90
 msgid "Observe only: block all input to the remote session"
 msgstr "Тек бақылау: қашықтағы сеансқа барлық енгізуді бұғаттау"
 
-#: rustconn/src/embedded_rdp/mod.rs:676
+#: rustconn/src/embedded_rdp/mod.rs:704
 msgid "Run PowerShell script on remote"
 msgstr "Қашықтағы құрылғыда PowerShell скриптін орындау"
 
-#: rustconn/src/embedded_rdp/mod.rs:679
+#: rustconn/src/embedded_rdp/mod.rs:707
 msgid "Run script on remote"
 msgstr "Қашықтағы құрылғыда скриптті орындау"
 
-#: rustconn/src/embedded_rdp/mod.rs:694 rustconn/src/embedded_vnc/ui.rs:73
+#: rustconn/src/embedded_rdp/mod.rs:722 rustconn/src/embedded_vnc/ui.rs:73
 msgid "Ctrl+Alt+Del"
 msgstr "Ctrl+Alt+Del"
 
-#: rustconn/src/embedded_rdp/mod.rs:702 rustconn/src/embedded_vnc/ui.rs:79
+#: rustconn/src/embedded_rdp/mod.rs:730 rustconn/src/embedded_vnc/ui.rs:79
 msgid "Send Ctrl+Alt+Del to remote session"
 msgstr "Қашықтағы сеансқа Ctrl+Alt+Del жіберу"
 
-#: rustconn/src/embedded_rdp/mod.rs:708 rustconn/src/embedded_rdp/mod.rs:711
+#: rustconn/src/embedded_rdp/mod.rs:736 rustconn/src/embedded_rdp/mod.rs:739
 msgid "Windows admin tools"
 msgstr "Windows басқару құралдары"
 
-#: rustconn/src/embedded_rdp/mod.rs:735
+#: rustconn/src/embedded_rdp/mod.rs:763
 msgid "Save Files"
 msgstr "Файлдарды сақтау"
 
-#: rustconn/src/embedded_rdp/mod.rs:738
+#: rustconn/src/embedded_rdp/mod.rs:766
 msgid "Save files from remote clipboard"
 msgstr "Қашықтағы алмасу буферінен файлдарды сақтау"
 
-#: rustconn/src/embedded_rdp/mod.rs:828 rustconn/src/embedded_vnc/ui.rs:162
+#: rustconn/src/embedded_rdp/mod.rs:856 rustconn/src/embedded_vnc/ui.rs:162
 #: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:428
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1334
 msgid "Reconnect"
 msgstr "Қайта қосылу"
 
-#: rustconn/src/embedded_rdp/mod.rs:830 rustconn/src/embedded_vnc/ui.rs:164
+#: rustconn/src/embedded_rdp/mod.rs:858 rustconn/src/embedded_vnc/ui.rs:164
 #: rustconn/src/terminal/session_lifecycle.rs:818
 #: rustconn/src/terminal/spawn.rs:192
 msgid "Reconnect to this session"
 msgstr "Бұл сеансқа қайта қосылу"
 
-#: rustconn/src/embedded_rdp/mod.rs:1007
+#: rustconn/src/embedded_rdp/mod.rs:1035
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr ""
 "Файлдарды қашықтағы сеансқа жіберу үшін алмасу буферін ортақтасуды қосыңыз"
 
-#: rustconn/src/embedded_rdp/mod.rs:1095
+#: rustconn/src/embedded_rdp/mod.rs:1123
 msgid ""
 "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
 "paste"
 msgstr ""
 "{} файл қашықтағы алмасу буферіне көшірілді — қою үшін сеанста Ctrl+V басыңыз"
 
-#: rustconn/src/embedded_rdp/mod.rs:1173
+#: rustconn/src/embedded_rdp/mod.rs:1201
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1178
+#: rustconn/src/embedded_rdp/mod.rs:1206
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1272 rustconn/src/embedded_rdp/mod.rs:1343
-#: rustconn/src/embedded_rdp/mod.rs:1723
+#: rustconn/src/embedded_rdp/mod.rs:1300 rustconn/src/embedded_rdp/mod.rs:1371
+#: rustconn/src/embedded_rdp/mod.rs:1751
 msgid "Channel not ready"
 msgstr "Арна дайын емес"
 
-#: rustconn/src/embedded_rdp/mod.rs:1317 rustconn/src/embedded_rdp/mod.rs:1370
+#: rustconn/src/embedded_rdp/mod.rs:1345 rustconn/src/embedded_rdp/mod.rs:1398
 msgid "Script sent"
 msgstr "Скрипт жіберілді"
 
-#: rustconn/src/embedded_rdp/mod.rs:1428 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1456 rustconn/src/window/snippets.rs:108
 msgid "Execute Snippet?"
 msgstr "Үзіндіні орындау?"
 
-#: rustconn/src/embedded_rdp/mod.rs:1435 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1463 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -12278,15 +12316,15 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1785
+#: rustconn/src/embedded_rdp/mod.rs:1813
 msgid "Select folder to save files"
 msgstr "Файлдарды сақтау үшін қалтаны таңдаңыз"
 
-#: rustconn/src/embedded_rdp/mod.rs:1918
+#: rustconn/src/embedded_rdp/mod.rs:1946
 msgid "Downloading files…"
 msgstr "Файлдар жүктелуде…"
 
-#: rustconn/src/embedded_rdp/mod.rs:2315
+#: rustconn/src/embedded_rdp/mod.rs:2343
 msgid "Connection may have been lost while the computer slept"
 msgstr "Компьютер ұйықтап жатқанда қосылым үзілген болуы мүмкін"
 
@@ -13962,7 +14000,7 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Аралық түйін қолжетімсіз"
 
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:827
+#: rustconn/src/window/clusters.rs:435 rustconn/src/window/rdp_vnc.rs:854
 #: rustconn/src/window/session_start.rs:1079
 #: rustconn/src/window/session_start.rs:1145
 msgid "Connect Anyway"
@@ -15801,7 +15839,7 @@ msgstr "Аралық хост қолжетімсіз, «{}» арқылы қос
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Ешбір аралық хост жауап бермеді, «{}» қолданылуда"
 
-#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1632
+#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1659
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "VNC көрушісі табылмады. TigerVNC немесе Remmina орнатыңыз."
 
@@ -15867,11 +15905,11 @@ msgstr "Ескерту: SSH агент сокеті {}: {}"
 msgid "SSH tunnel failed: {}"
 msgstr "SSH туннелі сәтсіз: {}"
 
-#: rustconn/src/window/rdp_vnc.rs:823
+#: rustconn/src/window/rdp_vnc.rs:850
 msgid "Use Legacy RDP Security?"
 msgstr "Ескірген RDP қауіпсіздігін пайдалану керек пе?"
 
-#: rustconn/src/window/rdp_vnc.rs:825
+#: rustconn/src/window/rdp_vnc.rs:852
 msgid ""
 "This server only supports Standard RDP Security, which is weaker than TLS or "
 "Network Level Authentication. Continue with the external RDP client?"
@@ -15880,11 +15918,11 @@ msgstr ""
 "деңгейіндегі аутентификациядан әлсіз. Сыртқы RDP клиентімен жалғастыру керек "
 "пе?"
 
-#: rustconn/src/window/rdp_vnc.rs:856 rustconn/src/window/rdp_vnc.rs:1164
+#: rustconn/src/window/rdp_vnc.rs:883 rustconn/src/window/rdp_vnc.rs:1191
 msgid "Certificate changed"
 msgstr "Сертификат өзгерді"
 
-#: rustconn/src/window/rdp_vnc.rs:858 rustconn/src/window/rdp_vnc.rs:1166
+#: rustconn/src/window/rdp_vnc.rs:885 rustconn/src/window/rdp_vnc.rs:1193
 msgid "Accept new certificate"
 msgstr "Жаңа сертификатты қабылдау"
 
@@ -16698,6 +16736,19 @@ msgstr "Қосылым менеджері"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Authentication failed: password must be changed before first login."
+#~ msgstr ""
+#~ "Аутентификация сәтсіз: алғашқы кіру алдында құпиясөзді өзгерту керек."
+
+#~ msgid "Authentication failed: account is disabled."
+#~ msgstr "Аутентификация сәтсіз: тіркелгі өшірілген."
+
+#~ msgid "Authentication failed: account is locked out."
+#~ msgstr "Аутентификация сәтсіз: тіркелгі құлыпталған."
+
+#~ msgid "Authentication failed: password has expired."
+#~ msgstr "Аутентификация сәтсіз: құпия сөздің мерзімі өтті."
 
 #~ msgid ""
 #~ "The label names this tab only. Leave it empty to go back to the default "
