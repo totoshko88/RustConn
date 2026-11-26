@@ -392,6 +392,22 @@ impl MainWindow {
             });
         }
 
+        // The split pane headers draw the View Only eye of their own session,
+        // told from the same split title path that gives the tab title the
+        // focused session's eye. Held weakly for the same reason as above.
+        {
+            let bridges_weak = Rc::downgrade(&session_split_bridges);
+            terminal_notebook.set_on_split_view_only(move |owner, view_only| {
+                let Some(bridges) = bridges_weak.upgrade() else {
+                    return;
+                };
+                let bridge = bridges.borrow().get(&owner).cloned();
+                if let Some(bridge) = bridge {
+                    bridge.set_view_only_sessions(view_only);
+                }
+            });
+        }
+
         // Wire activity monitoring from the single session-creation choke point.
         // This covers every terminal protocol and both synchronous and async
         // (port-checked) connection paths, regardless of which connect action

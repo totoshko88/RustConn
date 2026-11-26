@@ -920,7 +920,7 @@ impl TerminalNotebook {
         // a view-only tab that detaches and comes back keeps it.
         let title = tab_title(&title, group.as_deref());
         let title = if self.is_view_only_session(session_id) {
-            with_title_marker(&title, VIEW_ONLY_TITLE_MARKER, true, ALL_TITLE_MARKERS)
+            with_title_marker(&title, VIEW_ONLY_TITLE_MARKER, true, &all_title_markers())
         } else {
             title
         };

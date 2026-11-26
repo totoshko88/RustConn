@@ -75,10 +75,36 @@ pub struct TabMenuState {
 /// can offer **Edit Connection…** only when there is one to edit (issue #357).
 pub(crate) type TabConnectionMenuProvider = Rc<dyn Fn(Uuid) -> bool>;
 
-/// Resolves a connection id to its saved name, so **Rename…** on a connection
-/// tab can offer the connection's own name as the reset-to-default (an empty
+/// Resolves a connection id to its saved name, so **Rename Tab…** on a
+/// connection tab can offer the connection's own name as the reset-to-default (an empty
 /// label goes back to it rather than leaving the tab untitled).
 pub(crate) type TabConnectionNameProvider = Rc<dyn Fn(Uuid) -> Option<String>>;
+
+/// The label **Rename Tab…** applies for what the user typed, or `None` to
+/// leave the tab as it is.
+///
+/// A typed label is trimmed and used. An empty entry goes back to the tab's
+/// own name: the default for a local shell, otherwise the connection's saved
+/// name (`saved_name`, asked only then), falling back to `current`. A result
+/// that is still blank yields `None`, because an untitled tab cannot be told
+/// apart from a broken one in the tab bar.
+fn rename_tab_label(
+    typed: &str,
+    is_local_shell: bool,
+    saved_name: impl FnOnce() -> Option<String>,
+    current: &str,
+) -> Option<String> {
+    let typed = typed.trim();
+    let label = if !typed.is_empty() {
+        typed.to_owned()
+    } else if is_local_shell {
+        local_shell_label("").to_owned()
+    } else {
+        saved_name().unwrap_or_else(|| current.to_owned())
+    };
+    let label = label.trim();
+    (!label.is_empty()).then(|| label.to_owned())
+}
 
 /// Reports whether the detach section is offered for a verdict.
 ///
@@ -463,18 +489,11 @@ impl TerminalNotebook {
                 // markers, so neither marker nor label is lost or stacked.
                 let page = sessions_clone.borrow().get(&session_id).cloned();
                 if let Some(page) = page {
-                    let rec = format!("{} ", i18n("●REC"));
                     let title = regroup_title(
                         page.title().as_str(),
                         old_group.as_deref(),
                         Some(&group_name),
-                        &[
-                            VIEW_ONLY_TITLE_MARKER,
-                            BROADCAST_TITLE_MARKER,
-                            SHARED_TITLE_MARKER,
-                            SCRIPT_TITLE_MARKER,
-                            &rec,
-                        ],
+                        &all_title_markers(),
                     );
                     page.set_title(&title);
 
@@ -619,25 +638,19 @@ impl TerminalNotebook {
             // tab bar cannot show apart from a broken tab.
             let commit_entry = entry.clone();
             let commit: Rc<dyn Fn()> = Rc::new(move || {
-                let text = commit_entry.text().trim().to_string();
-                let label = if text.is_empty() {
-                    if is_local_shell {
-                        local_shell_label("").to_owned()
-                    } else {
+                let Some(label) = rename_tab_label(
+                    commit_entry.text().as_str(),
+                    is_local_shell,
+                    || {
                         name_provider
                             .borrow()
                             .as_ref()
                             .and_then(|p| p(connection_id))
-                            .unwrap_or_else(|| current.clone())
-                    }
-                } else {
-                    text
-                };
-                // If neither a typed label nor a fallback name is available,
-                // keep the tab as it is rather than setting it untitled.
-                if label.trim().is_empty() {
+                    },
+                    &current,
+                ) else {
                     return;
-                }
+                };
                 Self::apply_session_label(&chrome_for_apply, session_id, &label);
                 tracing::debug!(session_id = %session_id, label, "Tab relabelled");
             });
@@ -713,18 +726,11 @@ impl TerminalNotebook {
             // Remove the group label from the tab title, behind any markers.
             let page = sessions.borrow().get(&session_id).cloned();
             if let Some(page) = page {
-                let rec = format!("{} ", i18n("●REC"));
                 let title = regroup_title(
                     page.title().as_str(),
                     old_group.as_deref(),
                     None,
-                    &[
-                        VIEW_ONLY_TITLE_MARKER,
-                        BROADCAST_TITLE_MARKER,
-                        SHARED_TITLE_MARKER,
-                        SCRIPT_TITLE_MARKER,
-                        &rec,
-                    ],
+                    &all_title_markers(),
                 );
                 page.set_title(&title);
             }
@@ -1577,7 +1583,46 @@ impl TerminalNotebook {
 mod tests {
     use rustconn_core::DetachVerdict;
 
-    use super::{close_tab_label, offers_detach, session_output_filename};
+    use super::{close_tab_label, offers_detach, rename_tab_label, session_output_filename};
+
+    /// A typed label is trimmed and used as is, and the saved name is not
+    /// even asked for.
+    #[test]
+    fn rename_tab_uses_the_typed_label() {
+        let asked = std::cell::Cell::new(false);
+        let saved = || {
+            asked.set(true);
+            Some("saved".to_owned())
+        };
+        assert_eq!(
+            rename_tab_label("  web  ", false, saved, "current"),
+            Some("web".to_owned())
+        );
+        assert!(!asked.get());
+    }
+
+    /// An empty entry resets: a local shell to its default, a connection to
+    /// its saved name, then to the current name; blank everywhere keeps it.
+    #[test]
+    fn an_empty_rename_goes_back_to_the_tabs_own_name() {
+        assert_eq!(
+            rename_tab_label("   ", true, || Some("saved".to_owned()), "x"),
+            Some("Local Shell".to_owned())
+        );
+        assert_eq!(
+            rename_tab_label("", false, || Some("prod-db".to_owned()), "x"),
+            Some("prod-db".to_owned())
+        );
+        assert_eq!(
+            rename_tab_label("", false, || None, "current"),
+            Some("current".to_owned())
+        );
+        assert_eq!(rename_tab_label("", false, || None, "  "), None);
+        assert_eq!(
+            rename_tab_label("", false, || Some(" ".to_owned()), ""),
+            None
+        );
+    }
 
     #[test]
     fn close_tab_label_has_ellipsis_only_for_split_host() {

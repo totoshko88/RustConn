@@ -91,7 +91,7 @@ impl TerminalNotebook {
                 &title,
                 BROADCAST_TITLE_MARKER,
                 member,
-                ALL_TITLE_MARKERS,
+                &all_title_markers(),
             ));
 
             let tooltip = page.tooltip().unwrap_or_default().to_string();
@@ -117,7 +117,7 @@ impl TerminalNotebook {
                 &title,
                 SHARED_TITLE_MARKER,
                 shared,
-                ALL_TITLE_MARKERS,
+                &all_title_markers(),
             ));
         }
         // The ◉ prefix is a glyph; give assistive technology the meaning too.
@@ -150,13 +150,21 @@ impl TerminalNotebook {
         } else {
             self.view_only_sessions.borrow_mut().remove(&session_id);
         }
-        if let Some(page) = self.sessions.borrow().get(&session_id) {
+        // A split tab names its focused pane, and its eye describes that same
+        // session: the split title path recomputes both from the state set, and
+        // the pane headers with them. Only a tab that shows no split is written
+        // directly here.
+        if Self::refresh_split_tabs_for(&self.tab_chrome(), session_id, None) {
+            return;
+        }
+        let page = self.sessions.borrow().get(&session_id).cloned();
+        if let Some(page) = page {
             let title = page.title().to_string();
             page.set_title(&with_title_marker(
                 &title,
                 VIEW_ONLY_TITLE_MARKER,
                 on,
-                ALL_TITLE_MARKERS,
+                &all_title_markers(),
             ));
         }
     }
@@ -378,7 +386,7 @@ impl TerminalNotebook {
             // leading markers the session carries stay through the rename,
             // instead of being rebuilt out of the name and group alone.
             let current_title = page.title().to_string();
-            let (_, marker_run) = leading_marker_run(&current_title, ALL_TITLE_MARKERS);
+            let (_, marker_run) = leading_marker_run(&current_title, &all_title_markers());
             page.set_title(&format!(
                 "{marker_run}{}",
                 tab_title(label, group.as_deref())

@@ -315,7 +315,7 @@ impl TerminalNotebook {
                 &title,
                 SCRIPT_TITLE_MARKER,
                 on,
-                ALL_TITLE_MARKERS,
+                &all_title_markers(),
             ));
         }
     }

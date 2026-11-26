@@ -1349,7 +1349,7 @@ impl TerminalNotebook {
     }
 
     /// Sets the provider that resolves a connection id to its saved name, for
-    /// **Rename…**'s reset-to-default on a connection tab.
+    /// **Rename Tab…**'s reset-to-default on a connection tab.
     pub(crate) fn set_tab_connection_name_provider<F>(&self, provider: F)
     where
         F: Fn(Uuid) -> Option<String> + 'static,

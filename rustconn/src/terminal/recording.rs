@@ -362,22 +362,34 @@ impl TerminalNotebook {
             callback(connection_id, recording);
         }
 
-        let rec_prefix = i18n("●REC");
-        if let Some(page) = self.sessions.borrow().get(&session_id) {
+        // The same marker machinery as the eye, broadcast and shared markers,
+        // so starting or stopping a recording never strands another marker
+        // and a rename keeps `●REC` (PR #455 follow-up).
+        let page = self.sessions.borrow().get(&session_id).cloned();
+        if let Some(page) = page {
             let current_title = page.title().to_string();
-            if recording {
-                if !current_title.starts_with(&rec_prefix) {
-                    page.set_title(&format!("{rec_prefix} {current_title}"));
-                }
-            } else {
-                let stripped = current_title
-                    .strip_prefix(&rec_prefix)
-                    .map(|s| s.trim_start())
-                    .unwrap_or(&current_title);
-                page.set_title(stripped);
+            let new_title = with_title_marker(
+                &current_title,
+                &recording_title_marker(),
+                recording,
+                &all_title_markers(),
+            );
+            if new_title != current_title {
+                page.set_title(&new_title);
             }
         }
     }
+}
+
+/// The marker a tab carries while its session output is being recorded.
+///
+/// Translated, with its trailing space like the other markers, so it is the
+/// one leading marker that cannot be a constant; [`all_title_markers`] adds
+/// it to the fixed list. The locale cannot change while the program runs, so
+/// the marker is stable for the life of a title.
+#[must_use]
+pub(super) fn recording_title_marker() -> String {
+    format!("{} ", i18n("●REC"))
 }
 
 /// What a stopped recording still needs in order to be finished off.
