@@ -190,6 +190,15 @@ pub fn dispatch(
             browser,
             winrm_ssl,
             winrm_accept_invalid_certs,
+            kubeconfig,
+            context,
+            namespace,
+            pod,
+            container,
+            shell,
+            busybox,
+            busybox_image,
+            k8s_custom_arg,
         } => {
             // Bulk add from a file (or stdin) short-circuits the single-connection
             // flag assembly: --from-file conflicts with --name/--host at the clap
@@ -200,7 +209,9 @@ pub fn dispatch(
             // clap's `required_unless_present = "from_file"` guarantees both are
             // present on this path.
             let name = name.expect("clap requires --name unless --from-file");
-            let host = host.expect("clap requires --host unless --from-file");
+            // Absent only with --pod/--busybox, which `cmd_add` rejects for
+            // anything but a Kubernetes connection; there the pod is the target.
+            let host = host.unwrap_or_default();
             add::cmd_add(
                 config_path,
                 add::AddParams {
@@ -322,6 +333,17 @@ pub fn dispatch(
                     browser: browser.as_deref(),
                     winrm_ssl,
                     winrm_accept_invalid_certs,
+                    kubernetes: add::KubernetesArgs {
+                        kubeconfig: kubeconfig.as_deref(),
+                        context: context.as_deref(),
+                        namespace: namespace.as_deref(),
+                        pod: pod.as_deref(),
+                        container: container.as_deref(),
+                        shell: shell.as_deref(),
+                        busybox: busybox.then_some(true),
+                        busybox_image: busybox_image.as_deref(),
+                        custom_args: &k8s_custom_arg,
+                    },
                 },
             )
         }
@@ -495,6 +517,15 @@ pub fn dispatch(
             browser,
             winrm_ssl,
             winrm_accept_invalid_certs,
+            kubeconfig,
+            context,
+            namespace,
+            pod,
+            container,
+            shell,
+            busybox,
+            busybox_image,
+            k8s_custom_arg,
             postpend_command,
             postpend_arg,
             postpend_enabled,
@@ -623,6 +654,17 @@ pub fn dispatch(
                 browser: browser.as_deref(),
                 winrm_ssl,
                 winrm_accept_invalid_certs,
+                kubernetes: add::KubernetesArgs {
+                    kubeconfig: kubeconfig.as_deref(),
+                    context: context.as_deref(),
+                    namespace: namespace.as_deref(),
+                    pod: pod.as_deref(),
+                    container: container.as_deref(),
+                    shell: shell.as_deref(),
+                    busybox,
+                    busybox_image: busybox_image.as_deref(),
+                    custom_args: &k8s_custom_arg,
+                },
                 postpend_command: postpend_command.as_deref(),
                 postpend_arg: &postpend_arg,
                 postpend_enabled,

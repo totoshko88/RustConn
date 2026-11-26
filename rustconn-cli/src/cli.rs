@@ -78,9 +78,13 @@ pub enum Commands {
         #[arg(short, long, required_unless_present = "from_file")]
         name: Option<String>,
 
-        /// Host address (hostname or IP), or device path for serial
-        /// (required unless --from-file is used)
-        #[arg(short = 'H', long, required_unless_present = "from_file")]
+        /// Host address (hostname or IP), device path for serial, or pod name
+        /// for kubernetes (required unless --from-file, --pod or --busybox is used)
+        #[arg(
+            short = 'H',
+            long,
+            required_unless_present_any = ["from_file", "pod", "busybox"]
+        )]
         host: Option<String>,
 
         /// Port number (defaults to protocol default: SSH=22, RDP=3389,
@@ -597,6 +601,47 @@ pub enum Commands {
         /// Browser command for a Web connection in custom mode
         #[arg(long, value_name = "COMMAND")]
         browser: Option<String>,
+
+        // --- Kubernetes-specific flags ---
+        /// Kubeconfig file for a Kubernetes connection (default: $KUBECONFIG,
+        /// then ~/.kube/config)
+        #[arg(long, value_name = "PATH")]
+        kubeconfig: Option<String>,
+
+        /// Kubernetes context (default: the kubeconfig's current-context)
+        #[arg(long, value_name = "NAME")]
+        context: Option<String>,
+
+        /// Kubernetes namespace (default: the context's namespace)
+        #[arg(long, value_name = "NAME")]
+        namespace: Option<String>,
+
+        /// Pod to exec into. For -P kubernetes, -H/--host names the pod as
+        /// well; give one of the two. Required unless --busybox
+        #[arg(long, value_name = "NAME")]
+        pod: Option<String>,
+
+        /// Container within the pod (optional for single-container pods)
+        #[arg(long, value_name = "NAME")]
+        container: Option<String>,
+
+        /// Shell to start inside the container [default: /bin/sh]
+        #[arg(long, value_name = "PATH", value_parser = ["/bin/sh", "/bin/bash", "/bin/ash", "/bin/zsh"])]
+        shell: Option<String>,
+
+        /// Run a temporary pod (kubectl run --rm) instead of exec into an
+        /// existing one. Cannot be combined with --pod, -H or --container
+        #[arg(long)]
+        busybox: bool,
+
+        /// Image for the temporary pod [default: busybox:latest]; requires --busybox
+        #[arg(long, value_name = "IMAGE")]
+        busybox_image: Option<String>,
+
+        /// Additional kubectl argument (repeatable), e.g.
+        /// --k8s-custom-arg --request-timeout=30s
+        #[arg(long, value_name = "ARG", allow_hyphen_values = true)]
+        k8s_custom_arg: Vec<String>,
 
         /// Connect over HTTPS (WinRM connections, usually port 5986)
         #[arg(long)]
@@ -1193,6 +1238,47 @@ pub enum Commands {
         /// removes it
         #[arg(long, value_name = "COMMAND")]
         browser: Option<String>,
+
+        // --- Kubernetes-specific flags ---
+        /// Kubeconfig file for a Kubernetes connection; an empty value goes
+        /// back to the default ($KUBECONFIG, then ~/.kube/config)
+        #[arg(long, value_name = "PATH")]
+        kubeconfig: Option<String>,
+
+        /// Kubernetes context; an empty value uses the current-context
+        #[arg(long, value_name = "NAME")]
+        context: Option<String>,
+
+        /// Kubernetes namespace; an empty value uses the context's namespace
+        #[arg(long, value_name = "NAME")]
+        namespace: Option<String>,
+
+        /// Pod to exec into (-H/--host sets it too for a Kubernetes connection)
+        #[arg(long, value_name = "NAME")]
+        pod: Option<String>,
+
+        /// Container within the pod; an empty value removes it
+        #[arg(long, value_name = "NAME")]
+        container: Option<String>,
+
+        /// Shell to start inside the container
+        #[arg(long, value_name = "PATH", value_parser = ["/bin/sh", "/bin/bash", "/bin/ash", "/bin/zsh"])]
+        shell: Option<String>,
+
+        /// Temporary pod (kubectl run --rm) instead of exec. Bare flag enables;
+        /// `false` goes back to exec into the pod. Enabling it cannot be
+        /// combined with --pod, -H or --container
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        busybox: Option<bool>,
+
+        /// Image for the temporary pod; needs busybox mode
+        #[arg(long, value_name = "IMAGE")]
+        busybox_image: Option<String>,
+
+        /// Additional kubectl argument (repeatable; appends), e.g.
+        /// --k8s-custom-arg --request-timeout=30s
+        #[arg(long, value_name = "ARG", allow_hyphen_values = true)]
+        k8s_custom_arg: Vec<String>,
 
         /// Use HTTPS for a WinRM connection
         #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]

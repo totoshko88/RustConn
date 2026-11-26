@@ -149,6 +149,129 @@ pub(super) struct AddParams<'a> {
     // WinRM
     pub winrm_ssl: bool,
     pub winrm_accept_invalid_certs: bool,
+    // Kubernetes
+    pub kubernetes: KubernetesArgs<'a>,
+}
+
+/// The Kubernetes flags of `add` and `update`, applied by
+/// [`apply_kubernetes_fields`].
+pub(super) struct KubernetesArgs<'a> {
+    pub kubeconfig: Option<&'a str>,
+    pub context: Option<&'a str>,
+    pub namespace: Option<&'a str>,
+    pub pod: Option<&'a str>,
+    pub container: Option<&'a str>,
+    pub shell: Option<&'a str>,
+    /// `Some(true)` for busybox mode, `Some(false)` (update only) for exec.
+    pub busybox: Option<bool>,
+    pub busybox_image: Option<&'a str>,
+    pub custom_args: &'a [String],
+}
+
+impl KubernetesArgs<'_> {
+    /// The first Kubernetes flag given, for the error a non-Kubernetes
+    /// connection gets; `None` when no Kubernetes flag was given.
+    pub(super) fn first_flag(&self) -> Option<&'static str> {
+        [
+            (self.kubeconfig.is_some(), "--kubeconfig"),
+            (self.context.is_some(), "--context"),
+            (self.namespace.is_some(), "--namespace"),
+            (self.pod.is_some(), "--pod"),
+            (self.container.is_some(), "--container"),
+            (self.shell.is_some(), "--shell"),
+            (self.busybox.is_some(), "--busybox"),
+            (self.busybox_image.is_some(), "--busybox-image"),
+            (!self.custom_args.is_empty(), "--k8s-custom-arg"),
+        ]
+        .into_iter()
+        .find_map(|(given, flag)| given.then_some(flag))
+    }
+}
+
+/// Applies the Kubernetes flags to a `KubernetesConfig`, shared by `add` and
+/// `update`.
+///
+/// `host` is `-H/--host`: a Kubernetes connection has no network host, so the
+/// value names the pod, the same as `--pod` (giving both with different names
+/// is refused rather than one silently winning). An empty value clears an
+/// optional field. The rules are the GUI editor's: busybox mode runs a
+/// temporary pod, so it excludes a pod and a container in the same call, and
+/// without it a pod is required. The editor keeps a stored pod while busybox
+/// mode is on (the field is only greyed out), so switching modes here keeps it
+/// as well. The shell is limited by clap to the editor's four choices.
+///
+/// # Errors
+/// Returns [`CliError::Config`] for a conflicting pod, busybox mode combined
+/// with a pod or container, `--busybox-image` outside busybox mode, a result
+/// with neither a pod nor busybox mode, or a kubeconfig path that cannot be
+/// made absolute.
+pub(super) fn apply_kubernetes_fields(
+    cfg: &mut rustconn_core::models::KubernetesConfig,
+    host: Option<&str>,
+    args: &KubernetesArgs<'_>,
+) -> Result<(), CliError> {
+    let host = host.map(str::trim).filter(|h| !h.is_empty());
+    let pod = match (host, args.pod) {
+        (Some(host), Some(pod)) if host != pod.trim() => {
+            return Err(CliError::Config(format!(
+                "-H/--host and --pod both name the pod of a Kubernetes connection \
+                 ('{host}' and '{}'); give one of them",
+                pod.trim()
+            )));
+        }
+        (Some(host), _) => Some(host),
+        (None, pod) => pod,
+    };
+    let named = |value: Option<&str>| value.is_some_and(|v| !v.trim().is_empty());
+    if args.busybox == Some(true) && (named(pod) || named(args.container)) {
+        return Err(CliError::Config(
+            "--busybox runs a temporary pod and cannot be combined with --pod, -H/--host \
+             or --container"
+                .into(),
+        ));
+    }
+
+    let value = |text: &str| (!text.trim().is_empty()).then(|| text.trim().to_string());
+    if let Some(path) = args.kubeconfig {
+        cfg.kubeconfig = crate::util::kdbx_path_arg(path)?;
+    }
+    if let Some(context) = args.context {
+        cfg.context = value(context);
+    }
+    if let Some(namespace) = args.namespace {
+        cfg.namespace = value(namespace);
+    }
+    if let Some(pod) = pod {
+        cfg.pod = value(pod);
+    }
+    if let Some(container) = args.container {
+        cfg.container = value(container);
+    }
+    if let Some(shell) = args.shell {
+        cfg.shell = shell.to_string();
+    }
+    if let Some(busybox) = args.busybox {
+        cfg.use_busybox = busybox;
+    }
+    if let Some(image) = args.busybox_image {
+        if !cfg.use_busybox {
+            return Err(CliError::Config(
+                "--busybox-image applies only in busybox mode; add --busybox".into(),
+            ));
+        }
+        cfg.busybox_image = value(image)
+            .unwrap_or_else(|| rustconn_core::models::KubernetesConfig::default().busybox_image);
+    }
+    cfg.custom_args.extend(args.custom_args.iter().cloned());
+
+    if !cfg.use_busybox && cfg.pod.is_none() {
+        return Err(CliError::Config(
+            "A Kubernetes connection needs a pod: pass it with -H/--host or --pod, \
+             or use --busybox for a temporary pod"
+                .into(),
+        ));
+    }
+    Ok(())
 }
 
 /// Add connection command handler
@@ -207,6 +330,18 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         && let Some(baud) = params.baud_rate
     {
         config.baud_rate = crate::util::parse_baud_rate(baud)?;
+    }
+
+    // Kubernetes: -H names the pod (the connection has no network host), and
+    // a Kubernetes flag on any other protocol is a mistake, not a no-op.
+    if let rustconn_core::models::ProtocolConfig::Kubernetes(ref mut config) =
+        connection.protocol_config
+    {
+        apply_kubernetes_fields(config, Some(params.host), &params.kubernetes)?;
+    } else if let Some(flag) = params.kubernetes.first_flag() {
+        return Err(CliError::Config(format!(
+            "{flag} is only valid for Kubernetes connections, not {protocol_type:?}"
+        )));
     }
 
     if let Some(username) = params.user {
@@ -736,9 +871,19 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         store_password_from_stdin(config_path, &connection)?;
     }
 
-    let endpoint = match crate::util::display_port(&connection).as_str() {
-        "-" => connection.host.clone(),
-        port => format!("{}:{port}", connection.host),
+    let endpoint = match (
+        &connection.protocol_config,
+        crate::util::display_port(&connection).as_str(),
+    ) {
+        (rustconn_core::models::ProtocolConfig::Kubernetes(cfg), _) => {
+            if cfg.use_busybox {
+                format!("temporary pod {}", cfg.busybox_image)
+            } else {
+                format!("pod {}", cfg.pod.as_deref().unwrap_or_default())
+            }
+        }
+        (_, "-") => connection.host.clone(),
+        (_, port) => format!("{}:{port}", connection.host),
     };
     println!(
         "Added connection '{}' ({} {endpoint}) with ID {}{}",

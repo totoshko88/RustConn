@@ -6,9 +6,9 @@ use rustconn_core::config::ConfigManager;
 use rustconn_core::models::RdpGateway;
 
 use crate::commands::add::{
-    apply_jump_host_id, apply_ssh_wave2_fields, check_socks_password_variable,
-    check_web_socks_settings, parse_auth_method, parse_resolution, parse_shared_folder,
-    parse_spice_image_compression, resolve_fallback_jump_hosts,
+    KubernetesArgs, apply_jump_host_id, apply_kubernetes_fields, apply_ssh_wave2_fields,
+    check_socks_password_variable, check_web_socks_settings, parse_auth_method, parse_resolution,
+    parse_shared_folder, parse_spice_image_compression, resolve_fallback_jump_hosts,
 };
 use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
@@ -255,6 +255,8 @@ pub(super) struct UpdateParams<'a> {
     // WinRM
     pub winrm_ssl: Option<bool>,
     pub winrm_accept_invalid_certs: Option<bool>,
+    // Kubernetes
+    pub kubernetes: KubernetesArgs<'a>,
     // Output filter (postpend command) — terminal protocols
     pub postpend_command: Option<&'a str>,
     pub postpend_arg: &'a [String],
@@ -320,7 +322,20 @@ pub(super) fn cmd_update(
     if let Some(new_name) = params.new_name {
         connection.name = new_name.to_string();
     }
-    if let Some(host) = params.host {
+    // A Kubernetes connection has no network host: -H names its pod and is
+    // applied with the other Kubernetes flags below.
+    if let rustconn_core::models::ProtocolConfig::Kubernetes(ref mut cfg) =
+        connection.protocol_config
+    {
+        if params.host.is_some() || params.kubernetes.first_flag().is_some() {
+            apply_kubernetes_fields(cfg, params.host, &params.kubernetes)?;
+        }
+    } else if let Some(flag) = params.kubernetes.first_flag() {
+        return Err(CliError::Config(format!(
+            "{flag} is only valid for Kubernetes connections, not {:?}",
+            connection.protocol
+        )));
+    } else if let Some(host) = params.host {
         connection.host = host.to_string();
     }
     if let Some(port) = params.port {
