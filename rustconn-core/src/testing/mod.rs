@@ -1,21 +1,32 @@
 //! Connection testing module for verifying connectivity.
 //!
-//! This module provides functionality to test connections by verifying
-//! port accessibility and protocol handshakes.
+//! [`ConnectionTester`] picks a probe per connection with [`plan_probe`]: a
+//! TCP dial (with an SSH banner check for SSH), an `ssh -W` probe through the
+//! connection's jump host, `kubectl` for Kubernetes or `aws ssm` for an AWS
+//! Session Manager target. A connection with nothing to probe is
+//! [`TestStatus::Skipped`], which is neither a pass nor a failure.
 
 // cast_precision_loss, cast_possible_truncation allowed at workspace level
 
+mod probe;
+
 use std::collections::HashMap;
+use std::process::Stdio;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::time::timeout;
 use uuid::Uuid;
 
 use crate::connection::connect_tcp;
-use crate::models::{Connection, ProtocolType};
+use crate::connection::gateway_failover::{gateway_probes_by, probe_gateways, use_gateway};
+use crate::models::Connection;
+
+pub use probe::{
+    JumpOutcome, JumpProbe, ProbePlan, TestContext, classify_jump_probe, plan_probe, web_endpoint,
+};
 
 /// Default timeout for connection tests (10 seconds)
 pub const DEFAULT_TEST_TIMEOUT_SECS: u64 = 10;
@@ -58,6 +69,18 @@ pub enum TestError {
 /// Result type alias for testing operations
 pub type TestResult2<T> = std::result::Result<T, TestError>;
 
+/// The outcome of one test.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TestStatus {
+    /// The connection answered.
+    Ok,
+    /// The connection did not answer, or answered with an error.
+    Failed,
+    /// Nothing was probed; the `skipped` detail says why.
+    Skipped,
+}
+
 /// Result of testing a single connection
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TestResult {
@@ -65,7 +88,10 @@ pub struct TestResult {
     pub connection_id: Uuid,
     /// Name of the connection
     pub connection_name: String,
-    /// Whether the test was successful
+    /// The outcome
+    pub status: TestStatus,
+    /// Whether the test passed: true only for [`TestStatus::Ok`]. Kept for
+    /// consumers that predate `status`; a skipped test is not a success.
     pub success: bool,
     /// Connection latency in milliseconds (if successful)
     pub latency_ms: Option<u64>,
@@ -83,6 +109,7 @@ impl TestResult {
         Self {
             connection_id,
             connection_name,
+            status: TestStatus::Ok,
             success: true,
             latency_ms: Some(latency_ms),
             error: None,
@@ -96,6 +123,7 @@ impl TestResult {
         Self {
             connection_id,
             connection_name,
+            status: TestStatus::Failed,
             success: false,
             latency_ms: None,
             error: Some(error.into()),
@@ -109,23 +137,37 @@ impl TestResult {
         Self::failure(connection_id, connection_name, error.to_string())
     }
 
-    /// Creates a result for a connection that has no TCP endpoint to probe.
+    /// Creates a result for a connection that was not probed.
     ///
-    /// The `host` of a Zero Trust connection is a resource identifier (an EC2
-    /// instance ID for AWS SSM) and a serial connection has no network address
-    /// at all, so a TCP probe would only report a bogus DNS failure. The result
-    /// counts as a pass and carries a `skipped` detail with the reason.
-    // ponytail: no per-provider reachability check (e.g. SSM ping status);
-    // add one behind the provider's own CLI when a caller needs it
+    /// A serial device has no network address, a Zero Trust provider other than
+    /// AWS SSM has a resource ID instead of a host, a jump host may need an
+    /// interactive login, a client CLI may be missing. The result is
+    /// [`TestStatus::Skipped`] with `success: false`, no error, and a `skipped`
+    /// detail holding `reason`.
     #[must_use]
     pub fn skipped(connection_id: Uuid, connection_name: String, reason: &str) -> Self {
-        Self::success(connection_id, connection_name, 0).with_detail("skipped", reason)
+        Self {
+            connection_id,
+            connection_name,
+            status: TestStatus::Skipped,
+            success: false,
+            latency_ms: None,
+            error: None,
+            details: HashMap::new(),
+        }
+        .with_detail("skipped", reason)
     }
 
     /// Returns true if the connection was not probed (see [`Self::skipped`])
     #[must_use]
-    pub fn is_skipped(&self) -> bool {
-        self.details.contains_key("skipped")
+    pub const fn is_skipped(&self) -> bool {
+        matches!(self.status, TestStatus::Skipped)
+    }
+
+    /// The reason a skipped test gives, if it was skipped.
+    #[must_use]
+    pub fn skip_reason(&self) -> Option<&str> {
+        self.details.get("skipped").map(String::as_str)
     }
 
     /// Adds a detail to the test result
@@ -138,13 +180,13 @@ impl TestResult {
     /// Returns true if the test was successful
     #[must_use]
     pub const fn is_success(&self) -> bool {
-        self.success
+        matches!(self.status, TestStatus::Ok)
     }
 
-    /// Returns true if the test failed
+    /// Returns true if the test failed; a skipped test did not
     #[must_use]
     pub const fn is_failure(&self) -> bool {
-        !self.success
+        matches!(self.status, TestStatus::Failed)
     }
 }
 
@@ -157,6 +199,9 @@ pub struct TestSummary {
     pub passed: usize,
     /// Number of tests that failed
     pub failed: usize,
+    /// Number of connections that were not probed; neither passed nor failed
+    #[serde(default)]
+    pub skipped: usize,
     /// Individual test results
     pub results: Vec<TestResult>,
 }
@@ -169,6 +214,7 @@ impl TestSummary {
             total: 0,
             passed: 0,
             failed: 0,
+            skipped: 0,
             results: Vec::new(),
         }
     }
@@ -177,23 +223,25 @@ impl TestSummary {
     #[must_use]
     pub fn from_results(results: Vec<TestResult>) -> Self {
         let total = results.len();
-        let passed = results.iter().filter(|r| r.success).count();
-        let failed = total - passed;
+        let passed = results.iter().filter(|r| r.is_success()).count();
+        let skipped = results.iter().filter(|r| r.is_skipped()).count();
+        let failed = total - passed - skipped;
 
         Self {
             total,
             passed,
             failed,
+            skipped,
             results,
         }
     }
 
     /// Adds a test result to the summary
     pub fn add_result(&mut self, result: TestResult) {
-        if result.success {
-            self.passed += 1;
-        } else {
-            self.failed += 1;
+        match result.status {
+            TestStatus::Ok => self.passed += 1,
+            TestStatus::Failed => self.failed += 1,
+            TestStatus::Skipped => self.skipped += 1,
         }
         self.total += 1;
         self.results.push(result);
@@ -211,23 +259,26 @@ impl TestSummary {
         self.failed > 0
     }
 
-    /// Returns the pass rate as a percentage (0.0 to 100.0)
+    /// Returns the pass rate as a percentage (0.0 to 100.0) of the tests
+    /// that ran; skipped ones are left out
     #[must_use]
     pub fn pass_rate(&self) -> f64 {
-        if self.total == 0 {
+        let ran = self.passed + self.failed;
+        if ran == 0 {
             return 100.0;
         }
-        (self.passed as f64 / self.total as f64) * 100.0
+        (self.passed as f64 / ran as f64) * 100.0
     }
 
     /// Returns a summary string
     #[must_use]
     pub fn summary_string(&self) -> String {
         format!(
-            "Total: {}, Passed: {}, Failed: {} ({:.1}% pass rate)",
+            "Total: {}, Passed: {}, Failed: {}, Skipped: {} ({:.1}% pass rate)",
             self.total,
             self.passed,
             self.failed,
+            self.skipped,
             self.pass_rate()
         )
     }
@@ -235,13 +286,13 @@ impl TestSummary {
     /// Returns only the failed results
     #[must_use]
     pub fn failed_results(&self) -> Vec<&TestResult> {
-        self.results.iter().filter(|r| !r.success).collect()
+        self.results.iter().filter(|r| r.is_failure()).collect()
     }
 
     /// Returns only the successful results
     #[must_use]
     pub fn successful_results(&self) -> Vec<&TestResult> {
-        self.results.iter().filter(|r| r.success).collect()
+        self.results.iter().filter(|r| r.is_success()).collect()
     }
 }
 
@@ -304,62 +355,309 @@ impl ConnectionTester {
         self.concurrency
     }
 
-    /// Tests a single connection
+    /// Tests a single connection on its own, with no other connections or
+    /// groups to resolve a jump host from.
     ///
-    /// This method tests connectivity to the specified connection by:
-    /// 1. Testing TCP port accessibility
-    /// 2. For SSH connections, verifying the SSH banner exchange
-    ///
-    /// # Arguments
-    ///
-    /// * `connection` - The connection to test
-    ///
-    /// # Returns
-    ///
-    /// A `TestResult` indicating success or failure with details
+    /// A connection editor that tests an unsaved connection uses this; see
+    /// [`Self::test_connection_in`] for the full resolution.
     pub async fn test_connection(&self, connection: &Connection) -> TestResult {
-        let start = std::time::Instant::now();
-
-        let skip_reason = match connection.protocol {
-            ProtocolType::ZeroTrust => Some("host is a resource ID, not a network address"),
-            ProtocolType::Serial => Some("serial device, no network address to probe"),
-            _ => None,
+        let network = crate::config::NetworkSettings::default();
+        let ctx = TestContext {
+            connections: &[],
+            groups: &[],
+            network: &network,
         };
-        if let Some(reason) = skip_reason {
-            return TestResult::skipped(connection.id, connection.name.clone(), reason)
-                .with_detail("protocol", connection.protocol.to_string());
-        }
+        self.test_connection_in(connection, &ctx).await
+    }
 
-        // First test port connectivity
-        match self.test_port(&connection.host, connection.port).await {
+    /// Tests a single connection, reaching it the way a session would.
+    ///
+    /// The probe comes from [`plan_probe`]: through the connection's jump host
+    /// (its own, a group's or the global one, after failing over to a
+    /// reachable fallback), with `kubectl` for Kubernetes, with `aws ssm` for
+    /// an AWS Session Manager target, otherwise a TCP dial, plus the banner
+    /// exchange for SSH.
+    pub async fn test_connection_in(
+        &self,
+        connection: &Connection,
+        ctx: &TestContext<'_>,
+    ) -> TestResult {
+        let routed = self.with_reachable_gateway(connection, ctx).await;
+        let id = connection.id;
+        let name = connection.name.clone();
+        let protocol = connection.protocol.to_string();
+        let result = match plan_probe(&routed, ctx, self.timeout.as_secs()) {
+            ProbePlan::Skip(reason) => TestResult::skipped(id, name, &reason),
+            ProbePlan::Invalid(reason) => {
+                TestResult::from_error(id, name, &TestError::InvalidConfig(reason))
+            }
+            ProbePlan::Tcp {
+                host,
+                port,
+                ssh_banner,
+            } => self.probe_tcp(id, name, &host, port, ssh_banner).await,
+            ProbePlan::ThroughJump(probe) => self.probe_through_jump(id, name, &probe).await,
+            ProbePlan::Kubectl { args } => self.probe_kubectl(id, name, &args).await,
+            ProbePlan::AwsSsm { args } => self.probe_aws_ssm(id, name, &args).await,
+        };
+        result.with_detail("protocol", protocol)
+    }
+
+    /// A copy of `connection` routed through the first reachable of its
+    /// gateways, when it has fallback jump hosts, as `run-script` does.
+    async fn with_reachable_gateway(
+        &self,
+        connection: &Connection,
+        ctx: &TestContext<'_>,
+    ) -> Connection {
+        let mut routed = connection.clone();
+        let probes = gateway_probes_by(
+            connection,
+            |id| ctx.connections.iter().find(|c| c.id == id),
+            ctx.groups,
+            ctx.network,
+        );
+        if probes.is_empty() {
+            return routed;
+        }
+        let secs = u32::try_from(self.timeout.as_secs())
+            .unwrap_or(u32::MAX)
+            .max(1);
+        if let Ok(Some(selection)) =
+            tokio::task::spawn_blocking(move || probe_gateways(&probes, secs)).await
+        {
+            use_gateway(&mut routed, selection.gateway_id);
+        }
+        routed
+    }
+
+    /// A TCP dial, and for SSH the banner exchange.
+    async fn probe_tcp(
+        &self,
+        id: Uuid,
+        name: String,
+        host: &str,
+        port: u16,
+        ssh_banner: bool,
+    ) -> TestResult {
+        let start = std::time::Instant::now();
+        match self.test_port(host, port).await {
             Ok(latency) => {
-                // For SSH, also verify the protocol handshake
-                if connection.protocol == ProtocolType::Ssh {
-                    match self.test_ssh(connection).await {
-                        Ok(()) => {
-                            let latency_ms = latency.as_millis() as u64;
-                            TestResult::success(connection.id, connection.name.clone(), latency_ms)
-                                .with_detail("protocol", "SSH")
-                                .with_detail("handshake", "verified")
-                        }
-                        Err(e) => {
-                            TestResult::from_error(connection.id, connection.name.clone(), &e)
-                                .with_detail("protocol", "SSH")
-                                .with_detail("port_open", "true")
-                        }
-                    }
-                } else {
-                    // For RDP/VNC, port connectivity is sufficient
-                    let latency_ms = latency.as_millis() as u64;
-                    TestResult::success(connection.id, connection.name.clone(), latency_ms)
-                        .with_detail("protocol", connection.protocol.to_string())
+                let latency_ms = latency.as_millis() as u64;
+                if !ssh_banner {
+                    return TestResult::success(id, name, latency_ms);
+                }
+                match self.ssh_banner(host, port).await {
+                    Ok(()) => TestResult::success(id, name, latency_ms)
+                        .with_detail("handshake", "verified"),
+                    Err(e) => TestResult::from_error(id, name, &e).with_detail("port_open", "true"),
                 }
             }
             Err(e) => {
                 let elapsed = start.elapsed().as_millis() as u64;
-                TestResult::from_error(connection.id, connection.name.clone(), &e)
-                    .with_detail("elapsed_ms", elapsed.to_string())
+                TestResult::from_error(id, name, &e).with_detail("elapsed_ms", elapsed.to_string())
             }
+        }
+    }
+
+    /// `ssh -W` from the jump host nearest the target.
+    async fn probe_through_jump(&self, id: Uuid, name: String, probe: &JumpProbe) -> TestResult {
+        let Some(ssh) = crate::which::find_in_path("ssh") else {
+            return TestResult::skipped(
+                id,
+                name,
+                "ssh is not installed, so the jump host cannot be used",
+            )
+            .with_detail("jump_host", &probe.jump_host);
+        };
+        let start = std::time::Instant::now();
+        let (exit_code, stderr) = match self.run_jump_ssh(ssh, &probe.args).await {
+            Ok(run) => run,
+            Err(e) => {
+                return TestResult::from_error(id, name, &e)
+                    .with_detail("jump_host", &probe.jump_host);
+            }
+        };
+        let latency_ms = start.elapsed().as_millis() as u64;
+        let jump = probe.jump_host.as_str();
+        let target = probe.target.as_str();
+        let result = match classify_jump_probe(exit_code, &stderr) {
+            JumpOutcome::Reachable => TestResult::success(id, name, latency_ms)
+                .with_detail("jump_host_status", "ok")
+                .with_detail("target_status", "ok"),
+            JumpOutcome::TargetFailed(reason) => TestResult::failure(
+                id,
+                name,
+                format!("Target {target} unreachable from jump host {jump}: {reason}"),
+            )
+            .with_detail("jump_host_status", "ok")
+            .with_detail("target_status", "failed"),
+            JumpOutcome::JumpFailed(reason) => {
+                TestResult::failure(id, name, format!("Jump host {jump} unreachable: {reason}"))
+                    .with_detail("jump_host_status", "failed")
+            }
+            JumpOutcome::JumpNeedsInteraction(reason) => TestResult::skipped(
+                id,
+                name,
+                &format!(
+                    "jump host {jump} needs an interactive login ({reason}); \
+                     the test logs in with keys or the agent only"
+                ),
+            )
+            .with_detail("jump_host_status", "skipped"),
+            JumpOutcome::TimedOut { authenticated } => {
+                let secs = self.timeout.as_secs();
+                if authenticated {
+                    TestResult::failure(
+                        id,
+                        name,
+                        format!("Target {target} did not answer jump host {jump} within {secs} s"),
+                    )
+                    .with_detail("jump_host_status", "ok")
+                    .with_detail("target_status", "failed")
+                } else {
+                    TestResult::failure(
+                        id,
+                        name,
+                        format!("Jump host {jump} did not answer within {secs} s"),
+                    )
+                    .with_detail("jump_host_status", "failed")
+                }
+            }
+        };
+        result
+            .with_detail("jump_host", jump)
+            .with_detail("target", target)
+    }
+
+    /// Runs the jump probe's `ssh` until it exits or the test timeout passes.
+    /// Returns its exit code (`None` at the timeout) and what it wrote to
+    /// standard error so far.
+    async fn run_jump_ssh(
+        &self,
+        ssh: std::path::PathBuf,
+        args: &[String],
+    ) -> TestResult2<(Option<i32>, String)> {
+        let mut command = tokio::process::Command::new(ssh);
+        command
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
+        let mut child = command
+            .spawn()
+            .map_err(|e| TestError::IoError(e.to_string()))?;
+        let mut stderr_pipe = child.stderr.take();
+        let mut stderr = Vec::new();
+        let exit_code = {
+            let read = async {
+                if let Some(pipe) = stderr_pipe.as_mut() {
+                    // A read error leaves what was read; the exit code decides.
+                    pipe.read_to_end(&mut stderr).await.ok();
+                }
+            };
+            tokio::pin!(read);
+            let wait = child.wait();
+            tokio::pin!(wait);
+            let deadline = tokio::time::sleep(self.timeout);
+            tokio::pin!(deadline);
+            let mut read_done = false;
+            let status = loop {
+                tokio::select! {
+                    () = &mut read, if !read_done => read_done = true,
+                    status = &mut wait => break status.ok(),
+                    () = &mut deadline => break None,
+                }
+            };
+            // A ProxyCommand child can hold stderr open after ssh exits.
+            if status.is_some() && !read_done {
+                timeout(Duration::from_millis(500), &mut read).await.ok();
+            }
+            // A signal has no code; read it as a failed run, not a timeout.
+            status.map(|s| s.code().unwrap_or(-1))
+        };
+        if exit_code.is_none() {
+            child.start_kill().ok();
+        }
+        Ok((exit_code, String::from_utf8_lossy(&stderr).into_owned()))
+    }
+
+    /// `kubectl get pod`, or `kubectl auth can-i create pods` for busybox mode.
+    async fn probe_kubectl(&self, id: Uuid, name: String, args: &[String]) -> TestResult {
+        let start = std::time::Instant::now();
+        match self.run_tool("kubectl", args).await {
+            ToolRun::Missing => TestResult::skipped(id, name, "kubectl is not installed"),
+            ToolRun::Failed(error) => TestResult::from_error(id, name, &error),
+            ToolRun::Exited { code: 0, .. } => {
+                TestResult::success(id, name, start.elapsed().as_millis() as u64)
+            }
+            ToolRun::Exited { stdout, stderr, .. } => {
+                let reason = first_line(&stderr)
+                    .or_else(|| first_line(&stdout))
+                    .unwrap_or("kubectl failed");
+                // `auth can-i` answers `no` on stdout with exit status 1.
+                let reason = if reason == "no" {
+                    "not allowed to create pods"
+                } else {
+                    reason
+                };
+                TestResult::failure(id, name, format!("kubectl: {reason}"))
+            }
+        }
+    }
+
+    /// `aws ssm describe-instance-information`, reading the `PingStatus`.
+    async fn probe_aws_ssm(&self, id: Uuid, name: String, args: &[String]) -> TestResult {
+        let start = std::time::Instant::now();
+        match self.run_tool("aws", args).await {
+            ToolRun::Missing => TestResult::skipped(id, name, "the aws CLI is not installed"),
+            ToolRun::Failed(error) => TestResult::from_error(id, name, &error),
+            ToolRun::Exited {
+                code: 0, stdout, ..
+            } => match stdout.trim() {
+                "Online" => TestResult::success(id, name, start.elapsed().as_millis() as u64)
+                    .with_detail("ping_status", "Online"),
+                "" | "None" => TestResult::failure(
+                    id,
+                    name,
+                    "The instance is not registered with AWS Systems Manager",
+                ),
+                status => TestResult::failure(id, name, format!("SSM agent PingStatus: {status}"))
+                    .with_detail("ping_status", status),
+            },
+            ToolRun::Exited { stderr, .. } => TestResult::failure(
+                id,
+                name,
+                format!("aws: {}", first_line(&stderr).unwrap_or("command failed")),
+            ),
+        }
+    }
+
+    /// Runs `program` with `args`, no input, under the test timeout.
+    async fn run_tool(&self, program: &str, args: &[String]) -> ToolRun {
+        let Some(path) = crate::which::find_in_path(program) else {
+            return ToolRun::Missing;
+        };
+        let mut command = tokio::process::Command::new(path);
+        command
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
+        let child = match command.spawn() {
+            Ok(child) => child,
+            Err(e) => return ToolRun::Failed(TestError::IoError(e.to_string())),
+        };
+        match timeout(self.timeout, child.wait_with_output()).await {
+            Ok(Ok(output)) => ToolRun::Exited {
+                code: output.status.code().unwrap_or(-1),
+                stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+                stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            },
+            Ok(Err(e)) => ToolRun::Failed(TestError::IoError(e.to_string())),
+            Err(_) => ToolRun::Failed(TestError::Timeout(self.timeout.as_secs())),
         }
     }
 
@@ -425,7 +723,12 @@ impl ConnectionTester {
     /// Returns an error if the connection fails, times out, or the SSH banner
     /// is invalid or missing.
     pub async fn test_ssh(&self, connection: &Connection) -> TestResult2<()> {
-        let dial = connect_tcp(&connection.host, connection.port, false);
+        self.ssh_banner(&connection.host, connection.port).await
+    }
+
+    /// The banner exchange of [`Self::test_ssh`] with `host:port`.
+    async fn ssh_banner(&self, host: &str, port: u16) -> TestResult2<()> {
+        let dial = connect_tcp(host, port, false);
         let stream = match timeout(self.timeout, dial).await {
             Ok(Ok(s)) => s,
             Ok(Err(e)) => return Err(TestError::IoError(e.to_string())),
@@ -485,6 +788,42 @@ impl ConnectionTester {
 
         TestSummary::from_results(results)
     }
+
+    /// Tests `targets` concurrently, each with [`Self::test_connection_in`].
+    pub async fn test_batch_in(
+        &self,
+        targets: &[Connection],
+        ctx: &TestContext<'_>,
+    ) -> TestSummary {
+        use futures::stream::{self, StreamExt};
+
+        let results: Vec<TestResult> = stream::iter(targets)
+            .map(|conn| self.test_connection_in(conn, ctx))
+            .buffer_unordered(self.concurrency)
+            .collect()
+            .await;
+
+        TestSummary::from_results(results)
+    }
+}
+
+/// How a client CLI run by a probe ended.
+enum ToolRun {
+    /// The program is not installed.
+    Missing,
+    /// It could not be started, or did not finish in time.
+    Failed(TestError),
+    /// It exited.
+    Exited {
+        code: i32,
+        stdout: String,
+        stderr: String,
+    },
+}
+
+/// The first non-empty line of `text`, trimmed.
+fn first_line(text: &str) -> Option<&str> {
+    text.lines().map(str::trim).find(|line| !line.is_empty())
 }
 
 impl Default for ConnectionTester {
@@ -710,12 +1049,54 @@ mod tests {
 
         let serial = Connection::new_serial("console".to_string(), "/dev/ttyUSB0".to_string());
         let result = tester.test_connection(&serial).await;
-        assert!(result.is_success() && result.is_skipped());
-
-        let mut ssm = Connection::new_ssh("ssm".to_string(), "i-0abc".to_string(), 22);
-        ssm.protocol = ProtocolType::ZeroTrust;
-        let result = tester.test_connection(&ssm).await;
-        assert!(result.is_success() && result.is_skipped());
+        assert!(result.is_skipped() && !result.is_success() && !result.is_failure());
+        assert!(!result.success);
+        assert_eq!(result.status, TestStatus::Skipped);
         assert!(result.error.is_none());
+        assert_eq!(
+            result.skip_reason(),
+            Some("serial device, no network address to probe")
+        );
+    }
+
+    #[test]
+    fn a_skipped_result_is_neither_passed_nor_failed_in_a_summary() {
+        let summary = TestSummary::from_results(vec![
+            TestResult::success(Uuid::new_v4(), "ok".to_string(), 5),
+            TestResult::failure(Uuid::new_v4(), "bad".to_string(), "Error"),
+            TestResult::skipped(Uuid::new_v4(), "ssm".to_string(), "why"),
+        ]);
+        assert_eq!(
+            (
+                summary.total,
+                summary.passed,
+                summary.failed,
+                summary.skipped
+            ),
+            (3, 1, 1, 1)
+        );
+        assert!((summary.pass_rate() - 50.0).abs() < 0.01);
+
+        let mut incremental = TestSummary::new();
+        for result in summary.results {
+            incremental.add_result(result);
+        }
+        assert_eq!(incremental.skipped, 1);
+        assert_eq!(incremental.failed, 1);
+
+        let only_skipped = TestSummary::from_results(vec![TestResult::skipped(
+            Uuid::new_v4(),
+            "s".to_string(),
+            "why",
+        )]);
+        assert!(only_skipped.all_passed() && !only_skipped.has_failures());
+    }
+
+    #[test]
+    fn status_serializes_in_lowercase() {
+        let result = TestResult::skipped(Uuid::nil(), "s".to_string(), "why");
+        let json = serde_json::to_value(&result).unwrap();
+        assert_eq!(json["status"], "skipped");
+        assert_eq!(json["success"], false);
     }
 }

@@ -1461,6 +1461,14 @@ impl ConnectionDialog {
                                 ),
                             );
                         }
+                        // A skip is not a failure: show why nothing was probed.
+                        Some(test_result) if test_result.is_skipped() => {
+                            alert::show_alert(
+                                &window_clone,
+                                &i18n("Skipped"),
+                                test_result.skip_reason().unwrap_or_default(),
+                            );
+                        }
                         Some(test_result) => {
                             let error = test_result
                                 .error
