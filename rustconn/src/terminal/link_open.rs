@@ -17,10 +17,14 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{gdk, gio, glib};
+use libadwaita as adw;
 use vte4::Terminal;
 use vte4::prelude::*;
+
+use crate::i18n::i18n;
 
 thread_local! {
     /// Whether links may open. Mirrors `TerminalSettings::allow_hyperlinks` —
@@ -87,7 +91,7 @@ pub(super) fn setup_link_opening(terminal: &Terminal) {
     let term_released = terminal.clone();
     // The link the claimed press landed on; release opens it only if it
     // resolves to the same one.
-    let pressed: Rc<RefCell<Option<String>>> = Rc::default();
+    let pressed: Rc<RefCell<Option<Link>>> = Rc::default();
     let pressed_on_release = Rc::clone(&pressed);
     let click = link_click_gesture();
     click.connect_pressed(move |gesture, _, x, y| {
@@ -96,24 +100,30 @@ pub(super) fn setup_link_opening(terminal: &Terminal) {
         if !enabled() || !modifier_held(state) {
             return;
         }
-        let Some(uri) = link_at(&term_pressed, x, y) else {
+        let Some(link) = link_at(&term_pressed, x, y) else {
             return;
         };
         tracing::debug!(x, y, "link press claimed");
         gesture.set_state(gtk4::EventSequenceState::Claimed);
-        pressed.replace(Some(uri));
+        pressed.replace(Some(link));
     });
     click.connect_released(move |gesture, n_press, x, y| {
-        let Some(pressed_uri) = pressed_on_release.take() else {
+        let Some(pressed_link) = pressed_on_release.take() else {
             return;
         };
         if n_press != 1 || !enabled() || !modifier_held(gesture.current_event_state()) {
             return;
         }
-        if link_at(&term_released, x, y).as_deref() != Some(pressed_uri.as_str()) {
+        if link_at(&term_released, x, y).as_ref() != Some(&pressed_link) {
             return;
         }
-        open_link(&term_released, &pressed_uri);
+        open_link(&term_released, &pressed_link);
+    });
+    // An OSC 8 hyperlink shows a label and leads to a target the remote side
+    // chose; show the target on hover so the user sees where a click goes.
+    // VTE only reports a hover URI while hyperlinks are allowed.
+    terminal.connect_hyperlink_hover_uri_notify(|terminal| {
+        terminal.set_tooltip_text(terminal.hyperlink_hover_uri().as_deref());
     });
     terminal.add_controller(click);
 }
@@ -132,13 +142,46 @@ fn link_click_gesture() -> gtk4::GestureClick {
     click
 }
 
-/// The link under the point: a regex URL match, else an OSC 8 hyperlink.
-fn link_at(terminal: &Terminal, x: f64, y: f64) -> Option<String> {
-    terminal
-        .check_match_at(x, y)
-        .0
-        .or_else(|| terminal.check_hyperlink_at(x, y))
-        .map(String::from)
+/// A link a click resolved to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Link {
+    /// The text under the pointer is where the link leads: a printed URL, or
+    /// an OSC 8 hyperlink whose label is its own target. Opens directly.
+    Shown(String),
+    /// An OSC 8 hyperlink whose target is not the text under the pointer.
+    /// The remote side picks both the label and the target, so the target is
+    /// shown for confirmation before it opens.
+    Hidden(String),
+}
+
+impl Link {
+    /// The URI the link opens.
+    fn uri(&self) -> &str {
+        match self {
+            Self::Shown(uri) | Self::Hidden(uri) => uri,
+        }
+    }
+}
+
+/// The link under the point.
+fn link_at(terminal: &Terminal, x: f64, y: f64) -> Option<Link> {
+    let printed = terminal.check_match_at(x, y).0;
+    let target = terminal.check_hyperlink_at(x, y);
+    resolve_link(printed.as_deref(), target.as_deref())
+}
+
+/// Decides what a click opens from the printed URL under the pointer and the
+/// OSC 8 target there. An OSC 8 target wins, since it is what the browser
+/// would get; it opens directly only when the printed text under the pointer
+/// is that same URL. VTE does not expose a hyperlink's label span, so that
+/// printed match stands in for the label.
+fn resolve_link(printed: Option<&str>, target: Option<&str>) -> Option<Link> {
+    match (printed, target) {
+        (Some(printed), Some(target)) if printed == target => Some(Link::Shown(target.to_owned())),
+        (_, Some(target)) => Some(Link::Hidden(target.to_owned())),
+        (Some(printed), None) => Some(Link::Shown(printed.to_owned())),
+        (None, None) => None,
+    }
 }
 
 /// True for a web link GLib and the browser agree on.
@@ -166,13 +209,39 @@ fn is_openable_link(uri: &str) -> bool {
 }
 
 /// Opens a web link in the browser, after the same checks every link gets;
-/// anything else is refused.
-fn open_link(terminal: &Terminal, text: &str) {
-    if !is_openable_link(text) {
-        tracing::warn!(%text, "refused to open a non-web link");
+/// anything else is refused. A hyperlink whose target is not what the
+/// terminal shows asks first.
+fn open_link(terminal: &Terminal, link: &Link) {
+    let uri = link.uri();
+    if !is_openable_link(uri) {
+        tracing::warn!(%uri, "refused to open a non-web link");
         return;
     }
-    launch_uri(terminal, text);
+    match link {
+        Link::Shown(uri) => launch_uri(terminal, uri),
+        Link::Hidden(uri) => confirm_and_launch(terminal, uri),
+    }
+}
+
+/// Shows the full target of a hyperlink and opens it on approval.
+fn confirm_and_launch(terminal: &Terminal, uri: &str) {
+    // The body is the URI itself, as plain text (markup stays off), so the
+    // user reads exactly what the browser will get.
+    let dialog = adw::AlertDialog::new(Some(&i18n("Open link?")), Some(uri));
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("open", &i18n("Open"));
+    dialog.set_response_appearance("open", adw::ResponseAppearance::Suggested);
+    dialog.set_default_response(Some("cancel"));
+    dialog.set_close_response("cancel");
+    let terminal_for_response = terminal.clone();
+    let uri = uri.to_owned();
+    dialog.connect_response(None, move |_, response| {
+        if response == "open" {
+            launch_uri(&terminal_for_response, &uri);
+        }
+    });
+    // Modal to the terminal's own window, detached sessions included.
+    dialog.present(Some(terminal));
 }
 
 /// Hands a validated URI to the system browser through GTK's URI launcher.
@@ -190,8 +259,8 @@ fn launch_uri(terminal: &Terminal, uri: &str) {
 #[cfg(test)]
 mod tests {
     use super::{
-        PCRE2_MULTILINE, URL_PATTERN, is_openable_link, link_click_gesture, modifier_held,
-        setup_link_opening,
+        Link, PCRE2_MULTILINE, URL_PATTERN, is_openable_link, link_click_gesture, modifier_held,
+        resolve_link, setup_link_opening,
     };
     use gtk4::gdk;
     use gtk4::prelude::*;
@@ -226,6 +295,32 @@ mod tests {
         assert!(modifier_held(gdk::ModifierType::CONTROL_MASK));
         assert!(!modifier_held(gdk::ModifierType::empty()));
         assert!(!modifier_held(gdk::ModifierType::SHIFT_MASK));
+    }
+
+    /// A printed URL and an OSC 8 hyperlink labelled with its own target open
+    /// directly; an OSC 8 target that differs from the text under the pointer
+    /// (`Docs` leading to another host) is shown for confirmation first.
+    #[test]
+    fn hidden_hyperlink_targets_ask_first() {
+        let url = "https://example.com/a";
+        assert_eq!(resolve_link(None, None), None);
+        assert_eq!(
+            resolve_link(Some(url), None),
+            Some(Link::Shown(url.to_owned()))
+        );
+        assert_eq!(
+            resolve_link(Some(url), Some(url)),
+            Some(Link::Shown(url.to_owned()))
+        );
+        assert_eq!(
+            resolve_link(None, Some("https://evil.example/")),
+            Some(Link::Hidden("https://evil.example/".to_owned()))
+        );
+        // A label that looks like a URL but leads elsewhere: the target wins.
+        assert_eq!(
+            resolve_link(Some(url), Some("https://evil.example/")),
+            Some(Link::Hidden("https://evil.example/".to_owned()))
+        );
     }
 
     /// Only the primary button opens links: a gesture on every button (GTK's

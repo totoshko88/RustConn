@@ -159,6 +159,7 @@ rustconn/src/split_view/adapter.rs
 rustconn/src/split_view/bridge.rs
 rustconn/src/terminal/mod.rs
 rustconn/src/terminal/config.rs
+rustconn/src/terminal/link_open.rs
 rustconn/src/terminal/notebook_output.rs
 rustconn/src/terminal/playback.rs
 rustconn/src/terminal/recording.rs
