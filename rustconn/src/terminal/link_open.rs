@@ -143,7 +143,13 @@ fn open_link(terminal: &Terminal, uri: &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::is_openable_link;
+    use super::{
+        PCRE2_MULTILINE, URL_PATTERN, is_openable_link, modifier_held, setup_link_opening,
+    };
+    use gtk4::gdk;
+    use gtk4::prelude::*;
+    use vte4::Terminal;
+    use vte4::prelude::*;
 
     #[test]
     fn only_web_links_open() {
@@ -164,5 +170,67 @@ mod tests {
         // Control characters in the payload (terminal output can embed ESC).
         let esc = char::from_u32(0x1b).unwrap();
         assert!(!is_openable_link(&format!("https://example.com/{esc}x")));
+    }
+
+    /// Ctrl opens (also on macOS, where ⌘ does — see `modifier_held`); nothing
+    /// else does, on any platform this compiles for.
+    #[test]
+    fn the_open_modifier_is_ctrl_off_macos() {
+        assert!(modifier_held(gdk::ModifierType::CONTROL_MASK));
+        assert!(!modifier_held(gdk::ModifierType::empty()));
+        assert!(!modifier_held(gdk::ModifierType::SHIFT_MASK));
+    }
+
+    /// VTE must accept the pattern — a rejected regex means no link ever
+    /// underlines or opens, and nothing else in the module would notice.
+    #[test]
+    fn the_url_regex_compiles() {
+        assert!(vte4::Regex::for_match(URL_PATTERN, PCRE2_MULTILINE).is_ok());
+    }
+
+    /// The registered regex matches at the pixels of the URL as printed: this
+    /// is the check that catches a pattern VTE accepts but that matches
+    /// nothing, which the compile check above cannot see. Cell size is not
+    /// bound by `vte4` 0.10, so the sweep steps over the URL's own pixels —
+    /// columns 3.. of row 0, hundreds of px wide at any font.
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact terminal::link_open::tests::the_url_regex_matches_where_it_was_fed`"]
+    fn the_url_regex_matches_where_it_was_fed() {
+        if gtk4::init().is_err() {
+            return;
+        }
+        let pump = |ms: u64| {
+            let ctx = gtk4::glib::MainContext::default();
+            let end = std::time::Instant::now() + std::time::Duration::from_millis(ms);
+            while std::time::Instant::now() < end {
+                ctx.iteration(false);
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        };
+        let terminal = Terminal::new();
+        setup_link_opening(&terminal);
+        let host = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        host.append(&terminal);
+        let window = gtk4::Window::builder()
+            .default_width(700)
+            .default_height(500)
+            .child(&host)
+            .build();
+        window.present();
+        terminal.feed(b"xx https://example.com/rustconn\r\n");
+        // `feed()` queues the bytes; VTE parses them on a later main-loop pass.
+        pump(300);
+
+        let expected = "https://example.com/rustconn";
+        let matched = (0..300)
+            .step_by(2)
+            .flat_map(|x| (0..60).step_by(2).map(move |y| (x, y)))
+            .any(|(x, y)| {
+                terminal
+                    .check_match_at(f64::from(x), f64::from(y))
+                    .0
+                    .is_some_and(|uri| uri == expected)
+            });
+        assert!(matched, "no pixel of the fed URL resolved to {expected}");
     }
 }
