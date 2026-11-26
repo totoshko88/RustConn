@@ -14,7 +14,8 @@
 //! opening the same string locally would open the wrong file — one the remote
 //! side gets to choose.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 use gtk4::prelude::*;
 use gtk4::{gdk, gio, glib};
@@ -52,8 +53,9 @@ const PCRE2_MULTILINE: u32 = 0x0000_0400;
 // reaches the browser; trim end characters in [`link_at`] if users hit it.
 const URL_PATTERN: &str = r"(?:https?|ftp)://[^\s]+";
 
-/// Whether the event's modifier state opens a link: Ctrl on Linux, on macOS either ⌘ or Ctrl — ⌘ is what Terminal.app and iTerm use,
-/// and GTK's macOS backend may deliver a Ctrl+click as the emulated
+/// Whether the event's modifier state opens a link: Ctrl on Linux, on macOS
+/// either ⌘ or Ctrl — ⌘ is what Terminal.app and iTerm use, and GTK's macOS
+/// backend may deliver a Ctrl+click as the emulated
 /// right-click, which never reaches the primary-button gesture at all.
 fn modifier_held(state: gdk::ModifierType) -> bool {
     if cfg!(target_os = "macos") {
@@ -68,9 +70,8 @@ fn modifier_held(state: gdk::ModifierType) -> bool {
 /// Installed once per terminal at creation, next to
 /// [`super::config::setup_context_menu`]; moving the widget between a tab, a
 /// split pane and a detached window carries it along. Opening happens on
-/// *release* of the primary button, and the gesture never claims the sequence —
-/// VTE keeps its own mouse handling, which a claiming handler broke before
-/// (split-view selection, #84's Copy/Paste).
+/// *release* of the primary button, and only when press and release resolve
+/// to the same link, so a Ctrl+drag that ends on a link does not open it.
 pub(super) fn setup_link_opening(terminal: &Terminal) {
     for pattern in [URL_PATTERN] {
         match vte4::Regex::for_match(pattern, PCRE2_MULTILINE) {
@@ -84,30 +85,51 @@ pub(super) fn setup_link_opening(terminal: &Terminal) {
 
     let term_pressed = terminal.clone();
     let term_released = terminal.clone();
-    let click = gtk4::GestureClick::new();
-    // Capture phase, and a claim on the press: VTE's own click controller
-    // starts a selection on button 1 and would own the sequence, cancelling
-    // this gesture before `released` — the plain-click case stays unclaimed,
-    // so VTE keeps its selection handling (the split-view selection bug).
-    click.set_propagation_phase(gtk4::PropagationPhase::Capture);
+    // The link the claimed press landed on; release opens it only if it
+    // resolves to the same one.
+    let pressed: Rc<RefCell<Option<String>>> = Rc::default();
+    let pressed_on_release = Rc::clone(&pressed);
+    let click = link_click_gesture();
     click.connect_pressed(move |gesture, _, x, y| {
+        pressed.replace(None);
         let state = gesture.current_event_state();
-        if !enabled() || !modifier_held(state) || link_at(&term_pressed, x, y).is_none() {
+        if !enabled() || !modifier_held(state) {
             return;
         }
+        let Some(uri) = link_at(&term_pressed, x, y) else {
+            return;
+        };
         tracing::debug!(x, y, "link press claimed");
         gesture.set_state(gtk4::EventSequenceState::Claimed);
+        pressed.replace(Some(uri));
     });
     click.connect_released(move |gesture, n_press, x, y| {
+        let Some(pressed_uri) = pressed_on_release.take() else {
+            return;
+        };
         if n_press != 1 || !enabled() || !modifier_held(gesture.current_event_state()) {
             return;
         }
-        let Some(uri) = link_at(&term_released, x, y) else {
+        if link_at(&term_released, x, y).as_deref() != Some(pressed_uri.as_str()) {
             return;
-        };
-        open_link(&term_released, &uri);
+        }
+        open_link(&term_released, &pressed_uri);
     });
     terminal.add_controller(click);
+}
+
+/// The click gesture for links: primary button only, so Ctrl+right-click
+/// still reaches the context menu and Ctrl+middle-click still pastes.
+///
+/// Capture phase, and a claim on the press: VTE's own click controller
+/// starts a selection on button 1 and would own the sequence, cancelling
+/// this gesture before `released` — the plain-click case stays unclaimed,
+/// so VTE keeps its selection handling (the split-view selection bug).
+fn link_click_gesture() -> gtk4::GestureClick {
+    let click = gtk4::GestureClick::new();
+    click.set_button(gdk::BUTTON_PRIMARY);
+    click.set_propagation_phase(gtk4::PropagationPhase::Capture);
+    click
 }
 
 /// The link under the point: a regex URL match, else an OSC 8 hyperlink.
@@ -168,7 +190,8 @@ fn launch_uri(terminal: &Terminal, uri: &str) {
 #[cfg(test)]
 mod tests {
     use super::{
-        PCRE2_MULTILINE, URL_PATTERN, is_openable_link, modifier_held, setup_link_opening,
+        PCRE2_MULTILINE, URL_PATTERN, is_openable_link, link_click_gesture, modifier_held,
+        setup_link_opening,
     };
     use gtk4::gdk;
     use gtk4::prelude::*;
@@ -203,6 +226,20 @@ mod tests {
         assert!(modifier_held(gdk::ModifierType::CONTROL_MASK));
         assert!(!modifier_held(gdk::ModifierType::empty()));
         assert!(!modifier_held(gdk::ModifierType::SHIFT_MASK));
+    }
+
+    /// Only the primary button opens links: a gesture on every button (GTK's
+    /// default, button 0) claimed Ctrl+right-click and Ctrl+middle-click over
+    /// a link, so the context menu never appeared and paste was lost.
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact terminal::link_open::tests::the_link_gesture_listens_to_the_primary_button_only`"]
+    fn the_link_gesture_listens_to_the_primary_button_only() {
+        if gtk4::init().is_err() {
+            return;
+        }
+        let click = link_click_gesture();
+        assert_eq!(click.button(), gdk::BUTTON_PRIMARY);
+        assert_eq!(click.propagation_phase(), gtk4::PropagationPhase::Capture);
     }
 
     /// VTE must accept the patterns — a rejected regex means no link ever
