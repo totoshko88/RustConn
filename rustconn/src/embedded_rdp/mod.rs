@@ -1557,12 +1557,6 @@ impl EmbeddedRdpWidget {
         });
     }
 
-    /// Sets view-only mode from outside (the toolbar button does this via
-    /// signal); the input handlers pick it up on their next event.
-    pub fn set_view_only(&self, view_only: bool) {
-        self.view_only.set(view_only);
-    }
-
     /// Connects a callback for View Only toggle changes.
     ///
     /// Fires with the new mode each time the toolbar toggle changes the live
@@ -1573,12 +1567,6 @@ impl EmbeddedRdpWidget {
         F: Fn(bool) + 'static,
     {
         *self.on_view_only_changed.borrow_mut() = Some(Box::new(callback));
-    }
-
-    /// The toggle's button, for callers that mirror it into a header.
-    #[must_use]
-    pub fn view_only_button(&self) -> &ToggleButton {
-        &self.view_only_button
     }
 
     /// Registers GIO actions for the Autotype dropdown menu.
