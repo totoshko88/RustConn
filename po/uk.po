@@ -11927,7 +11927,7 @@ msgid ""
 msgstr ""
 "Сервер пропонує лише застарілий захист RDP, тому сеанс відкрито в "
 "зовнішньому RDP-клієнті. Щоб відкривати його тут, увімкни TLS на сервері, "
-"наприклад security_layer=tls у xrdp.ini."
+"наприклад, security_layer=tls у xrdp.ini."
 
 #: rustconn/src/embedded_rdp/connection.rs:3096
 msgid "Using external RDP client (server requires RDS licensing)"
@@ -12005,7 +12005,7 @@ msgid ""
 "The password has expired. Change it or ask the server administrator to reset "
 "it, then connect again."
 msgstr ""
-"Термін дії пароля скінчився. Зміни його або попроси адміністратора сервера "
+"Термін дії пароля минув. Зміни його або попроси адміністратора сервера "
 "скинути його, а тоді з'єднайся знову."
 
 #: rustconn/src/embedded_rdp/connection.rs:3287
@@ -12110,8 +12110,8 @@ msgid ""
 "connection's RDP settings or update KRdp to 6.7.90 or newer."
 msgstr ""
 "Ім'я користувача або пароль неправильні. Перевір їх і спробуй ще раз. Якщо "
-"сервер — KDE KRdp і дані правильні, вибери «Linux» в «ОС сервера» в уставах "
-"RDP цього з'єднанка або онови KRdp до 6.7.90 чи новішої версії."
+"сервер — KDE KRdp і дані правильні, обери «Linux» у полі «ОС сервера» в "
+"уставах RDP цього з'єднанка або онови KRdp до 6.7.90 чи новішої версії."
 
 #: rustconn/src/embedded_rdp/mod.rs:107
 msgid ""
