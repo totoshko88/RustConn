@@ -34,6 +34,7 @@ pub use split_title::title_session;
 mod failed_marker;
 pub mod file_drop;
 pub mod highlight_overlay;
+mod link_open;
 mod mark_registry;
 mod notebook_output;
 pub mod osc52;

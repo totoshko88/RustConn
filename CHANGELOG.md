@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Ctrl+click opens URLs in terminal sessions** — a printed `http`, `https` or `ftp` URL underlines on hover and opens in the system browser on Ctrl+click, the way Konsole does; OSC 8 hyperlinks open too. VTE only detects links — the click half was never wired, so nothing happened. Every session terminal carries the handler now, in a tab, a split pane and a detached window alike; on macOS the ⌘ modifier opens (Ctrl+click is the emulated right-click there), on Linux and Windows it is Ctrl. GTK's `UriLauncher` opens the platform's default browser on all three. It follows **Preferences → Terminal → Allow hyperlinks**: turned off, no URL is opened. Malformed or hostile links are refused instead of launched: non-web schemes (`ssh:`, `javascript:`, `data:`, `file:`), URIs with a backslash in the authority, with embedded credentials (`https://host@evil.com/` — the human reads one host, the browser opens another), or with control characters in them. (`rustconn/src/terminal/link_open.rs`, `rustconn/src/terminal/config.rs`, `rustconn/src/terminal/tab_lifecycle.rs`)
+
 ## [0.26.4] - 2026-11-25
 
 ### Added
