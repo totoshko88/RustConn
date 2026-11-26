@@ -2238,3 +2238,33 @@ fn export_selects_by_tag() {
         stderr_str(&out)
     );
 }
+
+/// M5: an emoji icon keeps its variation selector (U+FE0F), which asks for
+/// the colour presentation on tabs.
+#[test]
+fn an_icon_keeps_its_emoji_variation_selector() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    add_ok(
+        &[
+            "add",
+            "--name",
+            "k",
+            "-H",
+            "k.lan",
+            "--icon",
+            "\u{2638}\u{FE0F}",
+        ],
+        dir,
+    );
+    assert_eq!(
+        load_connection(dir, "k").icon.as_deref(),
+        Some("\u{2638}\u{FE0F}")
+    );
+    add_ok(&["update", "k", "--icon", "\u{26A0}\u{FE0F}"], dir);
+    assert_eq!(
+        load_connection(dir, "k").icon.as_deref(),
+        Some("\u{26A0}\u{FE0F}")
+    );
+    assert_eq!(show_json(dir, "k")["icon"], "\u{26A0}\u{FE0F}");
+}

@@ -152,7 +152,7 @@ Options:
 | `--auth-method` | — | SSH auth: `password`, `publickey`, `keyboard-interactive`, `agent`, `security-key` |
 | `--device` | — | Serial device path (alias for `--host` with serial protocol) |
 | `--baud-rate` | — | Serial baud rate (default: 115200) |
-| `--icon` | — | Custom icon (emoji or GTK icon name, e.g. `"🏢"`, `"starred-symbolic"`) |
+| `--icon` | — | Custom icon (emoji or GTK icon name, e.g. `"🏢"`, `"starred-symbolic"`). Stored as given, including an emoji's variation selector U+FE0F, which asks for the colour form (`"☸️"`) |
 | `--ssh-agent-socket` | — | Custom SSH agent socket path |
 | `--kdbx-path` | — | KeePass database (`.kdbx`) for this connection's password, instead of its group's or the global one. Sets the password source to `Vault`; with `--password-stdin` the password is stored there. Local-only, never synced |
 | `--jump-host` | — | SSH jump host (connection name or UUID, for SSH/SFTP/RDP/VNC/SPICE) |
