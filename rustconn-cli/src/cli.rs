@@ -881,9 +881,9 @@ pub enum Commands {
         #[arg(long, value_name = "COUNT")]
         keep_alive_count: Option<u32>,
 
-        /// Enable SSH verbose/debug output (-v flag)
-        #[arg(long)]
-        ssh_verbose: bool,
+        /// SSH verbose/debug output (-v flag). Bare flag enables; `false` disables
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        ssh_verbose: Option<bool>,
 
         /// Enable or disable Multipath TCP for SSH/RDP/VNC connections.
         /// SSH: wraps command with mptcpize run (requires mptcpd).
@@ -893,9 +893,10 @@ pub enum Commands {
         #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
         mptcp: Option<bool>,
 
-        /// Accept untrusted certificate for RDP or VNC (skip verification)
-        #[arg(long)]
-        ignore_certificate: bool,
+        /// Accept an untrusted certificate for RDP or VNC (skip verification).
+        /// Bare flag enables; `false` verifies again
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        ignore_certificate: Option<bool>,
 
         /// Comma-separated tags (replaces existing tags; use --add-tag/--remove-tag for incremental edits)
         #[arg(long, value_name = "TAG[,TAG...]")]
@@ -934,17 +935,20 @@ pub enum Commands {
         #[arg(long, num_args = 0..=1, default_missing_value = "true")]
         skip_port_check: Option<bool>,
 
-        /// Enable X11 forwarding (-X flag) for SSH/SFTP connections
-        #[arg(long)]
-        x11_forwarding: bool,
+        /// X11 forwarding (-X flag) for SSH/SFTP connections. Bare flag
+        /// enables; `false` disables
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        x11_forwarding: Option<bool>,
 
-        /// Enable SSH agent forwarding (-A flag) for SSH/SFTP connections
-        #[arg(long)]
-        agent_forwarding: bool,
+        /// SSH agent forwarding (-A flag) for SSH/SFTP connections. Bare flag
+        /// enables; `false` disables
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        agent_forwarding: Option<bool>,
 
-        /// Enable compression (-C flag) for SSH/SFTP connections
-        #[arg(long)]
-        compression: bool,
+        /// Compression (-C flag) for SSH/SFTP connections. Bare flag enables;
+        /// `false` disables
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        compression: Option<bool>,
 
         /// Command to execute on SSH connection startup
         #[arg(long, value_name = "TEXT")]
@@ -1008,9 +1012,10 @@ pub enum Commands {
         #[arg(long, value_name = "BITS")]
         color_depth: Option<u8>,
 
-        /// Disable Network Level Authentication for RDP
-        #[arg(long)]
-        disable_nla: bool,
+        /// Disable Network Level Authentication for RDP. Bare flag disables
+        /// NLA; `false` turns NLA back on
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        disable_nla: Option<bool>,
 
         /// Kerberos for RDP NLA (CredSSP). Bare flag enables; `false` disables.
         /// Needed for Active Directory "Protected Users" accounts.
@@ -1039,17 +1044,19 @@ pub enum Commands {
         #[arg(long, value_name = "KLID")]
         keyboard_layout: Option<u32>,
 
-        /// Enable audio redirection for RDP (shorthand for --audio-mode local)
-        #[arg(long)]
-        audio_redirect: bool,
+        /// Audio redirection for RDP: bare flag is shorthand for --audio-mode
+        /// local; `false` turns local playback off (--audio-mode none)
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        audio_redirect: Option<bool>,
 
         /// Where RDP session audio is played: local, remote or none
         #[arg(long, value_name = "MODE", value_parser = ["local", "remote", "none"])]
         audio_mode: Option<String>,
 
-        /// Enable printer redirection for RDP (maps local CUPS printer)
-        #[arg(long)]
-        printer: bool,
+        /// Printer redirection for RDP (maps local CUPS printer). Bare flag
+        /// enables; `false` disables
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        printer: Option<bool>,
 
         /// Shared folder for RDP drive redirection (repeatable, format: NAME:PATH)
         #[arg(long, value_name = "NAME:PATH")]
@@ -1076,17 +1083,20 @@ pub enum Commands {
         #[arg(long, value_name = "N", value_parser = clap::value_parser!(u8).range(0..=9))]
         vnc_quality: Option<u8>,
 
-        /// VNC view-only mode (no keyboard/mouse input)
-        #[arg(long)]
-        vnc_view_only: bool,
+        /// VNC view-only mode (no keyboard/mouse input). Bare flag enables;
+        /// `false` gives input back
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        vnc_view_only: Option<bool>,
 
-        /// Disable VNC scaling (don't scale display to fit window)
-        #[arg(long)]
-        vnc_no_scaling: bool,
+        /// Disable VNC scaling. Bare flag disables scaling; `false` scales the
+        /// display to fit the window again
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        vnc_no_scaling: Option<bool>,
 
-        /// Disable VNC clipboard sharing
-        #[arg(long)]
-        vnc_no_clipboard: bool,
+        /// Disable VNC clipboard sharing. Bare flag disables it; `false`
+        /// shares the clipboard again
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        vnc_no_clipboard: Option<bool>,
 
         /// Show the floating session toolbar in the embedded VNC viewer [default: true]
         #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "false")]
@@ -1102,25 +1112,27 @@ pub enum Commands {
         vnc_viewer: Option<String>,
 
         // --- SPICE-specific flags ---
-        /// Enable SPICE TLS encryption
-        #[arg(long)]
-        spice_tls: bool,
+        /// SPICE TLS encryption. Bare flag enables; `false` disables
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        spice_tls: Option<bool>,
 
         /// SPICE CA certificate path for TLS verification
         #[arg(long, value_name = "PATH")]
         spice_ca_cert: Option<String>,
 
-        /// Skip SPICE certificate verification (insecure)
-        #[arg(long)]
-        spice_skip_cert_verify: bool,
+        /// Skip SPICE certificate verification (insecure). Bare flag skips;
+        /// `false` verifies again
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        spice_skip_cert_verify: Option<bool>,
 
-        /// Enable SPICE USB redirection
-        #[arg(long)]
-        spice_usb_redirection: bool,
+        /// SPICE USB redirection. Bare flag enables; `false` disables
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        spice_usb_redirection: Option<bool>,
 
-        /// Disable SPICE clipboard sharing
-        #[arg(long)]
-        spice_no_clipboard: bool,
+        /// Disable SPICE clipboard sharing. Bare flag disables it; `false`
+        /// shares the clipboard again
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        spice_no_clipboard: Option<bool>,
 
         /// SPICE image compression mode: auto, off, glz, lz, quic
         #[arg(long, value_name = "MODE", value_parser = ["auto", "off", "glz", "lz", "quic"])]
@@ -1213,9 +1225,10 @@ pub enum Commands {
         #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "false")]
         web_toolbar: Option<bool>,
 
-        /// Open in private/incognito mode (custom browser only)
-        #[arg(long)]
-        private_mode: bool,
+        /// Private/incognito mode (custom browser only). Bare flag enables;
+        /// `false` disables
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        private_mode: Option<bool>,
 
         /// Zoom level for the embedded browser (0.3–3.0, default: 1.0)
         #[arg(long, value_name = "FLOAT")]

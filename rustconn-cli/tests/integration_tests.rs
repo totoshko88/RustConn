@@ -1691,3 +1691,109 @@ fn kubernetes_add_refuses_what_the_editor_refuses() {
     assert!(cfg.use_busybox);
     assert_eq!(cfg.pod, None);
 }
+
+#[test]
+fn update_turns_a_switch_off_and_show_reports_it() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add",
+            "-n",
+            "Linux VNC",
+            "-H",
+            "vnc.example.com",
+            "-P",
+            "vnc",
+        ],
+        Some(dir),
+    );
+    assert!(add.status.success(), "{}", stderr_str(&add));
+
+    let on = run_cli(
+        &[
+            "update",
+            "Linux VNC",
+            "--vnc-view-only",
+            "--vnc-no-clipboard",
+        ],
+        Some(dir),
+    );
+    assert!(on.status.success(), "{}", stderr_str(&on));
+    let value = show_json(dir, "Linux VNC");
+    assert_eq!(value["protocol_config"]["view_only"], true);
+    assert_eq!(value["protocol_config"]["clipboard_enabled"], false);
+    let table = run_cli(&["show", "Linux VNC", "--format", "table"], Some(dir));
+    assert!(
+        stdout_str(&table).contains("    view_only: true"),
+        "{}",
+        stdout_str(&table)
+    );
+
+    let off = run_cli(
+        &[
+            "update",
+            "Linux VNC",
+            "--vnc-view-only",
+            "false",
+            "--vnc-no-clipboard=false",
+        ],
+        Some(dir),
+    );
+    assert!(off.status.success(), "{}", stderr_str(&off));
+    let value = show_json(dir, "Linux VNC");
+    assert_eq!(value["protocol_config"]["view_only"], false);
+    assert_eq!(value["protocol_config"]["clipboard_enabled"], true);
+
+    let csv = run_cli(&["show", "Linux VNC", "--format", "csv"], Some(dir));
+    let text = stdout_str(&csv);
+    assert!(text.contains("protocol_config.view_only,false"), "{text}");
+    assert!(text.contains("password_source,"), "{text}");
+}
+
+#[test]
+fn update_turns_ssh_switches_off() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add",
+            "-n",
+            "web",
+            "-H",
+            "web.example.com",
+            "--x11-forwarding",
+            "--compression",
+            "--ssh-verbose",
+        ],
+        Some(dir),
+    );
+    assert!(add.status.success(), "{}", stderr_str(&add));
+
+    let off = run_cli(
+        &[
+            "update",
+            "web",
+            "--x11-forwarding",
+            "false",
+            "--compression",
+            "false",
+            "--ssh-verbose",
+            "false",
+            "--agent-forwarding",
+        ],
+        Some(dir),
+    );
+    assert!(off.status.success(), "{}", stderr_str(&off));
+    let rustconn_core::models::ProtocolConfig::Ssh(cfg) =
+        load_connection(dir, "web").protocol_config
+    else {
+        panic!("web is an SSH connection");
+    };
+    assert!(!cfg.x11_forwarding);
+    assert!(!cfg.compression);
+    assert!(!cfg.verbose);
+    assert!(cfg.agent_forwarding);
+}

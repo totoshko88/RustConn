@@ -468,9 +468,9 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
             rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) => {
                 apply_ssh_wave2_fields(
                     cfg,
-                    params.x11_forwarding,
-                    params.agent_forwarding,
-                    params.compression,
+                    params.x11_forwarding.then_some(true),
+                    params.agent_forwarding.then_some(true),
+                    params.compression.then_some(true),
                     params.startup_command,
                     params.proxy_command,
                     params.ssh_option,
@@ -482,9 +482,9 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
             rustconn_core::models::ProtocolConfig::Sftp(ref mut cfg) => {
                 apply_ssh_wave2_fields(
                     cfg,
-                    params.x11_forwarding,
-                    params.agent_forwarding,
-                    params.compression,
+                    params.x11_forwarding.then_some(true),
+                    params.agent_forwarding.then_some(true),
+                    params.compression.then_some(true),
                     params.startup_command,
                     params.proxy_command,
                     params.ssh_option,
@@ -1557,9 +1557,9 @@ pub(super) fn apply_jump_host_id(
 )]
 pub(super) fn apply_ssh_wave2_fields(
     cfg: &mut rustconn_core::models::SshConfig,
-    x11_forwarding: bool,
-    agent_forwarding: bool,
-    compression: bool,
+    x11_forwarding: Option<bool>,
+    agent_forwarding: Option<bool>,
+    compression: Option<bool>,
     startup_command: Option<&str>,
     proxy_command: Option<&str>,
     ssh_option: &[(String, String)],
@@ -1567,14 +1567,14 @@ pub(super) fn apply_ssh_wave2_fields(
     remote_forward: &[String],
     dynamic_forward: &[String],
 ) -> Result<(), CliError> {
-    if x11_forwarding {
-        cfg.x11_forwarding = true;
+    if let Some(value) = x11_forwarding {
+        cfg.x11_forwarding = value;
     }
-    if agent_forwarding {
-        cfg.agent_forwarding = true;
+    if let Some(value) = agent_forwarding {
+        cfg.agent_forwarding = value;
     }
-    if compression {
-        cfg.compression = true;
+    if let Some(value) = compression {
+        cfg.compression = value;
     }
     if let Some(cmd) = startup_command {
         cfg.startup_command = Some(cmd.to_string());

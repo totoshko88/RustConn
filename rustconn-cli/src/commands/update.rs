@@ -121,12 +121,10 @@ fn apply_elevated_credentials(
     );
 }
 
-/// Parameters for the `update` command
-#[expect(
-    clippy::struct_excessive_bools,
-    reason = "AddParams/UpdateParams mirror Clap-derived flags 1:1; bundling related \
-              booleans into enums would force callers to convert and obscure CLI mapping"
-)]
+/// Parameters for the `update` command.
+///
+/// Every setting switch is an `Option<bool>` (`--flag [<BOOL>]`): `None` leaves
+/// the stored value alone, so a switch can be turned off as well as on.
 pub(super) struct UpdateParams<'a> {
     pub name: &'a str,
     pub new_name: Option<&'a str>,
@@ -164,9 +162,9 @@ pub(super) struct UpdateParams<'a> {
     pub clear_fallback_jump_hosts: bool,
     pub keep_alive_interval: Option<u32>,
     pub keep_alive_count: Option<u32>,
-    pub ssh_verbose: bool,
+    pub ssh_verbose: Option<bool>,
     pub mptcp: Option<bool>,
-    pub ignore_certificate: bool,
+    pub ignore_certificate: Option<bool>,
     pub tags: Option<&'a str>,
     pub add_tag: &'a [String],
     pub remove_tag: &'a [String],
@@ -175,9 +173,9 @@ pub(super) struct UpdateParams<'a> {
     pub domain: Option<&'a str>,
     pub window_mode: Option<&'a str>,
     pub skip_port_check: Option<bool>,
-    pub x11_forwarding: bool,
-    pub agent_forwarding: bool,
-    pub compression: bool,
+    pub x11_forwarding: Option<bool>,
+    pub agent_forwarding: Option<bool>,
+    pub compression: Option<bool>,
     pub startup_command: Option<&'a str>,
     pub proxy_command: Option<&'a str>,
     pub network_mode: Option<&'a str>,
@@ -193,15 +191,15 @@ pub(super) struct UpdateParams<'a> {
     pub remote_app_name: Option<&'a str>,
     pub resolution: Option<&'a str>,
     pub color_depth: Option<u8>,
-    pub disable_nla: bool,
+    pub disable_nla: Option<bool>,
     pub kerberos: Option<bool>,
     pub kdc_address: Option<&'a str>,
     pub rdp_dynamic_resolution: Option<bool>,
     pub rdp_smart_sizing: Option<bool>,
     pub keyboard_layout: Option<u32>,
-    pub audio_redirect: bool,
+    pub audio_redirect: Option<bool>,
     pub audio_mode: Option<&'a str>,
-    pub printer: bool,
+    pub printer: Option<bool>,
     pub shared_folder: &'a [String],
     // VNC
     pub vnc_client_mode: Option<&'a str>,
@@ -209,18 +207,18 @@ pub(super) struct UpdateParams<'a> {
     pub vnc_encoding: Option<&'a str>,
     pub vnc_compression: Option<u8>,
     pub vnc_quality: Option<u8>,
-    pub vnc_view_only: bool,
-    pub vnc_no_scaling: bool,
-    pub vnc_no_clipboard: bool,
+    pub vnc_view_only: Option<bool>,
+    pub vnc_no_scaling: Option<bool>,
+    pub vnc_no_clipboard: Option<bool>,
     pub vnc_toolbar: Option<bool>,
     pub vnc_custom_arg: &'a [String],
     pub vnc_viewer: Option<&'a str>,
     // SPICE
-    pub spice_tls: bool,
+    pub spice_tls: Option<bool>,
     pub spice_ca_cert: Option<&'a str>,
-    pub spice_skip_cert_verify: bool,
-    pub spice_usb_redirection: bool,
-    pub spice_no_clipboard: bool,
+    pub spice_skip_cert_verify: Option<bool>,
+    pub spice_usb_redirection: Option<bool>,
+    pub spice_no_clipboard: Option<bool>,
     pub spice_image_compression: Option<&'a str>,
     pub spice_proxy: Option<&'a str>,
     pub spice_shared_folder: &'a [String],
@@ -246,7 +244,7 @@ pub(super) struct UpdateParams<'a> {
     pub user_agent: Option<&'a str>,
     pub accept_invalid_certs: Option<bool>,
     pub web_toolbar: Option<bool>,
-    pub private_mode: bool,
+    pub private_mode: Option<bool>,
     pub zoom_level: Option<f64>,
     pub socks_proxy: Option<&'a str>,
     pub socks_proxy_user: Option<&'a str>,
@@ -535,29 +533,19 @@ pub(super) fn cmd_update(
     // Apply SSH keep-alive and verbose settings
     if params.keep_alive_interval.is_some()
         || params.keep_alive_count.is_some()
-        || params.ssh_verbose
+        || params.ssh_verbose.is_some()
     {
         match connection.protocol_config {
-            rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) => {
+            rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg)
+            | rustconn_core::models::ProtocolConfig::Sftp(ref mut cfg) => {
                 if let Some(interval) = params.keep_alive_interval {
                     cfg.keep_alive_interval = Some(interval);
                 }
                 if let Some(count) = params.keep_alive_count {
                     cfg.keep_alive_count_max = Some(count);
                 }
-                if params.ssh_verbose {
-                    cfg.verbose = true;
-                }
-            }
-            rustconn_core::models::ProtocolConfig::Sftp(ref mut cfg) => {
-                if let Some(interval) = params.keep_alive_interval {
-                    cfg.keep_alive_interval = Some(interval);
-                }
-                if let Some(count) = params.keep_alive_count {
-                    cfg.keep_alive_count_max = Some(count);
-                }
-                if params.ssh_verbose {
-                    cfg.verbose = true;
+                if let Some(verbose) = params.ssh_verbose {
+                    cfg.verbose = verbose;
                 }
             }
             _ => {
@@ -566,7 +554,7 @@ pub(super) fn cmd_update(
                         "--keep-alive-interval/--keep-alive-count are only applicable to SSH/SFTP connections"
                     );
                 }
-                if params.ssh_verbose {
+                if params.ssh_verbose.is_some() {
                     tracing::warn!("--ssh-verbose is only applicable to SSH/SFTP connections");
                 }
             }
@@ -574,13 +562,13 @@ pub(super) fn cmd_update(
     }
 
     // Apply RDP/VNC ignore-certificate setting
-    if params.ignore_certificate {
+    if let Some(ignore) = params.ignore_certificate {
         match connection.protocol_config {
             rustconn_core::models::ProtocolConfig::Rdp(ref mut cfg) => {
-                cfg.ignore_certificate = true;
+                cfg.ignore_certificate = ignore;
             }
             rustconn_core::models::ProtocolConfig::Vnc(ref mut cfg) => {
-                cfg.accept_certificate = true;
+                cfg.accept_certificate = ignore;
             }
             _ => {
                 tracing::warn!(
@@ -616,9 +604,9 @@ pub(super) fn cmd_update(
 
     // Apply SSH wave-2 fields: x11, agent forwarding, compression, startup/proxy command,
     // custom options, port forwards
-    if params.x11_forwarding
-        || params.agent_forwarding
-        || params.compression
+    if params.x11_forwarding.is_some()
+        || params.agent_forwarding.is_some()
+        || params.compression.is_some()
         || params.startup_command.is_some()
         || params.proxy_command.is_some()
         || !params.ssh_option.is_empty()
@@ -689,16 +677,16 @@ pub(super) fn cmd_update(
         || params.remote_app_name.is_some()
         || params.resolution.is_some()
         || params.color_depth.is_some()
-        || params.disable_nla
+        || params.disable_nla.is_some()
         || params.kerberos.is_some()
         || params.kdc_address.is_some()
         || params.rdp_dynamic_resolution.is_some()
         || params.rdp_smart_sizing.is_some()
         || params.rdp_freerdp_client.is_some()
         || params.keyboard_layout.is_some()
-        || params.audio_redirect
+        || params.audio_redirect.is_some()
         || params.audio_mode.is_some()
-        || params.printer
+        || params.printer.is_some()
         || !params.shared_folder.is_empty()
     {
         if let rustconn_core::models::ProtocolConfig::Rdp(ref mut cfg) = connection.protocol_config
@@ -719,9 +707,9 @@ pub(super) fn cmd_update(
         || params.vnc_encoding.is_some()
         || params.vnc_compression.is_some()
         || params.vnc_quality.is_some()
-        || params.vnc_view_only
-        || params.vnc_no_scaling
-        || params.vnc_no_clipboard
+        || params.vnc_view_only.is_some()
+        || params.vnc_no_scaling.is_some()
+        || params.vnc_no_clipboard.is_some()
         || params.vnc_toolbar.is_some()
         || !params.vnc_custom_arg.is_empty()
         || params.vnc_viewer.is_some()
@@ -735,11 +723,11 @@ pub(super) fn cmd_update(
     }
 
     // Apply SPICE-specific fields
-    if params.spice_tls
+    if params.spice_tls.is_some()
         || params.spice_ca_cert.is_some()
-        || params.spice_skip_cert_verify
-        || params.spice_usb_redirection
-        || params.spice_no_clipboard
+        || params.spice_skip_cert_verify.is_some()
+        || params.spice_usb_redirection.is_some()
+        || params.spice_no_clipboard.is_some()
         || params.spice_image_compression.is_some()
         || params.spice_proxy.is_some()
         || !params.spice_shared_folder.is_empty()
@@ -805,7 +793,7 @@ pub(super) fn cmd_update(
         || params.user_agent.is_some()
         || params.accept_invalid_certs.is_some()
         || params.web_toolbar.is_some()
-        || params.private_mode
+        || params.private_mode.is_some()
         || params.zoom_level.is_some()
     {
         if let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
@@ -842,8 +830,8 @@ pub(super) fn cmd_update(
             if let Some(toolbar) = params.web_toolbar {
                 cfg.hide_floating_toolbar = !toolbar;
             }
-            if params.private_mode {
-                cfg.private_mode = true;
+            if let Some(private) = params.private_mode {
+                cfg.private_mode = private;
             }
             if let Some(zoom) = params.zoom_level {
                 if !(0.3..=3.0).contains(&zoom) {
@@ -1133,8 +1121,8 @@ fn apply_rdp_fields_update(
     }
 
     // NLA
-    if params.disable_nla {
-        cfg.disable_nla = true;
+    if let Some(disable) = params.disable_nla {
+        cfg.disable_nla = disable;
     }
 
     // Kerberos for NLA (issue #351). Tri-state: `--kerberos` enables,
@@ -1175,8 +1163,14 @@ fn apply_rdp_fields_update(
 
     // Audio. --audio-mode is the full three-state control; --audio-redirect is
     // kept as the shorthand for "local" and loses to an explicit mode.
-    if params.audio_redirect {
-        cfg.set_audio_mode(rustconn_core::models::RdpAudioMode::Local);
+    // `--audio-redirect false` turns local playback off; it leaves a Remote
+    // mode alone, since that was never local redirection.
+    match params.audio_redirect {
+        Some(true) => cfg.set_audio_mode(rustconn_core::models::RdpAudioMode::Local),
+        Some(false) if cfg.effective_audio_mode() == rustconn_core::models::RdpAudioMode::Local => {
+            cfg.set_audio_mode(rustconn_core::models::RdpAudioMode::None);
+        }
+        _ => {}
     }
     if let Some(mode) = params.audio_mode {
         // Already validated by clap's value_parser, so an unknown token here
@@ -1187,8 +1181,8 @@ fn apply_rdp_fields_update(
     }
 
     // Printer
-    if params.printer {
-        cfg.printer_enabled = true;
+    if let Some(printer) = params.printer {
+        cfg.printer_enabled = printer;
     }
 
     // Shared folders (appends to existing)
@@ -1226,14 +1220,15 @@ fn apply_vnc_fields_update(
     if let Some(qual) = params.vnc_quality {
         cfg.quality = Some(qual);
     }
-    if params.vnc_view_only {
-        cfg.view_only = true;
+    if let Some(view_only) = params.vnc_view_only {
+        cfg.view_only = view_only;
     }
-    if params.vnc_no_scaling {
-        cfg.scaling = false;
+    // Inverted: the `--vnc-no-*` flags name the off state of the field.
+    if let Some(no_scaling) = params.vnc_no_scaling {
+        cfg.scaling = !no_scaling;
     }
-    if params.vnc_no_clipboard {
-        cfg.clipboard_enabled = false;
+    if let Some(no_clipboard) = params.vnc_no_clipboard {
+        cfg.clipboard_enabled = !no_clipboard;
     }
     // Inverted: the flag offers the toolbar, the field hides it.
     if let Some(toolbar) = params.vnc_toolbar {
@@ -1257,20 +1252,21 @@ fn apply_spice_fields_update(
     cfg: &mut rustconn_core::models::SpiceConfig,
     params: &UpdateParams<'_>,
 ) -> Result<(), CliError> {
-    if params.spice_tls {
-        cfg.tls_enabled = true;
+    if let Some(tls) = params.spice_tls {
+        cfg.tls_enabled = tls;
     }
     if let Some(ca) = params.spice_ca_cert {
         cfg.ca_cert_path = Some(std::path::PathBuf::from(ca));
     }
-    if params.spice_skip_cert_verify {
-        cfg.skip_cert_verify = true;
+    if let Some(skip) = params.spice_skip_cert_verify {
+        cfg.skip_cert_verify = skip;
     }
-    if params.spice_usb_redirection {
-        cfg.usb_redirection = true;
+    if let Some(usb) = params.spice_usb_redirection {
+        cfg.usb_redirection = usb;
     }
-    if params.spice_no_clipboard {
-        cfg.clipboard_enabled = false;
+    // Inverted: `--spice-no-clipboard` names the off state of the field.
+    if let Some(no_clipboard) = params.spice_no_clipboard {
+        cfg.clipboard_enabled = !no_clipboard;
     }
     if let Some(mode) = params.spice_image_compression {
         cfg.image_compression = Some(parse_spice_image_compression(mode)?);
