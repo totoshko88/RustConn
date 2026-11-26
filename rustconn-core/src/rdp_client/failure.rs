@@ -313,6 +313,18 @@ pub fn is_license_exchange_failure(msg: &str) -> bool {
     LICENSE_MARKERS.iter().any(|m| lower.contains(m))
 }
 
+/// Returns `true` when the server offers only Standard RDP Security.
+///
+/// xrdp's default `security_layer=negotiate` answers this way. Used only to
+/// tell the user why the session opened in the external client and that
+/// turning on TLS on the server avoids it; the fallback decision is
+/// [`RdpFailureClass::SecurityUnsupported`]'s.
+#[must_use]
+pub fn is_standard_security_only(msg: &str) -> bool {
+    let lower = classified_text(msg);
+    lower.contains("standard rdp security") || lower.contains("standard_rdp_security")
+}
+
 /// Classifies an embedded RDP failure message into a [`RdpFailureClass`].
 ///
 /// Authentication is checked first, then RD Gateway tunnel failures, then a
@@ -383,7 +395,8 @@ fn is_authentication_failure_lower(lower: &str) -> bool {
 /// (`0xc000006d`), `STATUS_WRONG_PASSWORD` (`0xc000006a`) and `STATUS_NO_SUCH_USER`
 /// (`0xc0000064`) are deliberately **absent**: those are the exact statuses a
 /// KRdp/FreeRDP-3.32 server returns for its broken `HYBRID_EX` NTLM path even
-/// with correct credentials (issue [#366]), so they must stay retryable.
+/// with correct credentials (issue [#366]), so they stay retryable against a
+/// server marked Linux; see [`CREDENTIAL_REJECTION_MARKERS`].
 ///
 /// [#366]: https://github.com/totoshko88/RustConn/issues/366
 const TLS_ONLY_FALLBACK_BLOCKED_STATUSES: &[&str] = &[
@@ -398,8 +411,34 @@ const TLS_ONLY_FALLBACK_BLOCKED_STATUSES: &[&str] = &[
     "0xc0000234", // STATUS_ACCOUNT_LOCKED_OUT
 ];
 
+/// `NTSTATUS` codes and names saying the user name or password itself was refused.
+///
+/// A Windows server means exactly that. A KRdp/FreeRDP-3.32 server returns them
+/// for its broken `HYBRID_EX` path too, with correct credentials (issue [#366]),
+/// which is why [`warrants_tls_only_fallback`] reads them by the server OS.
+///
+/// [#366]: https://github.com/totoshko88/RustConn/issues/366
+const CREDENTIAL_REJECTION_MARKERS: &[&str] = &[
+    "0xc000006d", // STATUS_LOGON_FAILURE
+    "0xc000006a", // STATUS_WRONG_PASSWORD
+    "0xc0000064", // STATUS_NO_SUCH_USER
+    "status_logon_failure",
+    "status_wrong_password",
+    "status_no_such_user",
+];
+
 /// Returns `true` when a CredSSP/NLA rejection is worth one external-FreeRDP
 /// retry pinned to **TLS only** (`/sec:tls`, which drops `HYBRID`/`HYBRID_EX`).
+///
+/// `server_os` is the connection's Server OS setting. Only a server marked
+/// [`RdpServerOs::Linux`] gets the retry for a credential rejection
+/// ([`CREDENTIAL_REJECTION_MARKERS`]). Against Windows, or a server left on
+/// `Auto`, the same status is a wrong user name or password: a `/sec:tls`
+/// retry is refused with `HYBRID_REQUIRED_BY_SERVER` and hides the real error,
+/// so the caller asks for the password again instead. A CredSSP `InvalidToken`
+/// with no such status stays retryable for every server OS.
+///
+/// [`RdpServerOs::Linux`]: crate::models::RdpServerOs::Linux
 ///
 /// A KRdp 6.6.x server built on FreeRDP 3.32.x advertises `HYBRID_EX` ("Ext")
 /// security it cannot complete: the embedded IronRDP client (and the default
@@ -430,8 +469,17 @@ const TLS_ONLY_FALLBACK_BLOCKED_STATUSES: &[&str] = &[
 /// [#199]: https://github.com/totoshko88/RustConn/issues/199
 /// [#235]: https://github.com/totoshko88/RustConn/issues/235
 #[must_use]
-pub fn warrants_tls_only_fallback(msg: &str) -> bool {
+pub fn warrants_tls_only_fallback(msg: &str, server_os: crate::models::RdpServerOs) -> bool {
     let lower = classified_text(msg);
+
+    // A Windows (or unmarked) server rejecting the credentials means just that.
+    if server_os != crate::models::RdpServerOs::Linux
+        && CREDENTIAL_REJECTION_MARKERS
+            .iter()
+            .any(|m| lower.contains(m))
+    {
+        return false;
+    }
 
     // A Kerberos MIC mismatch is not the HYBRID_EX regression: the server
     // requires NLA, so a TLS-only retry is refused (issue #351).
@@ -744,6 +792,82 @@ mod reconnect_tests {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::RdpServerOs;
+
+    /// The TLS-only gate for a server marked Linux, the most permissive case.
+    fn tls_only_on_linux(msg: &str) -> bool {
+        warrants_tls_only_fallback(msg, RdpServerOs::Linux)
+    }
+
+    /// The live Windows Server 2022 log for a wrong password.
+    const WINDOWS_WRONG_PASSWORD: &str = "Connection failed: [CredSSP] CredSSP \
+         [kind: Credssp(Error { error_type: InvalidToken, description: \
+         \"CredSSP server returned an error status\", nstatus: Some(NStatusCode(0xc000006d)) })]";
+
+    #[test]
+    fn credential_rejections_hand_off_only_for_a_linux_server() {
+        for code in ["0xC000006D", "0xc000006a", "0xc0000064"] {
+            let msg = format!(
+                "CredSSP [kind: Credssp(Error {{ error_type: InvalidToken, \
+                 nstatus: Some(NStatusCode({code})) }})]"
+            );
+            assert!(
+                warrants_tls_only_fallback(&msg, RdpServerOs::Linux),
+                "{code}"
+            );
+            for os in [RdpServerOs::Windows, RdpServerOs::Auto] {
+                assert!(!warrants_tls_only_fallback(&msg, os), "{code} on {os:?}");
+            }
+            assert_eq!(
+                classify_auth_failure(&msg),
+                Some(AuthFailureKind::InvalidCredentials),
+                "{code}"
+            );
+        }
+        for os in [RdpServerOs::Windows, RdpServerOs::Auto] {
+            assert!(!warrants_tls_only_fallback(WINDOWS_WRONG_PASSWORD, os));
+            assert!(!warrants_tls_only_fallback("STATUS_LOGON_FAILURE", os));
+        }
+        assert_eq!(
+            classify_rdp_failure(WINDOWS_WRONG_PASSWORD),
+            RdpFailureClass::Authentication
+        );
+    }
+
+    #[test]
+    fn invalid_token_without_a_status_hands_off_for_every_server_os() {
+        let msg = "CredSSP [kind: Credssp(Error { error_type: InvalidToken, \
+                   description: \"CredSSP server returned an error status\", nstatus: None })]";
+        for os in RdpServerOs::all() {
+            assert!(warrants_tls_only_fallback(msg, *os), "{os:?}");
+        }
+    }
+
+    #[test]
+    fn account_state_statuses_never_hand_off_and_keep_their_kind() {
+        for (code, kind) in [
+            ("0xc0000071", AuthFailureKind::PasswordExpired),
+            ("0xc0000072", AuthFailureKind::AccountDisabled),
+            ("0xc0000234", AuthFailureKind::AccountLockedOut),
+            ("0xc0000224", AuthFailureKind::PasswordMustChange),
+        ] {
+            let msg = format!("CredSSP InvalidToken nstatus: Some(NStatusCode({code}))");
+            for os in RdpServerOs::all() {
+                assert!(!warrants_tls_only_fallback(&msg, *os), "{code} on {os:?}");
+            }
+            assert_eq!(classify_auth_failure(&msg), Some(kind), "{code}");
+        }
+    }
+
+    #[test]
+    fn standard_security_only_is_named_for_the_fallback_notice() {
+        assert!(is_standard_security_only(CONNECTOR_STANDARD_RDP_DOWNSELECT));
+        assert!(is_standard_security_only(ISSUE_235));
+        assert!(!is_standard_security_only(
+            "negotiation failure: HYBRID_REQUIRED_BY_SERVER"
+        ));
+        assert!(!is_standard_security_only(WINDOWS_WRONG_PASSWORD));
+    }
 
     #[test]
     fn hybrid_required_by_server_is_recognised() {
@@ -791,9 +915,7 @@ mod tests {
         assert!(class.warrants_freerdp_fallback());
         // It is a security-unsupported case, not the CredSSP/HYBRID_EX one, so
         // it must not also trip the TLS-only (#366) retry gate.
-        assert!(!warrants_tls_only_fallback(
-            CONNECTOR_STANDARD_RDP_DOWNSELECT
-        ));
+        assert!(!tls_only_on_linux(CONNECTOR_STANDARD_RDP_DOWNSELECT));
     }
 
     #[test]
@@ -827,7 +949,7 @@ mod tests {
         assert!(!is_license_exchange_failure(
             "Session error: x, caused by: server_new_license"
         ));
-        assert!(!warrants_tls_only_fallback(
+        assert!(!tls_only_on_linux(
             "Session error: x, caused by: CredSSP InvalidToken 0xc000006d"
         ));
         assert!(!warrants_tls_only_stall_fallback(&format!(
@@ -886,8 +1008,8 @@ mod tests {
         // regression) rejects the CredSSP IronRDP sent because the server picked
         // HYBRID_EX, with STATUS_LOGON_FAILURE — indistinguishable from a wrong
         // password, so this must route to a /sec:tls external retry.
-        assert!(warrants_tls_only_fallback(CREDSSP_LOGON_FAILURE));
-        assert!(warrants_tls_only_fallback(
+        assert!(tls_only_on_linux(CREDSSP_LOGON_FAILURE));
+        assert!(tls_only_on_linux(
             "CredSSP [kind: Credssp(Error { error_type: InvalidToken, description: \
              \"CredSSP server returned an error status\", nstatus: Some(NStatusCode(0xc000006d)) })]"
         ));
@@ -896,7 +1018,7 @@ mod tests {
             "STATUS_WRONG_PASSWORD 0xc000006a",
             "0xc0000064 no such user",
         ] {
-            assert!(warrants_tls_only_fallback(msg), "message: {msg}");
+            assert!(tls_only_on_linux(msg), "message: {msg}");
         }
     }
 
@@ -920,7 +1042,7 @@ mod tests {
                  nstatus: Some(NStatusCode({code})) }})]"
             );
             assert!(
-                !warrants_tls_only_fallback(&msg),
+                !tls_only_on_linux(&msg),
                 "account-state code wrongly retried: {code}"
             );
         }
@@ -935,7 +1057,7 @@ mod tests {
             "Failed to connect to host:3389: connection refused",
             "Account restriction nstatus: Some(NStatusCode(0xc000006e))",
         ] {
-            assert!(!warrants_tls_only_fallback(msg), "message: {msg}");
+            assert!(!tls_only_on_linux(msg), "message: {msg}");
         }
     }
 
@@ -998,7 +1120,7 @@ mod tests {
         assert_eq!(classify_auth_failure(&msg), None, "message: {msg}");
         // It is the post-TLS stall, not the CredSSP shape, so it must not trip
         // the CredSSP (#366) TLS-only gate — but it must trip the stall gate.
-        assert!(!warrants_tls_only_fallback(&msg), "message: {msg}");
+        assert!(!tls_only_on_linux(&msg), "message: {msg}");
         assert!(warrants_tls_only_stall_fallback(&msg), "message: {msg}");
         // The "server incompatible" banner is right here, not the licensing one.
         assert!(!is_license_exchange_failure(&msg), "message: {msg}");
@@ -1471,7 +1593,7 @@ mod tests {
                    InvalidToken, description: \"invalid MIC token sequence number: expected \
                    492697943 but got 0\", nstatus: None })]";
         assert!(warrants_nla_external_fallback(msg));
-        assert!(!warrants_tls_only_fallback(msg));
+        assert!(!tls_only_on_linux(msg));
         assert!(!warrants_nla_external_fallback(
             "CredSSP InvalidToken 0xc000006d"
         ));
