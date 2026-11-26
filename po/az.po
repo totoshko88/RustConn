@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 11:20+0200\n"
+"POT-Creation-Date: 2026-11-26 21:58+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -52,6 +52,7 @@ msgstr "OK"
 #: rustconn/src/session_group_window.rs:429
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1488
+#: rustconn/src/terminal/link_open.rs:326
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
@@ -471,7 +472,7 @@ msgid "Filter connections…"
 msgstr "Bağlantıları süzgəcdən keçir…"
 
 #: rustconn/src/dialogs/cluster.rs:332 rustconn/src/sidebar_ui.rs:1336
-#: rustconn/src/terminal/config.rs:305
+#: rustconn/src/terminal/config.rs:310
 msgid "Select All"
 msgstr "Hamısını seç"
 
@@ -636,8 +637,8 @@ msgid "Join Shared Session…"
 msgstr "Paylaşılan sessiyaya qoşul…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:674
-#: rustconn/src/terminal/mod.rs:680
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:675
+#: rustconn/src/terminal/mod.rs:681
 msgid "Tab Overview"
 msgstr "Tab icmalı"
 
@@ -1701,8 +1702,8 @@ msgstr ""
 "3. Autentifikasiyanı provayder CLI-ı həll edəcək"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1303
-#: rustconn/src/dialogs/connection/dialog/build.rs:1470
-#: rustconn/src/dialogs/connection/dialog/build.rs:1475
+#: rustconn/src/dialogs/connection/dialog/build.rs:1478
+#: rustconn/src/dialogs/connection/dialog/build.rs:1483
 msgid "Connection Test Failed"
 msgstr "Bağlantı sınağı uğursuz oldu"
 
@@ -1711,7 +1712,7 @@ msgid "Fill in the required fields (name and host)"
 msgstr "Tələb olunan sahələri doldurun (ad və host)"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1346
-#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1529
 msgid "Testing…"
 msgstr "Sınanılır…"
 
@@ -1729,6 +1730,11 @@ msgid "Connection successful. Latency: {} ms"
 msgstr "Bağlantı uğurludur. Gecikmə: {} ms"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1468
+#: rustconn/src/dialogs/export.rs:771
+msgid "Skipped"
+msgstr "Keçildi"
+
+#: rustconn/src/dialogs/connection/dialog/build.rs:1476
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1736,52 +1742,52 @@ msgstr ""
 "Sınaq konkret xəta olmadan uğursuz oldu. Host ünvanını və portu yoxlayıb "
 "yenidən cəhd edin."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1476
+#: rustconn/src/dialogs/connection/dialog/build.rs:1484
 msgid "Test timed out"
 msgstr "Sınaq vaxt aşımına uğradı"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1494
-#: rustconn/src/dialogs/connection/dialog/build.rs:1504
-#: rustconn/src/dialogs/connection/dialog/build.rs:1513
-#: rustconn/src/dialogs/connection/dialog/build.rs:1574
-#: rustconn/src/dialogs/connection/dialog/build.rs:1579
+#: rustconn/src/dialogs/connection/dialog/build.rs:1502
+#: rustconn/src/dialogs/connection/dialog/build.rs:1512
+#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1582
+#: rustconn/src/dialogs/connection/dialog/build.rs:1587
 msgid "Script Test Failed"
 msgstr "Skript sınağı uğursuz oldu"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1495
+#: rustconn/src/dialogs/connection/dialog/build.rs:1503
 msgid "Script command is empty"
 msgstr "Skript əmri boşdur"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1505
+#: rustconn/src/dialogs/connection/dialog/build.rs:1513
 msgid "Script command is empty after parsing"
 msgstr "Skript əmri təhlildən sonra boşdur"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1514
+#: rustconn/src/dialogs/connection/dialog/build.rs:1522
 msgid "Failed to parse command"
 msgstr "Əmri təhlil etmək mümkün olmadı"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1544
+#: rustconn/src/dialogs/connection/dialog/build.rs:1552
 msgid "Test Script"
 msgstr "Skripti sına"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1551
+#: rustconn/src/dialogs/connection/dialog/build.rs:1559
 msgid "(empty output)"
 msgstr "(çıxış boşdur)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1557
+#: rustconn/src/dialogs/connection/dialog/build.rs:1565
 msgid "Script Test Successful"
 msgstr "Skript sınağı uğurlu oldu"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1558
+#: rustconn/src/dialogs/connection/dialog/build.rs:1566
 #: rustconn/src/dialogs/export.rs:323
 msgid "Output"
 msgstr "Çıxış"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1565
+#: rustconn/src/dialogs/connection/dialog/build.rs:1573
 msgid "Command failed"
 msgstr "Əmr uğursuz oldu"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1580
+#: rustconn/src/dialogs/connection/dialog/build.rs:1588
 msgid "Script timed out after 30 seconds"
 msgstr "Skript 30 saniyədən sonra vaxt aşımına uğradı"
 
@@ -5061,7 +5067,7 @@ msgstr "Portativ faylın keçid ifadəsi"
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
 #: rustconn/src/embedded_rdp/mod.rs:651 rustconn/src/embedded_vnc/ui.rs:51
-#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
+#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:307
 msgid "Copy"
 msgstr "Kopyala"
 
@@ -5398,10 +5404,6 @@ msgstr "Çıxış faylları:"
 #: rustconn/src/dialogs/export.rs:768
 msgid "Exported"
 msgstr "İxrac edildi"
-
-#: rustconn/src/dialogs/export.rs:771
-msgid "Skipped"
-msgstr "Keçildi"
 
 #: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:504
 msgid "Warnings ({}):"
@@ -8418,7 +8420,7 @@ msgstr "Konfiqurasiya edilib"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:917
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:921
-#: rustconn/src/embedded_vnc/ui.rs:350
+#: rustconn/src/embedded_vnc/ui.rs:351
 msgid "Not configured"
 msgstr "Konfiqurasiya edilməyib"
 
@@ -9158,7 +9160,7 @@ msgid "Checking… touch your YubiKey when it blinks"
 msgstr "Yoxlanılır… YubiKey yanıb-sönəndə ona toxunun"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2909
-#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:370
+#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:371
 #: rustconn/src/sidebar/view.rs:883
 msgid "Connected"
 msgstr "Qoşulub"
@@ -10181,7 +10183,7 @@ msgid "Command Palette (Commands)"
 msgstr "Əmr palitrası (Əmrlər)"
 
 #: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:659
-#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:303
+#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:308
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "Yapışdır"
@@ -11517,7 +11519,8 @@ msgstr "Seçilmiş iş sahəsini sil"
 msgid "Rename selected workspace"
 msgstr "Seçilmiş iş sahəsinin adını dəyiş"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:458
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/terminal/link_open.rs:327
+#: rustconn/src/window/mc_launch.rs:458
 msgid "Open"
 msgstr "Aç"
 
@@ -11553,8 +11556,8 @@ msgstr "Yaratmaq üçün cari sessiyalarınızı saxlayın"
 msgid "{} connections"
 msgstr "{} bağlantı"
 
-#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:366
-#: rustconn/src/session/vnc.rs:175 rustconn/src/session/vnc.rs:243
+#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:367
+#: rustconn/src/session/vnc.rs:179 rustconn/src/session/vnc.rs:247
 msgid "Connecting…"
 msgstr "Qoşulur…"
 
@@ -11720,17 +11723,17 @@ msgid "No text to type"
 msgstr "Yazılacaq mətn yoxdur"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:84
-#: rustconn/src/embedded_vnc/ui.rs:781
+#: rustconn/src/embedded_vnc/ui.rs:782
 msgid "Copied {} chars"
 msgstr "{} simvol kopyalandı"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:92
-#: rustconn/src/embedded_vnc/ui.rs:757
+#: rustconn/src/embedded_vnc/ui.rs:758
 msgid "No remote clipboard data"
 msgstr "Uzaq bufer məlumatı yoxdur"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:202
-#: rustconn/src/embedded_vnc/ui.rs:839
+#: rustconn/src/embedded_vnc/ui.rs:840
 msgid "Pasted {} chars"
 msgstr "{} simvol yapışdırıldı"
 
@@ -12240,7 +12243,7 @@ msgid "Save files from remote clipboard"
 msgstr "Uzaq buferdən faylları saxla"
 
 #: rustconn/src/embedded_rdp/mod.rs:856 rustconn/src/embedded_vnc/ui.rs:162
-#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:428
+#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:433
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1334
 msgid "Reconnect"
@@ -12307,7 +12310,7 @@ msgid "Connection may have been lost while the computer slept"
 msgstr "Kompüter yuxuda olarkən bağlantı itmiş ola bilər"
 
 #: rustconn/src/embedded_rdp/polling_handlers.rs:172
-#: rustconn/src/embedded_vnc/mod.rs:701 rustconn/src/embedded_vnc/ui.rs:56
+#: rustconn/src/embedded_vnc/mod.rs:720 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr "Uzaq buferi lokala kopyala"
 
@@ -12366,7 +12369,7 @@ msgstr "RDP başladılır…"
 msgid "RDP session running in external window"
 msgstr "RDP sessiyası xarici pəncərədə işləyir"
 
-#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
+#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:346
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
 #: rustconn/src/window/session_start.rs:674
@@ -12387,7 +12390,7 @@ msgstr "Daha çox əməliyyat"
 msgid "Show session toolbar"
 msgstr "Sessiya panelini göstər"
 
-#: rustconn/src/embedded_vnc/mod.rs:589
+#: rustconn/src/embedded_vnc/mod.rs:593
 msgid ""
 "VNC encryption not supported. Install TigerVNC and enable 'Accept "
 "Certificate'."
@@ -12395,22 +12398,22 @@ msgstr ""
 "VNC şifrələməsi dəstəklənmir. TigerVNC quraşdırın və 'Sertifikatı qəbul et' "
 "seçimini aktivləşdirin."
 
-#: rustconn/src/embedded_vnc/mod.rs:664
+#: rustconn/src/embedded_vnc/mod.rs:683
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Xarici görüntüləyici istifadə olunur (dəstəklənməyən şifrələmə)"
 
-#: rustconn/src/embedded_vnc/ui.rs:365 rustconn/src/embedded_web/mod.rs:373
-#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:99
-#: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
+#: rustconn/src/embedded_vnc/ui.rs:366 rustconn/src/embedded_web/mod.rs:373
+#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:102
+#: rustconn/src/session/vnc.rs:178 rustconn/src/session/vnc.rs:441
 msgid "Disconnected"
 msgstr "Bağlantı kəsildi"
 
-#: rustconn/src/embedded_vnc/ui.rs:368 rustconn/src/session/vnc.rs:330
+#: rustconn/src/embedded_vnc/ui.rs:369 rustconn/src/session/vnc.rs:334
 msgid "Session running in external window"
 msgstr "Sessiya xarici pəncərədə işləyir"
 
-#: rustconn/src/embedded_vnc/ui.rs:371 rustconn/src/session/vnc.rs:177
-#: rustconn/src/session/vnc.rs:202
+#: rustconn/src/embedded_vnc/ui.rs:372 rustconn/src/session/vnc.rs:181
+#: rustconn/src/session/vnc.rs:206
 msgid "Connection error"
 msgstr "Bağlantı xətası"
 
@@ -13068,7 +13071,7 @@ msgstr "Yeni sessiya aç"
 msgid "Move to New Window"
 msgstr "Yeni pəncərəyə köçür"
 
-#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:474
+#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:479
 msgid "Execute Snippet…"
 msgstr "Fraqmenti icra et…"
 
@@ -13397,11 +13400,19 @@ msgstr "Bütün tablar artıq bu bölünmüş görünüşdə göstərilir"
 msgid "Select a tab to display"
 msgstr "Göstərmək üçün tab seçin"
 
-#: rustconn/src/terminal/config.rs:309
+#: rustconn/src/terminal/config.rs:314
 msgid "Save Selection as Snippet…"
 msgstr "Seçimi fraqment kimi saxla…"
 
-#: rustconn/src/terminal/mod.rs:693 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/link_open.rs:309
+msgid "Link not opened: only plain http and https links can be opened"
+msgstr "Keçid açılmadı: yalnız adi http və https keçidləri açıla bilər"
+
+#: rustconn/src/terminal/link_open.rs:325
+msgid "Open link?"
+msgstr "Keçid açılsın?"
+
+#: rustconn/src/terminal/mod.rs:694 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Xoş gəldiniz"
 
@@ -14434,7 +14445,7 @@ msgstr "SOCKS relesi başladıla bilmədi: {}"
 #: rustconn/src/window/edit_actions.rs:1843
 #: rustconn/src/window/edit_actions.rs:1952
 #: rustconn/src/window/protocols.rs:1463 rustconn/src/window/protocols.rs:1532
-#: rustconn/src/window/protocols.rs:2505
+#: rustconn/src/window/protocols.rs:2509
 msgid "Could not open the SSH tunnel: {}"
 msgstr "SSH tuneli açıla bilmədi: {}"
 
@@ -15812,19 +15823,19 @@ msgstr "Keçid hostu əlçatmazdır, ‘{}’ vasitəsilə qoşulur"
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Heç bir keçid hostu cavab vermədi, ‘{}’ sınanır"
 
-#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1659
+#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1660
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "VNC görüntüləyicisi tapılmadı. TigerVNC və ya Remmina quraşdırın."
 
-#: rustconn/src/window/protocols.rs:1936
+#: rustconn/src/window/protocols.rs:1940
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "SPICE görüntüləyicisi tapılmadı. virt-viewer quraşdırın."
 
-#: rustconn/src/window/protocols.rs:2170 rustconn/src/window/protocols.rs:2935
+#: rustconn/src/window/protocols.rs:2174 rustconn/src/window/protocols.rs:2939
 msgid "Invalid variable: {}"
 msgstr "Yanlış dəyişən: {}"
 
-#: rustconn/src/window/protocols.rs:2430
+#: rustconn/src/window/protocols.rs:2434
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
@@ -15836,7 +15847,7 @@ msgstr ""
 "giriş qabığınızın PATH-ında olmalıdır (yalnız ~/.bashrc-də deyil, ~/.profile-"
 "da təyin edin)."
 
-#: rustconn/src/window/protocols.rs:2434
+#: rustconn/src/window/protocols.rs:2438
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
@@ -15845,28 +15856,28 @@ msgstr ""
 "qoşulun və ya RustConn-un Flatpak versiyasından ya da paylama paketindən "
 "istifadə edin"
 
-#: rustconn/src/window/protocols.rs:2437
+#: rustconn/src/window/protocols.rs:2441
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm quraşdırılmayıb. Onu bu əmrlə quraşdırın: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2855
+#: rustconn/src/window/protocols.rs:2859
 msgid "Invalid config: {}"
 msgstr "Yanlış konfiqurasiya: {}"
 
-#: rustconn/src/window/protocols.rs:3041
+#: rustconn/src/window/protocols.rs:3045
 msgid "Install picocom for Serial connections"
 msgstr "Serial bağlantıları üçün picocom quraşdırın"
 
-#: rustconn/src/window/protocols.rs:3227
+#: rustconn/src/window/protocols.rs:3231
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Kubernetes bağlantıları üçün kubectl quraşdırın"
 
-#: rustconn/src/window/protocols.rs:3245
+#: rustconn/src/window/protocols.rs:3249
 msgid "Configure pod and container for Kubernetes"
 msgstr "Kubernetes üçün pod və konteyner konfiqurasiya edin"
 
-#: rustconn/src/window/protocols.rs:3485
+#: rustconn/src/window/protocols.rs:3489
 msgid "Install mosh for MOSH connections"
 msgstr "MOSH bağlantıları üçün mosh quraşdırın"
 

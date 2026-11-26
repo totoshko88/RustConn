@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 11:20+0200\n"
+"POT-Creation-Date: 2026-11-26 21:58+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -53,6 +53,7 @@ msgstr "OK"
 #: rustconn/src/session_group_window.rs:429
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1488
+#: rustconn/src/terminal/link_open.rs:326
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
@@ -471,7 +472,7 @@ msgid "Filter connections…"
 msgstr "Filtrer forbindelser…"
 
 #: rustconn/src/dialogs/cluster.rs:332 rustconn/src/sidebar_ui.rs:1336
-#: rustconn/src/terminal/config.rs:305
+#: rustconn/src/terminal/config.rs:310
 msgid "Select All"
 msgstr "Vælg alle"
 
@@ -632,8 +633,8 @@ msgid "Join Shared Session…"
 msgstr "Deltag i delt session…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:674
-#: rustconn/src/terminal/mod.rs:680
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:675
+#: rustconn/src/terminal/mod.rs:681
 msgid "Tab Overview"
 msgstr "Faneoversigt"
 
@@ -1697,8 +1698,8 @@ msgstr ""
 "3. Udbyderens CLI håndterer godkendelsen"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1303
-#: rustconn/src/dialogs/connection/dialog/build.rs:1470
-#: rustconn/src/dialogs/connection/dialog/build.rs:1475
+#: rustconn/src/dialogs/connection/dialog/build.rs:1478
+#: rustconn/src/dialogs/connection/dialog/build.rs:1483
 msgid "Connection Test Failed"
 msgstr "Forbindelsestest mislykkedes"
 
@@ -1707,7 +1708,7 @@ msgid "Fill in the required fields (name and host)"
 msgstr "Udfyld de påkrævede felter (navn og vært)"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1346
-#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1529
 msgid "Testing…"
 msgstr "Tester…"
 
@@ -1725,6 +1726,11 @@ msgid "Connection successful. Latency: {} ms"
 msgstr "Forbindelsen lykkedes. Forsinkelse: {} ms"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1468
+#: rustconn/src/dialogs/export.rs:771
+msgid "Skipped"
+msgstr "Sprunget over"
+
+#: rustconn/src/dialogs/connection/dialog/build.rs:1476
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1732,52 +1738,52 @@ msgstr ""
 "Testen mislykkedes uden en bestemt fejl. Kontrollér værtsadressen og porten, "
 "og prøv igen."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1476
+#: rustconn/src/dialogs/connection/dialog/build.rs:1484
 msgid "Test timed out"
 msgstr "Test timeout"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1494
-#: rustconn/src/dialogs/connection/dialog/build.rs:1504
-#: rustconn/src/dialogs/connection/dialog/build.rs:1513
-#: rustconn/src/dialogs/connection/dialog/build.rs:1574
-#: rustconn/src/dialogs/connection/dialog/build.rs:1579
+#: rustconn/src/dialogs/connection/dialog/build.rs:1502
+#: rustconn/src/dialogs/connection/dialog/build.rs:1512
+#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1582
+#: rustconn/src/dialogs/connection/dialog/build.rs:1587
 msgid "Script Test Failed"
 msgstr "Scripttest mislykkedes"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1495
+#: rustconn/src/dialogs/connection/dialog/build.rs:1503
 msgid "Script command is empty"
 msgstr "Scriptkommando er tom"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1505
+#: rustconn/src/dialogs/connection/dialog/build.rs:1513
 msgid "Script command is empty after parsing"
 msgstr "Scriptkommando er tom efter fortolkning"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1514
+#: rustconn/src/dialogs/connection/dialog/build.rs:1522
 msgid "Failed to parse command"
 msgstr "Kunne ikke fortolke kommando"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1544
+#: rustconn/src/dialogs/connection/dialog/build.rs:1552
 msgid "Test Script"
 msgstr "Test script"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1551
+#: rustconn/src/dialogs/connection/dialog/build.rs:1559
 msgid "(empty output)"
 msgstr "(tomt output)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1557
+#: rustconn/src/dialogs/connection/dialog/build.rs:1565
 msgid "Script Test Successful"
 msgstr "Scripttest vellykket"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1558
+#: rustconn/src/dialogs/connection/dialog/build.rs:1566
 #: rustconn/src/dialogs/export.rs:323
 msgid "Output"
 msgstr "Output"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1565
+#: rustconn/src/dialogs/connection/dialog/build.rs:1573
 msgid "Command failed"
 msgstr "Kommando mislykkedes"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1580
+#: rustconn/src/dialogs/connection/dialog/build.rs:1588
 msgid "Script timed out after 30 seconds"
 msgstr "Script timeout efter 30 sekunder"
 
@@ -5067,7 +5073,7 @@ msgstr "Adgangsfrase for den portable fil"
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
 #: rustconn/src/embedded_rdp/mod.rs:651 rustconn/src/embedded_vnc/ui.rs:51
-#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
+#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:307
 msgid "Copy"
 msgstr "Kopiér"
 
@@ -5403,10 +5409,6 @@ msgstr "Outputfiler:"
 #: rustconn/src/dialogs/export.rs:768
 msgid "Exported"
 msgstr "Eksporteret"
-
-#: rustconn/src/dialogs/export.rs:771
-msgid "Skipped"
-msgstr "Sprunget over"
 
 #: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:504
 msgid "Warnings ({}):"
@@ -8415,7 +8417,7 @@ msgstr "Konfigureret"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:917
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:921
-#: rustconn/src/embedded_vnc/ui.rs:350
+#: rustconn/src/embedded_vnc/ui.rs:351
 msgid "Not configured"
 msgstr "Ikke konfigureret"
 
@@ -9167,7 +9169,7 @@ msgid "Checking… touch your YubiKey when it blinks"
 msgstr "Kontrollerer… rør din YubiKey, når den blinker"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2909
-#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:370
+#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:371
 #: rustconn/src/sidebar/view.rs:883
 msgid "Connected"
 msgstr "Forbundet"
@@ -10191,7 +10193,7 @@ msgid "Command Palette (Commands)"
 msgstr "Kommandopalette (kommandoer)"
 
 #: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:659
-#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:303
+#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:308
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "Indsæt"
@@ -11528,7 +11530,8 @@ msgstr "Slet valgt arbejdsområde"
 msgid "Rename selected workspace"
 msgstr "Omdøb valgt arbejdsområde"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:458
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/terminal/link_open.rs:327
+#: rustconn/src/window/mc_launch.rs:458
 msgid "Open"
 msgstr "Åbn"
 
@@ -11564,8 +11567,8 @@ msgstr "Gem dine aktuelle sessioner for at oprette en"
 msgid "{} connections"
 msgstr "{} forbindelser"
 
-#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:366
-#: rustconn/src/session/vnc.rs:175 rustconn/src/session/vnc.rs:243
+#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:367
+#: rustconn/src/session/vnc.rs:179 rustconn/src/session/vnc.rs:247
 msgid "Connecting…"
 msgstr "Opretter forbindelse…"
 
@@ -11731,17 +11734,17 @@ msgid "No text to type"
 msgstr "Ingen tekst at skrive"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:84
-#: rustconn/src/embedded_vnc/ui.rs:781
+#: rustconn/src/embedded_vnc/ui.rs:782
 msgid "Copied {} chars"
 msgstr "Kopieret {} tegn"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:92
-#: rustconn/src/embedded_vnc/ui.rs:757
+#: rustconn/src/embedded_vnc/ui.rs:758
 msgid "No remote clipboard data"
 msgstr "Ingen fjernudklipsholderdata"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:202
-#: rustconn/src/embedded_vnc/ui.rs:839
+#: rustconn/src/embedded_vnc/ui.rs:840
 msgid "Pasted {} chars"
 msgstr "Indsat {} tegn"
 
@@ -12248,7 +12251,7 @@ msgid "Save files from remote clipboard"
 msgstr "Gem filer fra fjernudklipsholder"
 
 #: rustconn/src/embedded_rdp/mod.rs:856 rustconn/src/embedded_vnc/ui.rs:162
-#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:428
+#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:433
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1334
 msgid "Reconnect"
@@ -12317,7 +12320,7 @@ msgid "Connection may have been lost while the computer slept"
 msgstr "Forbindelsen kan være mistet, mens computeren sov"
 
 #: rustconn/src/embedded_rdp/polling_handlers.rs:172
-#: rustconn/src/embedded_vnc/mod.rs:701 rustconn/src/embedded_vnc/ui.rs:56
+#: rustconn/src/embedded_vnc/mod.rs:720 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr "Kopiér fjernudklipsholder til lokal"
 
@@ -12376,7 +12379,7 @@ msgstr "Starter RDP…"
 msgid "RDP session running in external window"
 msgstr "RDP-session kører i eksternt vindue"
 
-#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
+#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:346
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
 #: rustconn/src/window/session_start.rs:674
@@ -12397,7 +12400,7 @@ msgstr "Flere handlinger"
 msgid "Show session toolbar"
 msgstr "Vis sessionsværktøjslinje"
 
-#: rustconn/src/embedded_vnc/mod.rs:589
+#: rustconn/src/embedded_vnc/mod.rs:593
 msgid ""
 "VNC encryption not supported. Install TigerVNC and enable 'Accept "
 "Certificate'."
@@ -12405,22 +12408,22 @@ msgstr ""
 "VNC-kryptering understøttes ikke. Installér TigerVNC og aktivér »Acceptér "
 "certifikat«."
 
-#: rustconn/src/embedded_vnc/mod.rs:664
+#: rustconn/src/embedded_vnc/mod.rs:683
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Bruger ekstern fremviser (ikke-understøttet kryptering)"
 
-#: rustconn/src/embedded_vnc/ui.rs:365 rustconn/src/embedded_web/mod.rs:373
-#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:99
-#: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
+#: rustconn/src/embedded_vnc/ui.rs:366 rustconn/src/embedded_web/mod.rs:373
+#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:102
+#: rustconn/src/session/vnc.rs:178 rustconn/src/session/vnc.rs:441
 msgid "Disconnected"
 msgstr "Afbrudt"
 
-#: rustconn/src/embedded_vnc/ui.rs:368 rustconn/src/session/vnc.rs:330
+#: rustconn/src/embedded_vnc/ui.rs:369 rustconn/src/session/vnc.rs:334
 msgid "Session running in external window"
 msgstr "Session kører i eksternt vindue"
 
-#: rustconn/src/embedded_vnc/ui.rs:371 rustconn/src/session/vnc.rs:177
-#: rustconn/src/session/vnc.rs:202
+#: rustconn/src/embedded_vnc/ui.rs:372 rustconn/src/session/vnc.rs:181
+#: rustconn/src/session/vnc.rs:206
 msgid "Connection error"
 msgstr "Forbindelsesfejl"
 
@@ -13078,7 +13081,7 @@ msgstr "Åbn ny session"
 msgid "Move to New Window"
 msgstr "Flyt til nyt vindue"
 
-#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:474
+#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:479
 msgid "Execute Snippet…"
 msgstr "Kør kodestump…"
 
@@ -13407,11 +13410,19 @@ msgstr "Alle faner vises allerede i denne opdelte visning"
 msgid "Select a tab to display"
 msgstr "Vælg en fane til visning"
 
-#: rustconn/src/terminal/config.rs:309
+#: rustconn/src/terminal/config.rs:314
 msgid "Save Selection as Snippet…"
 msgstr "Gem markering som kodestump…"
 
-#: rustconn/src/terminal/mod.rs:693 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/link_open.rs:309
+msgid "Link not opened: only plain http and https links can be opened"
+msgstr "Linket blev ikke åbnet: kun almindelige http- og https-links kan åbnes"
+
+#: rustconn/src/terminal/link_open.rs:325
+msgid "Open link?"
+msgstr "Åbn link?"
+
+#: rustconn/src/terminal/mod.rs:694 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Velkommen"
 
@@ -14453,7 +14464,7 @@ msgstr "Kunne ikke starte SOCKS-relæet: {}"
 #: rustconn/src/window/edit_actions.rs:1843
 #: rustconn/src/window/edit_actions.rs:1952
 #: rustconn/src/window/protocols.rs:1463 rustconn/src/window/protocols.rs:1532
-#: rustconn/src/window/protocols.rs:2505
+#: rustconn/src/window/protocols.rs:2509
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Kunne ikke åbne SSH-tunnelen: {}"
 
@@ -15830,19 +15841,19 @@ msgstr "Springværten kan ikke nås, forbinder via “{}”"
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Ingen springvært svarede, prøver “{}”"
 
-#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1659
+#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1660
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Ingen VNC-fremviser fundet. Installer TigerVNC eller Remmina."
 
-#: rustconn/src/window/protocols.rs:1936
+#: rustconn/src/window/protocols.rs:1940
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Ingen SPICE-fremviser fundet. Installer virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2170 rustconn/src/window/protocols.rs:2935
+#: rustconn/src/window/protocols.rs:2174 rustconn/src/window/protocols.rs:2939
 msgid "Invalid variable: {}"
 msgstr "Ugyldig variabel: {}"
 
-#: rustconn/src/window/protocols.rs:2430
+#: rustconn/src/window/protocols.rs:2434
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
@@ -15854,7 +15865,7 @@ msgstr ""
 "ligge i PATH for din login-skal uden for Flatpak (sæt det i ~/.profile, ikke "
 "kun i ~/.bashrc)."
 
-#: rustconn/src/window/protocols.rs:2434
+#: rustconn/src/window/protocols.rs:2438
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
@@ -15862,28 +15873,28 @@ msgstr ""
 "evil-winrm kan ikke køre i Snap'en. Forbind til Windows over SSH i stedet, "
 "eller brug Flatpak'en eller en distributionspakke af RustConn"
 
-#: rustconn/src/window/protocols.rs:2437
+#: rustconn/src/window/protocols.rs:2441
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm er ikke installeret. Installer det med: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2855
+#: rustconn/src/window/protocols.rs:2859
 msgid "Invalid config: {}"
 msgstr "Ugyldig konfiguration: {}"
 
-#: rustconn/src/window/protocols.rs:3041
+#: rustconn/src/window/protocols.rs:3045
 msgid "Install picocom for Serial connections"
 msgstr "Installér picocom til serielle forbindelser"
 
-#: rustconn/src/window/protocols.rs:3227
+#: rustconn/src/window/protocols.rs:3231
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Installér kubectl til Kubernetes-forbindelser"
 
-#: rustconn/src/window/protocols.rs:3245
+#: rustconn/src/window/protocols.rs:3249
 msgid "Configure pod and container for Kubernetes"
 msgstr "Konfigurér pod og container til Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3485
+#: rustconn/src/window/protocols.rs:3489
 msgid "Install mosh for MOSH connections"
 msgstr "Installér mosh til MOSH-forbindelser"
 

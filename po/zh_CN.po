@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 11:20+0200\n"
+"POT-Creation-Date: 2026-11-26 21:58+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -54,6 +54,7 @@ msgstr "确定"
 #: rustconn/src/session_group_window.rs:429
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1488
+#: rustconn/src/terminal/link_open.rs:326
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
@@ -458,7 +459,7 @@ msgid "Filter connections…"
 msgstr "筛选连接…"
 
 #: rustconn/src/dialogs/cluster.rs:332 rustconn/src/sidebar_ui.rs:1336
-#: rustconn/src/terminal/config.rs:305
+#: rustconn/src/terminal/config.rs:310
 msgid "Select All"
 msgstr "全选"
 
@@ -617,8 +618,8 @@ msgid "Join Shared Session…"
 msgstr "加入共享会话…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:674
-#: rustconn/src/terminal/mod.rs:680
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:675
+#: rustconn/src/terminal/mod.rs:681
 msgid "Tab Overview"
 msgstr "标签页概览"
 
@@ -1655,8 +1656,8 @@ msgstr ""
 "3. 提供商 CLI 将处理身份验证"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1303
-#: rustconn/src/dialogs/connection/dialog/build.rs:1470
-#: rustconn/src/dialogs/connection/dialog/build.rs:1475
+#: rustconn/src/dialogs/connection/dialog/build.rs:1478
+#: rustconn/src/dialogs/connection/dialog/build.rs:1483
 msgid "Connection Test Failed"
 msgstr "连接测试失败"
 
@@ -1665,7 +1666,7 @@ msgid "Fill in the required fields (name and host)"
 msgstr "请填写必填字段（名称和主机）"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1346
-#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1529
 msgid "Testing…"
 msgstr "测试中…"
 
@@ -1683,57 +1684,62 @@ msgid "Connection successful. Latency: {} ms"
 msgstr "连接成功。延迟：{} 毫秒"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1468
+#: rustconn/src/dialogs/export.rs:771
+msgid "Skipped"
+msgstr "已跳过"
+
+#: rustconn/src/dialogs/connection/dialog/build.rs:1476
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
 msgstr "测试失败，但未返回具体错误。请检查主机地址和端口，然后重试。"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1476
+#: rustconn/src/dialogs/connection/dialog/build.rs:1484
 msgid "Test timed out"
 msgstr "测试超时"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1494
-#: rustconn/src/dialogs/connection/dialog/build.rs:1504
-#: rustconn/src/dialogs/connection/dialog/build.rs:1513
-#: rustconn/src/dialogs/connection/dialog/build.rs:1574
-#: rustconn/src/dialogs/connection/dialog/build.rs:1579
+#: rustconn/src/dialogs/connection/dialog/build.rs:1502
+#: rustconn/src/dialogs/connection/dialog/build.rs:1512
+#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1582
+#: rustconn/src/dialogs/connection/dialog/build.rs:1587
 msgid "Script Test Failed"
 msgstr "脚本测试失败"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1495
+#: rustconn/src/dialogs/connection/dialog/build.rs:1503
 msgid "Script command is empty"
 msgstr "脚本命令为空"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1505
+#: rustconn/src/dialogs/connection/dialog/build.rs:1513
 msgid "Script command is empty after parsing"
 msgstr "解析后脚本命令为空"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1514
+#: rustconn/src/dialogs/connection/dialog/build.rs:1522
 msgid "Failed to parse command"
 msgstr "解析命令失败"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1544
+#: rustconn/src/dialogs/connection/dialog/build.rs:1552
 msgid "Test Script"
 msgstr "测试脚本"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1551
+#: rustconn/src/dialogs/connection/dialog/build.rs:1559
 msgid "(empty output)"
 msgstr "（无输出）"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1557
+#: rustconn/src/dialogs/connection/dialog/build.rs:1565
 msgid "Script Test Successful"
 msgstr "脚本测试成功"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1558
+#: rustconn/src/dialogs/connection/dialog/build.rs:1566
 #: rustconn/src/dialogs/export.rs:323
 msgid "Output"
 msgstr "输出"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1565
+#: rustconn/src/dialogs/connection/dialog/build.rs:1573
 msgid "Command failed"
 msgstr "命令失败"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1580
+#: rustconn/src/dialogs/connection/dialog/build.rs:1588
 msgid "Script timed out after 30 seconds"
 msgstr "脚本在 30 秒后超时"
 
@@ -4945,7 +4951,7 @@ msgstr "便携文件口令"
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
 #: rustconn/src/embedded_rdp/mod.rs:651 rustconn/src/embedded_vnc/ui.rs:51
-#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
+#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:307
 msgid "Copy"
 msgstr "复制"
 
@@ -5269,10 +5275,6 @@ msgstr "输出文件："
 #: rustconn/src/dialogs/export.rs:768
 msgid "Exported"
 msgstr "已导出"
-
-#: rustconn/src/dialogs/export.rs:771
-msgid "Skipped"
-msgstr "已跳过"
 
 #: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:504
 msgid "Warnings ({}):"
@@ -8188,7 +8190,7 @@ msgstr "已配置"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:917
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:921
-#: rustconn/src/embedded_vnc/ui.rs:350
+#: rustconn/src/embedded_vnc/ui.rs:351
 msgid "Not configured"
 msgstr "未配置"
 
@@ -8906,7 +8908,7 @@ msgid "Checking… touch your YubiKey when it blinks"
 msgstr "正在检查……密钥闪烁时请触摸您的 YubiKey"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2909
-#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:370
+#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:371
 #: rustconn/src/sidebar/view.rs:883
 msgid "Connected"
 msgstr "已连接"
@@ -9900,7 +9902,7 @@ msgid "Command Palette (Commands)"
 msgstr "命令面板（命令）"
 
 #: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:659
-#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:303
+#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:308
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "粘贴"
@@ -11217,7 +11219,8 @@ msgstr "删除所选工作区"
 msgid "Rename selected workspace"
 msgstr "重命名所选工作区"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:458
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/terminal/link_open.rs:327
+#: rustconn/src/window/mc_launch.rs:458
 msgid "Open"
 msgstr "打开"
 
@@ -11253,8 +11256,8 @@ msgstr "保存当前会话以创建一个"
 msgid "{} connections"
 msgstr "{} 个连接"
 
-#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:366
-#: rustconn/src/session/vnc.rs:175 rustconn/src/session/vnc.rs:243
+#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:367
+#: rustconn/src/session/vnc.rs:179 rustconn/src/session/vnc.rs:247
 msgid "Connecting…"
 msgstr "连接中…"
 
@@ -11411,17 +11414,17 @@ msgid "No text to type"
 msgstr "没有要输入的文本"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:84
-#: rustconn/src/embedded_vnc/ui.rs:781
+#: rustconn/src/embedded_vnc/ui.rs:782
 msgid "Copied {} chars"
 msgstr "已复制 {} 个字符"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:92
-#: rustconn/src/embedded_vnc/ui.rs:757
+#: rustconn/src/embedded_vnc/ui.rs:758
 msgid "No remote clipboard data"
 msgstr "无远程剪贴板数据"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:202
-#: rustconn/src/embedded_vnc/ui.rs:839
+#: rustconn/src/embedded_vnc/ui.rs:840
 msgid "Pasted {} chars"
 msgstr "已粘贴 {} 个字符"
 
@@ -11883,7 +11886,7 @@ msgid "Save files from remote clipboard"
 msgstr "从远程剪贴板保存文件"
 
 #: rustconn/src/embedded_rdp/mod.rs:856 rustconn/src/embedded_vnc/ui.rs:162
-#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:428
+#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:433
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1334
 msgid "Reconnect"
@@ -11949,7 +11952,7 @@ msgid "Connection may have been lost while the computer slept"
 msgstr "计算机睡眠期间连接可能已断开"
 
 #: rustconn/src/embedded_rdp/polling_handlers.rs:172
-#: rustconn/src/embedded_vnc/mod.rs:701 rustconn/src/embedded_vnc/ui.rs:56
+#: rustconn/src/embedded_vnc/mod.rs:720 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr "将远程剪贴板复制到本地"
 
@@ -12008,7 +12011,7 @@ msgstr "正在启动 RDP…"
 msgid "RDP session running in external window"
 msgstr "RDP 会话正在外部窗口中运行"
 
-#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
+#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:346
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
 #: rustconn/src/window/session_start.rs:674
@@ -12029,28 +12032,28 @@ msgstr "更多操作"
 msgid "Show session toolbar"
 msgstr "显示会话工具栏"
 
-#: rustconn/src/embedded_vnc/mod.rs:589
+#: rustconn/src/embedded_vnc/mod.rs:593
 msgid ""
 "VNC encryption not supported. Install TigerVNC and enable 'Accept "
 "Certificate'."
 msgstr "不支持 VNC 加密。请安装 TigerVNC 并启用「接受证书」。"
 
-#: rustconn/src/embedded_vnc/mod.rs:664
+#: rustconn/src/embedded_vnc/mod.rs:683
 msgid "Using external viewer (unsupported encryption)"
 msgstr "使用外部查看器（不支持的加密）"
 
-#: rustconn/src/embedded_vnc/ui.rs:365 rustconn/src/embedded_web/mod.rs:373
-#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:99
-#: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
+#: rustconn/src/embedded_vnc/ui.rs:366 rustconn/src/embedded_web/mod.rs:373
+#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:102
+#: rustconn/src/session/vnc.rs:178 rustconn/src/session/vnc.rs:441
 msgid "Disconnected"
 msgstr "已断开"
 
-#: rustconn/src/embedded_vnc/ui.rs:368 rustconn/src/session/vnc.rs:330
+#: rustconn/src/embedded_vnc/ui.rs:369 rustconn/src/session/vnc.rs:334
 msgid "Session running in external window"
 msgstr "会话正在外部窗口中运行"
 
-#: rustconn/src/embedded_vnc/ui.rs:371 rustconn/src/session/vnc.rs:177
-#: rustconn/src/session/vnc.rs:202
+#: rustconn/src/embedded_vnc/ui.rs:372 rustconn/src/session/vnc.rs:181
+#: rustconn/src/session/vnc.rs:206
 msgid "Connection error"
 msgstr "连接错误"
 
@@ -12705,7 +12708,7 @@ msgstr "打开新会话"
 msgid "Move to New Window"
 msgstr "移动到新窗口"
 
-#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:474
+#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:479
 msgid "Execute Snippet…"
 msgstr "执行代码片段…"
 
@@ -13034,11 +13037,19 @@ msgstr "所有标签页已在此分屏视图中显示"
 msgid "Select a tab to display"
 msgstr "选择要显示的标签页"
 
-#: rustconn/src/terminal/config.rs:309
+#: rustconn/src/terminal/config.rs:314
 msgid "Save Selection as Snippet…"
 msgstr "将选中内容保存为代码片段…"
 
-#: rustconn/src/terminal/mod.rs:693 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/link_open.rs:309
+msgid "Link not opened: only plain http and https links can be opened"
+msgstr "未打开链接：只能打开普通的 http 和 https 链接"
+
+#: rustconn/src/terminal/link_open.rs:325
+msgid "Open link?"
+msgstr "打开链接？"
+
+#: rustconn/src/terminal/mod.rs:694 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "欢迎"
 
@@ -14035,7 +14046,7 @@ msgstr "无法启动 SOCKS 中继：{}"
 #: rustconn/src/window/edit_actions.rs:1843
 #: rustconn/src/window/edit_actions.rs:1952
 #: rustconn/src/window/protocols.rs:1463 rustconn/src/window/protocols.rs:1532
-#: rustconn/src/window/protocols.rs:2505
+#: rustconn/src/window/protocols.rs:2509
 msgid "Could not open the SSH tunnel: {}"
 msgstr "无法打开 SSH 隧道：{}"
 
@@ -15359,19 +15370,19 @@ msgstr "跳板机不可达，正在通过“{}”连接"
 msgid "No jump host responded, trying ‘{}’"
 msgstr "没有跳板机响应，正在尝试“{}”"
 
-#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1659
+#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1660
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "未找到 VNC 查看器。请安装 TigerVNC 或 Remmina。"
 
-#: rustconn/src/window/protocols.rs:1936
+#: rustconn/src/window/protocols.rs:1940
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "未找到 SPICE 查看器。请安装 virt-viewer。"
 
-#: rustconn/src/window/protocols.rs:2170 rustconn/src/window/protocols.rs:2935
+#: rustconn/src/window/protocols.rs:2174 rustconn/src/window/protocols.rs:2939
 msgid "Invalid variable: {}"
 msgstr "无效变量：{}"
 
-#: rustconn/src/window/protocols.rs:2430
+#: rustconn/src/window/protocols.rs:2434
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
@@ -15382,7 +15393,7 @@ msgstr ""
 "行：gem install evil-winrm。它必须位于 Flatpak 之外登录 shell 的 PATH 中（在 "
 "~/.profile 中设置，而不只是在 ~/.bashrc 中）。"
 
-#: rustconn/src/window/protocols.rs:2434
+#: rustconn/src/window/protocols.rs:2438
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
@@ -15390,27 +15401,27 @@ msgstr ""
 "evil-winrm 无法在 Snap 中运行。请改用 SSH 连接 Windows，或使用 RustConn 的 "
 "Flatpak 版本或发行版软件包"
 
-#: rustconn/src/window/protocols.rs:2437
+#: rustconn/src/window/protocols.rs:2441
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr "未安装 evil-winrm。请使用以下命令安装：gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2855
+#: rustconn/src/window/protocols.rs:2859
 msgid "Invalid config: {}"
 msgstr "配置无效：{}"
 
-#: rustconn/src/window/protocols.rs:3041
+#: rustconn/src/window/protocols.rs:3045
 msgid "Install picocom for Serial connections"
 msgstr "安装 picocom 以支持串口连接"
 
-#: rustconn/src/window/protocols.rs:3227
+#: rustconn/src/window/protocols.rs:3231
 msgid "Install kubectl for Kubernetes connections"
 msgstr "安装 kubectl 以支持 Kubernetes 连接"
 
-#: rustconn/src/window/protocols.rs:3245
+#: rustconn/src/window/protocols.rs:3249
 msgid "Configure pod and container for Kubernetes"
 msgstr "为 Kubernetes 配置 pod 和容器"
 
-#: rustconn/src/window/protocols.rs:3485
+#: rustconn/src/window/protocols.rs:3489
 msgid "Install mosh for MOSH connections"
 msgstr "安装 mosh 以支持 MOSH 连接"
 

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 11:20+0200\n"
+"POT-Creation-Date: 2026-11-26 21:58+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -59,6 +59,7 @@ msgstr "Гаразд"
 #: rustconn/src/session_group_window.rs:429
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1488
+#: rustconn/src/terminal/link_open.rs:326
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
@@ -477,7 +478,7 @@ msgid "Filter connections…"
 msgstr "Фільтр з'єднків…"
 
 #: rustconn/src/dialogs/cluster.rs:332 rustconn/src/sidebar_ui.rs:1336
-#: rustconn/src/terminal/config.rs:305
+#: rustconn/src/terminal/config.rs:310
 msgid "Select All"
 msgstr "Обери все"
 
@@ -639,8 +640,8 @@ msgid "Join Shared Session…"
 msgstr "Приєднайся до спільного сеансу…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:674
-#: rustconn/src/terminal/mod.rs:680
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:675
+#: rustconn/src/terminal/mod.rs:681
 msgid "Tab Overview"
 msgstr "Огляд вкладок"
 
@@ -1705,8 +1706,8 @@ msgstr ""
 "3. CLI провайдера обробить автентифікацію"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1303
-#: rustconn/src/dialogs/connection/dialog/build.rs:1470
-#: rustconn/src/dialogs/connection/dialog/build.rs:1475
+#: rustconn/src/dialogs/connection/dialog/build.rs:1478
+#: rustconn/src/dialogs/connection/dialog/build.rs:1483
 msgid "Connection Test Failed"
 msgstr "Перевірка з'єднанка не вдалася"
 
@@ -1715,7 +1716,7 @@ msgid "Fill in the required fields (name and host)"
 msgstr "Заповни обов'язкові поля (назва і гост)"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1346
-#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1529
 msgid "Testing…"
 msgstr "Тестування…"
 
@@ -1733,6 +1734,11 @@ msgid "Connection successful. Latency: {} ms"
 msgstr "З'єднок успішний. Затримка: {} мс"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1468
+#: rustconn/src/dialogs/export.rs:771
+msgid "Skipped"
+msgstr "Пропущено"
+
+#: rustconn/src/dialogs/connection/dialog/build.rs:1476
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1740,52 +1746,52 @@ msgstr ""
 "Перевірка не вдалася без конкретної помилки. Перевір адресу госта і порт та "
 "спробуй ще раз."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1476
+#: rustconn/src/dialogs/connection/dialog/build.rs:1484
 msgid "Test timed out"
 msgstr "Час перевірки вичерпано"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1494
-#: rustconn/src/dialogs/connection/dialog/build.rs:1504
-#: rustconn/src/dialogs/connection/dialog/build.rs:1513
-#: rustconn/src/dialogs/connection/dialog/build.rs:1574
-#: rustconn/src/dialogs/connection/dialog/build.rs:1579
+#: rustconn/src/dialogs/connection/dialog/build.rs:1502
+#: rustconn/src/dialogs/connection/dialog/build.rs:1512
+#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1582
+#: rustconn/src/dialogs/connection/dialog/build.rs:1587
 msgid "Script Test Failed"
 msgstr "Тест скрипту невдалий"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1495
+#: rustconn/src/dialogs/connection/dialog/build.rs:1503
 msgid "Script command is empty"
 msgstr "Команда скрипту порожня"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1505
+#: rustconn/src/dialogs/connection/dialog/build.rs:1513
 msgid "Script command is empty after parsing"
 msgstr "Команда скрипту порожня після розбору"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1514
+#: rustconn/src/dialogs/connection/dialog/build.rs:1522
 msgid "Failed to parse command"
 msgstr "Не вдалося розібрати команду"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1544
+#: rustconn/src/dialogs/connection/dialog/build.rs:1552
 msgid "Test Script"
 msgstr "Випробуй скрипт"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1551
+#: rustconn/src/dialogs/connection/dialog/build.rs:1559
 msgid "(empty output)"
 msgstr "(порожній вивід)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1557
+#: rustconn/src/dialogs/connection/dialog/build.rs:1565
 msgid "Script Test Successful"
 msgstr "Тест скрипту успішний"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1558
+#: rustconn/src/dialogs/connection/dialog/build.rs:1566
 #: rustconn/src/dialogs/export.rs:323
 msgid "Output"
 msgstr "Виведення"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1565
+#: rustconn/src/dialogs/connection/dialog/build.rs:1573
 msgid "Command failed"
 msgstr "Команда не виконана"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1580
+#: rustconn/src/dialogs/connection/dialog/build.rs:1588
 msgid "Script timed out after 30 seconds"
 msgstr "Скрипт перевищив час очікування (30 секунд)"
 
@@ -5070,7 +5076,7 @@ msgstr "Парольна фраза портативного файла"
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
 #: rustconn/src/embedded_rdp/mod.rs:651 rustconn/src/embedded_vnc/ui.rs:51
-#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
+#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:307
 msgid "Copy"
 msgstr "Копіюй"
 
@@ -5405,10 +5411,6 @@ msgstr "Файли виведення:"
 #: rustconn/src/dialogs/export.rs:768
 msgid "Exported"
 msgstr "Експортовано"
-
-#: rustconn/src/dialogs/export.rs:771
-msgid "Skipped"
-msgstr "Пропущено"
 
 #: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:504
 msgid "Warnings ({}):"
@@ -8415,7 +8417,7 @@ msgstr "Налаштовано"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:917
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:921
-#: rustconn/src/embedded_vnc/ui.rs:350
+#: rustconn/src/embedded_vnc/ui.rs:351
 msgid "Not configured"
 msgstr "Не налаштовано"
 
@@ -9160,7 +9162,7 @@ msgid "Checking… touch your YubiKey when it blinks"
 msgstr "Перевірка… торкнись YubiKey, коли він блимає"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2909
-#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:370
+#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:371
 #: rustconn/src/sidebar/view.rs:883
 msgid "Connected"
 msgstr "З'єднано"
@@ -10191,7 +10193,7 @@ msgid "Command Palette (Commands)"
 msgstr "Палітра команд (команди)"
 
 #: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:659
-#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:303
+#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:308
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "Устав"
@@ -11528,7 +11530,8 @@ msgstr "Вилучи обраний робочий простір"
 msgid "Rename selected workspace"
 msgstr "Перейменуй обраний робочий простір"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:458
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/terminal/link_open.rs:327
+#: rustconn/src/window/mc_launch.rs:458
 msgid "Open"
 msgstr "Відкрий"
 
@@ -11564,8 +11567,8 @@ msgstr "Збережи поточні сеанси, щоб створити пр
 msgid "{} connections"
 msgstr "{} з'єднок"
 
-#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:366
-#: rustconn/src/session/vnc.rs:175 rustconn/src/session/vnc.rs:243
+#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:367
+#: rustconn/src/session/vnc.rs:179 rustconn/src/session/vnc.rs:247
 msgid "Connecting…"
 msgstr "Під'єднування…"
 
@@ -11730,17 +11733,17 @@ msgid "No text to type"
 msgstr "Нема тексту для набору"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:84
-#: rustconn/src/embedded_vnc/ui.rs:781
+#: rustconn/src/embedded_vnc/ui.rs:782
 msgid "Copied {} chars"
 msgstr "Скопійовано {} символів"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:92
-#: rustconn/src/embedded_vnc/ui.rs:757
+#: rustconn/src/embedded_vnc/ui.rs:758
 msgid "No remote clipboard data"
 msgstr "Нема даних у віддаленому буфері обміну"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:202
-#: rustconn/src/embedded_vnc/ui.rs:839
+#: rustconn/src/embedded_vnc/ui.rs:840
 msgid "Pasted {} chars"
 msgstr "Вставлено {} символів"
 
@@ -12242,7 +12245,7 @@ msgid "Save files from remote clipboard"
 msgstr "Збережи файли з віддаленого буфера"
 
 #: rustconn/src/embedded_rdp/mod.rs:856 rustconn/src/embedded_vnc/ui.rs:162
-#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:428
+#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:433
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1334
 msgid "Reconnect"
@@ -12310,7 +12313,7 @@ msgid "Connection may have been lost while the computer slept"
 msgstr "Можливо, з'єднок утрачено, поки комп'ютер спав"
 
 #: rustconn/src/embedded_rdp/polling_handlers.rs:172
-#: rustconn/src/embedded_vnc/mod.rs:701 rustconn/src/embedded_vnc/ui.rs:56
+#: rustconn/src/embedded_vnc/mod.rs:720 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr "Копіюй віддалений буфер до локального"
 
@@ -12369,7 +12372,7 @@ msgstr "Запуск RDP…"
 msgid "RDP session running in external window"
 msgstr "Сеанс RDP працює у зовнішньому вікні"
 
-#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
+#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:346
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
 #: rustconn/src/window/session_start.rs:674
@@ -12390,7 +12393,7 @@ msgstr "Більше дій"
 msgid "Show session toolbar"
 msgstr "Покажи панель інструментів сеансу"
 
-#: rustconn/src/embedded_vnc/mod.rs:589
+#: rustconn/src/embedded_vnc/mod.rs:593
 msgid ""
 "VNC encryption not supported. Install TigerVNC and enable 'Accept "
 "Certificate'."
@@ -12398,22 +12401,22 @@ msgstr ""
 "Шифрування VNC не підтримується. Установи TigerVNC і увімкни «Прийми "
 "сертифікат»."
 
-#: rustconn/src/embedded_vnc/mod.rs:664
+#: rustconn/src/embedded_vnc/mod.rs:683
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Задіяно зовнішнього переглядача (непідтримуване шифрування)"
 
-#: rustconn/src/embedded_vnc/ui.rs:365 rustconn/src/embedded_web/mod.rs:373
-#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:99
-#: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
+#: rustconn/src/embedded_vnc/ui.rs:366 rustconn/src/embedded_web/mod.rs:373
+#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:102
+#: rustconn/src/session/vnc.rs:178 rustconn/src/session/vnc.rs:441
 msgid "Disconnected"
 msgstr "Від'єднано"
 
-#: rustconn/src/embedded_vnc/ui.rs:368 rustconn/src/session/vnc.rs:330
+#: rustconn/src/embedded_vnc/ui.rs:369 rustconn/src/session/vnc.rs:334
 msgid "Session running in external window"
 msgstr "Сеанс працює у зовнішньому вікні"
 
-#: rustconn/src/embedded_vnc/ui.rs:371 rustconn/src/session/vnc.rs:177
-#: rustconn/src/session/vnc.rs:202
+#: rustconn/src/embedded_vnc/ui.rs:372 rustconn/src/session/vnc.rs:181
+#: rustconn/src/session/vnc.rs:206
 msgid "Connection error"
 msgstr "Помилка з'єднування"
 
@@ -13070,7 +13073,7 @@ msgstr "Відкрий новий сеанс"
 msgid "Move to New Window"
 msgstr "Перемісти до нового вікна"
 
-#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:474
+#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:479
 msgid "Execute Snippet…"
 msgstr "Виконай сніпета…"
 
@@ -13401,11 +13404,19 @@ msgstr "Усі вкладки вже відображено в цьому роз
 msgid "Select a tab to display"
 msgstr "Обери вкладку, щоб відобразити"
 
-#: rustconn/src/terminal/config.rs:309
+#: rustconn/src/terminal/config.rs:314
 msgid "Save Selection as Snippet…"
 msgstr "Збережи виділене як сніпет…"
 
-#: rustconn/src/terminal/mod.rs:693 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/link_open.rs:309
+msgid "Link not opened: only plain http and https links can be opened"
+msgstr "Посилання не відкрито: відкривати можна лише звичайні посилання http і https"
+
+#: rustconn/src/terminal/link_open.rs:325
+msgid "Open link?"
+msgstr "Відкрити посилання?"
+
+#: rustconn/src/terminal/mod.rs:694 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Ласкаво просимо"
 
@@ -14444,7 +14455,7 @@ msgstr "Не вдалося запустити ретранслятор SOCKS: {
 #: rustconn/src/window/edit_actions.rs:1843
 #: rustconn/src/window/edit_actions.rs:1952
 #: rustconn/src/window/protocols.rs:1463 rustconn/src/window/protocols.rs:1532
-#: rustconn/src/window/protocols.rs:2505
+#: rustconn/src/window/protocols.rs:2509
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Не вдалося відкрити SSH-тунель: {}"
 
@@ -15830,19 +15841,19 @@ msgstr "Проміжний гост недоступний, з'єднуванн�
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Жоден проміжний гост не відповів, спроба через «{}»"
 
-#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1659
+#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1660
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Переглядач VNC не знайдено. Встанови TigerVNC або Remmina."
 
-#: rustconn/src/window/protocols.rs:1936
+#: rustconn/src/window/protocols.rs:1940
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Переглядач SPICE не знайдено. Встанови virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2170 rustconn/src/window/protocols.rs:2935
+#: rustconn/src/window/protocols.rs:2174 rustconn/src/window/protocols.rs:2939
 msgid "Invalid variable: {}"
 msgstr "Хибна змінниця: {}"
 
-#: rustconn/src/window/protocols.rs:2430
+#: rustconn/src/window/protocols.rs:2434
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
@@ -15854,7 +15865,7 @@ msgstr ""
 "твоєї оболонки входу поза Flatpak (задай це в ~/.profile, а не лише в "
 "~/.bashrc)."
 
-#: rustconn/src/window/protocols.rs:2434
+#: rustconn/src/window/protocols.rs:2438
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
@@ -15862,28 +15873,28 @@ msgstr ""
 "evil-winrm не може працювати всередині Snap. З'єднуйся з Windows через SSH "
 "або користуйся Flatpak чи пакунком RustConn зі свого дистрибутива"
 
-#: rustconn/src/window/protocols.rs:2437
+#: rustconn/src/window/protocols.rs:2441
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm не встановлено. Встанови його командою: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2855
+#: rustconn/src/window/protocols.rs:2859
 msgid "Invalid config: {}"
 msgstr "Хибна конфігурація: {}"
 
-#: rustconn/src/window/protocols.rs:3041
+#: rustconn/src/window/protocols.rs:3045
 msgid "Install picocom for Serial connections"
 msgstr "Встанови picocom для Serial-з'єднків"
 
-#: rustconn/src/window/protocols.rs:3227
+#: rustconn/src/window/protocols.rs:3231
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Встанови kubectl для Kubernetes-з'єднків"
 
-#: rustconn/src/window/protocols.rs:3245
+#: rustconn/src/window/protocols.rs:3249
 msgid "Configure pod and container for Kubernetes"
 msgstr "Налаштуй pod і контейнер для Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3485
+#: rustconn/src/window/protocols.rs:3489
 msgid "Install mosh for MOSH connections"
 msgstr "Встанови mosh для MOSH-з'єднків"
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 11:20+0200\n"
+"POT-Creation-Date: 2026-11-26 21:58+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -53,6 +53,7 @@ msgstr "OK"
 #: rustconn/src/session_group_window.rs:429
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1488
+#: rustconn/src/terminal/link_open.rs:326
 #: rustconn/src/terminal/safe_paste.rs:166
 #: rustconn/src/terminal/split_close.rs:272
 #: rustconn/src/terminal/split_close.rs:320
@@ -467,7 +468,7 @@ msgid "Filter connections…"
 msgstr "Lọc kết nối…"
 
 #: rustconn/src/dialogs/cluster.rs:332 rustconn/src/sidebar_ui.rs:1336
-#: rustconn/src/terminal/config.rs:305
+#: rustconn/src/terminal/config.rs:310
 msgid "Select All"
 msgstr "Chọn tất cả"
 
@@ -626,8 +627,8 @@ msgid "Join Shared Session…"
 msgstr "Tham gia phiên được chia sẻ…"
 
 #: rustconn/src/dialogs/command_palette.rs:706
-#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:674
-#: rustconn/src/terminal/mod.rs:680
+#: rustconn/src/dialogs/shortcuts.rs:212 rustconn/src/terminal/mod.rs:675
+#: rustconn/src/terminal/mod.rs:681
 msgid "Tab Overview"
 msgstr "Tổng quan thẻ"
 
@@ -1690,8 +1691,8 @@ msgstr ""
 "3. CLI của nhà cung cấp sẽ xử lý việc xác thực"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1303
-#: rustconn/src/dialogs/connection/dialog/build.rs:1470
-#: rustconn/src/dialogs/connection/dialog/build.rs:1475
+#: rustconn/src/dialogs/connection/dialog/build.rs:1478
+#: rustconn/src/dialogs/connection/dialog/build.rs:1483
 msgid "Connection Test Failed"
 msgstr "Kiểm tra kết nối thất bại"
 
@@ -1700,7 +1701,7 @@ msgid "Fill in the required fields (name and host)"
 msgstr "Hãy điền các trường bắt buộc (tên và máy chủ)"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1346
-#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1529
 msgid "Testing…"
 msgstr "Đang kiểm tra…"
 
@@ -1718,6 +1719,11 @@ msgid "Connection successful. Latency: {} ms"
 msgstr "Kết nối thành công. Độ trễ: {} ms"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1468
+#: rustconn/src/dialogs/export.rs:771
+msgid "Skipped"
+msgstr "Đã bỏ qua"
+
+#: rustconn/src/dialogs/connection/dialog/build.rs:1476
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1725,52 +1731,52 @@ msgstr ""
 "Kiểm tra thất bại mà không có lỗi cụ thể. Hãy kiểm tra địa chỉ và cổng của "
 "máy chủ, rồi thử lại."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1476
+#: rustconn/src/dialogs/connection/dialog/build.rs:1484
 msgid "Test timed out"
 msgstr "Hết thời gian chờ kiểm tra"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1494
-#: rustconn/src/dialogs/connection/dialog/build.rs:1504
-#: rustconn/src/dialogs/connection/dialog/build.rs:1513
-#: rustconn/src/dialogs/connection/dialog/build.rs:1574
-#: rustconn/src/dialogs/connection/dialog/build.rs:1579
+#: rustconn/src/dialogs/connection/dialog/build.rs:1502
+#: rustconn/src/dialogs/connection/dialog/build.rs:1512
+#: rustconn/src/dialogs/connection/dialog/build.rs:1521
+#: rustconn/src/dialogs/connection/dialog/build.rs:1582
+#: rustconn/src/dialogs/connection/dialog/build.rs:1587
 msgid "Script Test Failed"
 msgstr "Kiểm tra tập lệnh thất bại"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1495
+#: rustconn/src/dialogs/connection/dialog/build.rs:1503
 msgid "Script command is empty"
 msgstr "Lệnh của tập lệnh đang trống"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1505
+#: rustconn/src/dialogs/connection/dialog/build.rs:1513
 msgid "Script command is empty after parsing"
 msgstr "Lệnh của tập lệnh trống sau khi phân tích"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1514
+#: rustconn/src/dialogs/connection/dialog/build.rs:1522
 msgid "Failed to parse command"
 msgstr "Không thể phân tích lệnh"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1544
+#: rustconn/src/dialogs/connection/dialog/build.rs:1552
 msgid "Test Script"
 msgstr "Kiểm tra tập lệnh"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1551
+#: rustconn/src/dialogs/connection/dialog/build.rs:1559
 msgid "(empty output)"
 msgstr "(đầu ra trống)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1557
+#: rustconn/src/dialogs/connection/dialog/build.rs:1565
 msgid "Script Test Successful"
 msgstr "Kiểm tra tập lệnh thành công"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1558
+#: rustconn/src/dialogs/connection/dialog/build.rs:1566
 #: rustconn/src/dialogs/export.rs:323
 msgid "Output"
 msgstr "Đầu ra"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1565
+#: rustconn/src/dialogs/connection/dialog/build.rs:1573
 msgid "Command failed"
 msgstr "Lệnh thất bại"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1580
+#: rustconn/src/dialogs/connection/dialog/build.rs:1588
 msgid "Script timed out after 30 seconds"
 msgstr "Tập lệnh hết thời gian chờ sau 30 giây"
 
@@ -5050,7 +5056,7 @@ msgstr "Cụm mật khẩu của tệp di động"
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:206 rustconn/src/dialogs/widgets.rs:1089
 #: rustconn/src/embedded_rdp/mod.rs:651 rustconn/src/embedded_vnc/ui.rs:51
-#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:302
+#: rustconn/src/sidebar_ui.rs:306 rustconn/src/terminal/config.rs:307
 msgid "Copy"
 msgstr "Sao chép"
 
@@ -5384,10 +5390,6 @@ msgstr "Tệp đầu ra:"
 #: rustconn/src/dialogs/export.rs:768
 msgid "Exported"
 msgstr "Đã xuất"
-
-#: rustconn/src/dialogs/export.rs:771
-msgid "Skipped"
-msgstr "Đã bỏ qua"
 
 #: rustconn/src/dialogs/export.rs:781 rustconn/src/dialogs/import/mod.rs:504
 msgid "Warnings ({}):"
@@ -8389,7 +8391,7 @@ msgstr "Đã cấu hình"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:917
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:921
-#: rustconn/src/embedded_vnc/ui.rs:350
+#: rustconn/src/embedded_vnc/ui.rs:351
 msgid "Not configured"
 msgstr "Chưa cấu hình"
 
@@ -9134,7 +9136,7 @@ msgid "Checking… touch your YubiKey when it blinks"
 msgstr "Đang kiểm tra… hãy chạm vào YubiKey khi nó nhấp nháy"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2909
-#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:370
+#: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:371
 #: rustconn/src/sidebar/view.rs:883
 msgid "Connected"
 msgstr "Đã kết nối"
@@ -10157,7 +10159,7 @@ msgid "Command Palette (Commands)"
 msgstr "Bảng lệnh (lệnh)"
 
 #: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/embedded_rdp/mod.rs:659
-#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:303
+#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:308
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "Dán"
@@ -11490,7 +11492,8 @@ msgstr "Xóa không gian làm việc đã chọn"
 msgid "Rename selected workspace"
 msgstr "Đổi tên không gian làm việc đã chọn"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:458
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/terminal/link_open.rs:327
+#: rustconn/src/window/mc_launch.rs:458
 msgid "Open"
 msgstr "Mở"
 
@@ -11526,8 +11529,8 @@ msgstr "Lưu các phiên hiện tại của bạn để tạo một hồ sơ"
 msgid "{} connections"
 msgstr "{} kết nối"
 
-#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:366
-#: rustconn/src/session/vnc.rs:175 rustconn/src/session/vnc.rs:243
+#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:367
+#: rustconn/src/session/vnc.rs:179 rustconn/src/session/vnc.rs:247
 msgid "Connecting…"
 msgstr "Đang kết nối…"
 
@@ -11691,17 +11694,17 @@ msgid "No text to type"
 msgstr "Không có văn bản để gõ"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:84
-#: rustconn/src/embedded_vnc/ui.rs:781
+#: rustconn/src/embedded_vnc/ui.rs:782
 msgid "Copied {} chars"
 msgstr "Đã sao chép {} ký tự"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:92
-#: rustconn/src/embedded_vnc/ui.rs:757
+#: rustconn/src/embedded_vnc/ui.rs:758
 msgid "No remote clipboard data"
 msgstr "Không có dữ liệu bộ nhớ tạm từ xa"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:202
-#: rustconn/src/embedded_vnc/ui.rs:839
+#: rustconn/src/embedded_vnc/ui.rs:840
 msgid "Pasted {} chars"
 msgstr "Đã dán {} ký tự"
 
@@ -12196,7 +12199,7 @@ msgid "Save files from remote clipboard"
 msgstr "Lưu tệp từ bộ nhớ tạm từ xa"
 
 #: rustconn/src/embedded_rdp/mod.rs:856 rustconn/src/embedded_vnc/ui.rs:162
-#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:428
+#: rustconn/src/split_view/adapter.rs:200 rustconn/src/terminal/config.rs:433
 #: rustconn/src/terminal/session_lifecycle.rs:816
 #: rustconn/src/terminal/spawn.rs:190 rustconn/src/terminal/tab_menu.rs:1334
 msgid "Reconnect"
@@ -12263,7 +12266,7 @@ msgid "Connection may have been lost while the computer slept"
 msgstr "Kết nối có thể đã bị mất trong lúc máy tính ngủ"
 
 #: rustconn/src/embedded_rdp/polling_handlers.rs:172
-#: rustconn/src/embedded_vnc/mod.rs:701 rustconn/src/embedded_vnc/ui.rs:56
+#: rustconn/src/embedded_vnc/mod.rs:720 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr "Sao chép bộ nhớ tạm từ xa về máy cục bộ"
 
@@ -12322,7 +12325,7 @@ msgstr "Đang khởi chạy RDP…"
 msgid "RDP session running in external window"
 msgstr "Phiên RDP đang chạy trong cửa sổ bên ngoài"
 
-#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
+#: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:346
 #: rustconn/src/sidebar/view.rs:894 rustconn/src/window/remote_script.rs:209
 #: rustconn/src/window/session_start.rs:546
 #: rustconn/src/window/session_start.rs:674
@@ -12343,29 +12346,29 @@ msgstr "Thêm hành động"
 msgid "Show session toolbar"
 msgstr "Hiện thanh công cụ phiên"
 
-#: rustconn/src/embedded_vnc/mod.rs:589
+#: rustconn/src/embedded_vnc/mod.rs:593
 msgid ""
 "VNC encryption not supported. Install TigerVNC and enable 'Accept "
 "Certificate'."
 msgstr ""
 "Không hỗ trợ mã hóa VNC. Hãy cài đặt TigerVNC và bật “Chấp nhận chứng chỉ”."
 
-#: rustconn/src/embedded_vnc/mod.rs:664
+#: rustconn/src/embedded_vnc/mod.rs:683
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Đang dùng trình xem bên ngoài (mã hóa không được hỗ trợ)"
 
-#: rustconn/src/embedded_vnc/ui.rs:365 rustconn/src/embedded_web/mod.rs:373
-#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:99
-#: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
+#: rustconn/src/embedded_vnc/ui.rs:366 rustconn/src/embedded_web/mod.rs:373
+#: rustconn/src/embedded_web/mod.rs:596 rustconn/src/session/vnc.rs:102
+#: rustconn/src/session/vnc.rs:178 rustconn/src/session/vnc.rs:441
 msgid "Disconnected"
 msgstr "Đã ngắt kết nối"
 
-#: rustconn/src/embedded_vnc/ui.rs:368 rustconn/src/session/vnc.rs:330
+#: rustconn/src/embedded_vnc/ui.rs:369 rustconn/src/session/vnc.rs:334
 msgid "Session running in external window"
 msgstr "Phiên đang chạy trong cửa sổ bên ngoài"
 
-#: rustconn/src/embedded_vnc/ui.rs:371 rustconn/src/session/vnc.rs:177
-#: rustconn/src/session/vnc.rs:202
+#: rustconn/src/embedded_vnc/ui.rs:372 rustconn/src/session/vnc.rs:181
+#: rustconn/src/session/vnc.rs:206
 msgid "Connection error"
 msgstr "Lỗi kết nối"
 
@@ -13024,7 +13027,7 @@ msgstr "Mở phiên mới"
 msgid "Move to New Window"
 msgstr "Chuyển sang cửa sổ mới"
 
-#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:474
+#: rustconn/src/sidebar_ui.rs:603 rustconn/src/terminal/config.rs:479
 msgid "Execute Snippet…"
 msgstr "Thực thi đoạn lệnh…"
 
@@ -13353,11 +13356,19 @@ msgstr "Tất cả các thẻ đã được hiển thị trong chế độ chia 
 msgid "Select a tab to display"
 msgstr "Chọn một thẻ để hiển thị"
 
-#: rustconn/src/terminal/config.rs:309
+#: rustconn/src/terminal/config.rs:314
 msgid "Save Selection as Snippet…"
 msgstr "Lưu vùng chọn thành đoạn lệnh…"
 
-#: rustconn/src/terminal/mod.rs:693 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/link_open.rs:309
+msgid "Link not opened: only plain http and https links can be opened"
+msgstr "Không mở liên kết: chỉ có thể mở các liên kết http và https thông thường"
+
+#: rustconn/src/terminal/link_open.rs:325
+msgid "Open link?"
+msgstr "Mở liên kết?"
+
+#: rustconn/src/terminal/mod.rs:694 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Chào mừng"
 
@@ -14388,7 +14399,7 @@ msgstr "Không thể khởi động bộ chuyển tiếp SOCKS: {}"
 #: rustconn/src/window/edit_actions.rs:1843
 #: rustconn/src/window/edit_actions.rs:1952
 #: rustconn/src/window/protocols.rs:1463 rustconn/src/window/protocols.rs:1532
-#: rustconn/src/window/protocols.rs:2505
+#: rustconn/src/window/protocols.rs:2509
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Không thể mở đường hầm SSH: {}"
 
@@ -15768,19 +15779,19 @@ msgstr "Không truy cập được máy chủ trung gian, đang kết nối qua 
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Không có máy chủ trung gian nào phản hồi, đang thử ‘{}’"
 
-#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1659
+#: rustconn/src/window/protocols.rs:1589 rustconn/src/window/rdp_vnc.rs:1660
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Không tìm thấy trình xem VNC. Hãy cài đặt TigerVNC hoặc Remmina."
 
-#: rustconn/src/window/protocols.rs:1936
+#: rustconn/src/window/protocols.rs:1940
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Không tìm thấy trình xem SPICE. Hãy cài đặt virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2170 rustconn/src/window/protocols.rs:2935
+#: rustconn/src/window/protocols.rs:2174 rustconn/src/window/protocols.rs:2939
 msgid "Invalid variable: {}"
 msgstr "Biến không hợp lệ: {}"
 
-#: rustconn/src/window/protocols.rs:2430
+#: rustconn/src/window/protocols.rs:2434
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
@@ -15792,7 +15803,7 @@ msgstr ""
 "của shell đăng nhập của bạn bên ngoài Flatpak (đặt trong ~/.profile, không "
 "chỉ trong ~/.bashrc)."
 
-#: rustconn/src/window/protocols.rs:2434
+#: rustconn/src/window/protocols.rs:2438
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
@@ -15800,28 +15811,28 @@ msgstr ""
 "evil-winrm không thể chạy bên trong Snap. Hãy kết nối tới Windows qua SSH, "
 "hoặc dùng bản Flatpak hay gói RustConn của bản phân phối"
 
-#: rustconn/src/window/protocols.rs:2437
+#: rustconn/src/window/protocols.rs:2441
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm chưa được cài đặt. Hãy cài đặt bằng lệnh: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2855
+#: rustconn/src/window/protocols.rs:2859
 msgid "Invalid config: {}"
 msgstr "Cấu hình không hợp lệ: {}"
 
-#: rustconn/src/window/protocols.rs:3041
+#: rustconn/src/window/protocols.rs:3045
 msgid "Install picocom for Serial connections"
 msgstr "Hãy cài đặt picocom cho kết nối Serial"
 
-#: rustconn/src/window/protocols.rs:3227
+#: rustconn/src/window/protocols.rs:3231
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Hãy cài đặt kubectl cho kết nối Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3245
+#: rustconn/src/window/protocols.rs:3249
 msgid "Configure pod and container for Kubernetes"
 msgstr "Hãy cấu hình pod và container cho Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3485
+#: rustconn/src/window/protocols.rs:3489
 msgid "Install mosh for MOSH connections"
 msgstr "Hãy cài đặt mosh cho kết nối MOSH"
 
