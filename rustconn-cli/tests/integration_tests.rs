@@ -1528,3 +1528,166 @@ fn test_import_mremoteng_xml() {
         stdout_str(&output)
     );
 }
+
+// ============================================================================
+// Kubernetes flags, complete `show`, switches that turn off (0.26.5)
+// ============================================================================
+
+/// Loads the saved connection called `name` from a CLI config dir.
+fn load_connection(config_dir: &std::path::Path, name: &str) -> rustconn_core::models::Connection {
+    let manager = rustconn_core::config::ConfigManager::with_config_dir(config_dir.to_path_buf());
+    manager
+        .load_connections()
+        .expect("load connections")
+        .into_iter()
+        .find(|c| c.name == name)
+        .unwrap_or_else(|| panic!("connection {name} was saved"))
+}
+
+fn load_k8s(config_dir: &std::path::Path, name: &str) -> rustconn_core::models::KubernetesConfig {
+    match load_connection(config_dir, name).protocol_config {
+        rustconn_core::models::ProtocolConfig::Kubernetes(cfg) => cfg,
+        other => panic!("expected a Kubernetes connection, got {other:?}"),
+    }
+}
+
+fn show_json(config_dir: &std::path::Path, name: &str) -> serde_json::Value {
+    let out = run_cli(&["show", name, "--format", "json"], Some(config_dir));
+    assert!(out.status.success(), "{}", stderr_str(&out));
+    serde_json::from_str(&stdout_str(&out)).expect("show prints JSON")
+}
+
+#[test]
+fn kubernetes_flags_round_trip_through_add_update_and_show() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+
+    // -H names the pod of a Kubernetes connection instead of being dropped.
+    let add = run_cli(
+        &[
+            "add",
+            "-n",
+            "k3s pod",
+            "-H",
+            "rc-demo",
+            "-P",
+            "k8s",
+            "--kubeconfig",
+            "/etc/kube/test.yaml",
+            "--context",
+            "k3s",
+            "--namespace",
+            "demo",
+            "--container",
+            "app",
+            "--shell",
+            "/bin/bash",
+            "--k8s-custom-arg",
+            "--request-timeout=30s",
+        ],
+        Some(dir),
+    );
+    assert!(add.status.success(), "{}", stderr_str(&add));
+    let cfg = load_k8s(dir, "k3s pod");
+    assert_eq!(cfg.pod.as_deref(), Some("rc-demo"));
+    assert_eq!(
+        cfg.kubeconfig.as_deref(),
+        Some(std::path::Path::new("/etc/kube/test.yaml"))
+    );
+    assert_eq!(cfg.context.as_deref(), Some("k3s"));
+    assert_eq!(cfg.namespace.as_deref(), Some("demo"));
+    assert_eq!(cfg.container.as_deref(), Some("app"));
+    assert_eq!(cfg.shell, "/bin/bash");
+    assert!(!cfg.use_busybox);
+    assert_eq!(cfg.custom_args, ["--request-timeout=30s"]);
+
+    let value = show_json(dir, "k3s pod");
+    let settings = &value["protocol_config"];
+    assert_eq!(settings["type"], "Kubernetes");
+    assert_eq!(settings["pod"], "rc-demo");
+    assert_eq!(settings["namespace"], "demo");
+    assert_eq!(settings["shell"], "/bin/bash");
+    assert_eq!(settings["use_busybox"], false);
+
+    // Busybox mode excludes a pod or container in the same call.
+    let both = run_cli(
+        &["update", "k3s pod", "--busybox", "--pod", "other"],
+        Some(dir),
+    );
+    assert!(!both.status.success());
+    assert!(
+        stderr_str(&both).contains("--busybox"),
+        "{}",
+        stderr_str(&both)
+    );
+
+    let busybox = run_cli(
+        &[
+            "update",
+            "k3s pod",
+            "--busybox",
+            "--busybox-image",
+            "alpine:3",
+        ],
+        Some(dir),
+    );
+    assert!(busybox.status.success(), "{}", stderr_str(&busybox));
+    let cfg = load_k8s(dir, "k3s pod");
+    assert!(cfg.use_busybox);
+    assert_eq!(cfg.busybox_image, "alpine:3");
+    // As in the GUI editor, the stored pod survives the mode switch.
+    assert_eq!(cfg.pod.as_deref(), Some("rc-demo"));
+
+    let exec = run_cli(
+        &[
+            "update",
+            "k3s pod",
+            "--busybox",
+            "false",
+            "-H",
+            "web-0",
+            "--container",
+            "",
+        ],
+        Some(dir),
+    );
+    assert!(exec.status.success(), "{}", stderr_str(&exec));
+    let cfg = load_k8s(dir, "k3s pod");
+    assert!(!cfg.use_busybox);
+    assert_eq!(cfg.pod.as_deref(), Some("web-0"));
+    assert_eq!(cfg.container, None);
+    assert_eq!(load_connection(dir, "k3s pod").host, "");
+}
+
+#[test]
+fn kubernetes_add_refuses_what_the_editor_refuses() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+
+    let refused: [&[&str]; 4] = [
+        // No pod and no busybox mode.
+        &["add", "-n", "a", "-P", "k8s", "--namespace", "demo"],
+        // Busybox with a pod named through -H.
+        &["add", "-n", "b", "-P", "k8s", "-H", "web-0", "--busybox"],
+        // -H and --pod naming different pods.
+        &[
+            "add", "-n", "c", "-P", "k8s", "-H", "web-0", "--pod", "web-1",
+        ],
+        // A Kubernetes flag on another protocol.
+        &["add", "-n", "d", "-H", "example.com", "--namespace", "demo"],
+    ];
+    for args in refused {
+        let out = run_cli(args, Some(dir));
+        assert!(!out.status.success(), "{args:?} should fail");
+    }
+    assert!(saved_connection_names(dir).is_empty());
+
+    let busybox = run_cli(
+        &["add", "-n", "k3s busybox pod", "-P", "k8s", "--busybox"],
+        Some(dir),
+    );
+    assert!(busybox.status.success(), "{}", stderr_str(&busybox));
+    let cfg = load_k8s(dir, "k3s busybox pod");
+    assert!(cfg.use_busybox);
+    assert_eq!(cfg.pod, None);
+}
