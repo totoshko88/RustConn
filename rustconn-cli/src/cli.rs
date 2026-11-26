@@ -1466,7 +1466,7 @@ pub enum Commands {
         /// Connection name or UUID to duplicate
         name: String,
 
-        /// New name for the duplicated connection (default: '<NAME> (copy)')
+        /// New name for the duplicated connection (default: "connection_name (copy)")
         #[arg(short, long, visible_alias = "name", conflicts_with = "range")]
         new_name: Option<String>,
 
