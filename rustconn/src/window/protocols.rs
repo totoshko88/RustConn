@@ -1591,11 +1591,15 @@ fn launch_vnc_connection(
             sidebar.update_connection_status(&connection_id.to_string(), "failed");
             return None;
         };
+        let password = cached_connection_password(state, connection_id);
+        let password_file =
+            rustconn_core::protocol::VncPasswordFile::for_viewer(&viewer, password.as_ref());
         let (program, args) = rustconn_core::protocol::VncProtocol::build_external_viewer_command(
             &viewer,
             host,
             port,
             &vnc_config,
+            password_file.as_ref().map(|f| f.path()),
         );
         spawn_and_register_external_viewer(
             state,

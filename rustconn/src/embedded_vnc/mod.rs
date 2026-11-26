@@ -116,6 +116,9 @@ pub struct EmbeddedVncWidget {
     config: Rc<RefCell<Option<VncConfig>>>,
     /// VNC viewer child process (for external mode)
     process: Rc<RefCell<Option<Child>>>,
+    /// The external viewer's `vncpasswd` file, kept as long as `process` and
+    /// removed with it on disconnect
+    password_file: Rc<RefCell<Option<rustconn_core::protocol::VncPasswordFile>>>,
     /// Whether using embedded mode or external mode
     is_embedded: Rc<RefCell<bool>>,
     /// Current widget width
@@ -461,6 +464,7 @@ impl EmbeddedVncWidget {
         // Capture config and process for auto-fallback to external viewer
         let fallback_config = self.config.clone();
         let fallback_process = self.process.clone();
+        let fallback_password_file = self.password_file.clone();
 
         // Set up a GLib timeout to poll for VNC events (~60 FPS)
         glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
@@ -605,9 +609,14 @@ impl EmbeddedVncWidget {
                                     } else {
                                         format!("{}::{}", cfg.host, cfg.port)
                                     };
-                                    Some((viewer, server, cfg.accept_certificate))
+                                    let password_file =
+                                        rustconn_core::protocol::VncPasswordFile::for_viewer(
+                                            &viewer,
+                                            cfg.password.as_ref(),
+                                        );
+                                    Some((viewer, server, cfg.accept_certificate, password_file))
                                 })
-                                .and_then(|(viewer, server, accept_cert)| {
+                                .and_then(|(viewer, server, accept_cert, password_file)| {
                                     // Assemble the argument vector first so it
                                     // can be logged: this fallback is entered
                                     // only after an unsupported-encryption
@@ -616,7 +625,8 @@ impl EmbeddedVncWidget {
                                     // exactly the kind of viewer-specific flag
                                     // an older viewer may reject, so it must be
                                     // visible in the log (issue #339). The
-                                    // password is never on argv.
+                                    // password is never on argv, only the
+                                    // path of its `vncpasswd` file.
                                     let mut args: Vec<String> = Vec::new();
                                     if accept_cert
                                         && (viewer == "vncviewer" || viewer == "xvnc4viewer")
@@ -626,6 +636,14 @@ impl EmbeddedVncWidget {
                                             "VeNCrypt,TLSVnc,X509Vnc,VncAuth,None".to_string(),
                                         );
                                     }
+                                    args.extend(
+                                        rustconn_core::protocol::VncProtocol::password_file_args(
+                                            &viewer,
+                                            password_file
+                                                .as_ref()
+                                                .map(rustconn_core::protocol::VncPasswordFile::path),
+                                        ),
+                                    );
                                     args.push(server.clone());
                                     tracing::debug!(
                                         protocol = "vnc",
@@ -643,6 +661,7 @@ impl EmbeddedVncWidget {
                                                 "[EmbeddedVNC] Fallback to external viewer"
                                             );
                                             *fallback_process.borrow_mut() = Some(child);
+                                            *fallback_password_file.borrow_mut() = password_file;
                                             Some(())
                                         }
                                         Err(e) => {
@@ -803,10 +822,15 @@ impl EmbeddedVncWidget {
         // an older viewer does not know, e.g. `-SecurityTypes`) would then die
         // with nothing in the log to explain it — the same undiagnosable
         // failure fixed for external RDP in issue #339. The password is never
-        // placed on the command line.
+        // placed on the command line, only the path of its `vncpasswd` file.
+        let password_file =
+            rustconn_core::protocol::VncPasswordFile::for_viewer(&binary, config.password.as_ref());
         let mut args: Vec<String> = Vec::new();
         match binary.as_str() {
-            "vncviewer" | "xvnc4viewer" => {
+            // Same viewer set as `VncProtocol::build_external_viewer_command`
+            // and `viewer_reads_password_file`: a `tigervnc` binary outside
+            // this arm would get a password file but no `-passwd`.
+            "vncviewer" | "tigervnc" | "xvnc4viewer" => {
                 // TigerVNC/TightVNC/RealVNC style arguments.
                 if let Some(ref encoding) = config.encoding {
                     args.push("-PreferredEncoding".to_string());
@@ -828,6 +852,12 @@ impl EmbeddedVncWidget {
                     args.push("-SecurityTypes".to_string());
                     args.push("VeNCrypt,TLSVnc,X509Vnc,VncAuth,None".to_string());
                 }
+                args.extend(rustconn_core::protocol::VncProtocol::password_file_args(
+                    &binary,
+                    password_file
+                        .as_ref()
+                        .map(rustconn_core::protocol::VncPasswordFile::path),
+                ));
                 args.push(server);
             }
             "gvncviewer" => {
@@ -868,6 +898,7 @@ impl EmbeddedVncWidget {
         match cmd.spawn() {
             Ok(child) => {
                 *self.process.borrow_mut() = Some(child);
+                *self.password_file.borrow_mut() = password_file;
                 *self.is_embedded.borrow_mut() = false;
                 self.set_state(VncConnectionState::Connected);
                 Ok(())
@@ -898,6 +929,8 @@ impl EmbeddedVncWidget {
             let _ = child.kill();
             let _ = child.wait();
         }
+        // The viewer is gone, so its password file goes too.
+        self.password_file.borrow_mut().take();
 
         // Hide toolbar
         self.toolbar_auto_hide.hide();
@@ -915,6 +948,8 @@ impl EmbeddedVncWidget {
             let _ = child.kill();
             let _ = child.wait();
         }
+        // The viewer is gone, so its password file goes too.
+        self.password_file.borrow_mut().take();
 
         // Hide toolbar
         self.toolbar_auto_hide.hide();

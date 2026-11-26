@@ -1647,7 +1647,8 @@ fn start_vnc_session_internal(
     // Issue #209: an external-viewer VNC session gets no notebook tab. Spawn the
     // viewer and register it (through the same shared predicate + core builder as
     // the protocols.rs path) so the sidebar surfaces it without a dead tab
-    // (R1.1, R1.3). The password is handled by the viewer, never on the argv.
+    // (R1.1, R1.3). The password never goes on the argv: a viewer that reads a
+    // `vncpasswd` file gets one (`-passwd`), any other prompts.
     if let Some(ref conn_hist) = conn_for_history
         && conn_hist.uses_external_viewer()
     {
@@ -1661,11 +1662,18 @@ fn start_vnc_session_internal(
             sidebar.update_connection_status(&connection_id.to_string(), "failed");
             return;
         };
+        let secret = secrecy::SecretString::from(password.to_owned());
+        let password_file =
+            rustconn_core::protocol::VncPasswordFile::for_viewer(&viewer, Some(&secret));
+        drop(secret);
         let (program, args) = rustconn_core::protocol::VncProtocol::build_external_viewer_command(
             &viewer,
             &effective_host,
             effective_port,
             &vnc_config,
+            password_file
+                .as_ref()
+                .map(rustconn_core::protocol::VncPasswordFile::path),
         );
         super::protocols::spawn_and_register_external_viewer(
             state,

@@ -191,6 +191,7 @@ impl EmbeddedVncWidget {
             state,
             config: Rc::new(RefCell::new(None)),
             process: Rc::new(RefCell::new(None)),
+            password_file: Rc::new(RefCell::new(None)),
             is_embedded: Rc::new(RefCell::new(false)),
             width,
             height,

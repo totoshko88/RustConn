@@ -5059,6 +5059,7 @@ dependencies = [
  "criterion",
  "csv",
  "data-encoding",
+ "des",
  "dirs 7.0.0",
  "flate2",
  "futures",

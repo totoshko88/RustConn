@@ -1,8 +1,157 @@
 //! VNC protocol handler
 
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::os::unix::fs::OpenOptionsExt;
+use std::path::{Path, PathBuf};
+
+use secrecy::{ExposeSecret, SecretString};
+use zeroize::Zeroizing;
+
 use super::{Protocol, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, VncConfig};
+
+/// The fixed DES key VNC uses to obfuscate a stored password, in standard
+/// (most significant bit first) bit order.
+///
+/// `vncpasswd` and the viewers' `d3des.c` list it as `{23, 82, 107, 6, 35, 78,
+/// 88, 7}`; `d3des` reads key bits least significant first, so each of those
+/// bytes appears here bit-reversed. This is obfuscation, not encryption: anyone
+/// with the file can recover the password, which is why the file is 0600 in a
+/// user-private directory and lives only as long as the viewer.
+const VNC_PASSWD_KEY: [u8; 8] = [0xe8, 0x4a, 0xd6, 0x60, 0xc4, 0x72, 0x1a, 0xe0];
+
+/// Encodes `password` in the `vncpasswd` file format.
+///
+/// VNC authentication uses at most eight bytes of password, so the password is
+/// truncated or NUL-padded to one block and DES-encrypted under
+/// [`VNC_PASSWD_KEY`]. The result is the whole file.
+#[must_use]
+pub fn encode_vnc_password_file(password: &SecretString) -> Zeroizing<[u8; 8]> {
+    use des::Des;
+    use des::cipher::{BlockCipherEncrypt, KeyInit};
+
+    let mut block = Zeroizing::new([0u8; 8]);
+    let bytes = password.expose_secret().as_bytes();
+    let len = bytes.len().min(block.len());
+    block[..len].copy_from_slice(&bytes[..len]);
+
+    let cipher = Des::new(&VNC_PASSWD_KEY.into());
+    cipher.encrypt_block((&mut *block).into());
+    block
+}
+
+/// Returns whether `viewer` reads a `vncpasswd` file passed with `-passwd`.
+///
+/// TigerVNC, TightVNC and RealVNC 4 (`vncviewer`, `tigervnc`, `xvnc4viewer`)
+/// do. `gvncviewer`, Remmina, Vinagre and KRDC have no option that takes a
+/// password or a password file — Remmina's own `.remmina` files store it
+/// encrypted under a per-install key — so they keep prompting.
+#[must_use]
+pub fn viewer_reads_password_file(viewer: &str) -> bool {
+    matches!(viewer, "vncviewer" | "tigervnc" | "xvnc4viewer")
+}
+
+/// A mode-0600 `vncpasswd` file for one external viewer, removed on drop.
+///
+/// The viewer opens the file when the server asks for VNC authentication —
+/// after the TCP and any TLS handshake, and again when TigerVNC's own
+/// "Reconnect" runs — not at start, so the guard has to outlive the spawn. The
+/// launch site keeps it until the viewer process has exited and then drops it,
+/// which removes the file. A file left behind by a crash lives in
+/// `$XDG_RUNTIME_DIR` (tmpfs, user-private) and disappears at logout.
+pub struct VncPasswordFile {
+    path: PathBuf,
+}
+
+impl VncPasswordFile {
+    /// Prepares the password channel for `viewer`, if it has one.
+    ///
+    /// Returns `None`, and the viewer prompts as before, when there is no
+    /// password, the viewer reads no password file (see
+    /// [`viewer_reads_password_file`]), no user-private directory is available
+    /// ([`crate::secret_file_dir`]) or the file cannot be written.
+    #[must_use]
+    pub fn for_viewer(viewer: &str, password: Option<&SecretString>) -> Option<Self> {
+        let password = password.filter(|p| !p.expose_secret().is_empty())?;
+        if !viewer_reads_password_file(viewer) {
+            tracing::debug!(
+                protocol = "vnc",
+                viewer,
+                "External VNC viewer takes no password file; it will prompt for the password"
+            );
+            return None;
+        }
+        let Some(dir) = crate::secret_file_dir() else {
+            tracing::warn!(
+                protocol = "vnc",
+                "No user-private runtime directory; the VNC viewer will prompt for the password"
+            );
+            return None;
+        };
+        Self::write_in_dir(&dir, password)
+    }
+
+    /// Returns the path to pass to the viewer's `-passwd` option.
+    #[must_use]
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    fn write_in_dir(dir: &Path, password: &SecretString) -> Option<Self> {
+        let path = dir.join(format!("rustconn-vnc-{}.passwd", uuid::Uuid::new_v4()));
+        let mut file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .open(&path)
+            .map_err(|error| {
+                tracing::warn!(
+                    path = %path.display(),
+                    %error,
+                    "Failed to create VNC password file; the viewer will prompt"
+                );
+            })
+            .ok()?;
+
+        // From here on the guard owns the file, so a failed write removes it.
+        let guard = Self { path };
+        if let Err(error) = file.write_all(encode_vnc_password_file(password).as_slice()) {
+            tracing::warn!(
+                path = %guard.path.display(),
+                %error,
+                "Failed to write VNC password file; the viewer will prompt"
+            );
+            return None;
+        }
+        Some(guard)
+    }
+}
+
+impl Drop for VncPasswordFile {
+    fn drop(&mut self) {
+        if let Err(error) = std::fs::remove_file(&self.path)
+            && error.kind() != std::io::ErrorKind::NotFound
+        {
+            tracing::warn!(
+                path = %self.path.display(),
+                %error,
+                "Failed to remove VNC password file; it is removed at logout"
+            );
+        }
+    }
+}
+
+impl std::fmt::Debug for VncPasswordFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Hand-written so the file's contents can never be pulled in by a
+        // future field; the path is safe to show.
+        f.debug_struct("VncPasswordFile")
+            .field("path", &self.path)
+            .finish()
+    }
+}
 
 /// VNC protocol handler
 ///
@@ -143,7 +292,9 @@ impl VncProtocol {
     /// fallback, so a `std::process::Command` can be built without a GTK widget.
     /// Viewer *detection* (PATH/filesystem lookup) stays in the caller; this
     /// function assembles arguments only. Passwords are intentionally never
-    /// placed on the command line.
+    /// placed on the command line: `password_file` is the path of a
+    /// [`VncPasswordFile`], passed as `-passwd <path>` to a viewer that reads
+    /// one and ignored for any other.
     ///
     /// `custom_args` containing NUL or newline bytes are skipped.
     #[must_use]
@@ -152,6 +303,7 @@ impl VncProtocol {
         host: &str,
         port: u16,
         config: &VncConfig,
+        password_file: Option<&Path>,
     ) -> (String, Vec<String>) {
         let server = Self::external_server_address(viewer, host, port);
         let mut args: Vec<String> = Vec::new();
@@ -183,6 +335,7 @@ impl VncProtocol {
                     args.push("-SecurityTypes".to_string());
                     args.push("VeNCrypt,TLSVnc,X509Vnc,VncAuth,None".to_string());
                 }
+                args.extend(Self::password_file_args(viewer, password_file));
                 args.push(server);
             }
             "gvncviewer" => {
@@ -209,6 +362,21 @@ impl VncProtocol {
         args.extend(Self::filter_custom_args(&config.custom_args));
 
         (viewer.to_string(), args)
+    }
+
+    /// Returns `-passwd <path>` for a viewer that reads a `vncpasswd` file
+    /// (see [`viewer_reads_password_file`]), and nothing otherwise.
+    ///
+    /// Shared with the GUI's own argument builders so every external launch
+    /// spells the option the same way. Place it before the server argument.
+    #[must_use]
+    pub fn password_file_args(viewer: &str, password_file: Option<&Path>) -> Vec<String> {
+        match password_file {
+            Some(path) if viewer_reads_password_file(viewer) => {
+                vec!["-passwd".to_string(), path.to_string_lossy().into_owned()]
+            }
+            _ => Vec::new(),
+        }
     }
 }
 
@@ -450,7 +618,7 @@ mod tests {
             ..Default::default()
         };
         let (program, args) =
-            VncProtocol::build_external_viewer_command("vncviewer", "host", 5901, &config);
+            VncProtocol::build_external_viewer_command("vncviewer", "host", 5901, &config, None);
 
         assert_eq!(program, "vncviewer");
         assert!(args.contains(&"-PreferredEncoding".to_string()));
@@ -472,7 +640,7 @@ mod tests {
             ..Default::default()
         };
         let (_program, args) =
-            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
+            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config, None);
         assert!(!args.contains(&"-PreferredEncoding".to_string()));
     }
 
@@ -480,7 +648,7 @@ mod tests {
     fn test_build_external_viewer_command_remmina_uri() {
         let config = VncConfig::default();
         let (program, args) =
-            VncProtocol::build_external_viewer_command("remmina", "host", 5901, &config);
+            VncProtocol::build_external_viewer_command("remmina", "host", 5901, &config, None);
         assert_eq!(program, "remmina");
         assert_eq!(args, vec!["-c".to_string(), "vnc://host:5901".to_string()]);
     }
@@ -490,7 +658,7 @@ mod tests {
         let config = VncConfig::default();
         for viewer in ["vinagre", "krdc"] {
             let (program, args) =
-                VncProtocol::build_external_viewer_command(viewer, "host", 5902, &config);
+                VncProtocol::build_external_viewer_command(viewer, "host", 5902, &config, None);
             assert_eq!(program, viewer);
             assert_eq!(args, vec!["vnc://host:5902".to_string()]);
         }
@@ -503,7 +671,7 @@ mod tests {
             ..Default::default()
         };
         let (_program, args) =
-            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
+            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config, None);
         assert!(args.contains(&"-Fullscreen".to_string()));
         assert!(!args.iter().any(|a| a.contains('\n')));
     }
@@ -526,7 +694,7 @@ mod tests {
             ..Default::default()
         };
         let (_program, args) =
-            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
+            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config, None);
         assert!(args.contains(&"-Fullscreen".to_string()), "benign arg kept");
         for blocked in ["-via", "-passwordfile", "-Listen"] {
             assert!(
@@ -613,7 +781,7 @@ mod tests {
         };
 
         let (_program, external) =
-            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
+            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config, None);
         let mut connection = Connection::new(
             "vnc".to_string(),
             "host".to_string(),
@@ -631,5 +799,108 @@ mod tests {
         };
         assert_eq!(survived(&external), survived(&fallback));
         assert_eq!(survived(&external), vec!["-Fullscreen".to_string()]);
+    }
+
+    /// `vncpasswd -f` output for "password" — the vector RealVNC/TigerVNC
+    /// tooling documents, and what `openssl enc -des-ecb -K e84ad660c4721ae0`
+    /// produces for the same block.
+    #[test]
+    fn password_file_matches_the_vncpasswd_test_vector() {
+        let encoded = encode_vnc_password_file(&SecretString::from("password".to_string()));
+        assert_eq!(*encoded, [0xdb, 0xd8, 0x3c, 0xfd, 0x72, 0x7a, 0x14, 0x58]);
+    }
+
+    /// A short password is NUL-padded and a long one cut at eight bytes, as
+    /// VNC authentication itself does.
+    #[test]
+    fn password_file_pads_and_truncates_to_one_block() {
+        let short = encode_vnc_password_file(&SecretString::from("secret".to_string()));
+        assert_eq!(*short, [0x2e, 0x2d, 0xbf, 0x57, 0x6e, 0xb0, 0x6c, 0x9e]);
+
+        let long = encode_vnc_password_file(&SecretString::from("password-and-more".to_string()));
+        assert_eq!(*long, [0xdb, 0xd8, 0x3c, 0xfd, 0x72, 0x7a, 0x14, 0x58]);
+    }
+
+    #[test]
+    fn tigervnc_argv_carries_the_password_file_and_never_the_password() {
+        let password = "hunter2-secret";
+        let path = Path::new("/run/user/1000/rustconn-vnc-x.passwd");
+        let config = VncConfig::default();
+        for viewer in ["vncviewer", "tigervnc", "xvnc4viewer"] {
+            let (_program, args) = VncProtocol::build_external_viewer_command(
+                viewer,
+                "host",
+                5901,
+                &config,
+                Some(path),
+            );
+            let at = args
+                .iter()
+                .position(|a| a == "-passwd")
+                .expect("-passwd on the argv");
+            assert_eq!(args[at + 1], path.to_string_lossy());
+            assert_eq!(
+                args.last().map(String::as_str),
+                Some("host:1"),
+                "the server stays the last argument"
+            );
+            assert!(!args.iter().any(|a| a.contains(password)));
+        }
+    }
+
+    #[test]
+    fn viewers_without_a_password_file_option_get_none() {
+        let path = Path::new("/run/user/1000/rustconn-vnc-x.passwd");
+        let config = VncConfig::default();
+        for viewer in ["gvncviewer", "remmina", "vinagre", "krdc", "/opt/other"] {
+            let (_program, args) = VncProtocol::build_external_viewer_command(
+                viewer,
+                "host",
+                5901,
+                &config,
+                Some(path),
+            );
+            assert!(
+                !args
+                    .iter()
+                    .any(|a| a == "-passwd" || a.contains("rustconn-vnc")),
+                "{viewer} must not be handed -passwd"
+            );
+        }
+    }
+
+    #[test]
+    fn password_file_is_0600_holds_the_encoding_and_is_removed_on_drop() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = std::env::temp_dir().join(format!("rustconn-test-vnc-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).expect("create test dir");
+        let password = SecretString::from("password".to_string());
+
+        let file = VncPasswordFile::write_in_dir(&dir, &password).expect("write password file");
+        let path = file.path().to_path_buf();
+        let mode = std::fs::metadata(&path)
+            .expect("metadata")
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o600);
+        assert_eq!(
+            std::fs::read(&path).expect("read password file"),
+            encode_vnc_password_file(&password).to_vec()
+        );
+
+        drop(file);
+        assert!(!path.exists(), "dropping the guard removes the file");
+        std::fs::remove_dir_all(&dir).expect("test cleanup");
+    }
+
+    #[test]
+    fn no_password_or_no_channel_writes_no_file() {
+        let empty = SecretString::from(String::new());
+        assert!(VncPasswordFile::for_viewer("vncviewer", None).is_none());
+        assert!(VncPasswordFile::for_viewer("vncviewer", Some(&empty)).is_none());
+        let password = SecretString::from("password".to_string());
+        assert!(VncPasswordFile::for_viewer("remmina", Some(&password)).is_none());
+        assert!(VncPasswordFile::for_viewer("gvncviewer", Some(&password)).is_none());
     }
 }
