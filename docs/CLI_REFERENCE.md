@@ -142,7 +142,7 @@ Options:
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--name` | `-n` | Connection name (required, unless `--from-file`) |
-| `--host` | `-H` | Hostname, IP, or device path (required, unless `--from-file`) |
+| `--host` | `-H` | Hostname, IP, or device path; for `-P k8s` the pod name (required, unless `--from-file`, `--pod` or `--busybox`) |
 | `--from-file` | — | Bulk-add connections from a YAML or JSON file, or `-` for stdin (see [Bulk add](#bulk-add-from-a-file)). Mutually exclusive with `--name`/`--host` |
 | `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23, WinRM=5985) |
 | `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `winrm`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
@@ -240,6 +240,15 @@ Options:
 | `--browser` | — | Browser command for `--browser-mode custom` (Chromium-based or Firefox to use a proxy) |
 | `--winrm-ssl` | — | Use HTTPS for a WinRM connection |
 | `--winrm-accept-invalid-certs` | — | Accept a self-signed HTTPS certificate when running scripts over WinRM |
+| `--kubeconfig` | — | Kubeconfig file (Kubernetes only). Default: `$KUBECONFIG`, then `~/.kube/config`. Stored as an absolute path; an empty value on `update` restores the default |
+| `--context` | — | Kubernetes context (default: the kubeconfig's `current-context`) |
+| `--namespace` | — | Kubernetes namespace (default: the context's namespace) |
+| `--pod` | — | Pod to exec into. `-H` names the pod as well; giving both with different names is refused. Required unless `--busybox` |
+| `--container` | — | Container within the pod (optional for single-container pods) |
+| `--shell` | — | Shell inside the container: `/bin/sh` (default), `/bin/bash`, `/bin/ash`, `/bin/zsh` |
+| `--busybox` | — | Run a temporary pod (`kubectl run --rm`) instead of exec into an existing one. Cannot be combined with `--pod`, `-H` or `--container` in the same call |
+| `--busybox-image` | — | Image for the temporary pod (default: `busybox:latest`); needs busybox mode |
+| `--k8s-custom-arg` | — | Additional `kubectl` argument (repeatable; values may start with `-`, e.g. `--k8s-custom-arg --request-timeout=30s`) |
 | `--provider` | — | Zero Trust provider (see [Zero Trust examples](#zero-trust-examples) below) |
 
 **Protocol examples:**
@@ -308,9 +317,19 @@ rustconn-cli add -n "Docs" -H "file:///usr/share/doc/index.html" -P web \
 rustconn-cli add -n "Grafana" -H "https://grafana.internal" -P web \
     --user-agent "RustConn/0.19 Dashboard Monitor" --zoom-level 0.8
 
-# Kubernetes
+# Kubernetes: exec into a pod (-H is the pod name, same as --pod)
 rustconn-cli add -n "Pod" -H pod-name -P k8s
+rustconn-cli add -n "API pod" -P k8s --pod api-7d9f --container app \
+    --kubeconfig ~/.kube/prod.yaml --context prod --namespace api --shell /bin/bash
+
+# Kubernetes: temporary busybox pod (no -H/--pod)
+rustconn-cli add -n "Debug pod" -P k8s --busybox --busybox-image busybox:1.36 --namespace demo
 ```
+
+A Kubernetes connection has no network host, so `-H` names the pod and the stored
+host stays empty. The rules are the GUI editor's: without `--busybox` a pod is
+required, and `--busybox` cannot be combined with `--pod`, `-H` or `--container`.
+A Kubernetes flag on any other protocol is an error.
 
 **Zero Trust examples:**
 
@@ -427,7 +446,7 @@ The `--dry-run` flag prints the exact command that would be executed (e.g. `ssh 
 rustconn-cli show "Server" [-f table|json|csv]
 ```
 
-Displays all fields for a connection including protocol-specific configuration (SSH auth method, key path, RDP resolution, serial device settings, monitoring config, Zero Trust provider details).
+Displays all fields for a connection, including every protocol setting, so the effect of an `update` can be checked. No format prints a secret: only `password_source` (where the password comes from) is shown.
 
 ```bash
 rustconn-cli show "My Server"
@@ -436,7 +455,28 @@ rustconn-cli show "My Server" --format csv           # Key-value CSV pairs
 rustconn-cli show 550e8400-e29b-41d4-a716-446655440000   # By UUID
 ```
 
-The JSON output includes: `id`, `name`, `host`, `port`, `protocol`, `username`, `description`, `group_id`, `group_name`, `tags`, `icon`, `is_pinned`, `created_at`, `updated_at`, `last_connected`, `password_source` (type only, not the value), `domain`, `window_mode`, `skip_port_check`, `session_recording_enabled`, `is_dynamic`, plus protocol-specific fields (`auth_method`, `key_path`, `jump_host`, `resolution`, `device`, `baud_rate`, `provider`, etc.).
+The JSON output includes: `id`, `name`, `host`, `port`, `protocol`, `username`, `description`, `group_id`, `group_name`, `tags`, `icon`, `is_pinned`, `created_at`, `updated_at`, `last_connected`, `password_source` (type only, not the value), `domain`, `window_mode`, `skip_port_check`, `session_recording_enabled`, `is_dynamic`, plus protocol-specific fields (`auth_method`, `key_path`, `jump_host`, `resolution`, `device`, `baud_rate`, `provider`, etc.), plus `protocol_config`.
+
+`protocol_config` holds every protocol setting in the shape the connections file
+stores it: an object tagged by `type` (`Ssh`, `Rdp`, `Vnc`, `Spice`, `Telnet`,
+`ZeroTrust`, `Serial`, `Sftp`, `Kubernetes`, `Mosh`, `Web`, `WinRm`) whose other
+keys are the model's field names, e.g. `view_only`, `scaling`, `clipboard_enabled`
+and `encoding` for VNC, `tls_enabled`, `usb_redirection` and `shared_folders` for
+SPICE, `pod`, `namespace`, `use_busybox` for Kubernetes. A key whose value is unset
+is omitted. Jump hosts appear there as `jump_host_id` (the UUID); the flat
+`jump_host` key gives the name. The flat keys are kept unchanged for existing
+scripts. A WinRM `custom_args` list shows what the client is given, so a secret
+option in a hand-edited list is not printed.
+
+The table output ends with `Password Source` and a `Protocol Settings:` block, one
+`key: value` line per setting (nested values as dotted keys, e.g.
+`elevated.enabled`). The CSV output adds `password_source` and one
+`protocol_config.<key>,<value>` row per setting.
+
+```bash
+rustconn-cli update "Linux VNC" --vnc-view-only false
+rustconn-cli show "Linux VNC" --format json | jq .protocol_config.view_only   # false
+```
 
 When piped (non-TTY stdout), output defaults to JSON automatically.
 
@@ -482,11 +522,27 @@ All flags from `add` are available (except `--protocol`), plus:
 - `--skip-port-check=false` to clear the flag
 - `--kdbx-path ""` to clear the connection's own KeePass database, so it inherits its group's or the global one again
 
-Four boolean flags accept an explicit value on `update` so they can be *cleared*, unlike on `add` where they only turn a feature on:
-- `--mptcp` — bare `--mptcp` (or `--mptcp true`) enables Multipath TCP; `--mptcp false` disables it
-- `--skip-port-check` — bare `--skip-port-check` (or `=true`) sets the flag; `--skip-port-check=false` clears it
-- `--postpend-enabled` — turns the configured output filter on; `--postpend-enabled false` turns it off without forgetting the command
-- `--elevated-enabled` — turns sudo password injection on; `--elevated-enabled false` turns it off, keeping the patterns and delay
+On `update` every on/off setting takes an optional value, `--flag [<BOOL>]`, so it
+can be turned off as well as on. The bare flag means `true`, as on `add`;
+`--flag false` (or `--flag=false`) is the opposite. A flag whose name says *no* or
+*disable* keeps its meaning: `--vnc-no-scaling false` turns scaling back on,
+`--disable-nla false` turns NLA back on. The switches:
+
+- SSH/SFTP: `--ssh-verbose`, `--x11-forwarding`, `--agent-forwarding`, `--compression`, `--mptcp`, `--elevated-enabled` (keeps the patterns and delay when off)
+- RDP: `--ignore-certificate`, `--disable-nla`, `--kerberos`, `--rdp-dynamic-resolution`, `--rdp-smart-sizing`, `--printer`, `--mptcp`, `--audio-redirect` (`false` sets the audio mode to `none` when it was `local`; a `remote` mode is left alone)
+- VNC: `--ignore-certificate`, `--vnc-view-only`, `--vnc-no-scaling`, `--vnc-no-clipboard`, `--vnc-toolbar`, `--mptcp`
+- SPICE: `--spice-tls`, `--spice-skip-cert-verify`, `--spice-usb-redirection`, `--spice-no-clipboard`
+- Web: `--javascript`, `--accept-invalid-certs`, `--web-toolbar`, `--private-mode`
+- WinRM: `--winrm-ssl`, `--winrm-accept-invalid-certs`
+- Kubernetes: `--busybox` (`false` goes back to exec into the stored pod)
+- Any protocol: `--skip-port-check`, `--postpend-enabled` (keeps the command when off)
+
+`--vnc-toolbar`, `--web-toolbar` and `--javascript` are the exception to "bare
+means `true`": bare, they turn the feature *off*, as they always have.
+
+Put the connection name before the switches, or use the `=` form: an optional
+value takes the next word, so `update --vnc-view-only "Linux VNC"` reads
+`Linux VNC` as the value and fails.
 
 `update`-only flags:
 
