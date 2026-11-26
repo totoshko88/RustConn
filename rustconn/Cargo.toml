@@ -31,8 +31,6 @@ gdk4-wayland = { version = "0.11", optional = true }
 vte4 = { workspace = true, features = ["v0_76"] }
 uuid = { workspace = true }
 regex = { workspace = true }
-# `~` in printed paths — the same crate rustconn-core expands with
-shellexpand = { workspace = true }
 chrono = { workspace = true }
 serde_json = { workspace = true }
 secrecy = { workspace = true }

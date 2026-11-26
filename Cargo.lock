@@ -5009,7 +5009,6 @@ dependencies = [
  "serde",
  "serde_json",
  "shell-words",
- "shellexpand",
  "tempfile",
  "thiserror 2.0.21",
  "tokio",
