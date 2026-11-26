@@ -144,7 +144,7 @@ Options:
 | `--name` | `-n` | Connection name (required, unless `--from-file`) |
 | `--host` | `-H` | Hostname, IP, or device path; for `-P k8s` the pod name (required, unless `--from-file`, `--pod` or `--busybox`) |
 | `--from-file` | — | Bulk-add connections from a YAML or JSON file, or `-` for stdin (see [Bulk add](#bulk-add-from-a-file)). Mutually exclusive with `--name`/`--host` |
-| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23, WinRM=5985) |
+| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23, WinRM=5985). A Web connection takes its port from the URL (`http` 80, `https` 443 unless the URL names one); `--port` only counts for a URL without a scheme or port. A Zero Trust connection has no port: the provider's CLI reaches the resource |
 | `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `winrm`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
 | `--user` | `-u` | Username |
 | `--password-stdin` | — | Read a password from stdin (one line) and store it in the configured secret backend — the same vault the GUI uses — not in the connections file. For headless/CI provisioning. The value never appears in argv, output or logs. Requires a build with the `secret-management` feature |
@@ -533,6 +533,10 @@ rustconn-cli show "Linux VNC" --format json | jq .protocol_config.view_only   # 
 ```
 
 When piped (non-TTY stdout), output defaults to JSON automatically.
+
+`port` is the port the connection really uses: the URL's for a Web connection, and
+none for a Zero Trust one (`null` in JSON, an empty cell in the table and CSV). The
+same holds for `list` and `group show`.
 
 ### update — Update an existing connection
 

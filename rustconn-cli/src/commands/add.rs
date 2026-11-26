@@ -300,6 +300,13 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
 
     let (protocol_type, default_port) = parse_protocol(params.protocol)?;
     let port = params.port.unwrap_or(default_port);
+    // A Web connection's port is its URL's (or the scheme default); `--port`
+    // only fills in for a URL that names neither.
+    let port = if protocol_type == ProtocolType::Web {
+        crate::util::web_port(params.host, port)
+    } else {
+        port
+    };
 
     let ssh_auth = params.auth_method.map(parse_auth_method).transpose()?;
 
@@ -871,19 +878,15 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         store_password_from_stdin(config_path, &connection)?;
     }
 
-    let endpoint = match (
-        &connection.protocol_config,
-        crate::util::display_port(&connection).as_str(),
-    ) {
-        (rustconn_core::models::ProtocolConfig::Kubernetes(cfg), _) => {
+    let endpoint = match &connection.protocol_config {
+        rustconn_core::models::ProtocolConfig::Kubernetes(cfg) => {
             if cfg.use_busybox {
                 format!("temporary pod {}", cfg.busybox_image)
             } else {
                 format!("pod {}", cfg.pod.as_deref().unwrap_or_default())
             }
         }
-        (_, "-") => connection.host.clone(),
-        (_, port) => format!("{}:{port}", connection.host),
+        _ => crate::util::display_endpoint(&connection),
     };
     println!(
         "Added connection '{}' ({} {endpoint}) with ID {}{}",
@@ -1131,7 +1134,9 @@ fn zt_connection(name: &str, params: &AddParams<'_>, zt_config: ZeroTrustConfig)
     Connection::new(
         name.to_string(),
         params.host.to_string(),
-        params.port.unwrap_or(22),
+        // The provider CLI never reads a port, so none is made up (0, as
+        // `ProtocolType::ZeroTrust.default_port()`).
+        params.port.unwrap_or(0),
         ProtocolConfig::ZeroTrust(zt_config),
     )
 }

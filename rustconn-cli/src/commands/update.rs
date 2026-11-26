@@ -339,6 +339,14 @@ pub(super) fn cmd_update(
     if let Some(port) = params.port {
         connection.port = port;
     }
+    // As in `add`: a Web connection's port follows its URL.
+    if matches!(
+        connection.protocol_config,
+        rustconn_core::models::ProtocolConfig::Web(_)
+    ) && (params.host.is_some() || params.port.is_some())
+    {
+        connection.port = crate::util::web_port(&connection.host, connection.port);
+    }
     if let Some(user) = params.user {
         connection.username = Some(user.to_string());
     }

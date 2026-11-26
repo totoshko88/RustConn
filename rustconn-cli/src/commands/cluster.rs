@@ -146,8 +146,10 @@ fn cmd_cluster_show(config_path: Option<&Path>, name: &str) -> Result<(), CliErr
         };
         if let Some(conn) = connections.iter().find(|c| c.id == *conn_id) {
             println!(
-                "  - {} ({} {}:{}){auto}",
-                conn.name, conn.protocol, conn.host, conn.port
+                "  - {} ({} {}){auto}",
+                conn.name,
+                conn.protocol,
+                crate::util::display_endpoint(conn)
             );
         } else {
             println!("  - {conn_id} (not found){auto}");

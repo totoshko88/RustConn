@@ -1966,3 +1966,93 @@ fn update_turns_ssh_switches_off() {
     assert!(!cfg.verbose);
     assert!(cfg.agent_forwarding);
 }
+
+// ============================================================================
+// Small CLI fixes (0.26.5): Web/Zero Trust ports, flags, export selection, icons
+// ============================================================================
+
+fn add_ok(args: &[&str], dir: &std::path::Path) -> String {
+    let out = run_cli(args, Some(dir));
+    assert!(out.status.success(), "{args:?}: {}", stderr_str(&out));
+    stdout_str(&out)
+}
+
+/// I4: the port of a Web connection is its URL's, in storage and in output.
+#[test]
+fn a_web_connection_takes_its_port_from_the_url() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    let stdout = add_ok(
+        &[
+            "add",
+            "--name",
+            "cockpit",
+            "-H",
+            "https://3.254.125.5:9090",
+            "-P",
+            "web",
+        ],
+        dir,
+    );
+    assert!(stdout.contains(" https://3.254.125.5:9090)"), "{stdout}");
+    assert!(!stdout.contains(":9090:"), "{stdout}");
+    assert_eq!(load_connection(dir, "cockpit").port, 9090);
+    assert_eq!(show_json(dir, "cockpit")["port"], 9090);
+
+    add_ok(
+        &[
+            "add",
+            "--name",
+            "plain",
+            "-H",
+            "http://intranet.lan",
+            "-P",
+            "web",
+        ],
+        dir,
+    );
+    assert_eq!(load_connection(dir, "plain").port, 80);
+
+    add_ok(
+        &["update", "plain", "-H", "https://intranet.lan:8443/app"],
+        dir,
+    );
+    assert_eq!(load_connection(dir, "plain").port, 8443);
+}
+
+/// M1: a Zero Trust connection stores no placeholder port and prints none.
+#[test]
+fn a_zero_trust_connection_has_no_port() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    let stdout = add_ok(
+        &[
+            "add",
+            "--name",
+            "ssm",
+            "-P",
+            "zt",
+            "--provider",
+            "aws_ssm",
+            "-H",
+            "i-0123456789abcdef0",
+            "--group",
+            "cloud",
+        ],
+        dir,
+    );
+    assert!(stdout.contains("i-0123456789abcdef0)"), "{stdout}");
+    assert!(!stdout.contains(":22"), "{stdout}");
+    assert_eq!(load_connection(dir, "ssm").port, 0);
+    assert!(show_json(dir, "ssm")["port"].is_null());
+
+    let list = run_cli(&["list", "--format", "json"], Some(dir));
+    let list: serde_json::Value = serde_json::from_str(&stdout_str(&list)).expect("JSON");
+    assert!(list[0]["port"].is_null(), "{list}");
+    let csv = stdout_str(&run_cli(&["list", "--format", "csv"], Some(dir)));
+    assert!(csv.contains("ssm,i-0123456789abcdef0,,zerotrust"), "{csv}");
+
+    let group = run_cli(&["group", "show", "cloud", "--format", "json"], Some(dir));
+    let group: serde_json::Value = serde_json::from_str(&stdout_str(&group)).expect("JSON");
+    assert!(group["connections"][0]["port"].is_null(), "{group}");
+}

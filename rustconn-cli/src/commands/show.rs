@@ -139,7 +139,7 @@ fn print_json(
         "id": connection.id.to_string(),
         "name": connection.name,
         "host": connection.host,
-        "port": connection.port,
+        "port": crate::util::effective_port(connection),
         "protocol": connection.protocol.as_str(),
         "username": connection.username,
         "description": connection.description,
@@ -499,7 +499,7 @@ fn print_csv(connection: &Connection) -> Result<(), CliError> {
     println!("id,{}", connection.id);
     println!("name,{}", crate::format::escape_csv_field(&connection.name));
     println!("host,{}", crate::format::escape_csv_field(&connection.host));
-    println!("port,{}", connection.port);
+    println!("port,{}", crate::util::display_port(connection));
     println!("protocol,{}", connection.protocol.as_str());
     if let Some(ref user) = connection.username {
         println!("username,{}", crate::format::escape_csv_field(user));

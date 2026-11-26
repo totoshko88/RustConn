@@ -308,19 +308,43 @@ pub fn parse_protocol_type(s: &str) -> Result<rustconn_core::models::ProtocolTyp
     }
 }
 
-/// The port as a human-readable cell: `-` for a connection that has none.
+/// The port a connection really uses, or `None` when it has none.
 ///
-/// An AWS SSM connection reaches its instance through the SSM API, so the
-/// stored `22` is a placeholder and printing it misleads. Machine-readable
-/// output (JSON, CSV) keeps the stored number.
-pub fn display_port(connection: &rustconn_core::models::Connection) -> String {
-    use rustconn_core::models::{ProtocolConfig, ZeroTrustProviderConfig};
-    if let ProtocolConfig::ZeroTrust(zt) = &connection.protocol_config
-        && matches!(zt.provider_config, ZeroTrustProviderConfig::AwsSsm(_))
-    {
-        return "-".to_string();
+/// A Zero Trust connection names a resource (an instance ID, a VM, a target)
+/// and reaches it through the provider's CLI, which never reads the port, so
+/// a stored number is a placeholder (older files hold `22`). A Web connection
+/// keeps its URL in `host`; its port is the URL's, or the scheme's default
+/// (`http` 80, `https` 443) — not a stored one that may disagree with it.
+pub fn effective_port(connection: &rustconn_core::models::Connection) -> Option<u16> {
+    use rustconn_core::models::ProtocolConfig;
+    match &connection.protocol_config {
+        ProtocolConfig::ZeroTrust(_) => None,
+        ProtocolConfig::Web(_) => Some(web_port(&connection.host, connection.port)),
+        _ => Some(connection.port),
     }
-    connection.port.to_string()
+}
+
+/// The port of a Web URL: its own, or the scheme's default; `fallback` when
+/// the URL has neither or cannot be read.
+pub fn web_port(url: &str, fallback: u16) -> u16 {
+    rustconn_core::testing::web_endpoint(url, fallback).map_or(fallback, |(_, port)| port)
+}
+
+/// [`effective_port`] as a table or CSV cell: empty for a connection that has
+/// no port.
+pub fn display_port(connection: &rustconn_core::models::Connection) -> String {
+    effective_port(connection).map_or_else(String::new, |port| port.to_string())
+}
+
+/// Where a connection points, for a message: `host:port`, or the host alone
+/// when the port is not its own — a Web URL already carries it, and a Zero
+/// Trust resource has none.
+pub fn display_endpoint(connection: &rustconn_core::models::Connection) -> String {
+    use rustconn_core::models::ProtocolConfig;
+    match (&connection.protocol_config, effective_port(connection)) {
+        (ProtocolConfig::Web(_), _) | (_, None) => connection.host.clone(),
+        (_, Some(port)) => format!("{}:{port}", connection.host),
+    }
 }
 
 /// Get the default port for a protocol
@@ -335,7 +359,8 @@ pub fn default_port_for_protocol(proto: rustconn_core::models::ProtocolType) -> 
         ProtocolType::WinRm => 5985,
         ProtocolType::Serial => 0,
         ProtocolType::Kubernetes => 0,
-        ProtocolType::ZeroTrust => 22,
+        // The provider CLI reaches the resource; no port is read.
+        ProtocolType::ZeroTrust => 0,
         ProtocolType::Web => 443,
     }
 }
@@ -396,24 +421,63 @@ mod protocol_parse_tests {
     }
 
     #[test]
-    fn display_port_is_a_dash_only_for_aws_ssm() {
+    fn zero_trust_connections_have_no_port() {
         use rustconn_core::models::{
-            AwsSsmConfig, Connection, ProtocolConfig, ZeroTrustConfig, ZeroTrustProvider,
-            ZeroTrustProviderConfig,
+            AwsSsmConfig, Connection, GcpIapConfig, ProtocolConfig, ZeroTrustConfig,
+            ZeroTrustProvider, ZeroTrustProviderConfig,
         };
         let ssh = Connection::new_ssh("a".into(), "h".into(), 2222);
         assert_eq!(super::display_port(&ssh), "2222");
+        assert_eq!(super::display_endpoint(&ssh), "h:2222");
 
-        let mut ssm = Connection::new_ssh("b".into(), "i-0abc".into(), 22);
-        ssm.protocol_config = ProtocolConfig::ZeroTrust(ZeroTrustConfig {
-            provider: ZeroTrustProvider::AwsSsm,
-            provider_config: ZeroTrustProviderConfig::AwsSsm(AwsSsmConfig {
+        let zero_trust = |provider, provider_config| {
+            // Files written before 0.26.5 hold the placeholder 22.
+            let mut conn = Connection::new_ssh("b".into(), "i-0abc".into(), 22);
+            conn.protocol_config = ProtocolConfig::ZeroTrust(ZeroTrustConfig {
+                provider,
+                provider_config,
+                custom_args: Vec::new(),
+            });
+            conn
+        };
+        let ssm = zero_trust(
+            ZeroTrustProvider::AwsSsm,
+            ZeroTrustProviderConfig::AwsSsm(AwsSsmConfig {
                 target: "i-0abc".into(),
                 profile: "default".into(),
                 region: None,
             }),
-            custom_args: Vec::new(),
-        });
-        assert_eq!(super::display_port(&ssm), "-");
+        );
+        let iap = zero_trust(
+            ZeroTrustProvider::GcpIap,
+            ZeroTrustProviderConfig::GcpIap(GcpIapConfig::default()),
+        );
+        for conn in [ssm, iap] {
+            assert_eq!(super::effective_port(&conn), None);
+            assert_eq!(super::display_port(&conn), "");
+            assert_eq!(super::display_endpoint(&conn), "i-0abc");
+        }
+    }
+
+    /// I4: `add -H https://3.254.125.5:9090 -P web` stored and printed 443 and
+    /// announced `https://3.254.125.5:9090:443`.
+    #[test]
+    fn a_web_port_comes_from_its_url() {
+        use rustconn_core::models::{Connection, ProtocolConfig, WebConfig};
+        assert_eq!(super::web_port("https://3.254.125.5:9090", 443), 9090);
+        assert_eq!(super::web_port("https://example.com/app", 8080), 443);
+        assert_eq!(super::web_port("http://example.com", 443), 80);
+        assert_eq!(super::web_port("example.com:8443", 443), 8443);
+        assert_eq!(super::web_port("example.com", 443), 443);
+
+        // A connection saved with the wrong port shows the URL's.
+        let web = Connection::new(
+            "w".into(),
+            "https://3.254.125.5:9090".into(),
+            443,
+            ProtocolConfig::Web(WebConfig::default()),
+        );
+        assert_eq!(super::effective_port(&web), Some(9090));
+        assert_eq!(super::display_endpoint(&web), "https://3.254.125.5:9090");
     }
 }
