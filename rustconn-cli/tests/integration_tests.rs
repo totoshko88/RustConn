@@ -1338,6 +1338,175 @@ fn add_from_file_skips_duplicates_with_a_reason() {
     );
 }
 
+/// `docs/CLI_REFERENCE.md`, read at compile time so the bulk-add examples
+/// tested below are the ones the reference shows.
+const CLI_REFERENCE: &str = include_str!("../../docs/CLI_REFERENCE.md");
+
+/// The fenced block after `<!-- bulk-add-example:{kind} -->` in the reference.
+fn bulk_add_doc_example(kind: &str) -> String {
+    let marker = format!("<!-- bulk-add-example:{kind} -->");
+    let after = CLI_REFERENCE
+        .split_once(marker.as_str())
+        .unwrap_or_else(|| panic!("marker {marker} missing from CLI_REFERENCE.md"))
+        .1;
+    let fence = format!("```{kind}\n");
+    let body = after
+        .split_once(fence.as_str())
+        .unwrap_or_else(|| panic!("no ```{kind} block after {marker}"))
+        .1;
+    body.split_once("\n```")
+        .unwrap_or_else(|| panic!("unterminated ```{kind} block"))
+        .0
+        .to_string()
+}
+
+/// Runs `add --from-file -` with `input` on stdin.
+fn run_add_from_stdin(input: &str, config_dir: &std::path::Path) -> Output {
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rustconn-cli"))
+        .env("RUSTCONN_CONFIG_DIR", config_dir)
+        .args(["add", "--from-file", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn CLI");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(input.as_bytes())
+        .expect("write stdin");
+    child.wait_with_output().expect("CLI output")
+}
+
+/// The documented examples add all four connections: no ids or timestamps,
+/// a group by name, an RDP jump host by name, a Kubernetes pod.
+fn assert_doc_example_added(out: &Output, config_dir: &std::path::Path) {
+    assert!(
+        out.status.success(),
+        "the documented example must be accepted. stderr: {}",
+        stderr_str(out)
+    );
+    let out_s = stdout_str(out);
+    assert!(out_s.contains("Added 4 connection(s)"), "Got: {out_s}");
+    assert!(out_s.contains("Created 1 group(s)"), "Got: {out_s}");
+    assert!(!out_s.contains("Skipped"), "Got: {out_s}");
+
+    let bastion = show_json(config_dir, "bastion");
+    let rdp = show_json(config_dir, "win-desktop");
+    assert_eq!(rdp["protocol"], "rdp");
+    assert_eq!(rdp["port"], 3389);
+    assert_eq!(
+        rdp["protocol_config"]["jump_host_id"], bastion["id"],
+        "the RDP jump host must resolve to the bastion by name"
+    );
+
+    let web = show_json(config_dir, "web1");
+    assert_eq!(web["group_name"], "Web");
+    assert_eq!(web["port"], 2222);
+
+    let pod = show_json(config_dir, "api-pod");
+    assert_eq!(pod["protocol"], "kubernetes");
+    assert_eq!(pod["protocol_config"]["pod"], "api-0");
+    assert_eq!(pod["protocol_config"]["namespace"], "prod");
+    assert_eq!(pod["protocol_config"]["container"], "app");
+}
+
+#[test]
+fn add_from_file_accepts_the_documented_json_example() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+    let file = config_dir.join("servers.json");
+    std::fs::write(&file, bulk_add_doc_example("json")).expect("write example");
+
+    let out = run_cli(
+        &["add", "--from-file", file.to_str().unwrap()],
+        Some(config_dir),
+    );
+    assert_doc_example_added(&out, config_dir);
+}
+
+#[test]
+fn add_from_file_accepts_the_documented_yaml_example_on_stdin() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let out = run_add_from_stdin(&bulk_add_doc_example("yaml"), config_dir);
+    assert_doc_example_added(&out, config_dir);
+}
+
+/// A failing document with a `connections` key reports the object-shape error
+/// and the field path, not the bare-list error; a failing list reports the
+/// list error. Nothing is written in either case.
+#[test]
+fn add_from_file_reports_the_error_of_the_documents_own_shape() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let object = run_add_from_stdin(
+        r#"{"connections": [{"name": "a", "host": "h", "protocol_config": {"Ssh": {}}}]}"#,
+        config_dir,
+    );
+    assert!(!object.status.success());
+    let err = stderr_str(&object);
+    assert!(
+        err.contains("connections[0].protocol_config") && err.contains("missing field `type`"),
+        "the object-shape error must name the field path. stderr: {err}"
+    );
+    assert!(!err.contains("expected a sequence"), "stderr: {err}");
+
+    let list = run_add_from_stdin(
+        r#"[{"name": "a", "host": "h", "protocol_config": {"Ssh": {}}}]"#,
+        config_dir,
+    );
+    assert!(!list.status.success());
+    let err = stderr_str(&list);
+    assert!(
+        err.contains("a list of connections") && err.contains("[0].protocol_config"),
+        "stderr: {err}"
+    );
+
+    let listed = run_cli(&["list", "--format", "json"], Some(config_dir));
+    assert!(
+        !stdout_str(&listed).contains("\"a\""),
+        "a rejected document must not write anything"
+    );
+}
+
+/// A provided id that is already in use is replaced and reported, and the
+/// entry is still added.
+#[test]
+fn add_from_file_reassigns_a_colliding_id() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let seed = run_cli(
+        &["add", "--name", "first", "--host", "first.example.com"],
+        Some(config_dir),
+    );
+    assert!(seed.status.success(), "seed add should succeed");
+    let taken = show_json(config_dir, "first")["id"]
+        .as_str()
+        .expect("id")
+        .to_string();
+
+    let doc = format!(
+        "- id: {taken}\n  name: second\n  host: second.example.com\n  protocol_config:\n    type: Ssh\n"
+    );
+    let out = run_add_from_stdin(&doc, config_dir);
+    assert!(out.status.success(), "stderr: {}", stderr_str(&out));
+    let out_s = stdout_str(&out);
+    assert!(out_s.contains("Added 1 connection(s)"), "Got: {out_s}");
+    assert!(
+        out_s.contains("Reassigned 1 id(s)") && out_s.contains(&taken),
+        "Got: {out_s}"
+    );
+    assert_ne!(show_json(config_dir, "second")["id"], taken.as_str());
+}
+
 /// #3 — `--password-stdin` never echoes the password, regardless of build. On a
 /// build without `secret-management` it fails before writing anything and names
 /// the feature; on a build with it, the password is stored (keyring permitting)

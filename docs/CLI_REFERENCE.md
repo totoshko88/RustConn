@@ -401,7 +401,7 @@ The connection's password source is set to `Vault`, so a later connect reads the
 
 #### Bulk add from a file
 
-`--from-file PATH` adds many connections in one invocation, reading a YAML or JSON document; pass `-` to read the document from stdin. It reuses RustConn's own serde models, so the file is either a top-level object with a `connections` array (and an optional `groups` array), or a bare array of connection objects. The command reports how many connections were added and names each entry it skipped, with the reason — a name that already exists, or one that fails validation — without aborting the whole batch.
+`--from-file PATH` adds many connections in one invocation, reading a YAML or JSON document; pass `-` to read the document from stdin. The file is either a top-level object with a `connections` list (and an optional `groups` list), or a bare list of connection objects. The command reports how many connections were added and names each entry it skipped, with the reason (a name that already exists, a failed validation, a jump host it cannot find), without aborting the whole batch. A document that does not fit the model is rejected as a whole, nothing is written, and the error names the field by its path, e.g. ``connections[0].protocol_config: missing field `type` ``.
 
 ```bash
 rustconn-cli add --from-file servers.json        # JSON document
@@ -409,20 +409,74 @@ rustconn-cli add --from-file servers.yaml        # YAML document
 cat servers.json | rustconn-cli add --from-file -  # from stdin
 ```
 
-Example JSON (the `connections` objects use the same field names `show --format json` prints):
+Each entry uses the field names of the connections file. Only `name` and `protocol_config` are required:
 
+| Key | If omitted |
+|-----|------------|
+| `name` | required |
+| `protocol_config` | required: an object tagged by `type` (`Ssh`, `Rdp`, `Vnc`, `Spice`, `Telnet`, `ZeroTrust`, `Serial`, `Sftp`, `Kubernetes`, `Mosh`, `Web`, `WinRm`); its other keys are the protocol settings, each with a default |
+| `protocol` | taken from `protocol_config.type` |
+| `host` | empty, which only Kubernetes and Serial accept |
+| `port` | the protocol's default port |
+| `id` | a new UUID. A given `id` already in use is replaced by a new one and reported under `Reassigned` |
+| `created_at`, `updated_at` | the current time |
+| `group` | no group. A group name, resolved like `add --group`: case-insensitive, created when missing. Use it or `group_id` (a UUID), not both |
+| `jump_host` | no jump host. A connection name or UUID, resolved like `add --jump-host` against saved connections and the entries above it in the same file (SSH, SFTP, RDP, VNC, SPICE, WinRM). `protocol_config.jump_host_id` takes a UUID directly |
+
+Any other key of the connection model (`username`, `description`, `tags`, `domain`, `window_mode`, …) is accepted as the connections file stores it. `rustconn-cli show <name> --format json` prints an existing connection's `protocol_config` in exactly this shape, so it can be copied into an entry; the flat keys around it in `show` output are for reading and are not needed here.
+
+Example JSON: an SSH bastion, an SSH host in a group, an RDP host reached through the bastion by name, and a Kubernetes pod shell:
+
+<!-- bulk-add-example:json -->
 ```json
 {
   "connections": [
-    { "name": "web1", "host": "web1.example.com", "port": 22,
-      "protocol_config": { "Ssh": {} } },
-    { "name": "db1", "host": "db1.example.com", "port": 22,
-      "protocol_config": { "Ssh": {} } }
+    { "name": "bastion", "host": "bastion.example.com", "username": "admin",
+      "protocol_config": { "type": "Ssh" } },
+    { "name": "web1", "host": "web1.example.com", "port": 2222, "group": "Web",
+      "protocol_config": { "type": "Ssh", "auth_method": "agent" } },
+    { "name": "win-desktop", "host": "10.0.0.20", "username": "Administrator",
+      "jump_host": "bastion",
+      "protocol_config": { "type": "Rdp" } },
+    { "name": "api-pod",
+      "protocol_config": { "type": "Kubernetes", "namespace": "prod",
+                           "pod": "api-0", "container": "app" } }
   ]
 }
 ```
 
-The easiest way to produce a valid file is `rustconn-cli show <name> --format json` for the field shape, or an `export --format native` archive. `--from-file` is mutually exclusive with the single-connection flags (`--name`, `--host`, …).
+The same document as YAML:
+
+<!-- bulk-add-example:yaml -->
+```yaml
+connections:
+  - name: bastion
+    host: bastion.example.com
+    username: admin
+    protocol_config:
+      type: Ssh
+  - name: web1
+    host: web1.example.com
+    port: 2222
+    group: Web
+    protocol_config:
+      type: Ssh
+      auth_method: agent
+  - name: win-desktop
+    host: 10.0.0.20
+    username: Administrator
+    jump_host: bastion
+    protocol_config:
+      type: Rdp
+  - name: api-pod
+    protocol_config:
+      type: Kubernetes
+      namespace: prod
+      pod: api-0
+      container: app
+```
+
+Both examples are parsed and added by the `rustconn-cli` integration tests, so they stay valid as the model changes. `--from-file` is mutually exclusive with the single-connection flags (`--name`, `--host`, …).
 
 ### connect — Initiate a connection
 

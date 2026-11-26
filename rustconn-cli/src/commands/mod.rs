@@ -1,6 +1,7 @@
 //! Command handler modules for the CLI.
 
 mod add;
+mod bulk_add;
 mod cloud_sync;
 mod cluster;
 mod codec;
@@ -204,7 +205,7 @@ pub fn dispatch(
             // flag assembly: --from-file conflicts with --name/--host at the clap
             // layer, so the other flags are irrelevant here.
             if let Some(path) = from_file {
-                return add::cmd_add_from_file(config_path, &path);
+                return bulk_add::cmd_add_from_file(config_path, &path);
             }
             // clap's `required_unless_present = "from_file"` guarantees both are
             // present on this path.
