@@ -4191,7 +4191,7 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 
 ### Terminal page
 
-**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect, show scrollbar), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select, right-click pastes, Option as Meta key (macOS), confirm multi-line paste, remote clipboard (OSC 52), close tab on clean exit).
+**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect, show scrollbar), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks — a printed `http`/`https`/`ftp` URL or a filesystem path (`~/…`, `/…`, `file://…`) underlines on hover and **Ctrl+click** (⌘+click on macOS) opens it in the browser or the file's default viewer (OSC 8 hyperlinks too), mouse autohide, bell, SFTP via mc, copy on select, right-click pastes, Option as Meta key (macOS), confirm multi-line paste, remote clipboard (OSC 52), close tab on clean exit).
 
 **Confirm multi-line paste:** When enabled (the default), pasting clipboard text that spans more than one line first shows a preview and asks you to confirm before it reaches the shell — a guard against pastejacking, where a page or program sneaks a command onto your clipboard so the next paste runs it. Turn it off to paste multi-line text immediately without the prompt.
 

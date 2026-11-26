@@ -313,6 +313,10 @@ impl TerminalNotebook {
         // Apply user settings
         config::configure_terminal_with_settings(&terminal, settings);
 
+        // Ctrl+click URL opening — installed once at widget creation; moving the
+        // terminal between a tab, a split pane and a detached window keeps it.
+        super::link_open::setup_link_opening(&terminal);
+
         // Apply per-connection theme override (if present) on top of the global theme
         if let Some(override_colors) = theme_override {
             let base_theme =
