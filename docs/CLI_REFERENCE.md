@@ -699,24 +699,42 @@ rustconn-cli test all --format json          # Structured JSON with pass_rate an
 rustconn-cli test "My Server" --format csv   # CSV output
 ```
 
-A Zero Trust or serial connection has no network address to probe, so `test` reports it as skipped: a pass with a `skipped` detail and no latency. `test all` does not count it as a failure.
+What `test` probes depends on the connection:
 
+| Connection | Probe |
+|------------|-------|
+| SSH, RDP, VNC, SPICE, WinRM with a jump host (its own, inherited from a group or the global one) | `ssh -W host:port` to the jump host nearest the target, which opens the target. Fallback jump hosts are tried in order, as `run-script` does |
+| SSH with no jump host | TCP connect, then the SSH banner exchange |
+| Web | TCP connect to the host and port of the URL (`http` 80, `https` 443 unless the URL names a port) |
+| Kubernetes | `kubectl get pod <pod>` with the connection's kubeconfig, context and namespace; `kubectl auth can-i create pods` in busybox mode |
+| Zero Trust, AWS Session Manager | `aws ssm describe-instance-information`, which must report `PingStatus` `Online` |
+| Everything else | TCP connect to host and port |
 
-Output shows colored pass/fail indicators with latency measurements. When testing all connections, a summary with pass rate is printed at the end. Exit code is `2` if any test fails.
+The jump host probe never sends a password. It runs `ssh` with `BatchMode=yes` and `StrictHostKeyChecking=yes`, as `run-script` treats jump hosts: it logs in with an SSH key or the agent, and refuses a host key that is not in `known_hosts`. A jump host past the nearest one goes through the same `ProxyCommand` or `-J` route `run-script` builds. A failure names the part that failed, `Jump host … unreachable` or `Target … unreachable from jump host …`, with `jump_host_status` and `target_status` in the details. `--timeout` bounds the probe itself, the jump host login included. Choosing a reachable gateway among fallback jump hosts happens before it and can take up to about twice `--timeout` for each fallback that does not answer.
 
-JSON output for `test all` includes:
+A test that cannot run is **skipped**, which is neither a pass nor a failure. That happens for a serial device, a Zero Trust provider other than AWS Session Manager, a Kubernetes connection with no pod, a Web connection that browses through an SSH tunnel or a SOCKS proxy, an SSH connection routed by its own ProxyCommand or ProxyJump option, a jump host route that is not a plain `[user@]host[:port]` list, a jump host that wants a password, a passphrase, a PIN or a host key confirmation, and a missing `ssh`, `kubectl` or `aws`. The reason is printed: `SKIPPED: …` in the table, the `skipped` detail in JSON, the `skip_reason` column in CSV.
+
+Output shows colored pass/fail indicators with latency measurements. When testing all connections, a summary with pass rate is printed at the end; the pass rate counts only the tests that ran. Exit code is `2` if any test fails. A skipped test does not change it, so a run where nothing failed exits `0`.
+
+Each result has a `status` field: `ok`, `failed` or `skipped`. `success` stays for older scripts and is `true` only for `ok`, so a skipped test has `"success": false` and no `error`. JSON output for `test all` includes:
+
 ```json
 {
   "total": 5,
-  "passed": 4,
+  "passed": 3,
   "failed": 1,
-  "pass_rate": 80.0,
+  "skipped": 1,
+  "pass_rate": 75.0,
   "results": [
-    {"connection_id": "...", "connection_name": "Server", "success": true, "latency_ms": 42},
+    {"connection_id": "...", "connection_name": "Server", "status": "ok", "success": true, "latency_ms": 42},
+    {"connection_id": "...", "connection_name": "SSM host", "status": "skipped", "success": false,
+     "latency_ms": null, "error": null, "details": {"skipped": "the aws CLI is not installed"}},
     ...
   ]
 }
 ```
+
+CSV columns: `connection,success,latency_ms,error,status,skip_reason`.
 
 When piped (non-TTY stdout), output defaults to JSON automatically.
 
@@ -1477,7 +1495,7 @@ rustconn-cli list --format json > connections-backup.json
 rustconn-cli test all --timeout 5 || echo "Some connections failed"
 
 # Get structured test results for monitoring
-rustconn-cli test all --format json | jq '.results[] | select(.success == false)'
+rustconn-cli test all --format json | jq '.results[] | select(.status == "failed")'
 
 # Show connection details as JSON (useful for AI agents and automation)
 rustconn-cli show "Production DB" --format json | jq '{host, port, protocol, username}'
