@@ -502,8 +502,10 @@ pub fn create_ui_page() -> (
         .description(i18n("Behavior when opening a connection from the sidebar"))
         .build();
 
-    // Double-click behavior (issue #242). Off by default keeps the smart
-    // double-click: an already-open session is focused instead of duplicated.
+    // Double-click behavior (issue #242). On by default: a double-click opens a
+    // fresh session when the connection already has one open, rather than
+    // focusing it. Off keeps the smart double-click (focus the already-open
+    // session; a new one is then forced with Shift/Ctrl).
     let double_click_opens_new_session = adw::SwitchRow::builder()
         .title(i18n("Open a new session on every double-click"))
         .subtitle(i18n(

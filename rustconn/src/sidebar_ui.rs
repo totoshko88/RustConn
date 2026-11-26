@@ -486,7 +486,8 @@ pub fn show_context_menu_for_item(
         }
         // The same `connect` action either way: on a running connection it shows
         // the newest live session (or says it runs in an external window)
-        // instead of opening another; "Open New Session" below is the duplicate.
+        // instead of opening another; a double-click on the row opens a new
+        // session.
         let connect_label = if is_connected {
             i18n("Show Session")
         } else {
@@ -520,28 +521,6 @@ pub fn show_context_menu_for_item(
             &i18n("Move to Group…"),
             "move-to-group",
         ));
-        // Opening a second, independent session for a connection that already
-        // has one (issue #302). `win.open-new-session` force-launches one,
-        // bypassing the smart double-click that would otherwise just focus the
-        // existing tab — the behaviour Ásbrú calls "Duplicate connection".
-        //
-        // It was offered only for external-viewer sessions (issue #209 / R7.5),
-        // where a plain double-click shows an "already running" toast and
-        // nothing else. That left an existing action undiscoverable for every
-        // embedded session: the alternative was the global
-        // "Open a new session on every double-click" preference, which changes
-        // what *every* double-click does rather than making one extra session.
-        //
-        // Gated on there being a session to duplicate, so it does not sit next
-        // to Connect doing the same thing on an idle connection. `is_connected`
-        // only became trustworthy on a pinned row once the sidebar stopped
-        // updating just the Favorites copy of it.
-        if is_connected || has_external_session {
-            items.push(ContextMenuItem::action(
-                &i18n("Open New Session"),
-                "open-new-session",
-            ));
-        }
         // § Window / split placement (issue #374).
         //
         // "Move to New Window" moves the live session into its own window. For

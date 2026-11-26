@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Connection tabs ignored the custom icon set in the connection's settings** — a saved connection carries an optional custom icon (an emoji/Unicode glyph or a GTK icon name) that the sidebar row already drew, but every session tab — terminal, VNC, RDP, web and external viewer, in the main window, a split restore and a detached group window alike — still showed the protocol icon. The tabs now render the same mark the sidebar row does: the glyph is drawn as text, the icon name is resolved through the active theme and drawn in full colour, and a connection without an icon (or with one the theme lacks) keeps its protocol icon as before. Editing a connection's icon re-applies it to the connection's open tabs, so they do not wait for a rebuild to change. (`rustconn/src/icon_render.rs`, `rustconn/src/terminal/mod.rs`, `rustconn/src/terminal/session_lifecycle.rs`, `rustconn/src/terminal/tab_lifecycle.rs`, `rustconn/src/terminal/tab_labels.rs`, `rustconn/src/session_group_window.rs`, `rustconn/src/window/construct.rs`, `rustconn/src/window/detach_actions.rs`, `rustconn/src/window/edit_dialogs.rs`) (PR #453, contributed by asgitcode-tech)
 
+### Changed
+- **Double-click opens a new session when one is already open** — a saved connection's double-click now opens a fresh session when one is already open, instead of focusing the one that runs; the separate **Open New Session** right-click item is dropped, since the double-click is now the way to open another. The *Open a new session on every double-click* setting (Settings → Terminal → Connections) is on by default, and turning it off restores the old focus-on-double-click. (contributed by asgitcode-tech; `rustconn-core/src/config/settings.rs`, `rustconn/src/sidebar_ui.rs`, `rustconn/src/window/terminal_actions.rs`, `rustconn/src/window/session_start.rs`)
+
 ## [0.26.4] - 2026-11-25
 
 ### Added

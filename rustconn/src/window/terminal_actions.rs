@@ -525,37 +525,6 @@ impl MainWindow {
         });
         window.add_action(&external_stop_tracking_action);
 
-        // Open new session (issue #209 / R7.5) — force-launches a brand-new
-        // session for the selected connection, bypassing the smart double-click
-        // focus behavior. Offered in the context menu for external-only sessions
-        // where a plain double-click would only show the "already running" toast.
-        let open_new_session_action = gio::SimpleAction::new("open-new-session", None);
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        let notebook_clone = terminal_notebook.clone();
-        let split_view_clone = self.split_view.clone();
-        let monitoring_clone = self.monitoring.clone();
-        let activity_clone = self.activity_coordinator.clone();
-        open_new_session_action.connect_activate(move |_, _| {
-            let Some(item) = sidebar_clone.get_selected_item() else {
-                return;
-            };
-            let Ok(conn_id) = Uuid::parse_str(&item.id()) else {
-                return;
-            };
-            sidebar_clone.update_connection_status(&conn_id.to_string(), "connecting");
-            Self::start_connection_with_credential_resolution(
-                state_clone.clone(),
-                notebook_clone.clone(),
-                split_view_clone.clone(),
-                sidebar_clone.clone(),
-                monitoring_clone.clone(),
-                conn_id,
-                Some(activity_clone.clone()),
-            );
-        });
-        window.add_action(&open_new_session_action);
-
         // The same force-launch addressed by connection id (issue #437), for the
         // tab menu's **Duplicate Tab**: the tab knows its connection, and the
         // sidebar selection may name another one.

@@ -1240,13 +1240,13 @@ pub struct UiSettings {
     pub window_title_shows_path: bool,
     /// Make a double-click in the sidebar always start another session.
     ///
-    /// Default `false`: a double-click focuses the connection's already-open
-    /// session instead of duplicating it (the smart double-click introduced in
-    /// 0.18.3), and a new session needs Shift/Ctrl or "Open new session". When
-    /// `true`, every double-click launches a new session, as it did before
-    /// 0.18.3 — the workflow of users who keep several concurrent sessions per
-    /// host (issue #242).
-    #[serde(default)]
+    /// Default `true`: a double-click opens a fresh session when the connection
+    /// already has one open, rather than focusing that one — the workflow of
+    /// users who keep several concurrent sessions per host (issue #242), now the
+    /// default. When `false`, the double-click focuses the already-open session
+    /// instead (the smart double-click introduced in 0.18.3); a new one is then
+    /// forced with Shift/Ctrl.
+    #[serde(default = "default_true")]
     pub double_click_opens_new_session: bool,
     /// Auto-hide the connection sidebar when a session is opened (issue #401).
     ///
@@ -1447,7 +1447,7 @@ impl Default for UiSettings {
             terminal_passthrough_ctrl: true,
             window_title_shows_connection: false,
             window_title_shows_path: false,
-            double_click_opens_new_session: false,
+            double_click_opens_new_session: default_true(),
             auto_hide_sidebar_on_connect: false,
             open_tunnelled_browser_in_embedded: default_true(),
             tunnel_browser_start_url: default_tunnel_start_url(),

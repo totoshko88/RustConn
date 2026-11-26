@@ -6,10 +6,9 @@ impl MainWindow {
     /// Opens the selected connection: the sidebar menu's Connect / Show Session.
     ///
     /// A connection that already runs is shown, not duplicated: the newest live
-    /// embedded session is focused, the same way a double-click does it, and an
-    /// external-viewer session gets the "already running" hint. The menu labels
-    /// such a row **Show Session**, so the "new session on every double-click"
-    /// preference does not apply here; **Open new session** is the duplicate.
+    /// embedded session is focused, and an external-viewer session gets the
+    /// "already running" hint. The menu labels such a row **Show Session** — a
+    /// double-click instead opens a new session.
     pub(super) fn connect_selected(
         state: &SharedAppState,
         sidebar: &SharedSidebar,
@@ -84,14 +83,15 @@ impl MainWindow {
     /// Connects to a connection at a specific position with split view support.
     ///
     /// Smart double-click (R7): unless `force_new` is set (a Shift/Ctrl modifier
-    /// was held or the "Open New Session" menu item was used), an existing live
-    /// session for the connection is focused instead of spawning a duplicate.
-    /// An embedded session is focused in place (R7.1/7.2/7.4); an external-only
-    /// session shows an informational toast (a foreign OS window cannot be
-    /// raised reliably from RustConn); zero sessions launch a new one (R7.3).
+    /// was held) or the `double_click_opens_new_session` preference is on, an
+    /// existing live session for the connection is focused instead of spawning a
+    /// duplicate. An embedded session is focused in place (R7.1/7.2/7.4); an
+    /// external-only session shows an informational toast (a foreign OS window
+    /// cannot be raised reliably from RustConn); zero sessions launch a new one
+    /// (R7.3).
     ///
-    /// The `double_click_opens_new_session` preference opts out of that
-    /// resolution entirely (issue #242): while it is on, every activation
+    /// The `double_click_opens_new_session` preference (on by default) opts out of
+    /// that resolution entirely (issue #242): while it is on, every activation
     /// behaves as if `force_new` were set, so the modifier is simply redundant.
     #[expect(
         clippy::too_many_arguments,
