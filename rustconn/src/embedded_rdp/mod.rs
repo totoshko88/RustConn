@@ -88,6 +88,34 @@ pub fn is_credentials_required_message(msg: &str) -> bool {
     msg == credentials_required_message()
 }
 
+/// Error text for a sign-in the server refused for a wrong user name or password.
+///
+/// Worded by the connection's Server OS setting. On `Auto` it names the way out
+/// for a KRdp server, whose `HYBRID_EX` regression returns the same status with
+/// correct credentials (issue #366). The session code matches it with
+/// [`is_invalid_credentials_message`] to ask for the password again.
+pub fn invalid_credentials_message(server_os: rustconn_core::models::RdpServerOs) -> String {
+    use rustconn_core::models::RdpServerOs;
+    match server_os {
+        RdpServerOs::Windows => {
+            i18n("The user name or password is incorrect. Check them and try again.")
+        }
+        RdpServerOs::Auto => i18n(
+            "The user name or password is incorrect. Check them and try again. If the server is KDE KRdp and they are correct, set Server OS to Linux in the connection's RDP settings or update KRdp to 6.7.90 or newer.",
+        ),
+        RdpServerOs::Linux => i18n(
+            "Authentication failed: invalid username or password. If the credentials are correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can instead be the server's NLA regression with FreeRDP 3.32 — update KRdp to 6.7.90 or newer, or set ExtSecurity=0 on the server (FreeRDP issue #13567).",
+        ),
+    }
+}
+
+/// Returns `true` when `msg` is an [`invalid_credentials_message`].
+pub fn is_invalid_credentials_message(msg: &str) -> bool {
+    rustconn_core::models::RdpServerOs::all()
+        .iter()
+        .any(|os| msg == invalid_credentials_message(*os))
+}
+
 /// Inter-character delay when autotyping a command into the Windows Run dialog.
 ///
 /// Matches the previous scancode path (~30 ms/key) — slow enough that the
