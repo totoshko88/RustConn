@@ -47,6 +47,11 @@ pub(super) struct RunScriptParams<'a> {
     pub quiet: bool,
     /// `--same-password`: one typed answer for every host set to ask.
     pub same_password: bool,
+    /// What a jump host's `ssh` does with an unknown key: refuse it
+    /// ([`HopHostKeys::KnownOnly`]), or record it
+    /// ([`HopHostKeys::AcceptNew`], `--accept-new-host-keys`), which the
+    /// target then does too.
+    pub host_keys: HopHostKeys,
 }
 
 /// Runs a local script on the named connections and groups.
@@ -137,6 +142,7 @@ pub(super) fn cmd_run_script(
                 &settings.network,
                 timeout_secs,
                 &mut passwords,
+                params.host_keys,
             )
         })
         .collect();
@@ -152,6 +158,7 @@ pub(super) fn cmd_run_script(
     let options = RunOptions {
         parallel: params.parallel,
         timeout: Duration::from_secs(params.timeout_secs),
+        accept_new_host_keys: params.host_keys == HopHostKeys::AcceptNew,
         ..RunOptions::default()
     };
     let script = Arc::new(script);
@@ -259,6 +266,7 @@ fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String], quiet: bool)
     let total = names.len();
     let mut succeeded = 0;
     let mut finished = 0;
+    let mut hinted = false;
     while finished < total {
         let Ok(event) = receiver.recv() else {
             break;
@@ -267,7 +275,13 @@ fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String], quiet: bool)
             ScriptEvent::Started { .. } => {}
             ScriptEvent::Output { host, stream, line } => match stream {
                 OutputStream::Stdout => println!("[{}] {line}", names[host]),
-                OutputStream::Stderr => eprintln!("[{}] {line}", names[host]),
+                OutputStream::Stderr => {
+                    eprintln!("[{}] {line}", names[host]);
+                    if !hinted && is_unknown_host_key(&line) {
+                        hinted = true;
+                        eprintln!("[{}] {UNKNOWN_HOST_KEY_HINT}", names[host]);
+                    }
+                }
             },
             ScriptEvent::OutputTruncated { host } => {
                 eprintln!("[{}] further output dropped", names[host]);
@@ -290,6 +304,18 @@ fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String], quiet: bool)
         }
     }
     succeeded
+}
+
+/// Printed once per run after OpenSSH refuses a host key it has never seen.
+const UNKNOWN_HOST_KEY_HINT: &str = "the host key is not in known_hosts yet: connect once with \
+     ssh to check and accept it, or pass --accept-new-host-keys to record first-seen keys";
+
+/// Whether `line` is OpenSSH refusing an unknown key under strict checking:
+/// "No ED25519 host key is known for 10.0.0.5 and you have requested strict
+/// checking." A *changed* key reads differently and gets no hint, because
+/// `--accept-new-host-keys` would not let it through either.
+fn is_unknown_host_key(line: &str) -> bool {
+    line.contains("host key is known for") && line.contains("strict checking")
 }
 
 /// Where to get `pywinrm` for this package.
@@ -692,17 +718,11 @@ fn script_host(
     network: &NetworkSettings,
     probe_timeout_secs: u32,
     passwords: &mut Passwords<'_>,
+    host_keys: HopHostKeys,
 ) -> Option<RemoteHost> {
     let routed = route(connection, connections, groups, network, probe_timeout_secs);
     if matches!(routed.protocol_config, ProtocolConfig::WinRm(_)) {
-        let tunnel = winrm_tunnel(
-            &routed,
-            connections,
-            groups,
-            network,
-            passwords,
-            HopHostKeys::KnownOnly,
-        );
+        let tunnel = winrm_tunnel(&routed, connections, groups, network, passwords, host_keys);
         let password = passwords.of_target(connection);
         return Some(RemoteHost {
             name: routed.name.clone(),
@@ -717,6 +737,7 @@ fn script_host(
         groups,
         network,
         passwords,
+        host_keys,
         ssh_config_declares_proxy,
     )
 }
@@ -750,7 +771,9 @@ fn withhold_from_config_proxy(
 
 /// The route through `chain`, whose hops are plain, built the way the GUI
 /// builds it. Nobody watches a run, so the route is a `ProxyCommand` whose hops
-/// refuse a host key the user has not accepted; only a chain of several hops
+/// refuse a host key the user has not accepted (`host_keys` is
+/// [`HopHostKeys::KnownOnly`]) or record a first-seen one without a question
+/// ([`HopHostKeys::AcceptNew`]); only a chain of several hops
 /// that log in with a key alone goes through `-J`. A key path or PKCS#11
 /// provider a shell could interpret is left out of the `ProxyCommand`.
 fn plain_jump_route(
@@ -760,6 +783,7 @@ fn plain_jump_route(
     groups: &[ConnectionGroup],
     session_args: &[String],
     target_askpass_allowed: bool,
+    host_keys: HopHostKeys,
 ) -> Option<JumpRoute> {
     let first_hop = chain
         .hop_ids
@@ -800,7 +824,7 @@ fn plain_jump_route(
             .filter(|p| !p.is_empty())
             .and_then(plain_path),
         known_hosts: None,
-        hop_host_keys: HopHostKeys::KnownOnly,
+        hop_host_keys: host_keys,
         target_askpass_allowed,
     })
 }
@@ -813,6 +837,7 @@ fn ssh_script_host(
     groups: &[ConnectionGroup],
     network: &NetworkSettings,
     passwords: &mut Passwords<'_>,
+    host_keys: HopHostKeys,
     declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
 ) -> Option<RemoteHost> {
     let ProtocolConfig::Ssh(config) = &routed.protocol_config else {
@@ -854,6 +879,7 @@ fn ssh_script_host(
                 groups,
                 &session_args,
                 password.is_some(),
+                host_keys,
             );
             match route {
                 Some(JumpRoute::ProxyCommand {
@@ -910,6 +936,8 @@ mod tests {
     use rustconn_core::jump_route::JumpRoute;
     use rustconn_core::models::{Connection, ProtocolConfig, SshKeySource};
     use secrecy::{ExposeSecret, SecretString};
+
+    use rustconn_core::ssh_tunnel::HopHostKeys;
 
     use super::{plain_jump_route, withhold_from_config_proxy, within};
 
@@ -1043,11 +1071,16 @@ mod tests {
         passwords.known.insert(target.id, secret());
 
         let mut sent = |declares_proxy: bool| {
-            let host =
-                super::ssh_script_host(&target, &[], &[], &network, &mut passwords, |_, _, _| {
-                    declares_proxy
-                })
-                .expect("an SSH connection gives a host");
+            let host = super::ssh_script_host(
+                &target,
+                &[],
+                &[],
+                &network,
+                &mut passwords,
+                HopHostKeys::KnownOnly,
+                |_, _, _| declares_proxy,
+            )
+            .expect("an SSH connection gives a host");
             let ScriptTransport::Ssh { credentials, .. } = host.transport else {
                 panic!("an SSH host runs over SSH");
             };
@@ -1316,7 +1349,15 @@ mod tests {
         let chain = chain_through(&[&near, &far]);
         let connections = [near, far];
 
-        let route = plain_jump_route(&chain, &[None, None], &connections, &[], &[], false);
+        let route = plain_jump_route(
+            &chain,
+            &[None, None],
+            &connections,
+            &[],
+            &[],
+            false,
+            HopHostKeys::KnownOnly,
+        );
         let Some(JumpRoute::ProxyCommand { command, passwords }) = route else {
             panic!("a PKCS#11 bastion needs a ProxyCommand: {route:?}");
         };
@@ -1331,6 +1372,45 @@ mod tests {
             command.contains("PKCS11Provider=/usr/lib/opensc-pkcs11.so"),
             "{command}"
         );
+    }
+
+    /// `--accept-new-host-keys`: every hop records a first-seen key, none is
+    /// left on the strict `yes` that made the first run fail.
+    #[test]
+    fn accept_new_host_keys_reaches_every_proxy_command_hop() {
+        let near = bastion("near.lan", Some("/usr/lib/opensc-pkcs11.so"), None);
+        let far = bastion("far.lan", None, None);
+        let chain = chain_through(&[&near, &far]);
+        let connections = [near, far];
+        let route = plain_jump_route(
+            &chain,
+            &[None, None],
+            &connections,
+            &[],
+            &[],
+            false,
+            HopHostKeys::AcceptNew,
+        );
+        let Some(JumpRoute::ProxyCommand { command, .. }) = route else {
+            panic!("a PKCS#11 bastion needs a ProxyCommand: {route:?}");
+        };
+        assert_eq!(
+            command.matches("StrictHostKeyChecking=accept-new").count(),
+            2,
+            "{command}"
+        );
+        assert!(!command.contains("StrictHostKeyChecking=yes"), "{command}");
+    }
+
+    #[test]
+    fn only_an_unknown_host_key_gets_the_accept_new_hint() {
+        assert!(super::is_unknown_host_key(
+            "No ED25519 host key is known for 172.31.6.28 and you have requested strict checking."
+        ));
+        assert!(!super::is_unknown_host_key("Host key verification failed."));
+        assert!(!super::is_unknown_host_key(
+            "@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @"
+        ));
     }
 
     #[test]
@@ -1349,6 +1429,7 @@ mod tests {
             &[],
             &session_args,
             false,
+            HopHostKeys::KnownOnly,
         );
         let Some(JumpRoute::ProxyCommand { command, .. }) = route else {
             panic!("a bastion key needs a ProxyCommand: {route:?}");
@@ -1373,7 +1454,15 @@ mod tests {
 
         // With nothing usable left, the hop still gets a ProxyCommand, so it
         // refuses an unknown host key; no refused path goes into it.
-        let route = plain_jump_route(&chain, &[None], connections, &[], &session_args, false);
+        let route = plain_jump_route(
+            &chain,
+            &[None],
+            connections,
+            &[],
+            &session_args,
+            false,
+            HopHostKeys::KnownOnly,
+        );
         let Some(JumpRoute::ProxyCommand { command, .. }) = route else {
             panic!("a script-run hop needs a ProxyCommand: {route:?}");
         };
@@ -1383,7 +1472,15 @@ mod tests {
         assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
 
         // A password still needs a ProxyCommand, without the refused paths.
-        let route = plain_jump_route(&chain, &[secret()], connections, &[], &session_args, false);
+        let route = plain_jump_route(
+            &chain,
+            &[secret()],
+            connections,
+            &[],
+            &session_args,
+            false,
+            HopHostKeys::KnownOnly,
+        );
         let Some(JumpRoute::ProxyCommand { command, .. }) = route else {
             panic!("a bastion password needs a ProxyCommand: {route:?}");
         };

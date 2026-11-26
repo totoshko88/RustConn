@@ -1414,6 +1414,11 @@ pub enum Commands {
         /// Ask once and use that password for every host set to ask at connect
         #[arg(long)]
         same_password: bool,
+
+        /// Record a host key seen for the first time, on the target and on every
+        /// jump host (StrictHostKeyChecking=accept-new); a changed key is still refused
+        #[arg(long)]
+        accept_new_host_keys: bool,
     },
 
     /// Manage connection clusters

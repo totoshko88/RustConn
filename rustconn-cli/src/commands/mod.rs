@@ -697,6 +697,7 @@ pub fn dispatch(
             timeout,
             yes,
             same_password,
+            accept_new_host_keys,
         } => run_script::cmd_run_script(
             config_path,
             &run_script::RunScriptParams {
@@ -708,6 +709,11 @@ pub fn dispatch(
                 assume_yes: yes,
                 quiet,
                 same_password,
+                host_keys: if accept_new_host_keys {
+                    rustconn_core::ssh_tunnel::HopHostKeys::AcceptNew
+                } else {
+                    rustconn_core::ssh_tunnel::HopHostKeys::KnownOnly
+                },
             },
         ),
         Commands::Duplicate {

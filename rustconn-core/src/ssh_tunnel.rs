@@ -1605,12 +1605,18 @@ pub enum HopHostKeys {
     /// through an askpass helper. For background probes and script runs, which
     /// must never accept a key the user has not accepted.
     KnownOnly,
+    /// `StrictHostKeyChecking=accept-new`: a key seen for the first time is
+    /// recorded in `known_hosts` without a question; a changed key still fails.
+    /// For a script run whose user asked for it (`run-script
+    /// --accept-new-host-keys`).
+    AcceptNew,
 }
 
 /// The `StrictHostKeyChecking` option RustConn passes to a proxy hop's `ssh`,
 /// if any.
 ///
-/// [`HopHostKeys::KnownOnly`] always gives `yes`. [`HopHostKeys::UserConfig`]
+/// [`HopHostKeys::KnownOnly`] always gives `yes`, [`HopHostKeys::AcceptNew`]
+/// always `accept-new`. [`HopHostKeys::UserConfig`]
 /// gives `accept-new` only to a hop that answers through a forced askpass
 /// helper (issue #203, see [`build_nested_proxy_command_with_askpass`]) and
 /// otherwise leaves the user's ssh configuration in charge.
@@ -1621,6 +1627,7 @@ pub const fn proxy_hop_host_key_option(
 ) -> Option<&'static str> {
     match host_keys {
         HopHostKeys::KnownOnly => Some("StrictHostKeyChecking=yes"),
+        HopHostKeys::AcceptNew => Some("StrictHostKeyChecking=accept-new"),
         HopHostKeys::UserConfig if uses_askpass => Some("StrictHostKeyChecking=accept-new"),
         HopHostKeys::UserConfig => None,
     }

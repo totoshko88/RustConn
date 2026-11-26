@@ -566,6 +566,9 @@ pub(super) fn open_dialog(
                 parallel,
                 timeout: Duration::from_secs(timeout_minutes * 60),
                 cancel: Arc::clone(&view.cancel),
+                // The window refuses an unknown host key; only
+                // `run-script --accept-new-host-keys` relaxes it.
+                accept_new_host_keys: false,
             };
             confirm_and_start(
                 &view,

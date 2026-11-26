@@ -384,11 +384,23 @@ impl WinRmTarget {
 /// Puts `StrictHostKeyChecking=yes` first in a tunnel's arguments. OpenSSH
 /// keeps the first value of an option, so the caller's arguments cannot relax it.
 fn require_known_host_key(mut tunnel: SshTunnelParams) -> SshTunnelParams {
-    tunnel.extra_args.splice(
-        0..0,
-        ["-o".to_string(), "StrictHostKeyChecking=yes".to_string()],
-    );
     tunnel
+        .extra_args
+        .splice(0..0, ["-o".to_string(), STRICT_HOST_KEYS.to_string()]);
+    tunnel
+}
+
+/// The forced host key option of a run's `ssh` commands.
+const STRICT_HOST_KEYS: &str = "StrictHostKeyChecking=yes";
+
+/// Swaps the first `StrictHostKeyChecking=yes` in `args` for `accept-new`
+/// ([`RunOptions::accept_new_host_keys`]). The first one is the forced prefix of
+/// [`ssh_key_setup::remote_command_args`] and [`require_known_host_key`], and
+/// OpenSSH keeps the first value of an option, so it is the one that decides.
+fn accept_new_host_keys(args: &mut [String]) {
+    if let Some(option) = args.iter_mut().find(|arg| arg.as_str() == STRICT_HOST_KEYS) {
+        *option = "StrictHostKeyChecking=accept-new".to_string();
+    }
 }
 
 /// How a run behaves.
@@ -400,6 +412,12 @@ pub struct RunOptions {
     pub timeout: Duration,
     /// Set to `true` to stop running hosts and skip the rest.
     pub cancel: Arc<AtomicBool>,
+    /// Record a host key seen for the first time instead of refusing it:
+    /// `StrictHostKeyChecking=accept-new` in place of the forced `yes`, on
+    /// the target's `ssh` and on a WinRM host's tunnel. A changed key is still
+    /// refused. The jump hosts of an SSH target are the caller's route; give
+    /// them [`ssh_tunnel::HopHostKeys::AcceptNew`] to match.
+    pub accept_new_host_keys: bool,
 }
 
 impl Default for RunOptions {
@@ -408,6 +426,7 @@ impl Default for RunOptions {
             parallel: DEFAULT_PARALLEL,
             timeout: DEFAULT_HOST_TIMEOUT,
             cancel: Arc::new(AtomicBool::new(false)),
+            accept_new_host_keys: false,
         }
     }
 }
@@ -675,13 +694,17 @@ fn ssh_launch(
     programs: &Programs,
     target: &SshTarget,
     credentials: &DeployCredentials,
+    accept_new: bool,
 ) -> Result<Launch, LaunchError> {
     let program = programs.ssh.clone().ok_or(LaunchError::SshNotFound)?;
-    let args =
+    let mut args =
         ssh_key_setup::remote_command_args(target, credentials.password.is_some(), REMOTE_COMMAND)
             .map_err(|error| LaunchError::InvalidTarget {
                 detail: error.to_string(),
             })?;
+    if accept_new {
+        accept_new_host_keys(&mut args);
+    }
     let mut files = SecretFiles::default();
     let mut env = ssh_key_setup::stage_password_env(
         &credentials.jump_host_passwords,
@@ -739,7 +762,11 @@ fn winrm_preamble(header: &WinRmHeader<'_>) -> Result<Zeroizing<Vec<u8>>, Launch
     Ok(preamble)
 }
 
-fn winrm_launch(programs: &Programs, target: &WinRmTarget) -> Result<Launch, LaunchError> {
+fn winrm_launch(
+    programs: &Programs,
+    target: &WinRmTarget,
+    accept_new: bool,
+) -> Result<Launch, LaunchError> {
     let program = programs.python.clone()?;
     let password = target
         .password
@@ -753,6 +780,15 @@ fn winrm_launch(programs: &Programs, target: &WinRmTarget) -> Result<Launch, Lau
         .tunnel
         .as_ref()
         .map(|params| {
+            let relaxed;
+            let params = if accept_new {
+                let mut copy = params.clone();
+                accept_new_host_keys(&mut copy.extra_args);
+                relaxed = copy;
+                &relaxed
+            } else {
+                params
+            };
             let mut tunnel = ssh_tunnel::create_tunnel(params).map_err(tunnel_failed)?;
             ssh_tunnel::wait_for_tunnel_ready(&mut tunnel, 50, Duration::from_millis(200))
                 .map_err(tunnel_failed)?;
@@ -803,8 +839,10 @@ fn run_host(
         ScriptTransport::Ssh {
             target,
             credentials,
-        } => ssh_launch(programs, target, credentials),
-        ScriptTransport::WinRm(target) => winrm_launch(programs, target),
+        } => ssh_launch(programs, target, credentials, options.accept_new_host_keys),
+        ScriptTransport::WinRm(target) => {
+            winrm_launch(programs, target, options.accept_new_host_keys)
+        }
     };
     let mut launch = match launched {
         Ok(launch) => launch,
@@ -1635,6 +1673,35 @@ class Protocol:
                 "StrictHostKeyChecking=yes",
                 "-o",
                 "StrictHostKeyChecking=no"
+            ]
+        );
+    }
+
+    /// `accept_new_host_keys` relaxes the forced option, the one OpenSSH reads,
+    /// and leaves a later caller value alone rather than adding to it.
+    #[test]
+    fn accept_new_relaxes_only_the_forced_host_key_option() {
+        let target = SshTarget::new("web.lan".to_string(), 22, None, Vec::new());
+        let mut args = ssh_key_setup::remote_command_args(&target, false, "true").unwrap();
+        assert_eq!(args[1], "StrictHostKeyChecking=yes");
+        accept_new_host_keys(&mut args);
+        assert_eq!(args[1], "StrictHostKeyChecking=accept-new");
+        assert!(!args.iter().any(|a| a == "StrictHostKeyChecking=yes"));
+
+        let mut tunnel = vec![
+            "-o".to_string(),
+            "StrictHostKeyChecking=yes".to_string(),
+            "-o".to_string(),
+            "StrictHostKeyChecking=yes".to_string(),
+        ];
+        accept_new_host_keys(&mut tunnel);
+        assert_eq!(
+            tunnel,
+            [
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+                "-o",
+                "StrictHostKeyChecking=yes"
             ]
         );
     }
