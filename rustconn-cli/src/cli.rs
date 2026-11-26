@@ -1458,8 +1458,8 @@ pub enum Commands {
         /// Connection name or UUID to duplicate
         name: String,
 
-        /// New name for the duplicated connection
-        #[arg(short, long, conflicts_with = "range")]
+        /// New name for the duplicated connection (default: '<NAME> (copy)')
+        #[arg(short, long, visible_alias = "name", conflicts_with = "range")]
         new_name: Option<String>,
 
         /// Create one copy per number, e.g. 'host[02-10]'. Quote it for the shell
@@ -2604,9 +2604,17 @@ pub enum TagCommands {
     /// Add a tag to a connection
     #[command(about = "Add a tag to a connection")]
     Add {
-        /// Connection name or UUID
+        /// Connection name or UUID, as for pin, move and show
+        #[arg(
+            value_name = "CONNECTION",
+            required_unless_present = "connection",
+            conflicts_with = "connection"
+        )]
+        target: Option<String>,
+
+        /// Connection name or UUID (same as the positional argument)
         #[arg(short, long)]
-        connection: String,
+        connection: Option<String>,
 
         /// Tag to add
         #[arg(short, long)]
@@ -2616,9 +2624,17 @@ pub enum TagCommands {
     /// Remove a tag from a connection
     #[command(about = "Remove a tag from a connection")]
     Remove {
-        /// Connection name or UUID
+        /// Connection name or UUID, as for pin, move and show
+        #[arg(
+            value_name = "CONNECTION",
+            required_unless_present = "connection",
+            conflicts_with = "connection"
+        )]
+        target: Option<String>,
+
+        /// Connection name or UUID (same as the positional argument)
         #[arg(short, long)]
-        connection: String,
+        connection: Option<String>,
 
         /// Tag to remove
         #[arg(short, long)]

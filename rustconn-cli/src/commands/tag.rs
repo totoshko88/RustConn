@@ -18,9 +18,25 @@ use crate::util::{create_config_manager, find_connection};
 pub(super) fn cmd_tag(config_path: Option<&Path>, subcmd: TagCommands) -> Result<(), CliError> {
     match subcmd {
         TagCommands::List { format } => cmd_tag_list(config_path, OutputFormat::effective(format)),
-        TagCommands::Add { connection, tag } => cmd_tag_add(config_path, &connection, &tag),
-        TagCommands::Remove { connection, tag } => cmd_tag_remove(config_path, &connection, &tag),
+        TagCommands::Add {
+            target,
+            connection,
+            tag,
+        } => cmd_tag_add(config_path, &connection_ref(target, connection)?, &tag),
+        TagCommands::Remove {
+            target,
+            connection,
+            tag,
+        } => cmd_tag_remove(config_path, &connection_ref(target, connection)?, &tag),
     }
+}
+
+/// The connection named positionally or by `--connection`; clap requires
+/// exactly one of the two.
+fn connection_ref(target: Option<String>, connection: Option<String>) -> Result<String, CliError> {
+    target
+        .or(connection)
+        .ok_or_else(|| CliError::Config("Name the connection".to_string()))
 }
 
 /// List all tags used across connections with usage counts

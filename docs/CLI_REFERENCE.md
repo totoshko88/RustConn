@@ -575,7 +575,8 @@ rustconn-cli update "Router" --serial-data-bits 7 --serial-parity even --serial-
 ```
 
 All flags from `add` are available (except `--protocol`), plus:
-- `--new-name` to rename
+- `--new-name` to rename. `--name` is `add`'s flag for the new connection's own
+  name and is not accepted here; the error points at `--new-name`
 - `--add-tag` / `--remove-tag` for incremental tag editing
 - `--skip-port-check=false` to clear the flag
 - `--kdbx-path ""` to clear the connection's own KeePass database, so it inherits its group's or the global one again
@@ -649,12 +650,13 @@ unattended.
 ### duplicate — Duplicate a connection
 
 ```bash
-rustconn-cli duplicate "Server" [--new-name "Server Copy"]
+rustconn-cli duplicate "Server" [--new-name|--name "Server Copy"]
 ```
 
 ```bash
 rustconn-cli duplicate "My Server"                          # Creates "My Server (copy)"
 rustconn-cli duplicate "My Server" --new-name "Staging"     # Custom name
+rustconn-cli duplicate "My Server" --name "Staging"         # Same, as with add
 ```
 
 The duplicate gets a new UUID, fresh timestamps, and no `last_connected` value.
@@ -1324,9 +1326,12 @@ rustconn-cli unpin "Production DB"                   # Remove from favorites
 
 ```bash
 rustconn-cli tag list [-f table|json|csv]
-rustconn-cli tag add -c <connection> -t <tag>
-rustconn-cli tag remove -c <connection> -t <tag>
+rustconn-cli tag add <connection> -t <tag>
+rustconn-cli tag remove <connection> -t <tag>
 ```
+
+The connection is a positional argument, as for `pin`, `move` and `show`;
+`-c/--connection` still works.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1337,8 +1342,9 @@ rustconn-cli tag remove -c <connection> -t <tag>
 ```bash
 rustconn-cli tag list                                # All tags with counts
 rustconn-cli tag list --format json                  # JSON: {"linux": 5, "prod": 3}
-rustconn-cli tag add -c "Server" -t "production"     # Add tag
-rustconn-cli tag remove -c "Server" -t "staging"     # Remove tag
+rustconn-cli tag add "Server" -t "production"        # Add tag
+rustconn-cli tag remove "Server" -t "staging"        # Remove tag
+rustconn-cli tag add -c "Server" -t "linux"          # Same, with --connection
 ```
 
 ### move — Move connection to a group

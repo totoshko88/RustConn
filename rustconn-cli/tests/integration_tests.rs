@@ -2056,3 +2056,48 @@ fn a_zero_trust_connection_has_no_port() {
     let group: serde_json::Value = serde_json::from_str(&stdout_str(&group)).expect("JSON");
     assert!(group["connections"][0]["port"].is_null(), "{group}");
 }
+
+/// M3: `duplicate --name`, a positional connection for `tag add/remove`, and
+/// a pointer to `--new-name` when `update` is given `--name`.
+#[test]
+fn rename_and_tag_flags_match_the_other_commands() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    add_ok(&["add", "--name", "web", "-H", "web.lan"], dir);
+
+    add_ok(&["duplicate", "web", "--name", "web-2"], dir);
+    load_connection(dir, "web-2");
+    add_ok(&["duplicate", "web"], dir);
+    load_connection(dir, "web (copy)");
+
+    add_ok(&["tag", "add", "web", "--tag", "prod"], dir);
+    add_ok(
+        &["tag", "add", "--connection", "web", "--tag", "linux"],
+        dir,
+    );
+    assert_eq!(load_connection(dir, "web").tags, ["prod", "linux"]);
+    add_ok(&["tag", "remove", "web", "-t", "prod"], dir);
+    assert_eq!(load_connection(dir, "web").tags, ["linux"]);
+    let both = run_cli(
+        &["tag", "add", "web", "--connection", "web", "--tag", "x"],
+        Some(dir),
+    );
+    assert!(!both.status.success());
+
+    let out = run_cli(&["update", "web", "--name", "web-1"], Some(dir));
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "a usage error keeps clap's status"
+    );
+    let stderr = stderr_str(&out);
+    assert!(stderr.contains("unexpected argument '--name'"), "{stderr}");
+    assert!(stderr.contains("--new-name"), "{stderr}");
+    // No tip where `--new-name` does not exist.
+    let out = run_cli(&["show", "web", "--name", "x"], Some(dir));
+    assert!(
+        !stderr_str(&out).contains("--new-name"),
+        "{}",
+        stderr_str(&out)
+    );
+}
