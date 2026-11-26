@@ -118,7 +118,8 @@ pub fn plan_probe(connection: &Connection, ctx: &TestContext<'_>, timeout_secs: 
                 .filter(|p| !p.trim().is_empty())
             {
                 return ProbePlan::Skip(format!(
-                    "browses through the SOCKS proxy {proxy}, which the test does not use"
+                    "browses through the SOCKS proxy {}, which the test does not use",
+                    without_userinfo(proxy)
                 ));
             }
             return match web_endpoint(&connection.host, connection.port) {
@@ -249,8 +250,11 @@ fn kubectl_plan(config: &KubernetesConfig, timeout_secs: u64) -> ProbePlan {
 ///
 /// Returns the reason when the URL has no host or an invalid port.
 pub fn web_endpoint(url: &str, fallback_port: u16) -> Result<(String, u16), String> {
-    let url = url.trim();
-    let (default_port, rest) = match url.split_once("://") {
+    let raw = url.trim();
+    // Error text is printed by the CLI, so it never carries `user:password@`.
+    let url = without_userinfo(raw);
+    let url = url.as_str();
+    let (default_port, rest) = match raw.split_once("://") {
         Some((scheme, rest)) => {
             let port = match scheme.to_ascii_lowercase().as_str() {
                 "http" => 80,
@@ -259,7 +263,7 @@ pub fn web_endpoint(url: &str, fallback_port: u16) -> Result<(String, u16), Stri
             };
             (port, rest)
         }
-        None => (fallback_port, url),
+        None => (fallback_port, raw),
     };
     let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
     let host_port = authority.rsplit_once('@').map_or(authority, |(_, h)| h);
@@ -286,6 +290,27 @@ pub fn web_endpoint(url: &str, fallback_port: u16) -> Result<(String, u16), Stri
         None => default_port,
     };
     Ok((host.to_string(), port))
+}
+
+/// `url` with any `user[:password]@` in its authority replaced by `***@`.
+///
+/// For text a user sees (skip reasons, errors): a Web URL or SOCKS proxy may
+/// carry credentials, and those must not reach the terminal or a log.
+fn without_userinfo(url: &str) -> String {
+    let (scheme, rest) = match url.split_once("://") {
+        Some((scheme, rest)) => (Some(scheme), rest),
+        None => (None, url),
+    };
+    let authority_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    let (authority, tail) = rest.split_at(authority_end);
+    let authority = match authority.rsplit_once('@') {
+        Some((_, host)) => format!("***@{host}"),
+        None => authority.to_string(),
+    };
+    match scheme {
+        Some(scheme) => format!("{scheme}://{authority}{tail}"),
+        None => format!("{authority}{tail}"),
+    }
 }
 
 /// One hop of a resolved chain and the connection behind it, if any.
@@ -736,6 +761,36 @@ mod tests {
             let plan = plan_probe(&web, &ctx(&[], &[], &network), 10);
             assert!(matches!(plan, ProbePlan::Skip(_)), "{plan:?}");
         }
+    }
+
+    #[test]
+    fn url_credentials_never_reach_messages() {
+        let secret = "hunter2-probe-leak";
+        let bad_port = format!("https://admin:{secret}@host:99999/x");
+        let Err(reason) = web_endpoint(&bad_port, 443) else {
+            panic!("an invalid port must be rejected");
+        };
+        assert!(!reason.contains(secret), "{reason}");
+        assert!(reason.contains("***@host:99999"), "{reason}");
+
+        let network = NetworkSettings::default();
+        let socks = WebConfig {
+            socks_proxy: Some(format!("socks5://user:{secret}@127.0.0.1:1080")),
+            ..WebConfig::default()
+        };
+        let web = Connection::new(
+            "w".into(),
+            "https://10.0.0.1".into(),
+            443,
+            ProtocolConfig::Web(socks),
+        );
+        let ProbePlan::Skip(reason) = plan_probe(&web, &ctx(&[], &[], &network), 10) else {
+            panic!("a SOCKS-proxied Web connection is skipped");
+        };
+        assert!(!reason.contains(secret), "{reason}");
+
+        assert_eq!(without_userinfo("https://h/p@q"), "https://h/p@q");
+        assert_eq!(without_userinfo("u:p@h:1080"), "***@h:1080");
     }
 
     #[test]
