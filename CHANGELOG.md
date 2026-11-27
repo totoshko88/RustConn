@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.26.5] - Unreleased
+## [0.26.5] - 2026-11-27
 
 ### Added
 - **View Only toggle in the embedded VNC and RDP session toolbars** — the floating toolbar next to Copy, Paste and Ctrl+Alt+Del now carries a View Only toggle that switches the operator's own input off and on for the running session without a reconnect, in the embedded VNC and the embedded RDP sessions alike. While active it blocks the keyboard, mouse and wheel, the Paste and Ctrl+Alt+Del buttons, RDP Autotype / quick actions / scripts, the outbound clipboard (inbound clipboard sync is still allowed) and file drag-and-drop, and pauses the RDP jiggler — the input buttons dim so the state is visible. Held keys and mouse buttons are released when the mode turns on, and the toggle is per session: a fresh connection resets it to off, so the VNC View-Only setting from the connection dialog applies on connect and the toggle then takes over in place. (PR #454, contributed by asgitcode-tech; `rustconn/src/embedded_vnc/ui.rs`, `rustconn/src/embedded_vnc/mod.rs`, `rustconn/src/embedded_rdp/mod.rs`, `rustconn/src/embedded_rdp/input.rs`, `rustconn/src/embedded_rdp/clipboard.rs`, `rustconn/src/embedded_rdp/autotype.rs`, `rustconn/src/embedded_rdp/connection.rs`)
@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SFTP via mc did not add a legacy PEM or PKCS#8 SSH key to the agent** — these key formats do not store the public key, so when the agent already held any key, RustConn could not tell whether it held this one and did not add it ("Could not check whether the SSH agent holds the key"). The public key of an unencrypted legacy PEM or PKCS#8 key is now read with `ssh-keygen -y`, which never asks for a passphrase here, so the key is added and removed again like an OpenSSH key. An encrypted legacy key still cannot be checked; opening an SFTP connection directly now shows the same warning as the sidebar's **Open SFTP** instead of only logging it. (`rustconn-core/src/ssh_agent/keyfile.rs`, `rustconn-core/src/ssh_agent/own_keys.rs`, `rustconn/src/window/edit_actions.rs`)
 - **Remote monitoring through a jump host logged its ProxyCommand on every poll** — the debug line "using a ProxyCommand that refuses unknown host keys on every hop" was written every few seconds for the whole session. It is now written once per monitoring session. When monitoring stops because a host key on the route is not in `known_hosts`, the warning now says so instead of only counting failed attempts. (`rustconn-core/src/monitoring/ssh_exec.rs`, `rustconn-core/src/monitoring/collector.rs`)
 ### Dependencies
+- **ksni 0.3.7 → 0.3.8**, **sha2 0.11.1 → 0.11.2**, **zerocopy 0.8.65 → 0.8.66**
 - **des 0.9.0** is now a direct dependency of `rustconn-core`, used for the `vncpasswd` file. It was already in the lock file through `picky-krb`, so no new crate is downloaded.
 
 ## [0.26.4] - 2026-11-25

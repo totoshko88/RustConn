@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.26.4
+Version:        0.26.5
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,11 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Nov 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.5-0
+- Version bump to 0.26.5
+- Added: View Only toggle in the embedded VNC and RDP toolbars (#450, #454) with a tab marker, and one Rename Tab for local-shell and connection tabs (#455); Ctrl+click opens links in terminals (#458), asking before an OSC 8 link whose target differs; rustconn-cli Kubernetes flags for add and update, run-script --accept-new-host-keys, export --group and --tag, duplicate --name and a positional connection for tag add/remove
+- Fixed: session tabs show the connection's custom icon (#453); run-script finds KeePass passwords; Telnet auto-fill sends the password when the server echoes the username; a wrong RDP password asks again instead of opening FreeRDP, and legacy-only RDP security is explained; external TigerVNC viewers get the stored password; SFTP via mc adds unencrypted legacy PEM and PKCS#8 keys; no Gtk-CRITICAL lines when an editor opens; rustconn-cli show prints every protocol setting, update can turn switches off, add --from-file accepts hand-written entries, test follows jump hosts and reports skips, and Web and Zero Trust ports are correct
+- Dependencies: ksni 0.3.7 -> 0.3.8, sha2 0.11.1 -> 0.11.2, zerocopy 0.8.65 -> 0.8.66; des 0.9.0 now a direct dependency
 * Wed Nov 25 2026 Anton Isaiev <totoshko88@gmail.com> - 0.26.4-0
 - Version bump to 0.26.4
 - Added: Remmina SSH tunnels import as a linked Jump Host (#449, #450); eleven SecureCRT-inspired script examples (TDR, guarded erase, command capture, BGP peers, OUI lookup, guarded write scripts) with the caption and oui verbs; rustconn-cli report with 17 further report kinds

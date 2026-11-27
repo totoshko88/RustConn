@@ -116,6 +116,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.26.5" date="2026-11-27">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.5</url>
+      <description>
+        <p>Version 0.26.5 - View Only sessions, terminal links, CLI improvements:</p>
+        <ul>
+          <li>A View Only toggle in embedded VNC and RDP sessions blocks your own input, and the tab shows it.</li>
+          <li>Ctrl+click opens web links printed in terminals.</li>
+          <li>Session tabs show the connection's custom icon.</li>
+          <li>External TigerVNC viewers receive the stored password, and a wrong RDP password asks again.</li>
+          <li>Telnet auto-fill sends the password when the server echoes the username.</li>
+          <li>rustconn-cli gains Kubernetes settings, export by group or tag, and jump host aware connection tests.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.26.4" date="2026-11-25">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.26.4</url>
       <description>
