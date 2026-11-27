@@ -948,11 +948,16 @@ impl ElevatedCredentials {
     #[must_use]
     pub fn default_prompts() -> Vec<String> {
         vec![
-            // sudo, including the localised `for` forms that keep the brackets.
-            r"^\[sudo\] password for [^:]+:\s*$".to_string(),
+            // sudo in any locale: the `[sudo]` tag is never translated, the words
+            // after it are (`[sudo] Mot de passe de user :`, `[sudo] Passwort für
+            // user:`), and French typography adds a space before the colon.
+            r"^\[sudo\] [^:]+:\s*$".to_string(),
             // su on most systems, and `sudo -S` with a bare prompt. Anchored, so
-            // `user@host's password:` does not match.
-            r"^[Pp]assword:\s*$".to_string(),
+            // `user@host's password:` does not match. The word is localised
+            // (`Mot de passe :`, `Passwort:`) and French typography puts a space
+            // before the colon, hence `\s*:`.
+            r"^(?i:password|mot de passe|passwort|contraseña|senha|wachtwoord|пароль|hasło)\s*:\s*$"
+                .to_string(),
             // doas prints `doas (user@host) password:`.
             r"^doas \([^)]+\) password:\s*$".to_string(),
             // Cisco-style enable prompt on network equipment.

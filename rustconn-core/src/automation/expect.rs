@@ -1062,6 +1062,13 @@ mod tests {
             for line in [
                 "[sudo] password for totoshko88: ",
                 "[sudo] password for domain\\user:",
+                // Localised sudo/su prompts; French puts a space before the colon.
+                "[sudo] Mot de passe de roms : ",
+                "[sudo] Mot de passe de roms :\u{a0}",
+                "[sudo] Passwort für roms: ",
+                "Mot de passe : ",
+                "Mot de passe :",
+                "Passwort:",
                 "Password:",
                 "Password: ",
                 "password:",
