@@ -19,7 +19,7 @@
 // Re-export types for external use
 pub use crate::sidebar_types::{
     DropIndicator, DropPosition, MAX_SEARCH_HISTORY, RowIndicators, SelectionModelWrapper,
-    SessionStatusInfo, TreeState,
+    SessionStatusInfo, TreeState, drop_position,
 };
 
 // Submodules
@@ -1889,9 +1889,11 @@ impl ConnectionSidebar {
             return gdk::DragAction::empty();
         }
 
-        // Get the row widget's allocation to determine position within it
-        let (_, row_height) = row_widget.preferred_size();
-        let row_height = f64::from(row_height.height().max(36));
+        // The row's real allocated height (not its preferred minimum): the pointer's
+        // Y is measured in the row's own pixels, so the before/after/into bands below
+        // are a fixed fraction of what is actually on screen — a short row keeps
+        // short zones, a tall row keeps tall zones.
+        let row_height = f64::from(row_widget.height().max(1));
 
         // Get the Y position relative to the row widget
         // Use compute_point for GTK4.12+ compatibility
@@ -1901,42 +1903,13 @@ impl ConnectionSidebar {
             .map(|p| f64::from(p.y()))
             .unwrap_or(y);
 
-        // Determine drop position based on Y within the row
-        // Increased ratio for easier targeting (40% top/bottom zones)
-        const DROP_ZONE_RATIO: f64 = 0.4;
-        let drop_zone_size = row_height * DROP_ZONE_RATIO;
-
-        // Try to get the item to check if it's a group
+        // Determine drop position based on Y within the row. `drop_position` keeps
+        // the zones symmetric over the whole row and covers the import-group and
+        // group cases (see the unit tests for the 36/44/60 px bands).
         let is_group = Self::is_row_widget_group(&row_widget);
-
-        let position = if is_group {
-            // Check if this is an Import group — block "Into" drops
-            let is_import_group = Self::get_item_from_widget(&row_widget)
-                .is_some_and(|item| item.sync_mode() == "import");
-
-            // For groups: top zone = before, middle = into, bottom = after
-            // Import groups: never allow "Into" — treat as before/after only
-            if is_import_group {
-                if y_in_widget < row_height / 2.0 {
-                    DropPosition::Before
-                } else {
-                    DropPosition::After
-                }
-            } else if y_in_widget < drop_zone_size {
-                DropPosition::Before
-            } else if y_in_widget > row_height - drop_zone_size {
-                DropPosition::After
-            } else {
-                DropPosition::Into
-            }
-        } else {
-            // For connections: top half = before, bottom half = after
-            if y_in_widget < row_height / 2.0 {
-                DropPosition::Before
-            } else {
-                DropPosition::After
-            }
-        };
+        let is_import_group = Self::get_item_from_widget(&row_widget)
+            .is_some_and(|item| item.sync_mode() == "import");
+        let position = drop_position(y_in_widget, row_height, is_group, is_import_group);
 
         // Update visual feedback using CSS classes
         drop_indicator.show(position);

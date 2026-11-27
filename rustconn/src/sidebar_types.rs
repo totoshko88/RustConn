@@ -91,6 +91,113 @@ pub enum DropPosition {
     Into,
 }
 
+/// The fraction of a group row's height taken by its top (before) and bottom
+/// (after) bands; the middle is the group's "into" zone. A third leaves equal
+/// before/after bands and a wider middle band than a half-width split, so the
+/// three targets are symmetric and easy to line up on.
+const GROUP_BAND_RATIO: f64 = 1.0 / 3.0;
+
+/// Compute where a dragged item lands from the pointer's Y within the target row.
+///
+/// `y` and `height` are both in the row's real allocated pixels. The zones are
+/// symmetric and cover the whole row with no gaps: a plain connection splits
+/// into a top (before) and bottom (after) half; a group keeps a top and bottom
+/// `before`/`after` band of `height * GROUP_BAND_RATIO` and a middle `into` band.
+/// An import group takes no "into" drop, so it uses the connection halves.
+pub fn drop_position(y: f64, height: f64, is_group: bool, is_import_group: bool) -> DropPosition {
+    if is_group && !is_import_group {
+        let band = height * GROUP_BAND_RATIO;
+        if y < band {
+            DropPosition::Before
+        } else if y > height - band {
+            DropPosition::After
+        } else {
+            DropPosition::Into
+        }
+    } else if y < height / 2.0 {
+        DropPosition::Before
+    } else {
+        DropPosition::After
+    }
+}
+
+#[cfg(test)]
+mod drop_position_tests {
+    use super::{DropPosition, drop_position};
+
+    /// The row heights we actually render at, short to tall.
+    const HEIGHTS: [f64; 3] = [36.0, 44.0, 60.0];
+
+    /// A plain connection is split into a top (before) and bottom (after) half,
+    /// at every row height we render at.
+    #[test]
+    fn connection_split_at_half() {
+        for h in HEIGHTS {
+            assert_eq!(drop_position(0.0, h, false, false), DropPosition::Before);
+            assert_eq!(
+                drop_position(h * 0.25, h, false, false),
+                DropPosition::Before
+            );
+            assert_eq!(drop_position(h / 2.0, h, false, false), DropPosition::After);
+            assert_eq!(
+                drop_position(h * 0.75, h, false, false),
+                DropPosition::After
+            );
+            assert_eq!(drop_position(h - 0.5, h, false, false), DropPosition::After);
+        }
+    }
+
+    /// A group keeps a top and bottom before/after band and a middle into band.
+    #[test]
+    fn group_bands_top_bottom_and_into() {
+        for h in HEIGHTS {
+            let band = h / 3.0;
+            assert_eq!(drop_position(0.0, h, true, false), DropPosition::Before);
+            assert_eq!(
+                drop_position(band / 2.0, h, true, false),
+                DropPosition::Before
+            );
+            assert_eq!(drop_position(band, h, true, false), DropPosition::Into);
+            assert_eq!(drop_position(h / 2.0, h, true, false), DropPosition::Into);
+            assert_eq!(drop_position(h - band, h, true, false), DropPosition::Into);
+            assert_eq!(
+                drop_position(h - band / 2.0, h, true, false),
+                DropPosition::After
+            );
+            assert_eq!(drop_position(h - 0.5, h, true, false), DropPosition::After);
+        }
+    }
+
+    /// An import group takes no into drop — it behaves as a plain connection.
+    #[test]
+    fn import_group_has_no_into() {
+        for h in HEIGHTS {
+            assert_eq!(drop_position(0.0, h, true, true), DropPosition::Before);
+            assert_eq!(drop_position(h / 2.0, h, true, true), DropPosition::After);
+        }
+    }
+
+    /// The zones are symmetric: a point near the top that lands before has a
+    /// mirror near the bottom that lands after, and the row is covered with no
+    /// gap (every y is before, into or after).
+    #[test]
+    fn zones_are_symmetric_and_cover_the_row() {
+        for h in HEIGHTS {
+            assert_eq!(drop_position(h * 0.1, h, true, false), DropPosition::Before);
+            assert_eq!(drop_position(h * 0.9, h, true, false), DropPosition::After);
+            // Sweep: the before band and the after band are equal thirds.
+            assert_eq!(
+                drop_position(h / 3.0 - 1e-3, h, true, false),
+                DropPosition::Before
+            );
+            assert_eq!(
+                drop_position(h - h / 3.0 + 1e-3, h, true, false),
+                DropPosition::After
+            );
+        }
+    }
+}
+
 // `DragDropData` used to sit here, marked `#[expect(dead_code, reason = "Fields
 // used by drag-drop callback system")]`. No callback system ever referenced it —
 // the drag payload is encoded as a string in `sidebar::drag_drop` — so the reason
@@ -217,18 +324,19 @@ impl DropIndicator {
                 box-shadow: none;
             }
             
-            /* Drop indicator line BEFORE this row (line at top) */
+            /* Drop indicator line BEFORE this row (line at top). box-shadow +
+               background keep the row's own margin/padding, so it does not resize
+               under the cursor — a layout shift would flip the pointer between
+               before and into and flicker. The 4px inset line is the target. */
             .drop-target-before {
-                border-top: 3px solid @accent_bg_color;
-                margin-top: 4px;
-                padding-top: 4px;
+                box-shadow: inset 0 4px 0 0 @accent_bg_color;
+                background-color: alpha(@accent_bg_color, 0.14);
             }
-            
+
             /* Drop indicator line AFTER this row (line at bottom) */
             .drop-target-after {
-                border-bottom: 3px solid @accent_bg_color;
-                margin-bottom: 4px;
-                padding-bottom: 4px;
+                box-shadow: inset 0 -4px 0 0 @accent_bg_color;
+                background-color: alpha(@accent_bg_color, 0.14);
             }
 
             /* Status icons - using Adwaita semantic colors */
@@ -244,9 +352,8 @@ impl DropIndicator {
             
             /* Group highlight for drop-into */
             .drop-target-into {
+                box-shadow: inset 0 0 0 2px @accent_bg_color;
                 background-color: alpha(@accent_bg_color, 0.2);
-                border: 2px solid @accent_bg_color;
-                border-radius: 6px;
             }
             
             /* Legacy classes for compatibility */
