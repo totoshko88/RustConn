@@ -124,7 +124,9 @@ pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
         // A hop that is not plain, such as a free-text `b1,b2` chain or a
         // value from someone else's synced group, keeps `-J`, which OpenSSH
         // parses itself, rather than going unquoted into a shell command.
-        known_only: request.hop_host_keys == HopHostKeys::KnownOnly && hops_are_plain(&hops),
+        // `AcceptNew` needs the same `ProxyCommand`, the only route that can
+        // put a host key option on every hop.
+        known_only: request.hop_host_keys != HopHostKeys::UserConfig && hops_are_plain(&hops),
     };
 
     if !auth_shape.needs_explicit_proxy_command() {
@@ -958,6 +960,28 @@ mod tests {
         assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
         assert!(command.ends_with("bastion.example"), "{command}");
         assert!(passwords.is_empty());
+    }
+
+    /// `run-script --accept-new-host-keys`: every hop, with or without a
+    /// password, records a first-seen key instead of refusing it, and none is
+    /// left on the strict `yes`.
+    #[test]
+    fn accept_new_puts_accept_new_on_every_hop() {
+        for passwords in [[secret(), secret()], [None, None]] {
+            let chain = hops(&["b1.example", "b2.example"]);
+            let chain = jump_hops(&chain, &passwords);
+            let Some(JumpRoute::ProxyCommand { command, .. }) =
+                jump_route(&request(&chain, HopHostKeys::AcceptNew))
+            else {
+                panic!("accept-new needs a ProxyCommand to reach every hop");
+            };
+            assert_eq!(
+                command.matches("StrictHostKeyChecking=accept-new").count(),
+                2,
+                "{command}"
+            );
+            assert!(!command.contains("StrictHostKeyChecking=yes"), "{command}");
+        }
     }
 
     #[test]

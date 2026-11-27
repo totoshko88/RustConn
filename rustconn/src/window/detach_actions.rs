@@ -451,6 +451,7 @@ fn move_session_to_group_window(
         info.connection_id,
         &info.name,
         &info.protocol,
+        &targets.notebook.connection_icon_for(info.connection_id),
         &content,
     );
     group.present();
@@ -613,6 +614,7 @@ fn move_main_tab_to_group_window(
         info.connection_id,
         &title,
         &info.protocol,
+        &targets.notebook.connection_icon_for(info.connection_id),
         &content,
     );
     group.place_session(session_id, position);
@@ -664,6 +666,7 @@ fn move_between_group_windows(
         info.connection_id,
         &title,
         &info.protocol,
+        &targets.notebook.connection_icon_for(info.connection_id),
         &content,
     );
     group.place_session(session_id, position);

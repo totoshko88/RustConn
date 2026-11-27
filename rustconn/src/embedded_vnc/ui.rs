@@ -11,7 +11,7 @@ use std::rc::Rc;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, DrawingArea, EventControllerKey, EventControllerMotion, GestureClick,
-    Label, Orientation, gdk, glib,
+    Label, Orientation, ToggleButton, gdk, glib,
 };
 
 #[cfg(feature = "vnc-embedded")]
@@ -78,6 +78,19 @@ impl EmbeddedVncWidget {
         ctrl_alt_del_button.add_css_class("accent");
         ctrl_alt_del_button.set_tooltip_text(Some(&i18n("Send Ctrl+Alt+Del to remote session")));
         toolbar.append(&ctrl_alt_del_button);
+
+        // View Only toggle — flips keyboard and pointer forwarding for the live
+        // session. Every input path reads `VncConfig::view_only` at event time,
+        // so the mode takes effect without a reconnect; `connect()` mirrors the
+        // config's flag into the button's active state.
+        let view_only_button = ToggleButton::with_label(&i18n("View Only"));
+        view_only_button.add_css_class("flat");
+        view_only_button.add_css_class("accent");
+        view_only_button.set_tooltip_text(Some(&i18n(
+            "Observe only: block all input to the remote session",
+        )));
+        view_only_button.update_property(&[gtk4::accessible::Property::Label(&i18n("View Only"))]);
+        toolbar.append(&view_only_button);
 
         // The toolbar is placed in a Revealer inside a GTK Overlay so it
         // floats over the DrawingArea without consuming vertical space. This
@@ -171,12 +184,14 @@ impl EmbeddedVncWidget {
             copy_button: copy_button.clone(),
             paste_button: paste_button.clone(),
             ctrl_alt_del_button: ctrl_alt_del_button.clone(),
+            view_only_button: view_only_button.clone(),
             separator,
             drawing_area,
             cairo_buffer,
             state,
             config: Rc::new(RefCell::new(None)),
             process: Rc::new(RefCell::new(None)),
+            password_file: Rc::new(RefCell::new(None)),
             is_embedded: Rc::new(RefCell::new(false)),
             width,
             height,
@@ -186,6 +201,7 @@ impl EmbeddedVncWidget {
             on_error: Rc::new(RefCell::new(None)),
             on_frame_update: Rc::new(RefCell::new(None)),
             on_reconnect: Rc::new(RefCell::new(None)),
+            on_view_only_changed: Rc::new(RefCell::new(None)),
             reconnect_banner,
             reconnect_button,
             remote_clipboard_text: Rc::new(RefCell::new(None)),
@@ -200,6 +216,7 @@ impl EmbeddedVncWidget {
         widget.setup_resize_handler();
         widget.setup_clipboard_buttons(&copy_button, &paste_button);
         widget.setup_ctrl_alt_del_button(&ctrl_alt_del_button);
+        widget.setup_view_only_button(&view_only_button);
         widget.setup_reconnect_button();
         widget.setup_visibility_handler();
 
@@ -237,6 +254,18 @@ impl EmbeddedVncWidget {
         F: Fn() + 'static,
     {
         *self.on_reconnect.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Connects a callback for View Only toggle changes.
+    ///
+    /// Fires with the new mode each time the toolbar toggle changes the live
+    /// session's read-only state, so the host can mirror it — e.g. add or drop
+    /// the tab's eye marker without re-reading the config.
+    pub fn connect_view_only_changed<F>(&self, callback: F)
+    where
+        F: Fn(bool) + 'static,
+    {
+        *self.on_view_only_changed.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Sets up the drawing function for the DrawingArea
@@ -762,13 +791,18 @@ impl EmbeddedVncWidget {
             let drawing_area = self.drawing_area.clone();
             let state = self.state.clone();
             let is_embedded = self.is_embedded.clone();
+            let config = self.config.clone();
             let status_label = self.status_label.clone();
 
             paste_btn.connect_clicked(move |_| {
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
+                let view_only = config.borrow().as_ref().is_some_and(|c| c.view_only);
 
-                if current_state != VncConnectionState::Connected || !embedded {
+                // Paste types the local clipboard into the remote session — the
+                // operator's own input — so View Only suppresses it (the button
+                // stays enabled so the mode is visible).
+                if !super::input_allowed(embedded, current_state, view_only) {
                     return;
                 }
 
@@ -777,11 +811,17 @@ impl EmbeddedVncWidget {
                 let clipboard = display.clipboard();
                 let tx = command_sender.clone();
                 let status = status_label.clone();
+                // Re-check View Only when the async read completes: the user can
+                // flip the toggle while the clipboard is being read.
+                let config_async = config.clone();
 
                 clipboard.read_text_async(
                     None::<&gtk4::gio::Cancellable>,
                     move |result: Result<Option<glib::GString>, glib::Error>| {
                         if let Ok(Some(text)) = result {
+                            if config_async.borrow().as_ref().is_some_and(|c| c.view_only) {
+                                return;
+                            }
                             // chars().count(), not len(): len() is the UTF-8
                             // byte count, so the log said "chars" while
                             // reporting bytes for any multibyte text. Matches
@@ -829,12 +869,16 @@ impl EmbeddedVncWidget {
         let command_sender = self.command_sender.clone();
         let state = self.state.clone();
         let is_embedded = self.is_embedded.clone();
+        let config = self.config.clone();
 
         button.connect_clicked(move |_| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
+            let view_only = config.borrow().as_ref().is_some_and(|c| c.view_only);
 
-            if current_state != VncConnectionState::Connected || !embedded {
+            // Ctrl+Alt+Del is the operator's own input, so View Only suppresses
+            // it too (the button stays enabled so the mode is visible).
+            if !super::input_allowed(embedded, current_state, view_only) {
                 return;
             }
 
@@ -851,6 +895,38 @@ impl EmbeddedVncWidget {
     #[cfg(not(feature = "vnc-embedded"))]
     fn setup_ctrl_alt_del_button(&self, _button: &Button) {
         // No-op when vnc-embedded feature is disabled
+    }
+
+    /// Sets up the View Only toggle handler
+    ///
+    /// The button's active state is the user's view of `VncConfig::view_only`;
+    /// writing the flag back into the config is what makes it live, because the
+    /// key, motion, click and Ctrl+Alt+Del paths all read `view_only` at event
+    /// time. No `set_active` here: the click already moved it, and emitting it
+    /// again would just re-enter this handler.
+    fn setup_view_only_button(&self, button: &ToggleButton) {
+        let config = self.config.clone();
+        // The input buttons reflect the mode (disabled while View Only is on), so
+        // the operator can see at a glance what the toggle is holding.
+        let input_buttons = [
+            self.paste_button.clone().upcast::<gtk4::Widget>(),
+            self.ctrl_alt_del_button.clone().upcast::<gtk4::Widget>(),
+        ];
+        let on_view_only_changed = self.on_view_only_changed.clone();
+
+        button.connect_toggled(move |toggle| {
+            let view_only = toggle.is_active();
+            if let Some(cfg) = config.borrow_mut().as_mut() {
+                cfg.view_only = view_only;
+            }
+            for widget in &input_buttons {
+                widget.set_sensitive(!view_only);
+            }
+            if let Some(callback) = on_view_only_changed.borrow().as_ref() {
+                callback(view_only);
+            }
+            tracing::debug!(view_only, "[VNC] View Only toggled");
+        });
     }
 }
 

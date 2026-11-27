@@ -313,6 +313,10 @@ impl TerminalNotebook {
         // Apply user settings
         config::configure_terminal_with_settings(&terminal, settings);
 
+        // Ctrl+click URL opening — installed once at widget creation; moving the
+        // terminal between a tab, a split pane and a detached window keeps it.
+        super::link_open::setup_link_opening(&terminal);
+
         // Apply per-connection theme override (if present) on top of the global theme
         if let Some(override_colors) = theme_override {
             let base_theme =
@@ -410,9 +414,10 @@ impl TerminalNotebook {
         // Add page to TabView — child is the TabPageContainer outer box
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        page.set_icon(Some(&gio::ThemedIcon::new(Self::get_protocol_icon(
-            protocol,
-        ))));
+        page.set_icon(Some(&crate::icon_render::tab_icon(
+            &self.connection_icon_for(connection_id),
+            Self::get_protocol_icon(protocol),
+        )));
         page.set_tooltip(title);
 
         // Store session data
@@ -559,7 +564,8 @@ impl TerminalNotebook {
         let tab_container = TabPageContainer::single(&container);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        page.set_icon(Some(&gio::ThemedIcon::new(
+        page.set_icon(Some(&crate::icon_render::tab_icon(
+            &self.connection_icon_for(connection_id),
             "video-joined-displays-symbolic",
         )));
         // The host is stored on the session below, so a tab rebuilt after a
@@ -636,7 +642,10 @@ impl TerminalNotebook {
         let tab_container = TabPageContainer::single(&container);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        page.set_icon(Some(&gio::ThemedIcon::new("computer-symbolic")));
+        page.set_icon(Some(&crate::icon_render::tab_icon(
+            &self.connection_icon_for(connection_id),
+            "computer-symbolic",
+        )));
         page.set_tooltip(title);
 
         self.sessions.borrow_mut().insert(session_id, page.clone());
@@ -698,7 +707,10 @@ impl TerminalNotebook {
         let tab_container = TabPageContainer::single(&container);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        page.set_icon(Some(&gio::ThemedIcon::new("web-browser-symbolic")));
+        page.set_icon(Some(&crate::icon_render::tab_icon(
+            &self.connection_icon_for(connection_id),
+            "web-browser-symbolic",
+        )));
         page.set_tooltip(title);
 
         self.sessions.borrow_mut().insert(session_id, page.clone());
@@ -747,9 +759,10 @@ impl TerminalNotebook {
         let tab_container = TabPageContainer::single(widget);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
-        page.set_icon(Some(&gio::ThemedIcon::new(Self::get_protocol_icon(
-            protocol,
-        ))));
+        page.set_icon(Some(&crate::icon_render::tab_icon(
+            &self.connection_icon_for(connection_id),
+            Self::get_protocol_icon(protocol),
+        )));
         page.set_tooltip(title);
 
         self.sessions.borrow_mut().insert(session_id, page.clone());
@@ -880,13 +893,14 @@ impl TerminalNotebook {
         // Resolve the metadata *before* touching the park marks: a session
         // without metadata would otherwise lose its mark and gain no tab, which
         // leaves it in no placement at all (issue #236).
-        let Some((title, protocol, group, host)) =
+        let Some((title, protocol, group, host, connection_id)) =
             self.session_info.borrow().get(&session_id).map(|info| {
                 (
                     info.name.clone(),
                     info.protocol.clone(),
                     info.tab_group.clone(),
                     info.host.clone(),
+                    info.connection_id,
                 )
             })
         else {
@@ -906,10 +920,19 @@ impl TerminalNotebook {
         // name, so a tab that came back from a split pane silently lost its group
         // label — visible only in the tooltip — while still being a member of the
         // group for every operation. Nothing else re-applies it on this path.
-        page.set_title(&tab_title(&title, group.as_deref()));
-        page.set_icon(Some(&gio::ThemedIcon::new(Self::get_protocol_icon(
-            &protocol,
-        ))));
+        // The eye marker is rebuilt from the session's state, not the title text:
+        // a view-only tab that detaches and comes back keeps it.
+        let title = tab_title(&title, group.as_deref());
+        let title = if self.is_view_only_session(session_id) {
+            with_title_marker(&title, VIEW_ONLY_TITLE_MARKER, true, &all_title_markers())
+        } else {
+            title
+        };
+        page.set_title(&title);
+        page.set_icon(Some(&crate::icon_render::tab_icon(
+            &self.connection_icon_for(connection_id),
+            Self::get_protocol_icon(&protocol),
+        )));
         // The creation path sets a tooltip too, and a grouped tab carries the
         // group name as a second line.
         page.set_tooltip(&Self::tab_tooltip(

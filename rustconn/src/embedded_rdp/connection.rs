@@ -1460,6 +1460,8 @@ impl super::EmbeddedRdpWidget {
         let is_embedded = self.is_embedded.clone();
         let is_ironrdp = self.is_ironrdp.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
+        let view_only = self.view_only.clone();
+        let view_only_button = self.view_only_button.clone();
         let remote_clipboard_text = self.remote_clipboard_text.clone();
         let remote_clipboard_formats = self.remote_clipboard_formats.clone();
         let copy_button = self.copy_button.clone();
@@ -1946,14 +1948,25 @@ impl super::EmbeddedRdpWidget {
                                     callback(RdpConnectionState::Connected);
                                 }
 
+                                // The View Only toggle is per-session, not per-connection:
+                                // a fresh connection starts observing normally, so
+                                // reset it to off (the toggle's handler keeps the
+                                // jiggler and the input gate in step).
+                                view_only_button.set_active(false);
+
                                 // Arm the mouse jiggler now: embedded mode never
                                 // routes a Connected transition through set_state,
                                 // so this is the only place it can start (#185).
-                                if let Some(interval) = config
-                                    .borrow()
-                                    .as_ref()
-                                    .filter(|c| c.jiggler_enabled)
-                                    .map(|c| c.jiggler_interval_secs)
+                                // A new connection resets to normal input (below),
+                                // so only arm when view-only is off — otherwise a
+                                // reconnect would re-move the cursor while we
+                                // observe.
+                                if !view_only.get()
+                                    && let Some(interval) = config
+                                        .borrow()
+                                        .as_ref()
+                                        .filter(|c| c.jiggler_enabled)
+                                        .map(|c| c.jiggler_interval_secs)
                                 {
                                     jiggler.start(interval);
                                 }
@@ -2086,12 +2099,17 @@ impl super::EmbeddedRdpWidget {
                                 }
                             }
                             RdpClientEvent::ClipboardDataRequest(format) => {
-                                if !clipboard_sharing_enabled(&config) {
+                                // The server asks for our clipboard content — an
+                                // outbound send. In View Only we block outbound
+                                // clipboard (but still allow inbound sync) so the
+                                // observation session can't reach back.
+                                if !clipboard_sharing_enabled(&config) || view_only.get() {
                                     tracing::debug!(
                                         protocol = "rdp",
                                         format_id = format.id,
+                                        view_only = view_only.get(),
                                         "Ignoring server clipboard request — \
-                                         sharing disabled for this profile"
+                                         sharing off or view-only"
                                     );
                                     continue;
                                 }
@@ -2819,13 +2837,22 @@ Open Settings → Connection → Media Codecs to re-download it.",
             return;
         }
 
-        let tls_only_reason = if rustconn_core::rdp_client::warrants_tls_only_fallback(msg) {
-            Some("CredSSP rejected (possible KRdp/FreeRDP-3.32 HYBRID_EX regression)")
-        } else if rustconn_core::rdp_client::warrants_tls_only_stall_fallback(msg) {
-            Some("connect stalled after TLS (GNOME Remote Desktop / SSH-bridge, #392/#381)")
-        } else {
-            None
-        };
+        // A wrong password against a Windows (or unmarked) server is reported
+        // and asked for again, not handed off: core decides by the Server OS.
+        let server_os = ctx
+            .fallback_config
+            .borrow()
+            .as_ref()
+            .map(|config| config.server_os)
+            .unwrap_or_default();
+        let tls_only_reason =
+            if rustconn_core::rdp_client::warrants_tls_only_fallback(msg, server_os) {
+                Some("CredSSP rejected (possible KRdp/FreeRDP-3.32 HYBRID_EX regression)")
+            } else if rustconn_core::rdp_client::warrants_tls_only_stall_fallback(msg) {
+                Some("connect stalled after TLS (GNOME Remote Desktop / SSH-bridge, #392/#381)")
+            } else {
+                None
+            };
         let should_route_tls_only =
             !*ctx.tls_only_fallback_attempted.borrow() && tls_only_reason.is_some();
 
@@ -3059,7 +3086,13 @@ Open Settings → Connection → Media Codecs to re-download it.",
         // wording sent issue #218 chasing credentials for the wrong reason; the
         // embedded client cannot finish the licensing exchange yet (upstream
         // IronRDP #1629), which is a different and more useful thing to say.
-        let fallback_notice = if rustconn_core::rdp_client::is_license_exchange_failure(reason) {
+        // A server offering only Standard RDP Security (xrdp's default
+        // `security_layer=negotiate`) is fixed on the server, so say how.
+        let fallback_notice = if rustconn_core::rdp_client::is_standard_security_only(reason) {
+            i18n(
+                "The server offers only legacy RDP security, so the session opened in the external RDP client. To open it here, turn on TLS on the server, for example security_layer=tls in xrdp.ini.",
+            )
+        } else if rustconn_core::rdp_client::is_license_exchange_failure(reason) {
             i18n("Using external RDP client (server requires RDS licensing)")
         } else {
             i18n("Using external RDP client (server incompatible)")
@@ -3192,7 +3225,8 @@ Open Settings → Connection → Media Codecs to re-download it.",
             let realm = config.and_then(|config| {
                 kerberos_realm(config.username.as_deref(), config.domain.as_deref())
             });
-            return Self::auth_failure_message(&kind, kerberos, realm.as_deref());
+            let server_os = config.map(|config| config.server_os).unwrap_or_default();
+            return Self::auth_failure_message(&kind, kerberos, realm.as_deref(), server_os);
         }
         // Worded by the error's own text: a `tls` or `timed out` somewhere in
         // a session error's cause chain says nothing about the connection.
@@ -3217,18 +3251,19 @@ Open Settings → Connection → Media Codecs to re-download it.",
     ///
     /// `kerberos` says whether the attempt asked for Kerberos, `realm` is the
     /// realm derived from the connection, used when sspi's message names none.
+    /// `server_os` is the connection's Server OS setting, which words a wrong
+    /// password ([`super::invalid_credentials_message`]).
     #[cfg(feature = "rdp-embedded")]
     fn auth_failure_message(
         kind: &rustconn_core::rdp_client::AuthFailureKind,
         kerberos: bool,
         realm: Option<&str>,
+        server_os: rustconn_core::models::RdpServerOs,
     ) -> String {
         use rustconn_core::rdp_client::AuthFailureKind as Kind;
 
         match kind {
-            Kind::InvalidCredentials => i18n(
-                "Authentication failed: invalid username or password. If the credentials are correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can instead be the server's NLA regression with FreeRDP 3.32 — update KRdp to 6.7.90 or newer, or set ExtSecurity=0 on the server (FreeRDP issue #13567).",
-            ),
+            Kind::InvalidCredentials => super::invalid_credentials_message(server_os),
             // STATUS_ACCOUNT_RESTRICTION over NTLM is what an account in AD
             // "Protected Users" gets; Kerberos is the way in.
             Kind::AccountRestriction if !kerberos => i18n(
@@ -3237,12 +3272,18 @@ Open Settings → Connection → Media Codecs to re-download it.",
             Kind::AccountRestriction | Kind::LogonRestriction => {
                 i18n("Authentication failed: account restrictions prevent this login.")
             }
-            Kind::PasswordMustChange => {
-                i18n("Authentication failed: password must be changed before first login.")
+            Kind::PasswordMustChange => i18n(
+                "The password must be changed before the first sign-in. Change it or ask the server administrator to reset it, then connect again.",
+            ),
+            Kind::AccountDisabled => {
+                i18n("The account is disabled. Ask the server administrator to enable it.")
             }
-            Kind::AccountDisabled => i18n("Authentication failed: account is disabled."),
-            Kind::AccountLockedOut => i18n("Authentication failed: account is locked out."),
-            Kind::PasswordExpired => i18n("Authentication failed: password has expired."),
+            Kind::AccountLockedOut => i18n(
+                "The account is locked out after too many failed sign-ins. Wait for the lockout to end or ask the server administrator to unlock it.",
+            ),
+            Kind::PasswordExpired => i18n(
+                "The password has expired. Change it or ask the server administrator to reset it, then connect again.",
+            ),
             Kind::AccountExpired => i18n("Authentication failed: account has expired."),
             Kind::AccountRevoked => {
                 i18n("Authentication failed: account is disabled, locked out or expired.")
@@ -3523,6 +3564,8 @@ Open Settings → Connection → Media Codecs to re-download it.",
         // event path sets the state directly, bypassing set_state (#185).
         let jiggler = self.jiggler_handles();
         let jiggler_config = self.config.clone();
+        let view_only = self.view_only.clone();
+        let view_only_button = self.view_only_button.clone();
 
         glib::timeout_add_local(std::time::Duration::from_millis(33), move || {
             // Check if we're still in embedded mode, and still this attempt
@@ -3546,11 +3589,20 @@ Open Settings → Connection → Media Codecs to re-download it.",
                         super::with_callback(&on_state_changed, |callback| {
                             callback(RdpConnectionState::Connected);
                         });
-                        if let Some(interval) = jiggler_config
-                            .borrow()
-                            .as_ref()
-                            .filter(|c| c.jiggler_enabled)
-                            .map(|c| c.jiggler_interval_secs)
+                        // The View Only toggle is per-session, not per-connection:
+                        // a fresh connection starts observing normally, so reset
+                        // it to off (the toggle's handler keeps the jiggler and the
+                        // input gate in step).
+                        view_only_button.set_active(false);
+                        // A new connection resets to normal input (below), so only
+                        // arm when view-only is off — otherwise a reconnect would
+                        // re-move the cursor while we observe.
+                        if !view_only.get()
+                            && let Some(interval) = jiggler_config
+                                .borrow()
+                                .as_ref()
+                                .filter(|c| c.jiggler_enabled)
+                                .map(|c| c.jiggler_interval_secs)
                         {
                             jiggler.start(interval);
                         }

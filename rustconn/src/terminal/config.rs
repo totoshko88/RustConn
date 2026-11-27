@@ -62,6 +62,11 @@ pub fn configure_terminal_with_settings(terminal: &Terminal, settings: &Terminal
     // the output stream, which has no `TerminalSettings` of its own.
     super::osc52::set_enabled(settings.allow_osc52_clipboard);
 
+    // Ctrl+click link opening follows the same hyperlinks setting; recorded as a
+    // global so already-open sessions follow a change, like osc52 above, and
+    // this terminal's link regex is added or removed to match.
+    super::link_open::set_enabled(terminal, settings.allow_hyperlinks);
+
     // Record the multi-line-paste confirmation preference so every paste path
     // (Ctrl+V, the context menu, split-view and detached-window paste) reads
     // one global source. Set before the shortcut controller reads it.

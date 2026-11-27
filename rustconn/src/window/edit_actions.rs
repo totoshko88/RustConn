@@ -143,6 +143,7 @@ impl MainWindow {
         let window_weak = window.downgrade();
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
+        let notebook_clone = self.terminal_notebook.clone();
         let key_setup_ctx_for_edit = self.key_setup_context(window, state, sidebar);
         edit_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
@@ -150,6 +151,7 @@ impl MainWindow {
                     win.upcast_ref(),
                     &state_clone,
                     &sidebar_clone,
+                    &notebook_clone,
                     &key_setup_ctx_for_edit,
                 );
             }
@@ -2571,9 +2573,17 @@ impl MainWindow {
                 match rustconn_core::sftp::ensure_identity_loaded(kp, agent_socket.as_deref()) {
                     Ok(()) => {}
                     // The agent may hold the key anyway; mc finds out when it
-                    // logs in.
+                    // logs in. Said on screen as on the sidebar's Open SFTP
+                    // path: mc's ssh cannot ask for a passphrase, so if the
+                    // agent lacks the key, mc stops at "Waiting for initial line".
                     Err(rustconn_core::IdentityLoadError::Unverified(detail)) => {
                         tracing::warn!(?kp, %detail, "opening mc without adding the SSH key");
+                        Self::sftp_warn_on_window(
+                            notebook,
+                            &crate::i18n::i18n(
+                                "Could not check whether the SSH agent holds the key. Opening mc anyway.",
+                            ),
+                        );
                     }
                     Err(rustconn_core::IdentityLoadError::Failed(stderr)) => {
                         tracing::warn!(?kp, %stderr, "ssh-add failed");

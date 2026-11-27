@@ -39,6 +39,80 @@ pub(super) fn cmd_show(
     }
 }
 
+/// The connection's protocol settings in the shape the connections file stores
+/// them (`{"type": "Vnc", "view_only": true, …}`), for every protocol.
+///
+/// `ProtocolConfig` holds no credential — passwords live in the secret backend
+/// and only `password_source` is on the connection — so the one value removed
+/// here is what a hand-edited WinRM argument list may carry: the client is
+/// never given a secret option from it, so `show` does not print it either.
+///
+/// # Errors
+/// Returns [`CliError::Config`] if the settings cannot be serialized.
+fn protocol_settings(connection: &Connection) -> Result<serde_json::Value, CliError> {
+    let mut value = serde_json::to_value(&connection.protocol_config)
+        .map_err(|e| CliError::Config(format!("JSON serialization failed: {e}")))?;
+    if let ProtocolConfig::WinRm(config) = &connection.protocol_config
+        && let Some(map) = value.as_object_mut()
+    {
+        let custom_args = rustconn_core::protocol::launch_custom_args(config);
+        map.insert("custom_args".to_string(), serde_json::json!(custom_args));
+    }
+    Ok(value)
+}
+
+/// Flattens the protocol settings into `(key, value)` rows for the table and
+/// CSV outputs: nested objects become dotted keys, a list of plain values is
+/// joined with `", "`, a list of objects is printed as compact JSON. The `type`
+/// tag is left out (it repeats the protocol) and so are unset values, so a row
+/// appears for every setting the connection actually has.
+fn protocol_setting_rows(settings: &serde_json::Value) -> Vec<(String, String)> {
+    fn walk(prefix: &str, value: &serde_json::Value, rows: &mut Vec<(String, String)>) {
+        match value {
+            serde_json::Value::Null => {}
+            serde_json::Value::Object(map) => {
+                for (key, inner) in map {
+                    if prefix.is_empty() && key == "type" {
+                        continue;
+                    }
+                    let path = if prefix.is_empty() {
+                        key.clone()
+                    } else {
+                        format!("{prefix}.{key}")
+                    };
+                    walk(&path, inner, rows);
+                }
+            }
+            serde_json::Value::Array(items) => {
+                if items.is_empty() {
+                    return;
+                }
+                let text = if items
+                    .iter()
+                    .all(|item| !item.is_object() && !item.is_array())
+                {
+                    items.iter().map(scalar_text).collect::<Vec<_>>().join(", ")
+                } else {
+                    value.to_string()
+                };
+                rows.push((prefix.to_string(), text));
+            }
+            other => rows.push((prefix.to_string(), scalar_text(other))),
+        }
+    }
+
+    fn scalar_text(value: &serde_json::Value) -> String {
+        match value {
+            serde_json::Value::String(text) => text.clone(),
+            other => other.to_string(),
+        }
+    }
+
+    let mut rows = Vec::new();
+    walk("", settings, &mut rows);
+    rows
+}
+
 /// Build a full JSON representation of a connection (without secrets).
 #[expect(
     clippy::too_many_lines,
@@ -65,7 +139,7 @@ fn print_json(
         "id": connection.id.to_string(),
         "name": connection.name,
         "host": connection.host,
-        "port": connection.port,
+        "port": crate::util::effective_port(connection),
         "protocol": connection.protocol.as_str(),
         "username": connection.username,
         "description": connection.description,
@@ -392,6 +466,13 @@ fn print_json(
         _ => {}
     }
 
+    // Every protocol setting, in the connections-file shape. The flat keys
+    // above stay for existing scripts; this one is complete.
+    map.insert(
+        "protocol_config".to_string(),
+        protocol_settings(connection)?,
+    );
+
     // Monitoring config
     if let Some(ref mon) = connection.monitoring_config {
         map.insert(
@@ -418,7 +499,7 @@ fn print_csv(connection: &Connection) -> Result<(), CliError> {
     println!("id,{}", connection.id);
     println!("name,{}", crate::format::escape_csv_field(&connection.name));
     println!("host,{}", crate::format::escape_csv_field(&connection.host));
-    println!("port,{}", connection.port);
+    println!("port,{}", crate::util::display_port(connection));
     println!("protocol,{}", connection.protocol.as_str());
     if let Some(ref user) = connection.username {
         println!("username,{}", crate::format::escape_csv_field(user));
@@ -436,6 +517,17 @@ fn print_csv(connection: &Connection) -> Result<(), CliError> {
     println!("updated_at,{}", connection.updated_at.to_rfc3339());
     if let Some(last) = connection.last_connected {
         println!("last_connected,{}", last.to_rfc3339());
+    }
+    println!(
+        "password_source,{}",
+        crate::format::escape_csv_field(&format!("{:?}", connection.password_source))
+    );
+    for (key, value) in protocol_setting_rows(&protocol_settings(connection)?) {
+        println!(
+            "{},{}",
+            crate::format::escape_csv_field(&format!("protocol_config.{key}")),
+            crate::format::escape_csv_field(&value)
+        );
     }
     Ok(())
 }
@@ -717,6 +809,15 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
         println!("  Monitoring: {enabled}");
         if let Some(interval) = mon.interval_secs {
             println!("  Mon. interval: {interval}s");
+        }
+    }
+
+    println!("  Password Source: {:?}", connection.password_source);
+    let rows = protocol_setting_rows(&protocol_settings(connection)?);
+    if !rows.is_empty() {
+        println!("  Protocol Settings:");
+        for (key, value) in rows {
+            println!("    {key}: {value}");
         }
     }
 

@@ -107,14 +107,10 @@ impl KeePassTarget {
         connection: &rustconn_core::models::Connection,
         groups: &[rustconn_core::models::ConnectionGroup],
     ) -> Self {
-        let base = rustconn_core::secret::KeePassHierarchy::build_entry_path(connection, groups);
-        let entry_key = format!(
-            "{} ({})",
-            base.strip_prefix("RustConn/").unwrap_or(&base),
-            connection.protocol.as_str().to_lowercase()
-        );
         Self {
-            entry_key,
+            entry_key: rustconn_core::secret::KeePassHierarchy::build_entry_name(
+                connection, groups,
+            ),
             database_override: rustconn_core::secret::resolve_kdbx_path_override(
                 connection, groups,
             ),
@@ -861,6 +857,7 @@ pub(super) fn store_connection_credentials_in_backend(
 ) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
     use rustconn_core::secret::KeePassStatus;
+    let user_note = user_note(username_value);
 
     match backend_type {
         SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
@@ -885,8 +882,8 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map_err(|e| CliError::Secret(format!("Keyring error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in Keyring (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in Keyring{user_note}",
+                connection.name
             );
             Ok(())
         }
@@ -911,12 +908,7 @@ pub(super) fn store_connection_credentials_in_backend(
                 &keepass.entry_key,
                 username_value,
                 &password_value,
-                Some(&format!(
-                    "{}://{}:{}",
-                    connection.protocol.as_str().to_lowercase(),
-                    connection.host,
-                    connection.port
-                )),
+                Some(&entry_url(connection)),
                 settings.secrets.kdbx_yubikey_slot.as_deref(),
                 settings.secrets.kdbx_read_only,
             )
@@ -925,10 +917,9 @@ pub(super) fn store_connection_credentials_in_backend(
             })?;
 
             println!(
-                "Stored credentials for '{}' in KeePass database '{}' (user: {})",
+                "Stored credentials for '{}' in KeePass database '{}'{user_note}",
                 connection.name,
-                kdbx_path.display(),
-                username_value
+                kdbx_path.display()
             );
             Ok(())
         }
@@ -949,8 +940,8 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map_err(|e| CliError::Secret(format!("Bitwarden error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in Bitwarden (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in Bitwarden{user_note}",
+                connection.name
             );
             Ok(())
         }
@@ -972,8 +963,8 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map_err(|e| CliError::Secret(format!("1Password error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in 1Password (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in 1Password{user_note}",
+                connection.name
             );
             Ok(())
         }
@@ -995,8 +986,8 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map_err(|e| CliError::Secret(format!("Passbolt error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in Passbolt (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in Passbolt{user_note}",
+                connection.name
             );
             Ok(())
         }
@@ -1017,8 +1008,8 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map_err(|e| CliError::Secret(format!("Pass error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in Pass (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in Pass{user_note}",
+                connection.name
             );
             Ok(())
         }
@@ -1039,8 +1030,8 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map_err(|e| CliError::Secret(format!("Proton Pass error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in Proton Pass (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in Proton Pass{user_note}",
+                connection.name
             );
             Ok(())
         }
@@ -1061,8 +1052,8 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map_err(|e| CliError::Secret(format!("Encrypted file error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in encrypted file (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in encrypted file{user_note}",
+                connection.name
             );
             Ok(())
         }
@@ -1083,12 +1074,40 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map_err(|e| CliError::Secret(format!("Portable file error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in the portable encrypted file (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in the portable encrypted file{user_note}",
+                connection.name
             );
             Ok(())
         }
     }
+}
+
+/// ` (user: NAME)` for a store message, or nothing when there is no user
+/// name (a VNC or SPICE password has none).
+#[cfg(feature = "secret-management")]
+fn user_note(username: &str) -> String {
+    if username.trim().is_empty() {
+        String::new()
+    } else {
+        format!(" (user: {username})")
+    }
+}
+
+/// The URL written into a KeePass entry: `protocol://host:port`, or a Web
+/// connection's own URL.
+#[cfg(feature = "secret-management")]
+fn entry_url(connection: &rustconn_core::models::Connection) -> String {
+    if matches!(
+        connection.protocol_config,
+        rustconn_core::models::ProtocolConfig::Web(_)
+    ) {
+        return connection.host.clone();
+    }
+    format!(
+        "{}://{}",
+        connection.protocol.as_str().to_lowercase(),
+        crate::util::display_endpoint(connection)
+    )
 }
 
 /// Promotes a connection's `password_source` to `Vault` when it is still `None`.
@@ -1885,5 +1904,32 @@ mod keepass_target_tests {
                 .database(&settings_with_global(None))
                 .is_err()
         );
+    }
+}
+
+#[cfg(all(test, feature = "secret-management"))]
+mod store_message_tests {
+    use rustconn_core::models::{Connection, ProtocolConfig, WebConfig};
+
+    /// M2: a VNC or SPICE password has no user, and the message printed
+    /// `(user: )` for it.
+    #[test]
+    fn a_store_message_names_a_user_only_when_there_is_one() {
+        assert_eq!(super::user_note("admin"), " (user: admin)");
+        assert_eq!(super::user_note(""), "");
+        assert_eq!(super::user_note("  "), "");
+    }
+
+    #[test]
+    fn a_keepass_entry_url_has_one_port() {
+        let ssh = Connection::new_ssh("s".into(), "10.0.0.5".into(), 2222);
+        assert_eq!(super::entry_url(&ssh), "ssh://10.0.0.5:2222");
+        let web = Connection::new(
+            "w".into(),
+            "https://203.0.113.10:9090".into(),
+            443,
+            ProtocolConfig::Web(WebConfig::default()),
+        );
+        assert_eq!(super::entry_url(&web), "https://203.0.113.10:9090");
     }
 }

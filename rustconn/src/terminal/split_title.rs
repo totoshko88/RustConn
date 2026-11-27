@@ -10,19 +10,25 @@
 //! The title is changed by swapping the session name at its end. Everything in
 //! front of the name — the `[group] ` label, the `●REC` and `⇄ ` markers — is
 //! owned by other features that edit the title in place, so it is kept as is.
+//! The one exception is the View Only eye: it describes a session, so it is
+//! recomputed here for the named session together with the name, and the
+//! split pane headers are told the same state ([`SplitViewOnlyHook`]).
 //! The tooltip gains one line listing the panes; it is lifted out and put back
 //! by every tooltip mutator, the same way the working-directory line is. Its
 //! header (name and host) and directory line describe the same session as the
 //! title, and the owner's own header comes back when the split ends.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use libadwaita as adw;
 use uuid::Uuid;
 
-use super::{TerminalNotebook, TerminalSession, tab_title};
+use super::{
+    TerminalNotebook, TerminalSession, VIEW_ONLY_TITLE_MARKER, all_title_markers, tab_title,
+    with_title_marker,
+};
 use crate::i18n::i18n;
 use crate::split_view::SplitTitleSource;
 
@@ -62,11 +68,22 @@ pub(crate) struct TabChrome {
     /// The session views, renamed for screen readers along with the tab.
     pub(super) terminals: Rc<RefCell<HashMap<Uuid, vte4::Terminal>>>,
     pub(super) session_widgets: Rc<RefCell<HashMap<Uuid, super::SessionWidgetStorage>>>,
+    /// Sessions in View Only, which decide the eye of the named session.
+    pub(super) view_only_sessions: Rc<RefCell<HashSet<Uuid>>>,
+    /// Told the View Only sessions of a split tab's panes, see
+    /// [`SplitViewOnlyHook`].
+    pub(super) on_split_view_only: SplitViewOnlyHook,
 }
 
 /// Told a session's new name after a rename, so whatever else shows it — the
 /// header of the split pane that holds it — can follow (issue #421).
 pub(crate) type SessionRelabelHook = Rc<RefCell<Option<Rc<dyn Fn(Uuid, &str)>>>>;
+
+/// Told, for the split tab of an owner session, which of its displayed
+/// sessions are View Only, every time the tab's title is re-derived — so the
+/// pane headers draw the same eye the tab title does for the focused pane.
+/// An empty list clears every pane's eye.
+pub(crate) type SplitViewOnlyHook = Rc<RefCell<Option<Rc<dyn Fn(Uuid, &[Uuid])>>>>;
 
 /// Picks the session a split tab is named after.
 ///
@@ -91,6 +108,34 @@ pub fn replace_title_name(title: &str, shown: &str, name: &str) -> Option<String
     title
         .strip_suffix(shown)
         .map(|prefix| format!("{prefix}{name}"))
+}
+
+/// The title of a split tab once it names `name`, the named session.
+///
+/// The name at the end replaces `shown`; a title rebuilt elsewhere, which no
+/// longer ends with `shown`, is recomposed from the name and group. The View
+/// Only eye then follows the named session (`view_only`), so the name and the
+/// eye always describe the same session: it appears when focus moves to a
+/// View Only pane and goes when focus moves away. Every other leading marker
+/// is kept as it is.
+#[must_use]
+pub fn split_tab_title(
+    title: &str,
+    shown: &str,
+    name: &str,
+    group: Option<&str>,
+    view_only: bool,
+) -> String {
+    let swapped = replace_title_name(title, shown, name).unwrap_or_else(|| {
+        tracing::debug!("split title: title was rebuilt elsewhere, recomposing it");
+        tab_title(name, group)
+    });
+    with_title_marker(
+        &swapped,
+        VIEW_ONLY_TITLE_MARKER,
+        view_only,
+        &all_title_markers(),
+    )
 }
 
 /// The session a tab is named after: for a split tab, the one [`title_session`]
@@ -303,6 +348,8 @@ impl TerminalNotebook {
             on_session_relabelled: Rc::clone(&self.on_session_relabelled),
             terminals: Rc::clone(&self.terminals),
             session_widgets: Rc::clone(&self.session_widgets),
+            view_only_sessions: Rc::clone(&self.view_only_sessions),
+            on_split_view_only: Rc::clone(&self.on_split_view_only),
         }
     }
 
@@ -345,6 +392,32 @@ impl TerminalNotebook {
         *self.on_session_relabelled.borrow_mut() = Some(Rc::new(hook));
     }
 
+    /// Sets the hook told which panes of a split tab show a View Only session,
+    /// wired by the window to the split pane headers.
+    pub fn set_on_split_view_only<F>(&self, hook: F)
+    where
+        F: Fn(Uuid, &[Uuid]) + 'static,
+    {
+        *self.on_split_view_only.borrow_mut() = Some(Rc::new(hook));
+    }
+
+    /// Tells the pane-header hook which of `displayed` are View Only, with no
+    /// notebook borrow held while it runs.
+    fn notify_split_view_only(chrome: &TabChrome, owner: Uuid, displayed: &[Uuid]) {
+        let view_only: Vec<Uuid> = {
+            let set = chrome.view_only_sessions.borrow();
+            displayed
+                .iter()
+                .copied()
+                .filter(|id| set.contains(id))
+                .collect()
+        };
+        let hook = chrome.on_split_view_only.borrow().clone();
+        if let Some(hook) = hook {
+            hook(owner, &view_only);
+        }
+    }
+
     /// Gives a tab that stopped hosting a split its own title back.
     ///
     /// The owner's name returns to the end of the title, the owner's own header
@@ -354,6 +427,8 @@ impl TerminalNotebook {
         let Some(entry) = self.split_tab_titles.borrow_mut().remove(&owner) else {
             return;
         };
+        // A pane left behind keeps the eye of the session it still shows.
+        Self::notify_split_view_only(&self.tab_chrome(), owner, &entry.displayed);
         self.restore_owner_chrome(owner, entry);
         // The tab is named after its owner again, whatever happened above.
         self.notify_split_title_changed();
@@ -379,11 +454,13 @@ impl TerminalNotebook {
             entry.owner_header
         };
         let cwd = self.session_cwd.borrow().get(&owner).cloned();
+        let view_only = self.is_view_only_session(owner);
         Self::set_split_tab_chrome(
             &page,
             &entry.shown_name,
             &name,
             group.as_deref(),
+            view_only,
             &SplitTooltip {
                 header: &header,
                 panes_line: None,
@@ -491,6 +568,7 @@ impl TerminalNotebook {
         let panes_line = panes_tooltip_line(&names);
         let header = tooltip_header(&name, host.as_deref());
         let cwd = chrome.session_cwd.borrow().get(&target).cloned();
+        let view_only = chrome.view_only_sessions.borrow().contains(&target);
         // Set last and outside every borrow: the setters emit `notify`, and the
         // window title follows the tab title from that signal.
         Self::set_split_tab_chrome(
@@ -498,28 +576,31 @@ impl TerminalNotebook {
             &entry.shown_name,
             &name,
             group.as_deref(),
+            view_only,
             &SplitTooltip {
                 header: &header,
                 panes_line: panes_line.as_deref(),
                 cwd: cwd.as_deref(),
             },
         );
+        // The pane headers show the eye of their own session, from the same
+        // state set and at the same moment as the tab title.
+        Self::notify_split_view_only(chrome, owner, &entry.displayed);
     }
 
-    /// Puts `name` at the end of a tab title in place of `shown` and rebuilds
-    /// the session-describing parts of its tooltip from `tooltip`.
+    /// Puts `name` at the end of a tab title in place of `shown`, gives the
+    /// title the named session's View Only eye ([`split_tab_title`]) and
+    /// rebuilds the session-describing parts of its tooltip from `tooltip`.
     fn set_split_tab_chrome(
         page: &adw::TabPage,
         shown: &str,
         name: &str,
         group: Option<&str>,
+        view_only: bool,
         tooltip: &SplitTooltip<'_>,
     ) {
         let title = page.title().to_string();
-        let new_title = replace_title_name(&title, shown, name).unwrap_or_else(|| {
-            tracing::debug!("split title: title was rebuilt elsewhere, recomposing it");
-            tab_title(name, group)
-        });
+        let new_title = split_tab_title(&title, shown, name, group, view_only);
         if new_title != title {
             page.set_title(&new_title);
         }
@@ -542,9 +623,59 @@ mod tests {
     use super::{
         SplitTabTitle, SplitTabTitles, SplitTooltip, named_session, panes_tooltip_line,
         rebuilt_tooltip, rename_tab_target, replace_title_name, split_header, split_panes_line,
-        title_session, tooltip_header,
+        split_tab_title, title_session, tooltip_header,
     };
     use crate::terminal::TerminalNotebook;
+
+    /// The tab title's eye follows the focused pane, like its name: focus on a
+    /// View Only guest adds it, focus back on the owner takes it away, and the
+    /// other markers stay put (PR #455 follow-up).
+    #[test]
+    fn the_tab_title_eye_follows_the_focused_session() {
+        let owner = Uuid::new_v4();
+        let guest = Uuid::new_v4();
+        let displayed = [owner, guest];
+        let view_only = |id: Uuid| id == guest;
+        let names = |id: Uuid| if id == owner { "server_A" } else { "server_B" };
+
+        // Focus moves to the View Only guest.
+        let focused = title_session(owner, Some(guest), &displayed);
+        let title = split_tab_title(
+            "⇄ [Prod] server_A",
+            "server_A",
+            names(focused),
+            Some("Prod"),
+            view_only(focused),
+        );
+        assert_eq!(title, "\u{1F441}\u{FE0F} ⇄ [Prod] server_B");
+
+        // Focus moves back to the owner, which is not View Only.
+        let focused = title_session(owner, Some(owner), &displayed);
+        let title = split_tab_title(
+            &title,
+            "server_B",
+            names(focused),
+            Some("Prod"),
+            view_only(focused),
+        );
+        assert_eq!(title, "⇄ [Prod] server_A");
+    }
+
+    /// An owner that is View Only loses the eye while a guest is focused and
+    /// gets it back with focus; a rebuilt title is recomposed with the eye.
+    #[test]
+    fn a_view_only_owner_shows_the_eye_only_while_focused() {
+        let title = split_tab_title("\u{1F441}\u{FE0F} web", "web", "db", None, false);
+        assert_eq!(title, "db");
+        assert_eq!(
+            split_tab_title(&title, "db", "web", None, true),
+            "\u{1F441}\u{FE0F} web"
+        );
+        assert_eq!(
+            split_tab_title("something else", "web", "db", Some("g"), true),
+            "\u{1F441}\u{FE0F} [g] db"
+        );
+    }
 
     /// A split owned by `owner` showing `owner` and `guest`, focus on `focused`.
     fn split_of(owner: Uuid, guest: Uuid, focused: Uuid) -> SplitTabTitles {

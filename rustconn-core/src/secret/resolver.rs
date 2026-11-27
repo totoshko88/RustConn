@@ -904,6 +904,19 @@ impl CredentialResolver {
             return Ok(None);
         }
 
+        // The `.kdbx` file itself, under the entry `rustconn-cli add` and the
+        // GUI write, read the way the GUI's connect reads it.
+        let database = resolve_kdbx_path_override(connection, groups);
+        let entry_name = KeePassHierarchy::build_entry_name(connection, groups);
+        let aliases = [connection.host.as_str(), connection.name.as_str()];
+        if let Some(password) = self.read_kdbx(database, &entry_name, &aliases)? {
+            return Ok(Some(Credentials {
+                username: connection.username.clone(),
+                password: Some(password),
+                domain: None,
+            }));
+        }
+
         let lookup_key = Self::generate_hierarchical_lookup_key(connection, groups);
         let result = self.secret_manager.retrieve(&lookup_key).await?;
 
@@ -926,6 +939,38 @@ impl CredentialResolver {
         } else {
             Ok(None)
         }
+    }
+
+    /// Reads `entry_name` out of the KeePass database with `keepassxc-cli`:
+    /// the `RustConn/`-scoped entry first, then the whole database when root
+    /// search is on, trying `aliases` there too.
+    ///
+    /// `database` is a per-connection or per-group override (issue #411);
+    /// `None` means the global one. With no database at all this is a miss.
+    ///
+    /// This has to go to the file. `SecretManager::build_from_settings` holds no
+    /// KDBX backend for KeePassXC (the GUI reads the file in
+    /// `resolve_credentials_blocking`), so `secret_manager.retrieve` only asked
+    /// the system keyring, and `rustconn-cli run-script` never found a password
+    /// `rustconn-cli add` had stored in KeePass.
+    fn read_kdbx(
+        &self,
+        database: Option<std::path::PathBuf>,
+        entry_name: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<secrecy::SecretString>> {
+        let Some(database) = database.or_else(|| self.settings.kdbx_path.clone()) else {
+            return Ok(None);
+        };
+        super::KeePassStatus::get_password_from_kdbx_scoped_then_root(
+            &database,
+            self.settings.kdbx_password.as_ref(),
+            self.settings.kdbx_key_file.as_deref(),
+            entry_name,
+            aliases,
+            self.settings.kdbx_root_search,
+            self.settings.kdbx_yubikey_slot.as_deref(),
+        )
     }
 
     /// Resolves credentials using the fallback chain with hierarchical paths
@@ -991,11 +1036,23 @@ impl CredentialResolver {
                         match backend {
                             SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
                                 if self.settings.kdbx_enabled {
-                                    let group_path =
-                                        KeePassHierarchy::build_group_entry_path(group, groups);
-                                    if let Some(creds) =
-                                        self.secret_manager.retrieve(&group_path).await?
+                                    // The group's own credential lives in the
+                                    // group's database, under the name without
+                                    // `RustConn/` (issue #327).
+                                    let database = resolve_group_kdbx_path_override(
+                                        connection.group_id,
+                                        groups,
+                                    );
+                                    let entry_name =
+                                        KeePassHierarchy::build_group_entry_name(group, groups);
+                                    if let Some(password) =
+                                        self.read_kdbx(database, &entry_name, &[])?
                                     {
+                                        let creds = Credentials {
+                                            username: connection.username.clone(),
+                                            password: Some(password),
+                                            domain: None,
+                                        };
                                         return Ok(Some(
                                             self.merge_group_credentials(creds, group),
                                         ));
@@ -1392,6 +1449,81 @@ mod debug_tests {
         assert_eq!(
             resolve_kdbx_path_override(&conn, &groups),
             resolve_group_kdbx_path_override(Some(child_id), &groups)
+        );
+    }
+
+    /// Stands in for the system keyring `build_from_settings` puts in the chain
+    /// for KeePassXC: it answers every key, and records that it was asked.
+    struct KeyringStandIn {
+        asked: std::sync::atomic::AtomicBool,
+    }
+
+    #[async_trait::async_trait]
+    impl super::super::SecretBackend for KeyringStandIn {
+        async fn store(&self, _id: &str, _c: &Credentials) -> SecretResult<()> {
+            Ok(())
+        }
+        async fn retrieve(&self, _id: &str) -> SecretResult<Option<Credentials>> {
+            self.asked.store(true, std::sync::atomic::Ordering::SeqCst);
+            Ok(Some(Credentials::with_password("keyring", "from-keyring")))
+        }
+        async fn delete(&self, _id: &str) -> SecretResult<()> {
+            Ok(())
+        }
+        async fn is_available(&self) -> bool {
+            true
+        }
+        fn backend_id(&self) -> &'static str {
+            "keyring-stand-in"
+        }
+        fn display_name(&self) -> &'static str {
+            "Keyring stand-in"
+        }
+    }
+
+    /// `run-script` regression: with KeePassXC preferred, a Vault (and an
+    /// Inherit) password is read from the `.kdbx` file, as the GUI's connect
+    /// reads it, and not from whatever `SecretManager` holds. The database here
+    /// does not exist, so reaching the file is an error; the old code answered
+    /// from the keyring stand-in and never opened it.
+    #[tokio::test]
+    async fn keepass_vault_reads_the_kdbx_file_not_the_secret_manager() {
+        let missing = std::env::temp_dir().join(format!("rustconn-{}.kdbx", uuid::Uuid::new_v4()));
+        let settings = SecretSettings {
+            preferred_backend: SecretBackendType::KeePassXc,
+            kdbx_enabled: true,
+            kdbx_path: Some(missing),
+            enable_fallback: false,
+            ..Default::default()
+        };
+        let keyring = Arc::new(KeyringStandIn {
+            asked: std::sync::atomic::AtomicBool::new(false),
+        });
+        let manager = Arc::new(SecretManager::new(vec![
+            Arc::clone(&keyring) as Arc<dyn super::super::SecretBackend>
+        ]));
+        let resolver = CredentialResolver::new(manager, settings);
+
+        let mut group = ConnectionGroup::new("AWS Test 0.26.5".to_string());
+        group.password_source = Some(PasswordSource::Vault);
+        let mut conn = Connection::new_ssh("Linux SSH".to_string(), "10.0.0.4".to_string(), 22);
+        conn.group_id = Some(group.id);
+        conn.password_source = PasswordSource::Vault;
+        let groups = [group];
+
+        let vault = resolver.resolve_with_hierarchy(&conn, &groups).await;
+        assert!(vault.is_err(), "Vault must open the .kdbx, got {vault:?}");
+
+        conn.password_source = PasswordSource::Inherit;
+        let inherit = resolver.resolve_with_hierarchy(&conn, &groups).await;
+        assert!(
+            inherit.is_err(),
+            "Inherit must open the .kdbx, got {inherit:?}"
+        );
+
+        assert!(
+            !keyring.asked.load(std::sync::atomic::Ordering::SeqCst),
+            "the system keyring must not answer for KeePass"
         );
     }
 }

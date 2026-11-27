@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.26.4** | Command-line interface for RustConn connection management
+**Version 0.26.5** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -142,9 +142,9 @@ Options:
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--name` | `-n` | Connection name (required, unless `--from-file`) |
-| `--host` | `-H` | Hostname, IP, or device path (required, unless `--from-file`) |
+| `--host` | `-H` | Hostname, IP, or device path; for `-P k8s` the pod name (required, unless `--from-file`, `--pod` or `--busybox`) |
 | `--from-file` | — | Bulk-add connections from a YAML or JSON file, or `-` for stdin (see [Bulk add](#bulk-add-from-a-file)). Mutually exclusive with `--name`/`--host` |
-| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23, WinRM=5985) |
+| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23, WinRM=5985). A Web connection takes its port from the URL (`http` 80, `https` 443 unless the URL names one); `--port` only counts for a URL without a scheme or port. A Zero Trust connection has no port: the provider's CLI reaches the resource |
 | `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `winrm`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
 | `--user` | `-u` | Username |
 | `--password-stdin` | — | Read a password from stdin (one line) and store it in the configured secret backend — the same vault the GUI uses — not in the connections file. For headless/CI provisioning. The value never appears in argv, output or logs. Requires a build with the `secret-management` feature |
@@ -152,7 +152,7 @@ Options:
 | `--auth-method` | — | SSH auth: `password`, `publickey`, `keyboard-interactive`, `agent`, `security-key` |
 | `--device` | — | Serial device path (alias for `--host` with serial protocol) |
 | `--baud-rate` | — | Serial baud rate (default: 115200) |
-| `--icon` | — | Custom icon (emoji or GTK icon name, e.g. `"🏢"`, `"starred-symbolic"`) |
+| `--icon` | — | Custom icon (emoji or GTK icon name, e.g. `"🏢"`, `"starred-symbolic"`). Stored as given, including an emoji's variation selector U+FE0F, which asks for the colour form (`"☸️"`) |
 | `--ssh-agent-socket` | — | Custom SSH agent socket path |
 | `--kdbx-path` | — | KeePass database (`.kdbx`) for this connection's password, instead of its group's or the global one. Sets the password source to `Vault`; with `--password-stdin` the password is stored there. Local-only, never synced |
 | `--jump-host` | — | SSH jump host (connection name or UUID, for SSH/SFTP/RDP/VNC/SPICE) |
@@ -240,6 +240,15 @@ Options:
 | `--browser` | — | Browser command for `--browser-mode custom` (Chromium-based or Firefox to use a proxy) |
 | `--winrm-ssl` | — | Use HTTPS for a WinRM connection |
 | `--winrm-accept-invalid-certs` | — | Accept a self-signed HTTPS certificate when running scripts over WinRM |
+| `--kubeconfig` | — | Kubeconfig file (Kubernetes only). Default: `$KUBECONFIG`, then `~/.kube/config`. Stored as an absolute path; an empty value on `update` restores the default |
+| `--context` | — | Kubernetes context (default: the kubeconfig's `current-context`) |
+| `--namespace` | — | Kubernetes namespace (default: the context's namespace) |
+| `--pod` | — | Pod to exec into. `-H` names the pod as well; giving both with different names is refused. Required unless `--busybox` |
+| `--container` | — | Container within the pod (optional for single-container pods) |
+| `--shell` | — | Shell inside the container: `/bin/sh` (default), `/bin/bash`, `/bin/ash`, `/bin/zsh` |
+| `--busybox` | — | Run a temporary pod (`kubectl run --rm`) instead of exec into an existing one. Cannot be combined with `--pod`, `-H` or `--container` in the same call |
+| `--busybox-image` | — | Image for the temporary pod (default: `busybox:latest`); needs busybox mode |
+| `--k8s-custom-arg` | — | Additional `kubectl` argument (repeatable; values may start with `-`, e.g. `--k8s-custom-arg --request-timeout=30s`) |
 | `--provider` | — | Zero Trust provider (see [Zero Trust examples](#zero-trust-examples) below) |
 
 **Protocol examples:**
@@ -308,9 +317,19 @@ rustconn-cli add -n "Docs" -H "file:///usr/share/doc/index.html" -P web \
 rustconn-cli add -n "Grafana" -H "https://grafana.internal" -P web \
     --user-agent "RustConn/0.19 Dashboard Monitor" --zoom-level 0.8
 
-# Kubernetes
+# Kubernetes: exec into a pod (-H is the pod name, same as --pod)
 rustconn-cli add -n "Pod" -H pod-name -P k8s
+rustconn-cli add -n "API pod" -P k8s --pod api-7d9f --container app \
+    --kubeconfig ~/.kube/prod.yaml --context prod --namespace api --shell /bin/bash
+
+# Kubernetes: temporary busybox pod (no -H/--pod)
+rustconn-cli add -n "Debug pod" -P k8s --busybox --busybox-image busybox:1.36 --namespace demo
 ```
+
+A Kubernetes connection has no network host, so `-H` names the pod and the stored
+host stays empty. The rules are the GUI editor's: without `--busybox` a pod is
+required, and `--busybox` cannot be combined with `--pod`, `-H` or `--container`.
+A Kubernetes flag on any other protocol is an error.
 
 **Zero Trust examples:**
 
@@ -382,7 +401,7 @@ The connection's password source is set to `Vault`, so a later connect reads the
 
 #### Bulk add from a file
 
-`--from-file PATH` adds many connections in one invocation, reading a YAML or JSON document; pass `-` to read the document from stdin. It reuses RustConn's own serde models, so the file is either a top-level object with a `connections` array (and an optional `groups` array), or a bare array of connection objects. The command reports how many connections were added and names each entry it skipped, with the reason — a name that already exists, or one that fails validation — without aborting the whole batch.
+`--from-file PATH` adds many connections in one invocation, reading a YAML or JSON document; pass `-` to read the document from stdin. The file is either a top-level object with a `connections` list (and an optional `groups` list), or a bare list of connection objects. The command reports how many connections were added and names each entry it skipped, with the reason (a name that already exists, a failed validation, a jump host it cannot find), without aborting the whole batch. A document that does not fit the model is rejected as a whole, nothing is written, and the error names the field by its path, e.g. ``connections[0].protocol_config: missing field `type` ``.
 
 ```bash
 rustconn-cli add --from-file servers.json        # JSON document
@@ -390,20 +409,74 @@ rustconn-cli add --from-file servers.yaml        # YAML document
 cat servers.json | rustconn-cli add --from-file -  # from stdin
 ```
 
-Example JSON (the `connections` objects use the same field names `show --format json` prints):
+Each entry uses the field names of the connections file. Only `name` and `protocol_config` are required:
 
+| Key | If omitted |
+|-----|------------|
+| `name` | required |
+| `protocol_config` | required: an object tagged by `type` (`Ssh`, `Rdp`, `Vnc`, `Spice`, `Telnet`, `ZeroTrust`, `Serial`, `Sftp`, `Kubernetes`, `Mosh`, `Web`, `WinRm`); its other keys are the protocol settings, each with a default |
+| `protocol` | taken from `protocol_config.type` |
+| `host` | empty, which only Kubernetes and Serial accept |
+| `port` | the protocol's default port |
+| `id` | a new UUID. A given `id` already in use is replaced by a new one and reported under `Reassigned` |
+| `created_at`, `updated_at` | the current time |
+| `group` | no group. A group name, resolved like `add --group`: case-insensitive, created when missing. Use it or `group_id` (a UUID), not both |
+| `jump_host` | no jump host. A connection name or UUID, resolved like `add --jump-host` against saved connections and the entries above it in the same file (SSH, SFTP, RDP, VNC, SPICE, WinRM). `protocol_config.jump_host_id` takes a UUID directly |
+
+Any other key of the connection model (`username`, `description`, `tags`, `domain`, `window_mode`, …) is accepted as the connections file stores it. `rustconn-cli show <name> --format json` prints an existing connection's `protocol_config` in exactly this shape, so it can be copied into an entry; the flat keys around it in `show` output are for reading and are not needed here.
+
+Example JSON: an SSH bastion, an SSH host in a group, an RDP host reached through the bastion by name, and a Kubernetes pod shell:
+
+<!-- bulk-add-example:json -->
 ```json
 {
   "connections": [
-    { "name": "web1", "host": "web1.example.com", "port": 22,
-      "protocol_config": { "Ssh": {} } },
-    { "name": "db1", "host": "db1.example.com", "port": 22,
-      "protocol_config": { "Ssh": {} } }
+    { "name": "bastion", "host": "bastion.example.com", "username": "admin",
+      "protocol_config": { "type": "Ssh" } },
+    { "name": "web1", "host": "web1.example.com", "port": 2222, "group": "Web",
+      "protocol_config": { "type": "Ssh", "auth_method": "agent" } },
+    { "name": "win-desktop", "host": "10.0.0.20", "username": "Administrator",
+      "jump_host": "bastion",
+      "protocol_config": { "type": "Rdp" } },
+    { "name": "api-pod",
+      "protocol_config": { "type": "Kubernetes", "namespace": "prod",
+                           "pod": "api-0", "container": "app" } }
   ]
 }
 ```
 
-The easiest way to produce a valid file is `rustconn-cli show <name> --format json` for the field shape, or an `export --format native` archive. `--from-file` is mutually exclusive with the single-connection flags (`--name`, `--host`, …).
+The same document as YAML:
+
+<!-- bulk-add-example:yaml -->
+```yaml
+connections:
+  - name: bastion
+    host: bastion.example.com
+    username: admin
+    protocol_config:
+      type: Ssh
+  - name: web1
+    host: web1.example.com
+    port: 2222
+    group: Web
+    protocol_config:
+      type: Ssh
+      auth_method: agent
+  - name: win-desktop
+    host: 10.0.0.20
+    username: Administrator
+    jump_host: bastion
+    protocol_config:
+      type: Rdp
+  - name: api-pod
+    protocol_config:
+      type: Kubernetes
+      namespace: prod
+      pod: api-0
+      container: app
+```
+
+Both examples are parsed and added by the `rustconn-cli` integration tests, so they stay valid as the model changes. `--from-file` is mutually exclusive with the single-connection flags (`--name`, `--host`, …).
 
 ### connect — Initiate a connection
 
@@ -427,7 +500,7 @@ The `--dry-run` flag prints the exact command that would be executed (e.g. `ssh 
 rustconn-cli show "Server" [-f table|json|csv]
 ```
 
-Displays all fields for a connection including protocol-specific configuration (SSH auth method, key path, RDP resolution, serial device settings, monitoring config, Zero Trust provider details).
+Displays all fields for a connection, including every protocol setting, so the effect of an `update` can be checked. No format prints a secret: only `password_source` (where the password comes from) is shown.
 
 ```bash
 rustconn-cli show "My Server"
@@ -436,9 +509,34 @@ rustconn-cli show "My Server" --format csv           # Key-value CSV pairs
 rustconn-cli show 550e8400-e29b-41d4-a716-446655440000   # By UUID
 ```
 
-The JSON output includes: `id`, `name`, `host`, `port`, `protocol`, `username`, `description`, `group_id`, `group_name`, `tags`, `icon`, `is_pinned`, `created_at`, `updated_at`, `last_connected`, `password_source` (type only, not the value), `domain`, `window_mode`, `skip_port_check`, `session_recording_enabled`, `is_dynamic`, plus protocol-specific fields (`auth_method`, `key_path`, `jump_host`, `resolution`, `device`, `baud_rate`, `provider`, etc.).
+The JSON output includes: `id`, `name`, `host`, `port`, `protocol`, `username`, `description`, `group_id`, `group_name`, `tags`, `icon`, `is_pinned`, `created_at`, `updated_at`, `last_connected`, `password_source` (type only, not the value), `domain`, `window_mode`, `skip_port_check`, `session_recording_enabled`, `is_dynamic`, plus protocol-specific fields (`auth_method`, `key_path`, `jump_host`, `resolution`, `device`, `baud_rate`, `provider`, etc.), plus `protocol_config`.
+
+`protocol_config` holds every protocol setting in the shape the connections file
+stores it: an object tagged by `type` (`Ssh`, `Rdp`, `Vnc`, `Spice`, `Telnet`,
+`ZeroTrust`, `Serial`, `Sftp`, `Kubernetes`, `Mosh`, `Web`, `WinRm`) whose other
+keys are the model's field names, e.g. `view_only`, `scaling`, `clipboard_enabled`
+and `encoding` for VNC, `tls_enabled`, `usb_redirection` and `shared_folders` for
+SPICE, `pod`, `namespace`, `use_busybox` for Kubernetes. A key whose value is unset
+is omitted. Jump hosts appear there as `jump_host_id` (the UUID); the flat
+`jump_host` key gives the name. The flat keys are kept unchanged for existing
+scripts. A WinRM `custom_args` list shows what the client is given, so a secret
+option in a hand-edited list is not printed.
+
+The table output ends with `Password Source` and a `Protocol Settings:` block, one
+`key: value` line per setting (nested values as dotted keys, e.g.
+`elevated.enabled`). The CSV output adds `password_source` and one
+`protocol_config.<key>,<value>` row per setting.
+
+```bash
+rustconn-cli update "Linux VNC" --vnc-view-only false
+rustconn-cli show "Linux VNC" --format json | jq .protocol_config.view_only   # false
+```
 
 When piped (non-TTY stdout), output defaults to JSON automatically.
+
+`port` is the port the connection really uses: the URL's for a Web connection, and
+none for a Zero Trust one (`null` in JSON, an empty cell in the table and CSV). The
+same holds for `list` and `group show`.
 
 ### update — Update an existing connection
 
@@ -477,16 +575,33 @@ rustconn-cli update "Router" --serial-data-bits 7 --serial-parity even --serial-
 ```
 
 All flags from `add` are available (except `--protocol`), plus:
-- `--new-name` to rename
+- `--new-name` to rename. `--name` is `add`'s flag for the new connection's own
+  name and is not accepted here; the error points at `--new-name`
 - `--add-tag` / `--remove-tag` for incremental tag editing
 - `--skip-port-check=false` to clear the flag
 - `--kdbx-path ""` to clear the connection's own KeePass database, so it inherits its group's or the global one again
 
-Four boolean flags accept an explicit value on `update` so they can be *cleared*, unlike on `add` where they only turn a feature on:
-- `--mptcp` — bare `--mptcp` (or `--mptcp true`) enables Multipath TCP; `--mptcp false` disables it
-- `--skip-port-check` — bare `--skip-port-check` (or `=true`) sets the flag; `--skip-port-check=false` clears it
-- `--postpend-enabled` — turns the configured output filter on; `--postpend-enabled false` turns it off without forgetting the command
-- `--elevated-enabled` — turns sudo password injection on; `--elevated-enabled false` turns it off, keeping the patterns and delay
+On `update` every on/off setting takes an optional value, `--flag [<BOOL>]`, so it
+can be turned off as well as on. The bare flag means `true`, as on `add`;
+`--flag false` (or `--flag=false`) is the opposite. A flag whose name says *no* or
+*disable* keeps its meaning: `--vnc-no-scaling false` turns scaling back on,
+`--disable-nla false` turns NLA back on. The switches:
+
+- SSH/SFTP: `--ssh-verbose`, `--x11-forwarding`, `--agent-forwarding`, `--compression`, `--mptcp`, `--elevated-enabled` (keeps the patterns and delay when off)
+- RDP: `--ignore-certificate`, `--disable-nla`, `--kerberos`, `--rdp-dynamic-resolution`, `--rdp-smart-sizing`, `--printer`, `--mptcp`, `--audio-redirect` (`false` sets the audio mode to `none` when it was `local`; a `remote` mode is left alone)
+- VNC: `--ignore-certificate`, `--vnc-view-only`, `--vnc-no-scaling`, `--vnc-no-clipboard`, `--vnc-toolbar`, `--mptcp`
+- SPICE: `--spice-tls`, `--spice-skip-cert-verify`, `--spice-usb-redirection`, `--spice-no-clipboard`
+- Web: `--javascript`, `--accept-invalid-certs`, `--web-toolbar`, `--private-mode`
+- WinRM: `--winrm-ssl`, `--winrm-accept-invalid-certs`
+- Kubernetes: `--busybox` (`false` goes back to exec into the stored pod)
+- Any protocol: `--skip-port-check`, `--postpend-enabled` (keeps the command when off)
+
+`--vnc-toolbar`, `--web-toolbar` and `--javascript` are the exception to "bare
+means `true`": bare, they turn the feature *off*, as they always have.
+
+Put the connection name before the switches, or use the `=` form: an optional
+value takes the next word, so `update --vnc-view-only "Linux VNC"` reads
+`Linux VNC` as the value and fails.
 
 `update`-only flags:
 
@@ -535,12 +650,13 @@ unattended.
 ### duplicate — Duplicate a connection
 
 ```bash
-rustconn-cli duplicate "Server" [--new-name "Server Copy"]
+rustconn-cli duplicate "Server" [--new-name|--name "Server Copy"]
 ```
 
 ```bash
 rustconn-cli duplicate "My Server"                          # Creates "My Server (copy)"
 rustconn-cli duplicate "My Server" --new-name "Staging"     # Custom name
+rustconn-cli duplicate "My Server" --name "Staging"         # Same, as with add
 ```
 
 The duplicate gets a new UUID, fresh timestamps, and no `last_connected` value.
@@ -561,6 +677,7 @@ The width of the first number sets the zero padding. `--host-range` is optional 
 rustconn-cli run-script ./check.sh --on web1 --on web2       # Named connections
 rustconn-cli run-script ./check.sh --group Production --yes  # A group and its subgroups
 rustconn-cli run-script ./patch.sh --group DB --parallel 2 --timeout 1800
+rustconn-cli run-script ./check.sh --on private-vm --yes --accept-new-host-keys   # First run through a bastion
 ```
 
 | Option | Default | Description |
@@ -571,8 +688,9 @@ rustconn-cli run-script ./patch.sh --group DB --parallel 2 --timeout 1800
 | `--timeout` | 600 | Time limit per host, in seconds |
 | `--yes`, `-y` | — | Skip the confirmation; required when stdin is not a terminal |
 | `--same-password` | — | Ask once and use that password for every connection set to ask at connect. An answer belongs to the connection, so a host that is also another host's jump host uses it there too; a jump host that is not itself a target is asked on its own |
+| `--accept-new-host-keys` | — | Record a host key seen for the first time instead of refusing it (`StrictHostKeyChecking=accept-new`), on the target and on every jump host RustConn routes through its own `ProxyCommand` or WinRM tunnel. A changed key is still refused. Off by default |
 
-Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. A `.ps1` file runs in PowerShell on WinRM connections (needs the `pywinrm` Python library); any other file runs with bash on SSH connections. Saved passwords are read from the configured secret backend (the system keyring needs a build with `secret-management`), for the hosts and their jump hosts. A host whose key is not in `known_hosts` is refused (`StrictHostKeyChecking=yes`). So is every jump host of an SSH host: RustConn reaches it through its own `ProxyCommand`, which refuses an unknown key too. A WinRM host is reached through an `ssh -L` tunnel to its nearest jump host, which gets `StrictHostKeyChecking=yes` as well. The jump hosts past that one go through `-J` and follow your ssh configuration, unless the tunnel sends the nearest jump host's password: then they go through RustConn's own `ProxyCommand`, which keeps that password from them and refuses an unknown key. A jump host with no key of its own still offers `~/.ssh/id_*` and the agent's keys there, unless a password is sent along the route. In the CLI, three cases go through `-J` instead and follow your ssh configuration: a chain of several jump hosts whose first one has an SSH key of its own (set on it or its group) and that sends no password and uses no PKCS#11 provider, because `-J` is the only way to carry that key past the first jump host; a jump host address RustConn cannot pass to a shell safely, that is anything but letters, digits and `.-_:@[]`, such as a comma-separated chain in a ProxyJump or SSH Proxy Jump field (the CLI then sends no password along that route); and the jump hosts past the first of a WinRM tunnel that sends no password. The GUI can put such an address into a `ProxyCommand` of its own instead; [Run Local Script](USER_GUIDE.md#run-local-script) in the user guide says when. Connections set to ask at connect are each asked once, unless `--same-password` asks a single time for all of them; an empty answer sends no password, so that host uses its keys. With no terminal they use their keys. Global variables in a host or user name (`${name}`) are filled in; one set to ask at connect (`@ask:`) leaves that host out with a warning, since run-script cannot ask for it, and that host counts as not succeeded. A secret variable is not read from the secret backend, so one whose value is not in the configuration file counts as undefined. `--quiet` leaves out the progress lines (connections left out, hosts that succeeded, the closing count) and keeps the script's own output, hosts that did not succeed, warnings and prompts.
+Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. A `.ps1` file runs in PowerShell on WinRM connections (needs the `pywinrm` Python library); any other file runs with bash on SSH connections. Saved passwords are read from the configured secret backend (the system keyring needs a build with `secret-management`), for the hosts and their jump hosts. A host whose key is not in `known_hosts` is refused (`StrictHostKeyChecking=yes`) unless `--accept-new-host-keys` is given; the refusal prints a hint naming that option. So is every jump host of an SSH host: RustConn reaches it through its own `ProxyCommand`, which refuses an unknown key too. A WinRM host is reached through an `ssh -L` tunnel to its nearest jump host, which gets `StrictHostKeyChecking=yes` as well. The jump hosts past that one go through `-J` and follow your ssh configuration, unless the tunnel sends the nearest jump host's password: then they go through RustConn's own `ProxyCommand`, which keeps that password from them and refuses an unknown key. A jump host with no key of its own still offers `~/.ssh/id_*` and the agent's keys there, unless a password is sent along the route. In the CLI, three cases go through `-J` instead and follow your ssh configuration: a chain of several jump hosts whose first one has an SSH key of its own (set on it or its group) and that sends no password and uses no PKCS#11 provider, because `-J` is the only way to carry that key past the first jump host; a jump host address RustConn cannot pass to a shell safely, that is anything but letters, digits and `.-_:@[]`, such as a comma-separated chain in a ProxyJump or SSH Proxy Jump field (the CLI then sends no password along that route); and the jump hosts past the first of a WinRM tunnel that sends no password. The GUI can put such an address into a `ProxyCommand` of its own instead; [Run Local Script](USER_GUIDE.md#run-local-script) in the user guide says when. Connections set to ask at connect are each asked once, unless `--same-password` asks a single time for all of them; an empty answer sends no password, so that host uses its keys. With no terminal they use their keys. Global variables in a host or user name (`${name}`) are filled in; one set to ask at connect (`@ask:`) leaves that host out with a warning, since run-script cannot ask for it, and that host counts as not succeeded. A secret variable is not read from the secret backend, so one whose value is not in the configuration file counts as undefined. `--quiet` leaves out the progress lines (connections left out, hosts that succeeded, the closing count) and keeps the script's own output, hosts that did not succeed, warnings and prompts.
 
 ### test — Test connectivity
 
@@ -589,24 +707,42 @@ rustconn-cli test all --format json          # Structured JSON with pass_rate an
 rustconn-cli test "My Server" --format csv   # CSV output
 ```
 
-A Zero Trust or serial connection has no network address to probe, so `test` reports it as skipped: a pass with a `skipped` detail and no latency. `test all` does not count it as a failure.
+What `test` probes depends on the connection:
 
+| Connection | Probe |
+|------------|-------|
+| SSH, RDP, VNC, SPICE, WinRM with a jump host (its own, inherited from a group or the global one) | `ssh -W host:port` to the jump host nearest the target, which opens the target. Fallback jump hosts are tried in order, as `run-script` does |
+| SSH with no jump host | TCP connect, then the SSH banner exchange |
+| Web | TCP connect to the host and port of the URL (`http` 80, `https` 443 unless the URL names a port) |
+| Kubernetes | `kubectl get pod <pod>` with the connection's kubeconfig, context and namespace; `kubectl auth can-i create pods` in busybox mode |
+| Zero Trust, AWS Session Manager | `aws ssm describe-instance-information`, which must report `PingStatus` `Online` |
+| Everything else | TCP connect to host and port |
 
-Output shows colored pass/fail indicators with latency measurements. When testing all connections, a summary with pass rate is printed at the end. Exit code is `2` if any test fails.
+The jump host probe never sends a password. It runs `ssh` with `BatchMode=yes` and `StrictHostKeyChecking=yes`, as `run-script` treats jump hosts: it logs in with an SSH key or the agent, and refuses a host key that is not in `known_hosts`. A jump host past the nearest one goes through the same `ProxyCommand` or `-J` route `run-script` builds. A failure names the part that failed, `Jump host … unreachable` or `Target … unreachable from jump host …`, with `jump_host_status` and `target_status` in the details. `--timeout` bounds the probe itself, the jump host login included. Choosing a reachable gateway among fallback jump hosts happens before it and can take up to about twice `--timeout` for each fallback that does not answer.
 
-JSON output for `test all` includes:
+A test that cannot run is **skipped**, which is neither a pass nor a failure. That happens for a serial device, a Zero Trust provider other than AWS Session Manager, a Kubernetes connection with no pod, a Web connection that browses through an SSH tunnel or a SOCKS proxy, an SSH connection routed by its own ProxyCommand or ProxyJump option, a jump host route that is not a plain `[user@]host[:port]` list, a jump host that wants a password, a passphrase, a PIN or a host key confirmation, and a missing `ssh`, `kubectl` or `aws`. The reason is printed: `SKIPPED: …` in the table, the `skipped` detail in JSON, the `skip_reason` column in CSV.
+
+Output shows colored pass/fail indicators with latency measurements. When testing all connections, a summary with pass rate is printed at the end; the pass rate counts only the tests that ran. Exit code is `2` if any test fails. A skipped test does not change it, so a run where nothing failed exits `0`.
+
+Each result has a `status` field: `ok`, `failed` or `skipped`. `success` stays for older scripts and is `true` only for `ok`, so a skipped test has `"success": false` and no `error`. JSON output for `test all` includes:
+
 ```json
 {
   "total": 5,
-  "passed": 4,
+  "passed": 3,
   "failed": 1,
-  "pass_rate": 80.0,
+  "skipped": 1,
+  "pass_rate": 75.0,
   "results": [
-    {"connection_id": "...", "connection_name": "Server", "success": true, "latency_ms": 42},
+    {"connection_id": "...", "connection_name": "Server", "status": "ok", "success": true, "latency_ms": 42},
+    {"connection_id": "...", "connection_name": "SSM host", "status": "skipped", "success": false,
+     "latency_ms": null, "error": null, "details": {"skipped": "the aws CLI is not installed"}},
     ...
   ]
 }
 ```
+
+CSV columns: `connection,success,latency_ms,error,status,skip_reason`.
 
 When piped (non-TTY stdout), output defaults to JSON automatically.
 
@@ -634,7 +770,7 @@ mode (opening the SFTP location in Dolphin/Nautilus/`xdg-open`) requires the
 ### export — Export connections
 
 ```bash
-rustconn-cli export -f <format> -o <path> [--csv-delimiter <delim>] [--csv-fields <fields>]
+rustconn-cli export -f <format> -o <path> [--group <NAME|UUID>] [--tag <TAG>] [--csv-delimiter <delim>] [--csv-fields <fields>]
 ```
 
 ```bash
@@ -650,7 +786,18 @@ rustconn-cli export -f rdp-file -o ~/rdp-exports/
 rustconn-cli export -f csv -o connections.csv
 rustconn-cli export -f csv -o connections.csv --csv-delimiter semicolon
 rustconn-cli export -f csv -o connections.csv --csv-fields "name,host,port,protocol"
+rustconn-cli export -f ssh-config -o prod.conf --group Production   # A group and its subgroups
+rustconn-cli export -f ansible -o db.yml --tag db                   # Connections tagged db
 ```
+
+`--group` selects the connections in a group and its subgroups, `--tag` those with
+a tag (case-insensitive); both together select connections that match both. A
+selection that matches nothing is an error, so the output file is not replaced by
+an empty export. Groups, templates and the other data of a `native` archive are
+exported whole.
+
+A format that cannot hold some connections skips them and prints one line,
+`Skipped N connection(s) not supported by <format>`; `-v` lists them one by one.
 
 | Format | Description |
 |--------|-------------|
@@ -1190,9 +1337,12 @@ rustconn-cli unpin "Production DB"                   # Remove from favorites
 
 ```bash
 rustconn-cli tag list [-f table|json|csv]
-rustconn-cli tag add -c <connection> -t <tag>
-rustconn-cli tag remove -c <connection> -t <tag>
+rustconn-cli tag add <connection> -t <tag>
+rustconn-cli tag remove <connection> -t <tag>
 ```
+
+The connection is a positional argument, as for `pin`, `move` and `show`;
+`-c/--connection` still works.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1203,8 +1353,9 @@ rustconn-cli tag remove -c <connection> -t <tag>
 ```bash
 rustconn-cli tag list                                # All tags with counts
 rustconn-cli tag list --format json                  # JSON: {"linux": 5, "prod": 3}
-rustconn-cli tag add -c "Server" -t "production"     # Add tag
-rustconn-cli tag remove -c "Server" -t "staging"     # Remove tag
+rustconn-cli tag add "Server" -t "production"        # Add tag
+rustconn-cli tag remove "Server" -t "staging"        # Remove tag
+rustconn-cli tag add -c "Server" -t "linux"          # Same, with --connection
 ```
 
 ### move — Move connection to a group
@@ -1367,7 +1518,7 @@ rustconn-cli list --format json > connections-backup.json
 rustconn-cli test all --timeout 5 || echo "Some connections failed"
 
 # Get structured test results for monitoring
-rustconn-cli test all --format json | jq '.results[] | select(.success == false)'
+rustconn-cli test all --format json | jq '.results[] | select(.status == "failed")'
 
 # Show connection details as JSON (useful for AI agents and automation)
 rustconn-cli show "Production DB" --format json | jq '{host, port, protocol, username}'

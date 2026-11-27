@@ -149,6 +149,129 @@ pub(super) struct AddParams<'a> {
     // WinRM
     pub winrm_ssl: bool,
     pub winrm_accept_invalid_certs: bool,
+    // Kubernetes
+    pub kubernetes: KubernetesArgs<'a>,
+}
+
+/// The Kubernetes flags of `add` and `update`, applied by
+/// [`apply_kubernetes_fields`].
+pub(super) struct KubernetesArgs<'a> {
+    pub kubeconfig: Option<&'a str>,
+    pub context: Option<&'a str>,
+    pub namespace: Option<&'a str>,
+    pub pod: Option<&'a str>,
+    pub container: Option<&'a str>,
+    pub shell: Option<&'a str>,
+    /// `Some(true)` for busybox mode, `Some(false)` (update only) for exec.
+    pub busybox: Option<bool>,
+    pub busybox_image: Option<&'a str>,
+    pub custom_args: &'a [String],
+}
+
+impl KubernetesArgs<'_> {
+    /// The first Kubernetes flag given, for the error a non-Kubernetes
+    /// connection gets; `None` when no Kubernetes flag was given.
+    pub(super) fn first_flag(&self) -> Option<&'static str> {
+        [
+            (self.kubeconfig.is_some(), "--kubeconfig"),
+            (self.context.is_some(), "--context"),
+            (self.namespace.is_some(), "--namespace"),
+            (self.pod.is_some(), "--pod"),
+            (self.container.is_some(), "--container"),
+            (self.shell.is_some(), "--shell"),
+            (self.busybox.is_some(), "--busybox"),
+            (self.busybox_image.is_some(), "--busybox-image"),
+            (!self.custom_args.is_empty(), "--k8s-custom-arg"),
+        ]
+        .into_iter()
+        .find_map(|(given, flag)| given.then_some(flag))
+    }
+}
+
+/// Applies the Kubernetes flags to a `KubernetesConfig`, shared by `add` and
+/// `update`.
+///
+/// `host` is `-H/--host`: a Kubernetes connection has no network host, so the
+/// value names the pod, the same as `--pod` (giving both with different names
+/// is refused rather than one silently winning). An empty value clears an
+/// optional field. The rules are the GUI editor's: busybox mode runs a
+/// temporary pod, so it excludes a pod and a container in the same call, and
+/// without it a pod is required. The editor keeps a stored pod while busybox
+/// mode is on (the field is only greyed out), so switching modes here keeps it
+/// as well. The shell is limited by clap to the editor's four choices.
+///
+/// # Errors
+/// Returns [`CliError::Config`] for a conflicting pod, busybox mode combined
+/// with a pod or container, `--busybox-image` outside busybox mode, a result
+/// with neither a pod nor busybox mode, or a kubeconfig path that cannot be
+/// made absolute.
+pub(super) fn apply_kubernetes_fields(
+    cfg: &mut rustconn_core::models::KubernetesConfig,
+    host: Option<&str>,
+    args: &KubernetesArgs<'_>,
+) -> Result<(), CliError> {
+    let host = host.map(str::trim).filter(|h| !h.is_empty());
+    let pod = match (host, args.pod) {
+        (Some(host), Some(pod)) if host != pod.trim() => {
+            return Err(CliError::Config(format!(
+                "-H/--host and --pod both name the pod of a Kubernetes connection \
+                 ('{host}' and '{}'); give one of them",
+                pod.trim()
+            )));
+        }
+        (Some(host), _) => Some(host),
+        (None, pod) => pod,
+    };
+    let named = |value: Option<&str>| value.is_some_and(|v| !v.trim().is_empty());
+    if args.busybox == Some(true) && (named(pod) || named(args.container)) {
+        return Err(CliError::Config(
+            "--busybox runs a temporary pod and cannot be combined with --pod, -H/--host \
+             or --container"
+                .into(),
+        ));
+    }
+
+    let value = |text: &str| (!text.trim().is_empty()).then(|| text.trim().to_string());
+    if let Some(path) = args.kubeconfig {
+        cfg.kubeconfig = crate::util::kdbx_path_arg(path)?;
+    }
+    if let Some(context) = args.context {
+        cfg.context = value(context);
+    }
+    if let Some(namespace) = args.namespace {
+        cfg.namespace = value(namespace);
+    }
+    if let Some(pod) = pod {
+        cfg.pod = value(pod);
+    }
+    if let Some(container) = args.container {
+        cfg.container = value(container);
+    }
+    if let Some(shell) = args.shell {
+        cfg.shell = shell.to_string();
+    }
+    if let Some(busybox) = args.busybox {
+        cfg.use_busybox = busybox;
+    }
+    if let Some(image) = args.busybox_image {
+        if !cfg.use_busybox {
+            return Err(CliError::Config(
+                "--busybox-image applies only in busybox mode; add --busybox".into(),
+            ));
+        }
+        cfg.busybox_image = value(image)
+            .unwrap_or_else(|| rustconn_core::models::KubernetesConfig::default().busybox_image);
+    }
+    cfg.custom_args.extend(args.custom_args.iter().cloned());
+
+    if !cfg.use_busybox && cfg.pod.is_none() {
+        return Err(CliError::Config(
+            "A Kubernetes connection needs a pod: pass it with -H/--host or --pod, \
+             or use --busybox for a temporary pod"
+                .into(),
+        ));
+    }
+    Ok(())
 }
 
 /// Add connection command handler
@@ -177,6 +300,13 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
 
     let (protocol_type, default_port) = parse_protocol(params.protocol)?;
     let port = params.port.unwrap_or(default_port);
+    // A Web connection's port is its URL's (or the scheme default); `--port`
+    // only fills in for a URL that names neither.
+    let port = if protocol_type == ProtocolType::Web {
+        crate::util::web_port(params.host, port)
+    } else {
+        port
+    };
 
     let ssh_auth = params.auth_method.map(parse_auth_method).transpose()?;
 
@@ -207,6 +337,18 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         && let Some(baud) = params.baud_rate
     {
         config.baud_rate = crate::util::parse_baud_rate(baud)?;
+    }
+
+    // Kubernetes: -H names the pod (the connection has no network host), and
+    // a Kubernetes flag on any other protocol is a mistake, not a no-op.
+    if let rustconn_core::models::ProtocolConfig::Kubernetes(ref mut config) =
+        connection.protocol_config
+    {
+        apply_kubernetes_fields(config, Some(params.host), &params.kubernetes)?;
+    } else if let Some(flag) = params.kubernetes.first_flag() {
+        return Err(CliError::Config(format!(
+            "{flag} is only valid for Kubernetes connections, not {protocol_type:?}"
+        )));
     }
 
     if let Some(username) = params.user {
@@ -333,9 +475,9 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
             rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) => {
                 apply_ssh_wave2_fields(
                     cfg,
-                    params.x11_forwarding,
-                    params.agent_forwarding,
-                    params.compression,
+                    params.x11_forwarding.then_some(true),
+                    params.agent_forwarding.then_some(true),
+                    params.compression.then_some(true),
                     params.startup_command,
                     params.proxy_command,
                     params.ssh_option,
@@ -347,9 +489,9 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
             rustconn_core::models::ProtocolConfig::Sftp(ref mut cfg) => {
                 apply_ssh_wave2_fields(
                     cfg,
-                    params.x11_forwarding,
-                    params.agent_forwarding,
-                    params.compression,
+                    params.x11_forwarding.then_some(true),
+                    params.agent_forwarding.then_some(true),
+                    params.compression.then_some(true),
                     params.startup_command,
                     params.proxy_command,
                     params.ssh_option,
@@ -736,9 +878,15 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         store_password_from_stdin(config_path, &connection)?;
     }
 
-    let endpoint = match crate::util::display_port(&connection).as_str() {
-        "-" => connection.host.clone(),
-        port => format!("{}:{port}", connection.host),
+    let endpoint = match &connection.protocol_config {
+        rustconn_core::models::ProtocolConfig::Kubernetes(cfg) => {
+            if cfg.use_busybox {
+                format!("temporary pod {}", cfg.busybox_image)
+            } else {
+                format!("pod {}", cfg.pod.as_deref().unwrap_or_default())
+            }
+        }
+        _ => crate::util::display_endpoint(&connection),
     };
     println!(
         "Added connection '{}' ({} {endpoint}) with ID {}{}",
@@ -867,155 +1015,6 @@ fn store_password_from_stdin(
     ))
 }
 
-/// A bulk-add document: a set of connection definitions, optionally with the
-/// groups they reference. Accepts either a top-level object with `connections`
-/// (and optional `groups`) keys, or a bare array of connections (handled by the
-/// caller). Parsed as YAML, which is a JSON superset, so the same parser reads
-/// both formats.
-#[derive(serde::Deserialize)]
-struct BulkAddDoc {
-    #[serde(default)]
-    connections: Vec<Connection>,
-    #[serde(default)]
-    groups: Vec<rustconn_core::models::ConnectionGroup>,
-}
-
-/// Bulk-adds connections from a YAML or JSON file (native shape), or from stdin
-/// when `path` is `-`.
-///
-/// Reuses the existing serde models (`Connection`, `ConnectionGroup`) and a
-/// single YAML parser (YAML is a JSON superset, so JSON files parse too) rather
-/// than inventing a bespoke format. The document is either a top-level object
-/// with `connections` and optional `groups` arrays, or a bare array of
-/// connections. Every valid, non-duplicate connection is added in one save; the
-/// command reports how many were added and names each skipped entry with its
-/// reason (duplicate name, or failed validation), without aborting the whole
-/// batch on the first bad entry.
-///
-/// # Errors
-///
-/// Returns [`CliError::Config`] when the file cannot be read, the document
-/// cannot be parsed, or the merged set cannot be saved.
-pub(super) fn cmd_add_from_file(config_path: Option<&Path>, path: &str) -> Result<(), CliError> {
-    let content = if path == "-" {
-        use std::io::Read;
-        let mut buf = String::new();
-        std::io::stdin()
-            .read_to_string(&mut buf)
-            .map_err(|e| CliError::Config(format!("Failed to read stdin: {e}")))?;
-        buf
-    } else {
-        std::fs::read_to_string(path)
-            .map_err(|e| CliError::Config(format!("Failed to read {path}: {e}")))?
-    };
-
-    // Try the object shape first, then a bare array of connections. serde_yaml
-    // parses JSON as well, so both document formats work through one path.
-    let (incoming_conns, incoming_groups): (
-        Vec<Connection>,
-        Vec<rustconn_core::models::ConnectionGroup>,
-    ) = match serde_yaml::from_str::<BulkAddDoc>(&content) {
-        Ok(doc) if !doc.connections.is_empty() => (doc.connections, doc.groups),
-        _ => {
-            let conns: Vec<Connection> = serde_yaml::from_str(&content).map_err(|e| {
-                CliError::Config(format!(
-                    "Failed to parse connection definitions (expected a YAML/JSON object with \
-                         a 'connections' array, or a bare array of connections): {e}"
-                ))
-            })?;
-            (conns, Vec::new())
-        }
-    };
-
-    if incoming_conns.is_empty() {
-        return Err(CliError::Config(
-            "No connections found in the input. Provide a 'connections' array or a bare array."
-                .into(),
-        ));
-    }
-
-    let config_manager = create_config_manager(config_path)?;
-
-    let mut groups = config_manager
-        .load_groups()
-        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
-    let mut connections = config_manager
-        .load_connections()
-        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
-
-    // Merge any groups the file carries, keyed by name (case-insensitive), so a
-    // connection's group_id resolves. A group whose name already exists is kept,
-    // and the file's id for it is remapped to the existing group's id below so a
-    // connection referring to it is not orphaned by a dangling group_id.
-    let mut new_groups = 0usize;
-    let mut group_id_remap: std::collections::HashMap<uuid::Uuid, uuid::Uuid> =
-        std::collections::HashMap::new();
-    for group in incoming_groups {
-        if let Some(existing) = groups
-            .iter()
-            .find(|g| g.name.eq_ignore_ascii_case(&group.name))
-        {
-            // Duplicate by name: point the file's group_id at the kept group.
-            if group.id != existing.id {
-                group_id_remap.insert(group.id, existing.id);
-            }
-        } else {
-            groups.push(group);
-            new_groups += 1;
-        }
-    }
-
-    let mut added = 0usize;
-    let mut skipped: Vec<String> = Vec::new();
-
-    for mut conn in incoming_conns {
-        // Repoint a connection whose group was deduplicated to the kept group.
-        if let Some(gid) = conn.group_id
-            && let Some(canonical) = group_id_remap.get(&gid)
-        {
-            conn.group_id = Some(*canonical);
-        }
-        if let Err(e) = ConfigManager::validate_connection(&conn) {
-            skipped.push(format!("'{}' — invalid: {e}", conn.name));
-            continue;
-        }
-        if connections
-            .iter()
-            .any(|c| c.name.eq_ignore_ascii_case(&conn.name))
-        {
-            skipped.push(format!(
-                "'{}' — a connection with that name already exists",
-                conn.name
-            ));
-            continue;
-        }
-        connections.push(conn);
-        added += 1;
-    }
-
-    if new_groups > 0 {
-        config_manager
-            .save_groups(&groups)
-            .map_err(|e| CliError::Config(format!("Failed to save groups: {e}")))?;
-    }
-    config_manager
-        .save_connections(&connections)
-        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
-
-    println!("Added {added} connection(s) from {path}.");
-    if new_groups > 0 {
-        println!("Created {new_groups} group(s).");
-    }
-    if !skipped.is_empty() {
-        println!("Skipped {} entry/entries:", skipped.len());
-        for reason in &skipped {
-            println!("  - {reason}");
-        }
-    }
-
-    Ok(())
-}
-
 /// Parse auth method string into `SshAuthMethod`
 pub(super) fn parse_auth_method(s: &str) -> Result<SshAuthMethod, CliError> {
     match s.to_lowercase().as_str() {
@@ -1135,7 +1134,9 @@ fn zt_connection(name: &str, params: &AddParams<'_>, zt_config: ZeroTrustConfig)
     Connection::new(
         name.to_string(),
         params.host.to_string(),
-        params.port.unwrap_or(22),
+        // The provider CLI never reads a port, so none is made up (0, as
+        // `ProtocolType::ZeroTrust.default_port()`).
+        params.port.unwrap_or(0),
         ProtocolConfig::ZeroTrust(zt_config),
     )
 }
@@ -1412,9 +1413,9 @@ pub(super) fn apply_jump_host_id(
 )]
 pub(super) fn apply_ssh_wave2_fields(
     cfg: &mut rustconn_core::models::SshConfig,
-    x11_forwarding: bool,
-    agent_forwarding: bool,
-    compression: bool,
+    x11_forwarding: Option<bool>,
+    agent_forwarding: Option<bool>,
+    compression: Option<bool>,
     startup_command: Option<&str>,
     proxy_command: Option<&str>,
     ssh_option: &[(String, String)],
@@ -1422,14 +1423,14 @@ pub(super) fn apply_ssh_wave2_fields(
     remote_forward: &[String],
     dynamic_forward: &[String],
 ) -> Result<(), CliError> {
-    if x11_forwarding {
-        cfg.x11_forwarding = true;
+    if let Some(value) = x11_forwarding {
+        cfg.x11_forwarding = value;
     }
-    if agent_forwarding {
-        cfg.agent_forwarding = true;
+    if let Some(value) = agent_forwarding {
+        cfg.agent_forwarding = value;
     }
-    if compression {
-        cfg.compression = true;
+    if let Some(value) = compression {
+        cfg.compression = value;
     }
     if let Some(cmd) = startup_command {
         cfg.startup_command = Some(cmd.to_string());

@@ -907,14 +907,17 @@ impl SessionGroupWindow {
         connection_id: Uuid,
         title: &str,
         protocol: &str,
+        icon: &str,
         content: &gtk4::Box,
     ) {
         let slot = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         slot.append(content);
         let page = self.tab_view.append(&slot);
         page.set_title(title);
-        let icon = rustconn_core::protocol::icons::get_protocol_icon_by_name(protocol);
-        page.set_icon(Some(&gio::ThemedIcon::new(icon)));
+        // Custom icon from the connection's settings (emoji or GTK icon name),
+        // else the protocol icon — the sidebar row makes the same choice.
+        let protocol_icon = rustconn_core::protocol::icons::get_protocol_icon_by_name(protocol);
+        page.set_icon(Some(&crate::icon_render::tab_icon(icon, protocol_icon)));
         self.members.borrow_mut().insert(
             session_id,
             Member {

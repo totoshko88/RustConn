@@ -46,7 +46,8 @@ pub use knock::{
 };
 pub use lazy_loader::LazyGroupLoader;
 pub use login_prompt::{
-    DEFAULT_USERNAME_PROMPTS, LoginPrompt, LoginPromptMatcher, looks_like_username_prompt,
+    DEFAULT_USERNAME_PROMPTS, LoginAction, LoginPrompt, LoginPromptMatcher, LoginSequence,
+    looks_like_username_prompt,
 };
 pub use manager::{ConnectionManager, ReloadOutcome};
 pub use mdns::{apply_mdns_fallback, is_mdns_name, resolve_sandboxed_hostname};

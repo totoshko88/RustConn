@@ -1338,6 +1338,175 @@ fn add_from_file_skips_duplicates_with_a_reason() {
     );
 }
 
+/// `docs/CLI_REFERENCE.md`, read at compile time so the bulk-add examples
+/// tested below are the ones the reference shows.
+const CLI_REFERENCE: &str = include_str!("../../docs/CLI_REFERENCE.md");
+
+/// The fenced block after `<!-- bulk-add-example:{kind} -->` in the reference.
+fn bulk_add_doc_example(kind: &str) -> String {
+    let marker = format!("<!-- bulk-add-example:{kind} -->");
+    let after = CLI_REFERENCE
+        .split_once(marker.as_str())
+        .unwrap_or_else(|| panic!("marker {marker} missing from CLI_REFERENCE.md"))
+        .1;
+    let fence = format!("```{kind}\n");
+    let body = after
+        .split_once(fence.as_str())
+        .unwrap_or_else(|| panic!("no ```{kind} block after {marker}"))
+        .1;
+    body.split_once("\n```")
+        .unwrap_or_else(|| panic!("unterminated ```{kind} block"))
+        .0
+        .to_string()
+}
+
+/// Runs `add --from-file -` with `input` on stdin.
+fn run_add_from_stdin(input: &str, config_dir: &std::path::Path) -> Output {
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rustconn-cli"))
+        .env("RUSTCONN_CONFIG_DIR", config_dir)
+        .args(["add", "--from-file", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn CLI");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(input.as_bytes())
+        .expect("write stdin");
+    child.wait_with_output().expect("CLI output")
+}
+
+/// The documented examples add all four connections: no ids or timestamps,
+/// a group by name, an RDP jump host by name, a Kubernetes pod.
+fn assert_doc_example_added(out: &Output, config_dir: &std::path::Path) {
+    assert!(
+        out.status.success(),
+        "the documented example must be accepted. stderr: {}",
+        stderr_str(out)
+    );
+    let out_s = stdout_str(out);
+    assert!(out_s.contains("Added 4 connection(s)"), "Got: {out_s}");
+    assert!(out_s.contains("Created 1 group(s)"), "Got: {out_s}");
+    assert!(!out_s.contains("Skipped"), "Got: {out_s}");
+
+    let bastion = show_json(config_dir, "bastion");
+    let rdp = show_json(config_dir, "win-desktop");
+    assert_eq!(rdp["protocol"], "rdp");
+    assert_eq!(rdp["port"], 3389);
+    assert_eq!(
+        rdp["protocol_config"]["jump_host_id"], bastion["id"],
+        "the RDP jump host must resolve to the bastion by name"
+    );
+
+    let web = show_json(config_dir, "web1");
+    assert_eq!(web["group_name"], "Web");
+    assert_eq!(web["port"], 2222);
+
+    let pod = show_json(config_dir, "api-pod");
+    assert_eq!(pod["protocol"], "kubernetes");
+    assert_eq!(pod["protocol_config"]["pod"], "api-0");
+    assert_eq!(pod["protocol_config"]["namespace"], "prod");
+    assert_eq!(pod["protocol_config"]["container"], "app");
+}
+
+#[test]
+fn add_from_file_accepts_the_documented_json_example() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+    let file = config_dir.join("servers.json");
+    std::fs::write(&file, bulk_add_doc_example("json")).expect("write example");
+
+    let out = run_cli(
+        &["add", "--from-file", file.to_str().unwrap()],
+        Some(config_dir),
+    );
+    assert_doc_example_added(&out, config_dir);
+}
+
+#[test]
+fn add_from_file_accepts_the_documented_yaml_example_on_stdin() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let out = run_add_from_stdin(&bulk_add_doc_example("yaml"), config_dir);
+    assert_doc_example_added(&out, config_dir);
+}
+
+/// A failing document with a `connections` key reports the object-shape error
+/// and the field path, not the bare-list error; a failing list reports the
+/// list error. Nothing is written in either case.
+#[test]
+fn add_from_file_reports_the_error_of_the_documents_own_shape() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let object = run_add_from_stdin(
+        r#"{"connections": [{"name": "a", "host": "h", "protocol_config": {"Ssh": {}}}]}"#,
+        config_dir,
+    );
+    assert!(!object.status.success());
+    let err = stderr_str(&object);
+    assert!(
+        err.contains("connections[0].protocol_config") && err.contains("missing field `type`"),
+        "the object-shape error must name the field path. stderr: {err}"
+    );
+    assert!(!err.contains("expected a sequence"), "stderr: {err}");
+
+    let list = run_add_from_stdin(
+        r#"[{"name": "a", "host": "h", "protocol_config": {"Ssh": {}}}]"#,
+        config_dir,
+    );
+    assert!(!list.status.success());
+    let err = stderr_str(&list);
+    assert!(
+        err.contains("a list of connections") && err.contains("[0].protocol_config"),
+        "stderr: {err}"
+    );
+
+    let listed = run_cli(&["list", "--format", "json"], Some(config_dir));
+    assert!(
+        !stdout_str(&listed).contains("\"a\""),
+        "a rejected document must not write anything"
+    );
+}
+
+/// A provided id that is already in use is replaced and reported, and the
+/// entry is still added.
+#[test]
+fn add_from_file_reassigns_a_colliding_id() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let seed = run_cli(
+        &["add", "--name", "first", "--host", "first.example.com"],
+        Some(config_dir),
+    );
+    assert!(seed.status.success(), "seed add should succeed");
+    let taken = show_json(config_dir, "first")["id"]
+        .as_str()
+        .expect("id")
+        .to_string();
+
+    let doc = format!(
+        "- id: {taken}\n  name: second\n  host: second.example.com\n  protocol_config:\n    type: Ssh\n"
+    );
+    let out = run_add_from_stdin(&doc, config_dir);
+    assert!(out.status.success(), "stderr: {}", stderr_str(&out));
+    let out_s = stdout_str(&out);
+    assert!(out_s.contains("Added 1 connection(s)"), "Got: {out_s}");
+    assert!(
+        out_s.contains("Reassigned 1 id(s)") && out_s.contains(&taken),
+        "Got: {out_s}"
+    );
+    assert_ne!(show_json(config_dir, "second")["id"], taken.as_str());
+}
+
 /// #3 — `--password-stdin` never echoes the password, regardless of build. On a
 /// build without `secret-management` it fails before writing anything and names
 /// the feature; on a build with it, the password is stored (keyring permitting)
@@ -1527,4 +1696,575 @@ fn test_import_mremoteng_xml() {
         "Got: {}",
         stdout_str(&output)
     );
+}
+
+// ============================================================================
+// Kubernetes flags, complete `show`, switches that turn off (0.26.5)
+// ============================================================================
+
+/// Loads the saved connection called `name` from a CLI config dir.
+fn load_connection(config_dir: &std::path::Path, name: &str) -> rustconn_core::models::Connection {
+    let manager = rustconn_core::config::ConfigManager::with_config_dir(config_dir.to_path_buf());
+    manager
+        .load_connections()
+        .expect("load connections")
+        .into_iter()
+        .find(|c| c.name == name)
+        .unwrap_or_else(|| panic!("connection {name} was saved"))
+}
+
+fn load_k8s(config_dir: &std::path::Path, name: &str) -> rustconn_core::models::KubernetesConfig {
+    match load_connection(config_dir, name).protocol_config {
+        rustconn_core::models::ProtocolConfig::Kubernetes(cfg) => cfg,
+        other => panic!("expected a Kubernetes connection, got {other:?}"),
+    }
+}
+
+fn show_json(config_dir: &std::path::Path, name: &str) -> serde_json::Value {
+    let out = run_cli(&["show", name, "--format", "json"], Some(config_dir));
+    assert!(out.status.success(), "{}", stderr_str(&out));
+    serde_json::from_str(&stdout_str(&out)).expect("show prints JSON")
+}
+
+#[test]
+fn kubernetes_flags_round_trip_through_add_update_and_show() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+
+    // -H names the pod of a Kubernetes connection instead of being dropped.
+    let add = run_cli(
+        &[
+            "add",
+            "-n",
+            "k3s pod",
+            "-H",
+            "rc-demo",
+            "-P",
+            "k8s",
+            "--kubeconfig",
+            "/etc/kube/test.yaml",
+            "--context",
+            "k3s",
+            "--namespace",
+            "demo",
+            "--container",
+            "app",
+            "--shell",
+            "/bin/bash",
+            "--k8s-custom-arg",
+            "--request-timeout=30s",
+        ],
+        Some(dir),
+    );
+    assert!(add.status.success(), "{}", stderr_str(&add));
+    let cfg = load_k8s(dir, "k3s pod");
+    assert_eq!(cfg.pod.as_deref(), Some("rc-demo"));
+    assert_eq!(
+        cfg.kubeconfig.as_deref(),
+        Some(std::path::Path::new("/etc/kube/test.yaml"))
+    );
+    assert_eq!(cfg.context.as_deref(), Some("k3s"));
+    assert_eq!(cfg.namespace.as_deref(), Some("demo"));
+    assert_eq!(cfg.container.as_deref(), Some("app"));
+    assert_eq!(cfg.shell, "/bin/bash");
+    assert!(!cfg.use_busybox);
+    assert_eq!(cfg.custom_args, ["--request-timeout=30s"]);
+
+    let value = show_json(dir, "k3s pod");
+    let settings = &value["protocol_config"];
+    assert_eq!(settings["type"], "Kubernetes");
+    assert_eq!(settings["pod"], "rc-demo");
+    assert_eq!(settings["namespace"], "demo");
+    assert_eq!(settings["shell"], "/bin/bash");
+    assert_eq!(settings["use_busybox"], false);
+
+    // Busybox mode excludes a pod or container in the same call.
+    let both = run_cli(
+        &["update", "k3s pod", "--busybox", "--pod", "other"],
+        Some(dir),
+    );
+    assert!(!both.status.success());
+    assert!(
+        stderr_str(&both).contains("--busybox"),
+        "{}",
+        stderr_str(&both)
+    );
+
+    let busybox = run_cli(
+        &[
+            "update",
+            "k3s pod",
+            "--busybox",
+            "--busybox-image",
+            "alpine:3",
+        ],
+        Some(dir),
+    );
+    assert!(busybox.status.success(), "{}", stderr_str(&busybox));
+    let cfg = load_k8s(dir, "k3s pod");
+    assert!(cfg.use_busybox);
+    assert_eq!(cfg.busybox_image, "alpine:3");
+    // As in the GUI editor, the stored pod survives the mode switch.
+    assert_eq!(cfg.pod.as_deref(), Some("rc-demo"));
+
+    let exec = run_cli(
+        &[
+            "update",
+            "k3s pod",
+            "--busybox",
+            "false",
+            "-H",
+            "web-0",
+            "--container",
+            "",
+        ],
+        Some(dir),
+    );
+    assert!(exec.status.success(), "{}", stderr_str(&exec));
+    let cfg = load_k8s(dir, "k3s pod");
+    assert!(!cfg.use_busybox);
+    assert_eq!(cfg.pod.as_deref(), Some("web-0"));
+    assert_eq!(cfg.container, None);
+    assert_eq!(load_connection(dir, "k3s pod").host, "");
+}
+
+#[test]
+fn kubernetes_add_refuses_what_the_editor_refuses() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+
+    let refused: [&[&str]; 4] = [
+        // No pod and no busybox mode.
+        &["add", "-n", "a", "-P", "k8s", "--namespace", "demo"],
+        // Busybox with a pod named through -H.
+        &["add", "-n", "b", "-P", "k8s", "-H", "web-0", "--busybox"],
+        // -H and --pod naming different pods.
+        &[
+            "add", "-n", "c", "-P", "k8s", "-H", "web-0", "--pod", "web-1",
+        ],
+        // A Kubernetes flag on another protocol.
+        &["add", "-n", "d", "-H", "example.com", "--namespace", "demo"],
+    ];
+    for args in refused {
+        let out = run_cli(args, Some(dir));
+        assert!(!out.status.success(), "{args:?} should fail");
+    }
+    assert!(saved_connection_names(dir).is_empty());
+
+    let busybox = run_cli(
+        &["add", "-n", "k3s busybox pod", "-P", "k8s", "--busybox"],
+        Some(dir),
+    );
+    assert!(busybox.status.success(), "{}", stderr_str(&busybox));
+    let cfg = load_k8s(dir, "k3s busybox pod");
+    assert!(cfg.use_busybox);
+    assert_eq!(cfg.pod, None);
+}
+
+#[test]
+fn update_turns_a_switch_off_and_show_reports_it() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add",
+            "-n",
+            "Linux VNC",
+            "-H",
+            "vnc.example.com",
+            "-P",
+            "vnc",
+        ],
+        Some(dir),
+    );
+    assert!(add.status.success(), "{}", stderr_str(&add));
+
+    let on = run_cli(
+        &[
+            "update",
+            "Linux VNC",
+            "--vnc-view-only",
+            "--vnc-no-clipboard",
+        ],
+        Some(dir),
+    );
+    assert!(on.status.success(), "{}", stderr_str(&on));
+    let value = show_json(dir, "Linux VNC");
+    assert_eq!(value["protocol_config"]["view_only"], true);
+    assert_eq!(value["protocol_config"]["clipboard_enabled"], false);
+    let table = run_cli(&["show", "Linux VNC", "--format", "table"], Some(dir));
+    assert!(
+        stdout_str(&table).contains("    view_only: true"),
+        "{}",
+        stdout_str(&table)
+    );
+
+    let off = run_cli(
+        &[
+            "update",
+            "Linux VNC",
+            "--vnc-view-only",
+            "false",
+            "--vnc-no-clipboard=false",
+        ],
+        Some(dir),
+    );
+    assert!(off.status.success(), "{}", stderr_str(&off));
+    let value = show_json(dir, "Linux VNC");
+    assert_eq!(value["protocol_config"]["view_only"], false);
+    assert_eq!(value["protocol_config"]["clipboard_enabled"], true);
+
+    let csv = run_cli(&["show", "Linux VNC", "--format", "csv"], Some(dir));
+    let text = stdout_str(&csv);
+    assert!(text.contains("protocol_config.view_only,false"), "{text}");
+    assert!(text.contains("password_source,"), "{text}");
+}
+
+#[test]
+fn update_turns_ssh_switches_off() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add",
+            "-n",
+            "web",
+            "-H",
+            "web.example.com",
+            "--x11-forwarding",
+            "--compression",
+            "--ssh-verbose",
+        ],
+        Some(dir),
+    );
+    assert!(add.status.success(), "{}", stderr_str(&add));
+
+    let off = run_cli(
+        &[
+            "update",
+            "web",
+            "--x11-forwarding",
+            "false",
+            "--compression",
+            "false",
+            "--ssh-verbose",
+            "false",
+            "--agent-forwarding",
+        ],
+        Some(dir),
+    );
+    assert!(off.status.success(), "{}", stderr_str(&off));
+    let rustconn_core::models::ProtocolConfig::Ssh(cfg) =
+        load_connection(dir, "web").protocol_config
+    else {
+        panic!("web is an SSH connection");
+    };
+    assert!(!cfg.x11_forwarding);
+    assert!(!cfg.compression);
+    assert!(!cfg.verbose);
+    assert!(cfg.agent_forwarding);
+}
+
+// ============================================================================
+// Small CLI fixes (0.26.5): Web/Zero Trust ports, flags, export selection, icons
+// ============================================================================
+
+fn add_ok(args: &[&str], dir: &std::path::Path) -> String {
+    let out = run_cli(args, Some(dir));
+    assert!(out.status.success(), "{args:?}: {}", stderr_str(&out));
+    stdout_str(&out)
+}
+
+/// I4: the port of a Web connection is its URL's, in storage and in output.
+#[test]
+fn a_web_connection_takes_its_port_from_the_url() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    let stdout = add_ok(
+        &[
+            "add",
+            "--name",
+            "cockpit",
+            "-H",
+            "https://203.0.113.10:9090",
+            "-P",
+            "web",
+        ],
+        dir,
+    );
+    assert!(stdout.contains(" https://203.0.113.10:9090)"), "{stdout}");
+    assert!(!stdout.contains(":9090:"), "{stdout}");
+    assert_eq!(load_connection(dir, "cockpit").port, 9090);
+    assert_eq!(show_json(dir, "cockpit")["port"], 9090);
+
+    add_ok(
+        &[
+            "add",
+            "--name",
+            "plain",
+            "-H",
+            "http://intranet.lan",
+            "-P",
+            "web",
+        ],
+        dir,
+    );
+    assert_eq!(load_connection(dir, "plain").port, 80);
+
+    add_ok(
+        &["update", "plain", "-H", "https://intranet.lan:8443/app"],
+        dir,
+    );
+    assert_eq!(load_connection(dir, "plain").port, 8443);
+}
+
+/// M1: a Zero Trust connection stores no placeholder port and prints none.
+#[test]
+fn a_zero_trust_connection_has_no_port() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    let stdout = add_ok(
+        &[
+            "add",
+            "--name",
+            "ssm",
+            "-P",
+            "zt",
+            "--provider",
+            "aws_ssm",
+            "-H",
+            "i-0123456789abcdef0",
+            "--group",
+            "cloud",
+        ],
+        dir,
+    );
+    assert!(stdout.contains("i-0123456789abcdef0)"), "{stdout}");
+    assert!(!stdout.contains(":22"), "{stdout}");
+    assert_eq!(load_connection(dir, "ssm").port, 0);
+    assert!(show_json(dir, "ssm")["port"].is_null());
+
+    let list = run_cli(&["list", "--format", "json"], Some(dir));
+    let list: serde_json::Value = serde_json::from_str(&stdout_str(&list)).expect("JSON");
+    assert!(list[0]["port"].is_null(), "{list}");
+    let csv = stdout_str(&run_cli(&["list", "--format", "csv"], Some(dir)));
+    assert!(csv.contains("ssm,i-0123456789abcdef0,,zerotrust"), "{csv}");
+
+    let group = run_cli(&["group", "show", "cloud", "--format", "json"], Some(dir));
+    let group: serde_json::Value = serde_json::from_str(&stdout_str(&group)).expect("JSON");
+    assert!(group["connections"][0]["port"].is_null(), "{group}");
+}
+
+/// M3: `duplicate --name`, a positional connection for `tag add/remove`, and
+/// a pointer to `--new-name` when `update` is given `--name`.
+#[test]
+fn rename_and_tag_flags_match_the_other_commands() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    add_ok(&["add", "--name", "web", "-H", "web.lan"], dir);
+
+    add_ok(&["duplicate", "web", "--name", "web-2"], dir);
+    load_connection(dir, "web-2");
+    add_ok(&["duplicate", "web"], dir);
+    load_connection(dir, "web (copy)");
+
+    add_ok(&["tag", "add", "web", "--tag", "prod"], dir);
+    add_ok(
+        &["tag", "add", "--connection", "web", "--tag", "linux"],
+        dir,
+    );
+    assert_eq!(load_connection(dir, "web").tags, ["prod", "linux"]);
+    add_ok(&["tag", "remove", "web", "-t", "prod"], dir);
+    assert_eq!(load_connection(dir, "web").tags, ["linux"]);
+    let both = run_cli(
+        &["tag", "add", "web", "--connection", "web", "--tag", "x"],
+        Some(dir),
+    );
+    assert!(!both.status.success());
+
+    let out = run_cli(&["update", "web", "--name", "web-1"], Some(dir));
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "a usage error keeps clap's status"
+    );
+    let stderr = stderr_str(&out);
+    assert!(stderr.contains("unexpected argument '--name'"), "{stderr}");
+    assert!(stderr.contains("--new-name"), "{stderr}");
+    // No tip where `--new-name` does not exist.
+    let out = run_cli(&["show", "web", "--name", "x"], Some(dir));
+    assert!(
+        !stderr_str(&out).contains("--new-name"),
+        "{}",
+        stderr_str(&out)
+    );
+}
+
+/// Two groups, `prod` and its subgroup `eu`, with SSH and VNC connections.
+fn export_fixture(dir: &std::path::Path) {
+    add_ok(&["group", "create", "--name", "prod"], dir);
+    add_ok(
+        &["group", "create", "--name", "eu", "--parent", "prod"],
+        dir,
+    );
+    add_ok(
+        &[
+            "add", "--name", "a", "-H", "a.lan", "--group", "prod", "--tags", "db",
+        ],
+        dir,
+    );
+    add_ok(&["add", "--name", "b", "-H", "b.lan", "--group", "eu"], dir);
+    add_ok(&["add", "--name", "c", "-H", "c.lan", "--tags", "db"], dir);
+    add_ok(
+        &[
+            "add", "--name", "v1", "-H", "v1.lan", "-P", "vnc", "--group", "prod",
+        ],
+        dir,
+    );
+    add_ok(
+        &[
+            "add", "--name", "v2", "-H", "v2.lan", "-P", "vnc", "--group", "eu",
+        ],
+        dir,
+    );
+}
+
+/// M4: one summary line for the connections the format cannot hold, the
+/// details under `-v`; `--group` takes the subgroups along.
+#[test]
+fn export_sums_up_what_it_skipped() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    export_fixture(dir);
+    let file = dir.join("prod.conf");
+    let file_arg = file.to_str().expect("utf-8 path");
+    let out = run_cli(
+        &[
+            "export",
+            "-f",
+            "ssh-config",
+            "-o",
+            file_arg,
+            "--group",
+            "prod",
+        ],
+        Some(dir),
+    );
+    assert!(out.status.success(), "{}", stderr_str(&out));
+    let written = std::fs::read_to_string(&file).expect("export written");
+    assert!(
+        written.contains("a.lan") && written.contains("b.lan"),
+        "{written}"
+    );
+    assert!(!written.contains("c.lan"), "{written}");
+    let stderr = stderr_str(&out);
+    assert_eq!(
+        stderr
+            .matches("Skipped 2 connection(s) not supported by")
+            .count(),
+        1,
+        "{stderr}"
+    );
+    assert!(!stderr.contains("'v1'"), "details only under -v: {stderr}");
+
+    let out = run_cli(
+        &[
+            "-v",
+            "export",
+            "-f",
+            "ssh-config",
+            "-o",
+            file_arg,
+            "--group",
+            "prod",
+        ],
+        Some(dir),
+    );
+    assert!(stderr_str(&out).contains("'v1'"), "{}", stderr_str(&out));
+}
+
+/// M4: `export --tag`, both selections together, and a selection of nothing.
+#[test]
+fn export_selects_by_tag() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    export_fixture(dir);
+    let file = dir.join("db.conf");
+    let file_arg = file.to_str().expect("utf-8 path");
+    let out = run_cli(
+        &["export", "-f", "ssh-config", "-o", file_arg, "--tag", "DB"],
+        Some(dir),
+    );
+    assert!(out.status.success(), "{}", stderr_str(&out));
+    let written = std::fs::read_to_string(&file).expect("export written");
+    assert!(
+        written.contains("a.lan") && written.contains("c.lan"),
+        "{written}"
+    );
+    assert!(!written.contains("b.lan"), "{written}");
+
+    let out = run_cli(
+        &[
+            "export",
+            "-f",
+            "ssh-config",
+            "-o",
+            file_arg,
+            "--group",
+            "eu",
+            "--tag",
+            "db",
+        ],
+        Some(dir),
+    );
+    assert!(!out.status.success(), "an empty selection is an error");
+    let out = run_cli(
+        &[
+            "export",
+            "-f",
+            "ssh-config",
+            "-o",
+            file_arg,
+            "--group",
+            "nope",
+        ],
+        Some(dir),
+    );
+    assert!(
+        stderr_str(&out).contains("Group not found"),
+        "{}",
+        stderr_str(&out)
+    );
+}
+
+/// M5: an emoji icon keeps its variation selector (U+FE0F), which asks for
+/// the colour presentation on tabs.
+#[test]
+fn an_icon_keeps_its_emoji_variation_selector() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let dir = temp_dir.path();
+    add_ok(
+        &[
+            "add",
+            "--name",
+            "k",
+            "-H",
+            "k.lan",
+            "--icon",
+            "\u{2638}\u{FE0F}",
+        ],
+        dir,
+    );
+    assert_eq!(
+        load_connection(dir, "k").icon.as_deref(),
+        Some("\u{2638}\u{FE0F}")
+    );
+    add_ok(&["update", "k", "--icon", "\u{26A0}\u{FE0F}"], dir);
+    assert_eq!(
+        load_connection(dir, "k").icon.as_deref(),
+        Some("\u{26A0}\u{FE0F}")
+    );
+    assert_eq!(show_json(dir, "k")["icon"], "\u{26A0}\u{FE0F}");
 }

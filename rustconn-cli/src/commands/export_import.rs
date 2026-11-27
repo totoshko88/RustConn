@@ -8,13 +8,67 @@ use crate::cli::{ExportFormatArg, ImportFormatArg};
 use crate::error::CliError;
 use crate::util::create_config_manager;
 
+/// Which connections `export` writes: all of them, or those in a group (with
+/// its subgroups) and/or with a tag. Both given means both must hold.
+pub(super) struct ExportSelection<'a> {
+    pub group: Option<&'a str>,
+    pub tag: Option<&'a str>,
+}
+
+impl ExportSelection<'_> {
+    /// The selected connections, in their stored order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CliError::Group`] for an unknown or ambiguous group.
+    fn apply(
+        &self,
+        connections: Vec<Connection>,
+        groups: &[ConnectionGroup],
+    ) -> Result<Vec<Connection>, CliError> {
+        let group_ids = self
+            .group
+            .map(|reference| {
+                let root = super::group::find_group(groups, reference)?;
+                Ok::<_, CliError>(rustconn_core::models::collect_descendant_group_ids(
+                    root.id, groups,
+                ))
+            })
+            .transpose()?;
+        let tag = self.tag.map(str::to_lowercase);
+        Ok(connections
+            .into_iter()
+            .filter(|c| {
+                group_ids
+                    .as_ref()
+                    .is_none_or(|ids| c.group_id.is_some_and(|id| ids.contains(&id)))
+            })
+            .filter(|c| {
+                tag.as_ref()
+                    .is_none_or(|tag| c.tags.iter().any(|t| t.to_lowercase() == *tag))
+            })
+            .collect())
+    }
+}
+
+/// Whether an exporter warning is the per-connection note of a connection the
+/// format cannot hold. Every exporter words it "Skipped …"; the CLI folds
+/// them into one count and keeps the rest (write failures) as warnings.
+// ponytail: matches the exporters' wording; a typed skip list on
+// `ExportResult` would replace it if the GUI ever needs the split too.
+fn is_skip_note(warning: &str) -> bool {
+    warning.starts_with("Skipped ")
+}
+
 /// Export connections command handler
 ///
 /// # Errors
 ///
 /// Returns:
 /// - [`CliError::Config`] when connections, groups, or settings cannot be loaded
-/// - [`CliError::Export`] when the requested format does not support the
+/// - [`CliError::Group`] when `--group` names no group, or more than one
+/// - [`CliError::Export`] when `--group`/`--tag` select no connection, the
+///   requested format does not support the
 ///   selected options (`--csv-delimiter` / `--csv-fields` outside CSV) or the
 ///   underlying exporter fails to write the output file
 pub(super) fn cmd_export(
@@ -23,6 +77,7 @@ pub(super) fn cmd_export(
     output: &Path,
     csv_delimiter: Option<&str>,
     csv_fields: Option<&str>,
+    selection: &ExportSelection<'_>,
 ) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
@@ -94,6 +149,14 @@ pub(super) fn cmd_export(
         options.csv_fields = Some(fields.split(',').map(|s| s.trim().to_string()).collect());
     }
 
+    let connections = selection.apply(connections, &groups)?;
+    // A mistyped tag must not overwrite the output with an empty export.
+    if connections.is_empty() && (selection.group.is_some() || selection.tag.is_some()) {
+        return Err(CliError::Export(
+            "No connections match --group/--tag; nothing exported".to_string(),
+        ));
+    }
+
     let result = export_connections(
         &connections,
         &groups,
@@ -110,8 +173,17 @@ pub(super) fn cmd_export(
         result.exported_count, result.skipped_count
     );
 
-    if !result.warnings.is_empty() {
-        for warning in &result.warnings {
+    if result.skipped_count > 0 {
+        tracing::warn!(
+            "Skipped {} connection(s) not supported by {}",
+            result.skipped_count,
+            options.format
+        );
+    }
+    for warning in &result.warnings {
+        if is_skip_note(warning) {
+            tracing::info!("Export: {warning}");
+        } else {
             tracing::warn!("Export: {warning}");
         }
     }

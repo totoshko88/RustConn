@@ -24,7 +24,9 @@
 //!
 //! Legacy PEM (`BEGIN RSA/EC PRIVATE KEY`) and PKCS#8
 //! (`BEGIN ENCRYPTED PRIVATE KEY`) are recognised only well enough to route
-//! them to `ssh-add`: this module does not parse their bodies.
+//! them to `ssh-add`: this module does not parse their bodies. For the
+//! agent's "is it already loaded?" check, the public key of an unencrypted
+//! one comes from `ssh-keygen -y` ([`key_file_blobs`]).
 //!
 //! Everything here is byte parsing over `data-encoding` (already the project's
 //! base64) and `ring` (already the project's SHA-256), so it builds on every
@@ -204,7 +206,9 @@ fn pub_line_blob(line: &str) -> AgentResult<Vec<u8>> {
 pub(super) struct KeyFileBlobs {
     /// From the private key file itself: an OpenSSH private key carries its
     /// public key in the clear, even when encrypted, so this names the key
-    /// `ssh-add` loads from that file.
+    /// `ssh-add` loads from that file. An unencrypted legacy PEM or PKCS#8 key
+    /// has it derived by `ssh-keygen -y` ([`derived_public_blob`]); an
+    /// encrypted one has `None`.
     pub(super) key_file: Option<Vec<u8>>,
     /// From a sibling `<path>-cert.pub`, the certificate `ssh-add` loads
     /// together with the key when that file exists. Not checked against the
@@ -246,11 +250,12 @@ pub(super) fn key_file_blobs(key_path: &std::path::Path) -> KeyFileBlobs {
     let key_file = std::fs::read_to_string(key_path)
         .ok()
         .map(Zeroizing::new)
-        .filter(|contents| detect_format(contents) == KeyFormat::OpenSsh)
-        .and_then(|contents| {
-            decode_openssh_body(&contents)
+        .and_then(|contents| match detect_format(&contents) {
+            KeyFormat::OpenSsh => decode_openssh_body(&contents)
                 .and_then(|b| openssh_public_blob(&b))
-                .ok()
+                .ok(),
+            KeyFormat::LegacyPem | KeyFormat::Pkcs8 => derived_public_blob(key_path),
+            KeyFormat::Unknown => None,
         });
     let mut cert_path = key_path.as_os_str().to_os_string();
     cert_path.push("-cert.pub");
@@ -261,6 +266,64 @@ pub(super) fn key_file_blobs(key_path: &std::path::Path) -> KeyFileBlobs {
         key_file,
         cert_file,
     }
+}
+
+/// The public blob of an unencrypted legacy PEM or PKCS#8 key, computed by
+/// `ssh-keygen -y` from the private key itself, or `None` when it cannot be.
+///
+/// These formats do not store the public key, so without this an agent that
+/// holds any key at all could not be asked whether it holds this one, and the
+/// key was never added. The blob is as trustworthy as an OpenSSH key's own
+/// public section: it is derived from the private half, unlike a `.pub`
+/// beside the key, which may be stale.
+///
+/// An encrypted key yields `None` without a prompt: [`derive_public_key_command`]
+/// gives `ssh-keygen` the empty passphrase on its command line, no stdin and
+/// no askpass. The run is bounded by [`super::AGENT_COMMAND_TIMEOUT`].
+fn derived_public_blob(key_path: &std::path::Path) -> Option<Vec<u8>> {
+    let output = match super::run_agent_command(
+        derive_public_key_command(key_path),
+        super::AGENT_COMMAND_TIMEOUT,
+        "ssh-keygen -y",
+    ) {
+        Ok(Some(output)) => output,
+        Ok(None) => {
+            tracing::debug!(?key_path, "ssh-keygen -y did not finish in time");
+            return None;
+        }
+        Err(e) => {
+            tracing::debug!(?key_path, error = %e, "could not run ssh-keygen -y");
+            return None;
+        }
+    };
+    if !output.status.success() {
+        // Most often an encrypted key: the empty passphrase does not open it.
+        tracing::debug!(
+            ?key_path,
+            "ssh-keygen -y could not read the public key without a passphrase"
+        );
+        return None;
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    pub_line_blob(stdout.lines().next()?.trim()).ok()
+}
+
+/// `ssh-keygen -y -P "" -f <key>`: prints the public key of an unencrypted
+/// key, and fails on an encrypted one instead of asking for its passphrase.
+///
+/// `-P ""` is the empty passphrase, not a secret; with it `ssh-keygen` never
+/// prompts. The host `SSH_ASKPASS` is stripped and `SSH_ASKPASS_REQUIRE=never`
+/// set as for RustConn's own `ssh-add`, so no askpass window opens either.
+fn derive_public_key_command(key_path: &std::path::Path) -> std::process::Command {
+    let mut cmd = std::process::Command::new("ssh-keygen");
+    cmd.arg("-y")
+        .arg("-P")
+        .arg("")
+        .arg("-f")
+        .arg(key_path)
+        .env_remove("SSH_ASKPASS")
+        .env("SSH_ASKPASS_REQUIRE", "never");
+    cmd
 }
 
 /// The public-key line (`<type> <base64>`, no comment) of an OpenSSH private
@@ -708,6 +771,74 @@ mod tests {
             .expect("blob read without a passphrase");
         assert_eq!(key_type_from_blob(&blob), "ED25519");
         assert_eq!(blobs.cert_file, None, "no certificate beside it");
+    }
+
+    /// The derivation can never ask for a passphrase: the empty one is on the
+    /// command line and no askpass is reachable.
+    #[test]
+    fn derive_command_is_non_interactive() {
+        let cmd = derive_public_key_command(std::path::Path::new("/k/id_rsa"));
+        assert_eq!(cmd.get_program(), "ssh-keygen");
+        let args: Vec<_> = cmd.get_args().collect();
+        assert_eq!(args, ["-y", "-P", "", "-f", "/k/id_rsa"]);
+        let envs: Vec<_> = cmd.get_envs().collect();
+        assert!(envs.contains(&(std::ffi::OsStr::new("SSH_ASKPASS"), None)));
+        assert!(envs.contains(&(
+            std::ffi::OsStr::new("SSH_ASKPASS_REQUIRE"),
+            Some(std::ffi::OsStr::new("never"))
+        )));
+    }
+
+    /// An unencrypted legacy PEM or PKCS#8 key gets the blob `ssh-keygen -y`
+    /// derives from the key itself, not the one in a stale `.pub` beside it;
+    /// an encrypted one gets none, without a prompt.
+    #[cfg(unix)]
+    #[test]
+    fn a_legacy_key_blob_is_derived_from_the_key_itself() {
+        let have_keygen = std::process::Command::new("ssh-keygen")
+            .arg("-?")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .is_ok();
+        if !have_keygen {
+            return;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let generate = |name: &str, format: &str, passphrase: &str| {
+            let path = dir.path().join(name);
+            let status = std::process::Command::new("ssh-keygen")
+                .args([
+                    "-q", "-t", "rsa", "-b", "2048", "-m", format, "-N", passphrase,
+                ])
+                .arg("-C")
+                .arg("test")
+                .arg("-f")
+                .arg(&path)
+                .stdin(std::process::Stdio::null())
+                .status()
+                .unwrap();
+            assert!(status.success());
+            path
+        };
+        for (name, format, armour) in [
+            ("pem", "PEM", "-----BEGIN RSA PRIVATE KEY-----"),
+            ("pkcs8", "PKCS8", "-----BEGIN PRIVATE KEY-----"),
+        ] {
+            let key = generate(name, format, "");
+            let pub_line = std::fs::read_to_string(key.with_extension("pub")).unwrap();
+            assert!(std::fs::read_to_string(&key).unwrap().starts_with(armour));
+            // A stale `.pub` beside the key must not be what comes back.
+            let mut stale = key.as_os_str().to_os_string();
+            stale.push(".pub");
+            std::fs::write(&stale, ED25519_PUB).unwrap();
+            let blob = key_file_blobs(&key).key_file.expect("derived blob");
+            assert_eq!(blob, pub_line_blob(pub_line.trim()).unwrap(), "{format}");
+        }
+
+        let encrypted = generate("pem_enc", "PEM", "correct horse");
+        assert_eq!(key_file_blobs(&encrypted).key_file, None);
     }
 
     /// A `.pub` beside a key is never read: it may be stale. Only the key

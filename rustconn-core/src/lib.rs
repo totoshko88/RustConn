@@ -159,9 +159,10 @@ pub use config::{
     default_passthrough_exceptions, is_valid_accelerator,
 };
 pub use connection::{
-    ConnectionManager, LazyGroupLoader, LoginPrompt, LoginPromptMatcher, PortCheckError,
-    PortCheckResult, ReloadOutcome, RetryConfig, RetryState, SelectionState, check_port,
-    check_port_async, looks_like_password_prompt, looks_like_username_prompt,
+    ConnectionManager, LazyGroupLoader, LoginAction, LoginPrompt, LoginPromptMatcher,
+    LoginSequence, PortCheckError, PortCheckResult, ReloadOutcome, RetryConfig, RetryState,
+    SelectionState, check_port, check_port_async, looks_like_password_prompt,
+    looks_like_username_prompt,
 };
 pub use display_geometry::{DesktopRequest, desktop_request_for_area};
 pub use embedded_client_error::EmbeddedClientError;

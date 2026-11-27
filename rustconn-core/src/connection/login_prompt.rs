@@ -158,6 +158,150 @@ impl LoginPromptMatcher {
     }
 }
 
+/// What the auto-fill should do after looking at one terminal line.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LoginAction {
+    /// Type the account name ([`LoginSequence::username`]) and a newline.
+    SendUsername,
+    /// Type the password and a newline.
+    SendPassword,
+    /// The login prompt came back after credentials were sent; stop typing.
+    Stop,
+}
+
+/// Which credential the sequence is still waiting to send.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LoginStage {
+    Username,
+    Password,
+    Done,
+}
+
+/// The one-shot login auto-fill sequence: username, then password, each sent
+/// at most once.
+///
+/// Fed the line under the cursor every time the terminal changes, it decides
+/// what to type. Kept GUI-free so the sequencing can be tested without VTE.
+///
+/// A username prompt while the password is still pending means the device
+/// started over, and the sequence stops rather than retry (a wrong stored
+/// password must not walk an account into a lockout). The exception is the
+/// prompt line it has just answered: the terminal is re-read within
+/// milliseconds of sending the name, so it still shows `login: `, or
+/// `login: ubuntu` once the server echoes the name back. That line is the
+/// device waiting on our own answer, not a new prompt, and is ignored until
+/// the cursor has left it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoginSequence {
+    stage: LoginStage,
+    username: Option<String>,
+    send_password: bool,
+    /// The answered username prompt line, trailing padding removed.
+    answered_line: Option<String>,
+    /// Whether a line other than the answered prompt (or its echo) has been
+    /// seen since the username was sent.
+    left_answered_line: bool,
+}
+
+impl LoginSequence {
+    /// Starts a sequence for the credentials that are available.
+    ///
+    /// Without a username the sequence waits for the password prompt straight
+    /// away (SSH, or a device that only asks for a password).
+    #[must_use]
+    pub fn new(username: Option<String>, send_password: bool) -> Self {
+        let stage = if username.is_some() {
+            LoginStage::Username
+        } else if send_password {
+            LoginStage::Password
+        } else {
+            LoginStage::Done
+        };
+        Self {
+            stage,
+            username,
+            send_password,
+            answered_line: None,
+            left_answered_line: false,
+        }
+    }
+
+    /// The account name to type for [`LoginAction::SendUsername`].
+    #[must_use]
+    pub fn username(&self) -> Option<&str> {
+        self.username.as_deref()
+    }
+
+    /// Returns `true` once nothing more will be typed.
+    #[must_use]
+    pub fn is_done(&self) -> bool {
+        self.stage == LoginStage::Done
+    }
+
+    /// Ends the sequence early (timeout, closed session).
+    pub fn finish(&mut self) {
+        self.stage = LoginStage::Done;
+    }
+
+    /// Examines the line under the cursor and returns what to type, if
+    /// anything. Each action is returned at most once per sequence.
+    pub fn step(&mut self, matcher: &LoginPromptMatcher, line: &str) -> Option<LoginAction> {
+        if self.stage == LoginStage::Done {
+            return None;
+        }
+        let own_answer = self.is_answered_line(line);
+        if !own_answer {
+            self.left_answered_line = true;
+        }
+        let prompt = matcher.classify(line)?;
+
+        match (self.stage, prompt) {
+            (LoginStage::Username, LoginPrompt::Username) => {
+                self.answered_line = Some(line.trim_end().to_owned());
+                self.left_answered_line = false;
+                self.stage = if self.send_password {
+                    LoginStage::Password
+                } else {
+                    LoginStage::Done
+                };
+                Some(LoginAction::SendUsername)
+            }
+            // The device went straight to the password (or the account name
+            // travelled with the command line, as `telnet -l user` does).
+            (LoginStage::Username | LoginStage::Password, LoginPrompt::Password) => {
+                self.stage = LoginStage::Done;
+                self.send_password.then_some(LoginAction::SendPassword)
+            }
+            // Still the line we answered: the name is on its way or echoed.
+            (LoginStage::Password, LoginPrompt::Username)
+                if own_answer && !self.left_answered_line =>
+            {
+                None
+            }
+            // ponytail: text-only — a rejection whose identical new prompt
+            // arrives before any other line is observed reads as the echo, so
+            // the sequence keeps waiting (types nothing) until the idle
+            // deadline. Compare the cursor row if that ever bites.
+            (LoginStage::Password, LoginPrompt::Username) => {
+                self.stage = LoginStage::Done;
+                Some(LoginAction::Stop)
+            }
+            (LoginStage::Done, _) => None,
+        }
+    }
+
+    /// Returns `true` if `line` is the answered username prompt, bare or
+    /// followed by (part of) the echoed account name.
+    fn is_answered_line(&self, line: &str) -> bool {
+        let (Some(answered), Some(user)) = (&self.answered_line, &self.username) else {
+            return false;
+        };
+        line.trim_end()
+            .strip_prefix(answered.as_str())
+            .is_some_and(|rest| user.starts_with(rest.trim_start()))
+    }
+}
+
 /// Trims a configured expected text and lowercases it, mapping blank to `None`.
 fn normalize_needle(value: Option<&str>) -> Option<String> {
     let trimmed = value?.trim();
@@ -275,6 +419,145 @@ mod tests {
             matcher.classify("Enter passphrase for key '/home/u/.ssh/id_ed25519':"),
             None
         );
+    }
+
+    /// Feeds `lines` in order and collects every action returned.
+    fn run(
+        seq: &mut LoginSequence,
+        matcher: &LoginPromptMatcher,
+        lines: &[&str],
+    ) -> Vec<LoginAction> {
+        lines.iter().filter_map(|l| seq.step(matcher, l)).collect()
+    }
+
+    #[test]
+    fn echoed_username_on_the_prompt_line_still_gets_the_password() {
+        // inetutils telnetd: the prompt line is re-read before and after the
+        // server echoes the name onto it.
+        let matcher = LoginPromptMatcher::default();
+        let mut seq = LoginSequence::new(Some("ubuntu".into()), true);
+        let actions = run(
+            &mut seq,
+            &matcher,
+            &[
+                "ip-172-31-6-28 login: ",
+                "ip-172-31-6-28 login: ",
+                "ip-172-31-6-28 login: ub",
+                "ip-172-31-6-28 login: ubuntu",
+                "Password: ",
+            ],
+        );
+        assert_eq!(
+            actions,
+            [LoginAction::SendUsername, LoginAction::SendPassword]
+        );
+        assert!(seq.is_done());
+    }
+
+    #[test]
+    fn echo_is_ignored_with_a_substring_custom_prompt() {
+        // A custom needle matches the echoed line too ("login: ubuntu").
+        let matcher = LoginPromptMatcher::new(Some("login:"), None);
+        let mut seq = LoginSequence::new(Some("ubuntu".into()), true);
+        let actions = run(
+            &mut seq,
+            &matcher,
+            &["host login:", "host login: ubuntu", "Password:"],
+        );
+        assert_eq!(
+            actions,
+            [LoginAction::SendUsername, LoginAction::SendPassword]
+        );
+    }
+
+    #[test]
+    fn new_login_prompt_after_the_username_stops() {
+        let matcher = LoginPromptMatcher::default();
+        let mut seq = LoginSequence::new(Some("ubuntu".into()), true);
+        let actions = run(
+            &mut seq,
+            &matcher,
+            &[
+                "host login: ",
+                "host login: ubuntu",
+                "Login incorrect",
+                "host login: ",
+                "Password: ",
+            ],
+        );
+        assert_eq!(actions, [LoginAction::SendUsername, LoginAction::Stop]);
+        assert!(seq.is_done());
+    }
+
+    #[test]
+    fn differently_worded_login_prompt_stops_without_an_intervening_line() {
+        let matcher = LoginPromptMatcher::default();
+        let mut seq = LoginSequence::new(Some("admin".into()), true);
+        let actions = run(&mut seq, &matcher, &["login:", "Username:"]);
+        assert_eq!(actions, [LoginAction::SendUsername, LoginAction::Stop]);
+    }
+
+    #[test]
+    fn line_carrying_another_name_is_not_our_echo() {
+        let matcher = LoginPromptMatcher::new(Some("login:"), None);
+        let mut seq = LoginSequence::new(Some("ubuntu".into()), true);
+        let actions = run(&mut seq, &matcher, &["login:", "login: root"]);
+        assert_eq!(actions, [LoginAction::SendUsername, LoginAction::Stop]);
+    }
+
+    #[test]
+    fn nothing_is_typed_after_the_password() {
+        let matcher = LoginPromptMatcher::default();
+        let mut seq = LoginSequence::new(Some("ubuntu".into()), true);
+        let actions = run(
+            &mut seq,
+            &matcher,
+            &[
+                "host login: ",
+                "Password: ",
+                "Login incorrect",
+                "host login: ",
+                "Password: ",
+            ],
+        );
+        assert_eq!(
+            actions,
+            [LoginAction::SendUsername, LoginAction::SendPassword]
+        );
+    }
+
+    #[test]
+    fn device_that_goes_straight_to_the_password() {
+        let matcher = LoginPromptMatcher::default();
+        let mut seq = LoginSequence::new(Some("admin".into()), true);
+        assert_eq!(
+            run(&mut seq, &matcher, &["Password:"]),
+            [LoginAction::SendPassword]
+        );
+
+        let mut seq = LoginSequence::new(None, true);
+        assert_eq!(
+            run(&mut seq, &matcher, &["Password:", "Password:"]),
+            [LoginAction::SendPassword]
+        );
+    }
+
+    #[test]
+    fn username_prompt_without_a_username_stops() {
+        let matcher = LoginPromptMatcher::default();
+        let mut seq = LoginSequence::new(None, true);
+        assert_eq!(run(&mut seq, &matcher, &["login:"]), [LoginAction::Stop]);
+    }
+
+    #[test]
+    fn username_only_sequence_ends_after_the_name() {
+        let matcher = LoginPromptMatcher::default();
+        let mut seq = LoginSequence::new(Some("admin".into()), false);
+        assert_eq!(
+            run(&mut seq, &matcher, &["login:", "Password:"]),
+            [LoginAction::SendUsername]
+        );
+        assert!(seq.is_done());
     }
 
     #[test]

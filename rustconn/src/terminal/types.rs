@@ -140,17 +140,75 @@ pub const SHARED_TITLE_MARKER: &str = "◉ ";
 
 /// The marker a tab carries while a script recording captures its input.
 pub const SCRIPT_TITLE_MARKER: &str = "⏺ ";
+
+/// The marker a tab carries while View Only is active, so the read-only
+/// session is visible in the tab strip, not just on the session toolbar.
+///
+/// The eye is `U+1F441` with its emoji variation selector: without the selector
+/// some fonts render it as the monochrome text glyph, which reads as a different
+/// marker from the broadcast and shared ones.
+pub const VIEW_ONLY_TITLE_MARKER: &str = "\u{1F441}\u{FE0F} ";
+
+/// The untranslated leading markers a tab title can carry.
+///
+/// Not the whole list: the recording marker (`●REC `) is translated, so it
+/// cannot be a constant. Runtime sites use [`all_title_markers`], which adds
+/// it; this list is its fixed part.
+pub const ALL_TITLE_MARKERS: &[&str] = &[
+    VIEW_ONLY_TITLE_MARKER,
+    BROADCAST_TITLE_MARKER,
+    SHARED_TITLE_MARKER,
+    SCRIPT_TITLE_MARKER,
+];
+
+/// Every leading marker a tab title can carry, in one shared list.
+///
+/// One definition, so a marker added or stripped at one site is never left
+/// behind by another: the eye, the recording, broadcast, shared and script
+/// markers are known at every site that edits the run, and a rename keeps
+/// all of them.
+#[must_use]
+pub fn all_title_markers() -> Vec<String> {
+    let mut markers = Vec::with_capacity(ALL_TITLE_MARKERS.len() + 1);
+    markers.extend(ALL_TITLE_MARKERS.iter().map(|m| (*m).to_owned()));
+    markers.push(super::recording::recording_title_marker());
+    markers
+}
+
+/// Splits `title` into its run of known leading markers and the remainder.
+///
+/// The rename path uses it to replace only the name part of the title, so a
+/// relabel never eats the markers other features put in front of it — the eye,
+/// the recording, broadcast and shared markers stay through a rename (PR #455).
+#[must_use]
+pub fn leading_marker_run<'a, M: AsRef<str>>(title: &'a str, markers: &[M]) -> (&'a str, String) {
+    let mut rest = title;
+    let mut head = String::new();
+    while let Some(marker) = markers.iter().find(|m| rest.starts_with(m.as_ref())) {
+        let marker = marker.as_ref();
+        head.push_str(marker);
+        rest = &rest[marker.len()..];
+    }
+    (rest, head)
+}
+
 /// Adds or removes `marker` in the run of markers at the front of `title`.
 ///
 /// Unlike `strip_prefix`, it finds the marker wherever it sits among the
 /// other leading markers, so toggling one never leaves another behind. The
 /// marker goes first when added.
 #[must_use]
-pub fn with_title_marker(title: &str, marker: &str, on: bool, markers: &[&str]) -> String {
+pub fn with_title_marker<M: AsRef<str>>(
+    title: &str,
+    marker: &str,
+    on: bool,
+    markers: &[M],
+) -> String {
     let mut rest = title;
     let mut others = String::new();
-    while let Some(found) = markers.iter().find(|m| rest.starts_with(**m)) {
-        if *found != marker {
+    while let Some(found) = markers.iter().find(|m| rest.starts_with(m.as_ref())) {
+        let found = found.as_ref();
+        if found != marker {
             others.push_str(found);
         }
         rest = &rest[found.len()..];
@@ -167,18 +225,13 @@ pub fn with_title_marker(title: &str, marker: &str, on: bool, markers: &[&str]) 
 /// markers instead of in front of them. `markers` are the prefixes with their
 /// trailing space.
 #[must_use]
-pub fn regroup_title(
+pub fn regroup_title<M: AsRef<str>>(
     title: &str,
     old: Option<&str>,
     new: Option<&str>,
-    markers: &[&str],
+    markers: &[M],
 ) -> String {
-    let mut rest = title;
-    let mut head = String::new();
-    while let Some(marker) = markers.iter().find(|m| rest.starts_with(**m)) {
-        head.push_str(marker);
-        rest = &rest[marker.len()..];
-    }
+    let (mut rest, head) = leading_marker_run(title, markers);
     if let Some(old) = old
         && let Some(stripped) = rest.strip_prefix(&format!("[{old}] "))
     {
@@ -220,8 +273,9 @@ pub fn local_shell_label(saved: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        DEFAULT_LOCAL_SHELL_LABEL, group_still_in_use, local_shell_label, regroup_title, tab_title,
-        with_title_marker,
+        ALL_TITLE_MARKERS, BROADCAST_TITLE_MARKER, DEFAULT_LOCAL_SHELL_LABEL, SHARED_TITLE_MARKER,
+        VIEW_ONLY_TITLE_MARKER, all_title_markers, group_still_in_use, leading_marker_run,
+        local_shell_label, regroup_title, tab_title, with_title_marker,
     };
 
     #[test]
@@ -251,6 +305,144 @@ mod tests {
         assert_eq!(with_title_marker("⏺ ◉ ⇄ web", "◉ ", false, &m), "⏺ ⇄ web");
         assert_eq!(with_title_marker("⏺ web", "⏺ ", true, &m), "⏺ web");
         assert_eq!(with_title_marker("⏺ web", "⏺ ", false, &m), "web");
+    }
+
+    /// The eye joins the shared marker list, so it sits in each position of the
+    /// run and toggling it never leaves the markers behind it — the regression
+    /// for the eye missing from the broadcast and shared sites (PR #455).
+    #[test]
+    fn the_eye_sits_in_each_position_of_the_marker_run() {
+        assert_eq!(
+            with_title_marker(
+                BROADCAST_TITLE_MARKER,
+                VIEW_ONLY_TITLE_MARKER,
+                true,
+                ALL_TITLE_MARKERS
+            ),
+            "\u{1F441}\u{FE0F} ⇄ "
+        );
+        // Eye first, then toggling the broadcast marker off strips only it.
+        assert_eq!(
+            with_title_marker(
+                "\u{1F441}\u{FE0F} ⇄ web",
+                BROADCAST_TITLE_MARKER,
+                false,
+                ALL_TITLE_MARKERS
+            ),
+            "\u{1F441}\u{FE0F} web"
+        );
+        // The shared marker in front does not hide the eye behind it.
+        assert_eq!(
+            with_title_marker(
+                SHARED_TITLE_MARKER,
+                VIEW_ONLY_TITLE_MARKER,
+                true,
+                ALL_TITLE_MARKERS
+            ),
+            "\u{1F441}\u{FE0F} ◉ "
+        );
+        // Toggling the eye off, with the others still there.
+        assert_eq!(
+            with_title_marker(
+                "\u{1F441}\u{FE0F} ◉ ⇄ web",
+                VIEW_ONLY_TITLE_MARKER,
+                false,
+                ALL_TITLE_MARKERS
+            ),
+            "◉ ⇄ web"
+        );
+        assert_eq!(
+            with_title_marker("web", VIEW_ONLY_TITLE_MARKER, true, ALL_TITLE_MARKERS),
+            "\u{1F441}\u{FE0F} web"
+        );
+    }
+
+    /// `leading_marker_run` peels the marker run off the front and leaves the
+    /// name (and group) part, so a rename can replace only the name.
+    #[test]
+    fn leading_markers_are_peeled_off_the_front_of_the_title() {
+        assert_eq!(
+            leading_marker_run("\u{1F441}\u{FE0F} ⇄ [prod] web", ALL_TITLE_MARKERS),
+            ("[prod] web", "\u{1F441}\u{FE0F} ⇄ ".to_string())
+        );
+        assert_eq!(
+            leading_marker_run("[prod] web", ALL_TITLE_MARKERS),
+            ("[prod] web", String::new())
+        );
+        assert_eq!(
+            leading_marker_run("⇄ ◉ web", ALL_TITLE_MARKERS),
+            ("web", "⇄ ◉ ".to_string())
+        );
+    }
+
+    /// The recording marker is part of the shared list, so it and the eye no
+    /// longer corrupt each other in either order, and a rename during a
+    /// recording keeps both (PR #455 follow-up, D1).
+    #[test]
+    fn the_recording_marker_and_the_eye_toggle_and_rename_together() {
+        let markers = all_title_markers();
+        let rec = crate::terminal::recording::recording_title_marker();
+        let eye = VIEW_ONLY_TITLE_MARKER;
+
+        // Recording started after the eye, then View Only off: only the eye goes.
+        let title = format!("{rec}{eye}web");
+        assert_eq!(
+            with_title_marker(&title, eye, false, &markers),
+            format!("{rec}web")
+        );
+        // Eye on while recording, then recording stops: no stale `●REC`.
+        let title = with_title_marker(&format!("{rec}web"), eye, true, &markers);
+        assert_eq!(title, format!("{eye}{rec}web"));
+        assert_eq!(
+            with_title_marker(&title, &rec, false, &markers),
+            format!("{eye}web")
+        );
+        // Starting a recording twice does not stack the marker.
+        let once = with_title_marker("web", &rec, true, &markers);
+        assert_eq!(with_title_marker(&once, &rec, true, &markers), once);
+
+        // A rename keeps the whole run, `●REC` included.
+        let title = format!("{rec}{eye}⇄ [prod] web");
+        let (rest, run) = leading_marker_run(&title, &markers);
+        assert_eq!(rest, "[prod] web");
+        assert_eq!(run, format!("{rec}{eye}⇄ "));
+        assert_eq!(
+            format!("{run}{}", tab_title("db", Some("prod"))),
+            format!("{rec}{eye}⇄ [prod] db")
+        );
+        // And a regroup keeps it in front of the new group.
+        assert_eq!(
+            regroup_title(&title, Some("prod"), Some("dev"), &markers),
+            format!("{rec}{eye}⇄ [dev] web")
+        );
+    }
+
+    /// The regroup path knows the eye too: a group change on a view-only tab
+    /// keeps the eye in front and moves only the group label behind it.
+    #[test]
+    fn regroup_keeps_the_eye_in_front_of_the_group() {
+        let m = [
+            VIEW_ONLY_TITLE_MARKER,
+            BROADCAST_TITLE_MARKER,
+            SHARED_TITLE_MARKER,
+        ];
+        assert_eq!(
+            regroup_title("\u{1F441}\u{FE0F} web", None, Some("prod"), &m),
+            "\u{1F441}\u{FE0F} [prod] web"
+        );
+        assert_eq!(
+            regroup_title(
+                "\u{1F441}\u{FE0F} [prod] web",
+                Some("prod"),
+                Some("dev"),
+                &m
+            ),
+            "\u{1F441}\u{FE0F} [dev] web"
+        );
+        assert_eq!(
+            regroup_title("\u{1F441}\u{FE0F} [prod] web", Some("prod"), None, &m),
+            "\u{1F441}\u{FE0F} web"
+        );
     }
     /// The shape the creation paths produce.
     #[test]

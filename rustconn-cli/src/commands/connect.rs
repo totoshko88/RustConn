@@ -102,8 +102,10 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
     }
 
     println!(
-        "Connecting to '{}' ({} {}:{})...",
-        connection.name, connection.protocol, connection.host, connection.port
+        "Connecting to '{}' ({} {})...",
+        connection.name,
+        connection.protocol,
+        crate::util::display_endpoint(connection)
     );
 
     if matches!(

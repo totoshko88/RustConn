@@ -5,12 +5,12 @@
 //! It maintains synchronization between the data model and the widget tree.
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use gtk4::prelude::*;
 use gtk4::{
-    Align, Box as GtkBox, Button, CheckButton, DropTarget, EventControllerMotion, Label,
+    Align, Box as GtkBox, Button, CheckButton, DropTarget, EventControllerMotion, Image, Label,
     Orientation, Overlay, Paned, Revealer, gdk, gio, glib,
 };
 use libadwaita as adw;
@@ -156,6 +156,13 @@ pub struct SplitViewAdapter {
     /// Called with `(panel, included)` when the user ticks or unticks a
     /// panel's Broadcast check box.
     broadcast_toggled_callback: Rc<RefCell<Option<BroadcastToggledCallback>>>,
+    /// The View Only eye in each panel's header. Cleared on rebuild and
+    /// repopulated by [`Self::create_pane_header`].
+    view_only_icons: Rc<RefCell<HashMap<PanelId, Image>>>,
+    /// The sessions of this layout that are View Only, as last told by
+    /// [`Self::set_view_only_sessions`]. Kept so a header rebuilt or relabelled
+    /// after a move draws the eye of the session it now shows.
+    view_only_sessions: RefCell<HashSet<uuid::Uuid>>,
 }
 
 /// Callback for a panel's Broadcast check box: the panel and its new state.
@@ -231,6 +238,8 @@ impl std::fmt::Debug for SplitViewAdapter {
             .field("broadcast_checks", &self.broadcast_checks)
             .field("syncing_broadcast_checks", &self.syncing_broadcast_checks)
             .field("broadcast_toggled_callback", &"<callback>")
+            .field("view_only_icons", &self.view_only_icons)
+            .field("view_only_sessions", &self.view_only_sessions)
             .finish()
     }
 }
@@ -266,6 +275,8 @@ impl SplitViewAdapter {
             broadcast_checks: Rc::new(RefCell::new(HashMap::new())),
             syncing_broadcast_checks: Rc::new(Cell::new(false)),
             broadcast_toggled_callback: Rc::new(RefCell::new(None)),
+            view_only_icons: Rc::new(RefCell::new(HashMap::new())),
+            view_only_sessions: RefCell::new(HashSet::new()),
         };
 
         adapter.rebuild_widgets();
@@ -302,6 +313,8 @@ impl SplitViewAdapter {
             broadcast_checks: Rc::new(RefCell::new(HashMap::new())),
             syncing_broadcast_checks: Rc::new(Cell::new(false)),
             broadcast_toggled_callback: Rc::new(RefCell::new(None)),
+            view_only_icons: Rc::new(RefCell::new(HashMap::new())),
+            view_only_sessions: RefCell::new(HashSet::new()),
         };
 
         adapter.rebuild_widgets();
@@ -1052,6 +1065,24 @@ impl SplitViewAdapter {
         protocol_label.set_widget_name("pane-header-protocol");
         header.append(&protocol_label);
 
+        // The View Only eye of the session in this pane: the tab title shows
+        // only the focused pane's, so each header carries its own. Appended
+        // after the two labels, which `set_panel_label` finds by position.
+        let view_only_icon = Image::from_icon_name("view-reveal-symbolic");
+        view_only_icon.set_halign(Align::End);
+        view_only_icon.set_visible(false);
+        view_only_icon.set_widget_name("pane-header-view-only");
+        let view_only_hint = i18n("Keyboard and pointer input are not sent to this session");
+        view_only_icon.set_tooltip_text(Some(&view_only_hint));
+        view_only_icon.update_property(&[
+            gtk4::accessible::Property::Label(&i18n("View Only")),
+            gtk4::accessible::Property::Description(&view_only_hint),
+        ]);
+        header.append(&view_only_icon);
+        self.view_only_icons
+            .borrow_mut()
+            .insert(panel_id, view_only_icon);
+
         // Takes this panel out of the keystroke broadcast, and back in. Hidden
         // until broadcast is switched on (`set_broadcast_controls`).
         let broadcast_check = CheckButton::with_label(&i18n("Broadcast"));
@@ -1165,6 +1196,8 @@ impl SplitViewAdapter {
                         &[name],
                     ))]);
                 }
+                // A session moved into this panel brings its own eye.
+                self.sync_view_only_icon(panel_id);
                 // Show header only if labels are globally enabled, or while
                 // it carries a broadcast check box
                 header.set_visible(self.header_wanted(panel_id));
@@ -1179,6 +1212,37 @@ impl SplitViewAdapter {
                 }
                 header.set_visible(false);
             }
+        }
+    }
+
+    /// Records which of this layout's sessions are View Only and redraws the
+    /// eye in every pane header.
+    ///
+    /// Told by the notebook whenever the tab title is re-derived, from the
+    /// same state the tab title's eye comes from, so a pane header and the tab
+    /// never disagree about a session. A pane whose header is hidden keeps the
+    /// icon hidden with it.
+    pub fn set_view_only_sessions(&self, sessions: &[uuid::Uuid]) {
+        {
+            let mut stored = self.view_only_sessions.borrow_mut();
+            stored.clear();
+            stored.extend(sessions.iter().copied());
+        }
+        let panels: Vec<PanelId> = self.view_only_icons.borrow().keys().copied().collect();
+        for panel_id in panels {
+            self.sync_view_only_icon(panel_id);
+        }
+    }
+
+    /// Shows a panel's eye when the session it holds is View Only.
+    fn sync_view_only_icon(&self, panel_id: PanelId) {
+        let on = self.get_panel_session(panel_id).is_some_and(|session| {
+            self.view_only_sessions
+                .borrow()
+                .contains(&session.as_uuid())
+        });
+        if let Some(icon) = self.view_only_icons.borrow().get(&panel_id) {
+            icon.set_visible(on);
         }
     }
 
@@ -1477,6 +1541,7 @@ impl SplitViewAdapter {
         self.panel_widgets.borrow_mut().clear();
         self.panel_headers.borrow_mut().clear();
         self.broadcast_checks.borrow_mut().clear();
+        self.view_only_icons.borrow_mut().clear();
         self.panel_reveal_containers.borrow_mut().clear();
         self.paned_widgets.clear();
 

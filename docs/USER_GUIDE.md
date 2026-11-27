@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.26.4** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.26.5** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -1269,6 +1269,8 @@ The embedded RDP session provides a floating toolbar with actions like Copy, Pas
 - **Touch** — tap the arrow indicator to toggle the toolbar
 
 The toolbar is fully transparent and pass-through when hidden — it does not block interaction with the remote desktop or window controls. In narrow panels (split view or small windows), secondary actions collapse into an overflow "⋯" menu while Fit Resolution and Ctrl+Alt+Del stay directly visible.
+
+**View Only** — a **View Only** toggle on the toolbar (and the equivalent embedded VNC toolbar) switches your own input off for the running session so you can observe without touching it. While on, it blocks the keyboard, mouse and wheel, Paste and Ctrl+Alt+Del, RDP Autotype / Quick Actions / Scripts, the outbound clipboard and file drag-and-drop, and pauses the mouse jiggler; the input buttons dim to show the state, and held keys and mouse buttons are released as it turns on. Inbound clipboard sync still flows in, so the session keeps mirroring the remote. The toggle is per session — a new connection starts with it off — and it is never written back to the connection.
 
 **Turning the toolbar off completely:** switch off **Session Toolbar** in the connection dialog's Features section. The toolbar and its arrow indicator are then absent for that connection — there is nothing left to reveal and nothing to hit by accident, which matters when the window behind the session has controls of its own near the top edge. In a split pane the panel's own corner buttons are suppressed for that session too (see [Split View](#split-view)).
 
@@ -3467,7 +3469,7 @@ curl -s -k "https://proxmox:8006/api2/json/nodes/pve/qemu" -H "Authorization: PV
 
 ### Custom Icons
 
-Set custom emoji or GTK icon names on connections and groups to visually distinguish them in the sidebar.
+Set custom emoji or GTK icon names on connections and groups to visually distinguish them in the sidebar. The same mark also appears on the connection's session tabs in the tab bar — the glyph is drawn as text, the icon name is resolved through the active theme in full colour, and a connection without an icon (or with one the theme lacks) keeps its protocol icon. Editing the connection's icon updates its open tabs as well.
 
 **Supported Icon Types:**
 
@@ -4189,7 +4191,13 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 
 ### Terminal page
 
-**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect, show scrollbar), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select, right-click pastes, Option as Meta key (macOS), confirm multi-line paste, remote clipboard (OSC 52), close tab on clean exit).
+**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect, show scrollbar), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks (see **Opening links** below), mouse autohide, bell, SFTP via mc, copy on select, right-click pastes, Option as Meta key (macOS), confirm multi-line paste, remote clipboard (OSC 52), close tab on clean exit).
+
+**Opening links:** With **Allow hyperlinks** on, a printed `http` or `https` URL underlines on hover, and **Ctrl+click** (⌘+click on macOS, where Ctrl+click works too) opens it in your default browser. This works in tabs, split panes and detached windows; the read-only playback of a recording does not open links. Only `http` and `https` links with a host open. Other schemes (`ftp:`, `ssh:`, `file:`, `javascript:`, …), links with a user name or password before the host, and links with a backslash are refused, and a notification says so. Sentence punctuation right after a URL (`https://example.com/page).`) is left out. Filesystem paths do not open: a path printed by an SSH, Telnet, serial or Kubernetes session names a file on the remote machine, not on yours. Turning **Allow hyperlinks** off removes the underline and the click handling from open sessions too.
+
+OSC 8 hyperlinks (clickable text that a program prints with a separate target, such as `ls --hyperlink` or `gcc` diagnostics) show their target as a tooltip on hover. When the target is not the URL printed under the pointer, for example a link labelled "Docs", Ctrl+click first shows an **Open link?** dialog with the full target, and the link opens only after you choose **Open**. The remote side chooses both the label and the target, so read the target before you open it.
+
+In a program that uses the mouse itself (mc, vim with `mouse=a`, tmux with `mouse on`, htop), a Ctrl+click on link text opens the link and is not passed to the program. Clicks anywhere else still reach the program, and Shift+drag still selects text as in any VTE terminal.
 
 **Confirm multi-line paste:** When enabled (the default), pasting clipboard text that spans more than one line first shows a preview and asks you to confirm before it reaches the shell — a guard against pastejacking, where a page or program sneaks a command onto your clipboard so the next paste runs it. Turn it off to paste multi-line text immediately without the prompt.
 

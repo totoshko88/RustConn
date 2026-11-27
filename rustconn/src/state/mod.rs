@@ -1452,17 +1452,11 @@ impl AppState {
                 });
             }
 
-            // Build hierarchical entry path using KeePassHierarchy
-            // This matches how passwords are saved with group structure
-            let entry_path = KeePassHierarchy::build_entry_path(connection, groups);
-
-            // Add protocol suffix for uniqueness
-            let protocol = connection.protocol_config.protocol_type();
-            let protocol_str = protocol.as_str();
-
-            // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
-            let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
-            let lookup_key = format!("{entry_name} ({protocol_str})");
+            // `{group path}/{name} ({protocol})` without `RustConn/`, which
+            // get_password_from_kdbx_with_key adds back: the key every KeePass
+            // read and write of a connection's password shares.
+            let protocol_str = connection.protocol_config.protocol_type().as_str();
+            let lookup_key = KeePassHierarchy::build_entry_name(connection, groups);
 
             // Get credentials - password and key file can be used together
             let db_password = kdbx_password.as_ref();

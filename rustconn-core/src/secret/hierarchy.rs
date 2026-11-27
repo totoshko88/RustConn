@@ -182,6 +182,30 @@ impl KeePassHierarchy {
         }
     }
 
+    /// Builds a connection's KDBX entry name **without** the `RustConn/` root
+    /// prefix: `{group path}/{name} ({protocol})`.
+    ///
+    /// The one key a connection's Vault password has in KeePass: the GUI's
+    /// connect, `rustconn-cli add`/`secret` and
+    /// [`CredentialResolver::resolve_with_hierarchy`] all read or write it. The
+    /// `KeePassStatus` readers and writers add `RustConn/` themselves, as for
+    /// [`Self::build_group_entry_name`] (issue #327).
+    ///
+    /// The protocol is the one `protocol_config` holds; `connection.protocol`
+    /// is a second persisted copy nothing keeps in step on load.
+    ///
+    /// [`CredentialResolver::resolve_with_hierarchy`]: super::CredentialResolver::resolve_with_hierarchy
+    #[must_use]
+    pub fn build_entry_name(connection: &Connection, groups: &[ConnectionGroup]) -> String {
+        let full = Self::build_entry_path(connection, groups);
+        let root_prefix = format!("{KEEPASS_ROOT_GROUP}{PATH_SEPARATOR}");
+        let name = full.strip_prefix(&root_prefix).unwrap_or(&full);
+        format!(
+            "{name} ({})",
+            connection.protocol_config.protocol_type().as_str()
+        )
+    }
+
     /// Builds a simple lookup key for a group's credentials.
     ///
     /// This is used for backends that don't support hierarchical paths (like libsecret).
@@ -426,6 +450,29 @@ mod tests {
         );
         conn.group_id = group_id;
         conn
+    }
+
+    /// The entry `rustconn-cli add --password-stdin` writes and the GUI reads,
+    /// as found in a live database: `RustConn/<group>/<name> (<protocol>)`.
+    #[test]
+    fn entry_name_is_group_path_name_and_protocol_without_root() {
+        let group = ConnectionGroup::new("AWS Test 0.26.5".to_string());
+        let mut conn = Connection::new(
+            "Windows WinRM".to_string(),
+            "10.0.0.5".to_string(),
+            5985,
+            ProtocolConfig::WinRm(crate::models::WinRmConfig::default()),
+        );
+        conn.group_id = Some(group.id);
+        assert_eq!(
+            KeePassHierarchy::build_entry_name(&conn, &[group]),
+            "AWS Test 0.26.5/Windows WinRM (winrm)"
+        );
+        let ungrouped = create_test_connection("web1", None);
+        assert_eq!(
+            KeePassHierarchy::build_entry_name(&ungrouped, &[]),
+            "web1 (ssh)"
+        );
     }
 
     #[test]

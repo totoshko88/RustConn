@@ -1328,6 +1328,35 @@ impl TerminalNotebook {
         *self.tab_connection_menu.borrow_mut() = Some(Rc::new(provider));
     }
 
+    /// Wires the custom-icon lookup for the tab bar (see `connection_icon`).
+    pub(crate) fn set_connection_icon_provider<F>(&self, provider: F)
+    where
+        F: Fn(Uuid) -> Option<String> + 'static,
+    {
+        *self.connection_icon.borrow_mut() = Some(Rc::new(provider));
+    }
+
+    /// Returns the custom icon value for a connection, or an empty string
+    /// when it has none (or no provider is wired) — the tab then keeps its
+    /// protocol icon, as `icon_render::tab_icon` decides.
+    #[must_use]
+    pub(crate) fn connection_icon_for(&self, connection_id: Uuid) -> String {
+        self.connection_icon
+            .borrow()
+            .as_ref()
+            .and_then(|provider| (provider)(connection_id))
+            .unwrap_or_default()
+    }
+
+    /// Sets the provider that resolves a connection id to its saved name, for
+    /// **Rename Tab…**'s reset-to-default on a connection tab.
+    pub(crate) fn set_tab_connection_name_provider<F>(&self, provider: F)
+    where
+        F: Fn(Uuid) -> Option<String> + 'static,
+    {
+        *self.tab_connection_name.borrow_mut() = Some(Rc::new(provider));
+    }
+
     /// Returns a clone of the reconnect callback reference for use in auto-reconnect polling
     #[must_use]
     pub fn reconnect_callback(&self) -> Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>> {

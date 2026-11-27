@@ -57,6 +57,9 @@ pub struct VncSessionWidget {
     state_callback: Rc<RefCell<Option<StateCallback>>>,
     /// External VNC viewer process (when using external mode)
     external_process: Rc<RefCell<Option<Child>>>,
+    /// The external viewer's `vncpasswd` file; removed on disconnect, on the
+    /// next launch, or when the widget drops (the tab closes)
+    external_password_file: RefCell<Option<rustconn_core::protocol::VncPasswordFile>>,
     /// Whether using external viewer mode
     is_external: Rc<RefCell<bool>>,
     /// Whether using embedded native VNC mode
@@ -115,6 +118,7 @@ impl VncSessionWidget {
             status_container,
             state_callback,
             external_process,
+            external_password_file: RefCell::new(None),
             is_external,
             is_embedded_native,
         };
@@ -351,20 +355,32 @@ impl VncSessionWidget {
     /// Argument construction is delegated to
     /// [`rustconn_core::protocol::VncProtocol::build_external_viewer_command`]
     /// (single source of truth); this method only builds and spawns the
-    /// process. Passwords are handled by the viewer, never on the command line.
+    /// process. The password never goes on the command line: a viewer that
+    /// reads a `vncpasswd` file gets one, kept until disconnect.
     fn spawn_external_viewer_with_config(
         &self,
         viewer: &str,
         host: &str,
         port: u16,
-        _password: Option<&str>,
+        password: Option<&str>,
         config: &VncConfig,
     ) -> Result<(), SessionError> {
-        let (program, args) =
-            VncProtocol::build_external_viewer_command(viewer, host, port, config);
+        let secret = password.map(|p| secrecy::SecretString::from(p.to_owned()));
+        let password_file =
+            rustconn_core::protocol::VncPasswordFile::for_viewer(viewer, secret.as_ref());
+        drop(secret);
+        let (program, args) = VncProtocol::build_external_viewer_command(
+            viewer,
+            host,
+            port,
+            config,
+            password_file
+                .as_ref()
+                .map(rustconn_core::protocol::VncPasswordFile::path),
+        );
 
-        // Log the program and its full argument vector. The password is handled
-        // by the viewer, never placed on the command line, so this is safe to
+        // Log the program and its full argument vector. The password is in a
+        // file whose path alone is on the command line, so this is safe to
         // log — and with stdout/stderr nulled below it is the only record of
         // what the viewer was asked to do. Without it, a viewer that rejects an
         // option (a stale `custom_args` entry, or a flag an older viewer does
@@ -391,6 +407,8 @@ impl VncSessionWidget {
         match cmd.spawn() {
             Ok(child) => {
                 *self.external_process.borrow_mut() = Some(child);
+                // Replaces (and so removes) a previous launch's file.
+                *self.external_password_file.borrow_mut() = password_file;
                 Ok(())
             }
             Err(e) => Err(SessionError::connection_failed(format!(
@@ -413,6 +431,8 @@ impl VncSessionWidget {
             let _ = child.kill();
             let _ = child.wait();
         }
+        // The viewer is gone, so its password file goes too.
+        self.external_password_file.borrow_mut().take();
 
         // Reset state
         *self.is_external.borrow_mut() = false;
@@ -485,12 +505,22 @@ impl VncSessionWidget {
 
     /// Connects a callback for state changes
     ///
-    /// The callback is invoked whenever the session state changes.
+    /// This callback is invoked whenever the session state changes.
     pub fn connect_state_changed<F>(&self, callback: F)
     where
         F: Fn(SessionState) + 'static,
     {
         *self.state_callback.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Connects a callback for View Only toggle changes (forwards to the
+    /// embedded widget), so the host can mirror the read-only state — e.g. the
+    /// tab's eye marker — without reaching into the widget's config.
+    pub fn connect_view_only_changed<F>(&self, callback: F)
+    where
+        F: Fn(bool) + 'static,
+    {
+        self.embedded_widget.connect_view_only_changed(callback);
     }
 }
 

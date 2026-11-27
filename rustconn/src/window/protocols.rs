@@ -718,6 +718,7 @@ pub(super) fn spawn_and_register_external_viewer(
     program: &str,
     args: &[String],
     ssh_tunnel: Option<rustconn_core::ssh_tunnel::SshTunnel>,
+    held: Option<rustconn_core::protocol::VncPasswordFile>,
 ) -> bool {
     // A `host:` viewer runs through flatpak-spawn; everything else runs directly.
     let (launcher, mut launch_args) = external_viewer_command(program);
@@ -789,6 +790,11 @@ pub(super) fn spawn_and_register_external_viewer(
                 notebook.store_ssh_tunnel(session_id, tunnel);
             }
             registry.register(session_id, connection_id, tracked_child, history_entry_id);
+            // The viewer opens its password file when the server asks for
+            // authentication, long after the spawn: keep it until the viewer exits.
+            if let Some(held) = held {
+                registry.hold(session_id, held);
+            }
         }
         None => {
             tracing::error!(
@@ -1591,11 +1597,15 @@ fn launch_vnc_connection(
             sidebar.update_connection_status(&connection_id.to_string(), "failed");
             return None;
         };
+        let password = cached_connection_password(state, connection_id);
+        let password_file =
+            rustconn_core::protocol::VncPasswordFile::for_viewer(&viewer, password.as_ref());
         let (program, args) = rustconn_core::protocol::VncProtocol::build_external_viewer_command(
             &viewer,
             host,
             port,
             &vnc_config,
+            password_file.as_ref().map(|f| f.path()),
         );
         spawn_and_register_external_viewer(
             state,
@@ -1606,6 +1616,7 @@ fn launch_vnc_connection(
             &program,
             &args,
             ssh_tunnel,
+            password_file,
         );
         return None;
     }
@@ -2034,6 +2045,7 @@ fn start_spice_connection_internal(
         &viewer,
         &args,
         ssh_tunnel,
+        None,
     );
     if let Some(vv_file) = vv_file {
         // Ownership passes to the viewer only if it both started *and* was given

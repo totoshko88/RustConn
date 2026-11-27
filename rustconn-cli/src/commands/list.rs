@@ -186,7 +186,7 @@ pub(super) fn format_csv(connections: &[&Connection]) -> String {
             "{},{},{},{}",
             name,
             host,
-            conn.port,
+            crate::util::display_port(conn),
             conn.protocol.as_str()
         );
     }
@@ -200,7 +200,8 @@ pub(super) struct ConnectionOutput {
     pub id: String,
     pub name: String,
     pub host: String,
-    pub port: u16,
+    /// `null` for a connection without a port of its own (Zero Trust).
+    pub port: Option<u16>,
     pub protocol: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
@@ -252,7 +253,7 @@ impl From<&Connection> for ConnectionOutput {
             id: conn.id.to_string(),
             name: conn.name.clone(),
             host: conn.host.clone(),
-            port: conn.port,
+            port: crate::util::effective_port(conn),
             protocol: conn.protocol.as_str().to_string(),
             username: conn.username.clone(),
             description: conn.description.clone(),

@@ -193,7 +193,7 @@ fn cmd_group_show(
                         "id": c.id.to_string(),
                         "name": c.name,
                         "host": c.host,
-                        "port": c.port,
+                        "port": crate::util::effective_port(c),
                         "protocol": c.protocol.as_str(),
                         "username": c.username,
                     })
@@ -249,7 +249,7 @@ fn cmd_group_show(
                     c.id,
                     escape_csv_field(&c.name),
                     escape_csv_field(&c.host),
-                    c.port,
+                    crate::util::display_port(c),
                     c.protocol.as_str(),
                 );
             }

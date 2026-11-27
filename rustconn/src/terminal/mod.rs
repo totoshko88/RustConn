@@ -34,6 +34,7 @@ pub use split_title::title_session;
 mod failed_marker;
 pub mod file_drop;
 pub mod highlight_overlay;
+mod link_open;
 mod mark_registry;
 mod notebook_output;
 pub mod osc52;
@@ -85,8 +86,9 @@ use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends, RdpKe
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
     BROADCAST_TITLE_MARKER, ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SCRIPT_TITLE_MARKER,
-    SHARED_TITLE_MARKER, SessionWidgetStorage, TerminalSession, group_still_in_use,
-    local_shell_label, regroup_title, tab_title, with_title_marker,
+    SHARED_TITLE_MARKER, SessionWidgetStorage, TerminalSession, VIEW_ONLY_TITLE_MARKER,
+    all_title_markers, group_still_in_use, leading_marker_run, local_shell_label, regroup_title,
+    tab_title, with_title_marker,
 };
 use uuid::Uuid;
 use vte4::Terminal;
@@ -326,6 +328,16 @@ pub struct TerminalNotebook {
     /// connection id. Wired by the window, which owns the connection data
     /// (issue #357).
     tab_connection_menu: Rc<RefCell<Option<tab_menu::TabConnectionMenuProvider>>>,
+    /// Resolves the custom icon for the tab bar (an emoji/Unicode glyph or a
+    /// GTK icon name — see `Connection::icon`) by connection id, so a tab shows
+    /// the same mark as its sidebar row. Wired by the window, which owns the
+    /// connection data, like `tab_connection_menu`; `None` keeps the protocol
+    /// icon, which is what quick/local sessions without a saved connection get.
+    connection_icon: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<String>>>>>,
+    /// Resolves a connection id to its saved name, the name **Rename Tab…**
+    /// falls back to when its entry is left empty on a connection tab. Wired by
+    /// the window, which owns the connection data, like `tab_connection_menu`.
+    tab_connection_name: Rc<RefCell<Option<tab_menu::TabConnectionNameProvider>>>,
     /// Whether keyboard passthrough is on; mirrors `win.toggle-passthrough`.
     keyboard_passthrough: Rc<std::cell::Cell<bool>>,
     /// Whether to automatically capture system shortcuts (Alt+Tab, Super)
@@ -415,6 +427,10 @@ pub struct TerminalNotebook {
     /// Told every session rename, so the split pane header follows it
     /// (issue #421); see `set_on_session_relabelled`.
     on_session_relabelled: split_title::SessionRelabelHook,
+    /// Told which displayed sessions of a split tab are View Only whenever its
+    /// title is re-derived, so the split pane headers draw the same eye the
+    /// tab title does; see `set_on_split_view_only`.
+    on_split_view_only: split_title::SplitViewOnlyHook,
     /// Told after a split tab's title source changes, so the header subtitle
     /// follows the focused pane (issue #421); see `set_on_split_title_changed`.
     on_split_title_changed: Rc<RefCell<Option<Rc<dyn Fn()>>>>,
@@ -493,6 +509,9 @@ pub struct TerminalNotebook {
     script_recording: Rc<RefCell<Option<script_recorder::ActiveScriptRecording>>>,
     /// Sessions whose output is being shared read-only; drives the tab menu.
     shared_sessions: Rc<RefCell<HashSet<Uuid>>>,
+    /// Sessions in View Only; the tab's eye marker is derived from this set
+    /// rather than from the title text, so a rebuilt title keeps the eye.
+    view_only_sessions: Rc<RefCell<HashSet<Uuid>>>,
     /// Shared script section for terminal context menus. One live model shared
     /// by every terminal, rebuilt when recording starts or stops so the single
     /// item's label can flip between Record and Stop.
@@ -704,6 +723,8 @@ impl TerminalNotebook {
             on_tab_broadcast_toggle: Rc::new(RefCell::new(None)),
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),
+            connection_icon: Rc::new(RefCell::new(None)),
+            tab_connection_name: Rc::new(RefCell::new(None)),
             keyboard_passthrough: Rc::new(std::cell::Cell::new(false)),
             auto_capture_shortcuts: Rc::new(std::cell::Cell::new(true)),
             focused_viewer: Rc::new(RefCell::new(None)),
@@ -722,6 +743,7 @@ impl TerminalNotebook {
             session_cwd: Rc::new(RefCell::new(HashMap::new())),
             split_tab_titles: Rc::new(RefCell::new(HashMap::new())),
             on_session_relabelled: Rc::new(RefCell::new(None)),
+            on_split_view_only: Rc::new(RefCell::new(None)),
             on_split_title_changed: Rc::new(RefCell::new(None)),
             pty_relays: Rc::new(RefCell::new(HashMap::new())),
             output_observers: Rc::new(RefCell::new(HashMap::new())),
@@ -736,6 +758,7 @@ impl TerminalNotebook {
             session_highlight_rules: Rc::new(RefCell::new(HashMap::new())),
             script_recording: Rc::new(RefCell::new(None)),
             shared_sessions: Rc::new(RefCell::new(HashSet::new())),
+            view_only_sessions: Rc::new(RefCell::new(HashSet::new())),
             script_menu_section: Rc::new(gio::Menu::new()),
             highlight_overlays: Rc::new(RefCell::new(HashMap::new())),
             session_themes: Rc::new(RefCell::new(HashMap::new())),
@@ -810,6 +833,7 @@ impl TerminalNotebook {
         let failed_markers_on_close = Rc::clone(&self.failed_markers);
         let session_cwd_on_close = Rc::clone(&self.session_cwd);
         let split_tab_titles_on_close = Rc::clone(&self.split_tab_titles);
+        let view_only_on_close = Rc::clone(&self.view_only_sessions);
         let pty_relays_on_close = Rc::clone(&self.pty_relays);
         let output_observers_on_close = Rc::clone(&self.output_observers);
         let output_filters_on_close = Rc::clone(&self.output_filters);
@@ -988,6 +1012,11 @@ impl TerminalNotebook {
                 failed_markers_on_close.borrow_mut().remove(&session_id);
                 session_cwd_on_close.borrow_mut().remove(&session_id);
                 split_tab_titles_on_close.borrow_mut().remove(&session_id);
+                // The View Only state ends with the session. Every close —
+                // a tab's own button, `close_tab`, `close_session` for a split
+                // guest or a detached window — reaches this handler; a detach
+                // or a move into a split does not, so the eye survives those.
+                view_only_on_close.borrow_mut().remove(&session_id);
 
                 // A recording running against this session cannot outlive it:
                 // write the steps out rather than dropping them on the floor.

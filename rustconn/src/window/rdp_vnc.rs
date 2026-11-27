@@ -719,11 +719,19 @@ fn start_embedded_rdp_session(
         crate::embedded_rdp::RdpConnectionState::Connecting => {}
     });
 
+    // Mirror the View Only toggle onto the tab (eye marker) for as long as it
+    // lasts. Not written to the connection, so it is dropped on the next start.
+    let notebook_for_view_only = notebook.clone();
+    embedded_widget.connect_view_only_changed(move |view_only| {
+        notebook_for_view_only.set_view_only_marker(session_id, view_only);
+    });
+
     // Connect error callback — shows specific error message as toast
     let notebook_for_error = notebook.clone();
     let state_for_error = state.clone();
     let split_view_for_error = split_view.clone();
     let sidebar_for_error = sidebar.clone();
+    let was_connected_for_error = was_ever_connected.clone();
     embedded_widget.connect_error(move |error_msg| {
         // The server requires NLA and this attempt had no password (password
         // source "None" tries without one first): ask for it rather than fail.
@@ -755,12 +763,38 @@ fn start_embedded_rdp_session(
             });
             return;
         }
-        if let Some(window) = notebook_for_error
+        let window = notebook_for_error
             .widget()
             .ancestor(gtk4::Window::static_type())
-            .and_then(|w| w.downcast::<gtk4::Window>().ok())
-        {
-            crate::toast::show_toast_on_window(&window, error_msg, crate::toast::ToastType::Error);
+            .and_then(|w| w.downcast::<gtk4::Window>().ok());
+        if let Some(ref window) = window {
+            crate::toast::show_toast_on_window(window, error_msg, crate::toast::ToastType::Error);
+        }
+        // The server refused the user name or password. Drop the cached copy,
+        // which a session that once connected keeps, and ask for the password
+        // again when the attempt never reached a session (its tab is closed).
+        if crate::embedded_rdp::is_invalid_credentials_message(error_msg) {
+            crate::state::forget_cached_credentials(&state_for_error, connection_id);
+            if !was_connected_for_error.get()
+                && let Some(window) = window
+            {
+                let state = state_for_error.clone();
+                let notebook = notebook_for_error.clone();
+                let split_view = split_view_for_error.clone();
+                let sidebar = sidebar_for_error.clone();
+                glib::idle_add_local_once(move || {
+                    sidebar.update_connection_status(&connection_id.to_string(), "connecting");
+                    start_rdp_with_password_dialog_observed(
+                        state,
+                        notebook,
+                        split_view,
+                        sidebar,
+                        connection_id,
+                        &window,
+                        None,
+                    );
+                });
+            }
         }
 
         // Persist the real error text in connection history. The Error state
@@ -1613,7 +1647,8 @@ fn start_vnc_session_internal(
     // Issue #209: an external-viewer VNC session gets no notebook tab. Spawn the
     // viewer and register it (through the same shared predicate + core builder as
     // the protocols.rs path) so the sidebar surfaces it without a dead tab
-    // (R1.1, R1.3). The password is handled by the viewer, never on the argv.
+    // (R1.1, R1.3). The password never goes on the argv: a viewer that reads a
+    // `vncpasswd` file gets one (`-passwd`), any other prompts.
     if let Some(ref conn_hist) = conn_for_history
         && conn_hist.uses_external_viewer()
     {
@@ -1627,11 +1662,18 @@ fn start_vnc_session_internal(
             sidebar.update_connection_status(&connection_id.to_string(), "failed");
             return;
         };
+        let secret = secrecy::SecretString::from(password.to_owned());
+        let password_file =
+            rustconn_core::protocol::VncPasswordFile::for_viewer(&viewer, Some(&secret));
+        drop(secret);
         let (program, args) = rustconn_core::protocol::VncProtocol::build_external_viewer_command(
             &viewer,
             &effective_host,
             effective_port,
             &vnc_config,
+            password_file
+                .as_ref()
+                .map(rustconn_core::protocol::VncPasswordFile::path),
         );
         super::protocols::spawn_and_register_external_viewer(
             state,
@@ -1642,6 +1684,7 @@ fn start_vnc_session_internal(
             &program,
             &args,
             ssh_tunnel,
+            password_file,
         );
         return;
     }
@@ -1720,6 +1763,14 @@ fn start_vnc_session_internal(
             if let Err(e) = widget_for_reconnect.reconnect() {
                 tracing::error!(%e, "VNC reconnect failed");
             }
+        });
+
+        // Mirror the View Only toggle onto the tab (eye marker) for as long as it
+        // lasts. Not written to the connection, so it is dropped on the next
+        // start — the same way the toolbar toggle itself is.
+        let notebook_for_view_only = notebook.clone();
+        vnc_widget.connect_view_only_changed(move |view_only| {
+            notebook_for_view_only.set_view_only_marker(session_id, view_only);
         });
 
         // Initiate connection with VNC config

@@ -48,6 +48,10 @@ data-encoding = "2.10"
 # fwknop SPA packet builder (AES-256-CBC + EVP_BytesToKey)
 aes = "0.9"
 cbc = { version = "0.2", features = ["block-padding"] }
+# The vncpasswd file format for the external TigerVNC viewer (`-passwd`): one
+# DES block under the fixed VNC key. Already in the lock file through
+# picky-krb, on the same `cipher` 0.5 as `aes` above.
+des = "0.9"
 md-5 = "0.11"
 csv = "1"
 glob = "0.3"
