@@ -51,7 +51,7 @@ static TEMPLATES: [AutomationTemplate; 5] = [
         protocol_hint: "ssh",
         rules_fn: || {
             vec![
-                ExpectRule::new(r"\[sudo\] password for \w+:", "${password}\n")
+                ExpectRule::new(r"^\[sudo\] [^:]+:\s*$", "${password}\n")
                     .with_priority(10)
                     .with_timeout(30_000),
             ]
