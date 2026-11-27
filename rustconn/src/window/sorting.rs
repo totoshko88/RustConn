@@ -415,8 +415,12 @@ pub fn handle_drag_drop(state: &SharedAppState, sidebar: &SharedSidebar, data: &
         _ => return,
     }
 
-    // Save tree state before rebuild
-    let tree_state = sidebar.save_state();
+    // Save tree state before rebuild. Drop the selection so the list is clean
+    // after the drop: the row we just moved was the selected one, and keeping it
+    // highlighted would leave a "selected" row behind the reordering. Expanded
+    // groups and the scroll position are restored as before.
+    let mut tree_state = sidebar.save_state();
+    tree_state.selected_id = None;
 
     // Rebuild sidebar to reflect changes
     rebuild_sidebar_sorted(state, sidebar);
