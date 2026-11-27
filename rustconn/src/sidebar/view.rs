@@ -424,6 +424,13 @@ pub fn setup_list_item(
             // Remove all drop-related CSS classes
             list_view.remove_css_class("drop-active");
             list_view.remove_css_class("drop-into-group");
+            // Also hide the drop indicator, which clears the `.drop-target-*`
+            // highlight band set on the target row during motion. `drag-end`
+            // fires for every drag end (drop, cancel, and the "dropping on
+            // self" early return in `connect_drop` that skips
+            // `hide-drop-indicator`), so a drop that leaves the list unchanged
+            // no longer leaves the highlight band behind on the row.
+            let _ = list_view.activate_action("win.hide-drop-indicator", None);
         }
     });
 
