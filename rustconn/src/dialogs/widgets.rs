@@ -343,7 +343,13 @@ impl FallbackJumpHostsInner {
         for entry in this.rows.borrow_mut().drain(..) {
             this.expander.remove(&entry.row);
         }
-        this.expander.remove(&this.add_row);
+        // The first rebuild (from `new`) runs before the add row was ever added.
+        // `adw_expander_row_remove` on an unparented child matches its lazily
+        // created, still-NULL prefix box and calls `gtk_box_remove(NULL, …)`:
+        // three Gtk-CRITICALs on every editor dialog that builds this widget.
+        if this.add_row.parent().is_some() {
+            this.expander.remove(&this.add_row);
+        }
 
         let selected = this.selected.borrow().clone();
         for (index, id) in selected.iter().enumerate() {

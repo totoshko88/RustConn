@@ -12,7 +12,8 @@
 //! Keys the user loaded before RustConn's add are never recorded. A key the
 //! agent already holds is not added again, because re-adding would replace its
 //! constraints. When the agent cannot say what it holds, or the key file does
-//! not carry its public key (a legacy PEM or PKCS#8 key) and the agent holds
+//! not carry its public key (an encrypted legacy PEM or PKCS#8 key; an
+//! unencrypted one has it derived by `ssh-keygen -y`) and the agent holds
 //! any key at all, nothing is added: a `.pub` beside such a key may be stale,
 //! so it is not trusted to tell.
 //!
@@ -167,7 +168,7 @@ impl OwnKeys {
                 );
                 return Err(AgentError::KeyPresenceUnknown(
                     "the agent holds keys and this key file does not carry its public \
-                     key (a legacy PEM or PKCS#8 key), so RustConn did not add it"
+                     key (an encrypted legacy PEM or PKCS#8 key), so RustConn did not add it"
                         .to_owned(),
                 ));
             }
@@ -179,7 +180,7 @@ impl OwnKeys {
         let Some(blob) = blobs.key_file.as_deref() else {
             tracing::info!(
                 ?key_path,
-                "this SSH key file does not carry its public key (a legacy PEM or PKCS#8 key), \
+                "this SSH key file does not carry its public key (an encrypted legacy PEM or PKCS#8 key), \
                  so RustConn does not record it; only its lifetime will remove it"
             );
             return Ok(());

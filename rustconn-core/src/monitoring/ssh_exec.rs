@@ -524,8 +524,16 @@ impl Drop for AskpassScript {
 /// would drop as well (issue #191 follow-up); outside it, as with `-J`, the
 /// user's ssh config supplies them.
 ///
+/// The command is logged only when `log` is set: it is rebuilt for every poll,
+/// and the caller passes [`LogOnce::first`] so a session logs it once.
+///
 /// [`HopHostKeys::KnownOnly`]: crate::ssh_tunnel::HopHostKeys::KnownOnly
-fn build_jump_host_args(cmd: &mut Command, jump_host: &str, identity_file: Option<&str>) {
+fn build_jump_host_args(
+    cmd: &mut Command,
+    jump_host: &str,
+    identity_file: Option<&str>,
+    log: bool,
+) {
     let flatpak_kh = crate::flatpak::get_flatpak_known_hosts_path();
     // The chain may carry several hops (`a,b,c`), target-first (RustConn's
     // internal order), which is the order the nested command takes.
@@ -543,12 +551,26 @@ fn build_jump_host_args(cmd: &mut Command, jump_host: &str, identity_file: Optio
         flatpak_kh.as_deref(),
         crate::ssh_tunnel::HopHostKeys::KnownOnly,
     );
-    tracing::debug!(
-        protocol = "ssh",
-        proxy_command = %proxy_cmd,
-        "Monitoring: using a ProxyCommand that refuses unknown host keys on every hop"
-    );
+    if log {
+        tracing::debug!(
+            protocol = "ssh",
+            proxy_command = %proxy_cmd,
+            "Monitoring: using a ProxyCommand that refuses unknown host keys on every hop"
+        );
+    }
     cmd.arg("-o").arg(format!("ProxyCommand={proxy_cmd}"));
+}
+
+/// A flag that is up for the first caller only, shared by every poll of one
+/// monitoring session so a line that is the same on every poll is logged once.
+#[derive(Debug, Default)]
+struct LogOnce(std::sync::atomic::AtomicBool);
+
+impl LogOnce {
+    /// `true` the first time it is asked, `false` from then on.
+    fn first(&self) -> bool {
+        !self.0.swap(true, std::sync::atomic::Ordering::Relaxed)
+    }
 }
 
 /// Waits for the main SSH session's ControlMaster socket to appear.
@@ -637,6 +659,8 @@ pub fn ssh_exec_factory(
         },
         None => None,
     };
+    // One per factory, which is one per monitoring session.
+    let proxy_logged = Arc::new(LogOnce::default());
 
     move |command: String| {
         let host = host.clone();
@@ -646,6 +670,7 @@ pub fn ssh_exec_factory(
         let jump_host = jump_host.clone();
         let agent_socket = agent_socket.clone();
         let askpass_script = askpass_script.clone();
+        let proxy_logged = Arc::clone(&proxy_logged);
         let control_path = ssh_control_path(&host, port);
 
         Box::pin(async move {
@@ -711,7 +736,7 @@ pub fn ssh_exec_factory(
 
             // Jump host chain for tunneled connections
             if let Some(ref jh) = jump_host {
-                build_jump_host_args(&mut cmd, jh, identity_file.as_deref());
+                build_jump_host_args(&mut cmd, jh, identity_file.as_deref(), proxy_logged.first());
             }
 
             if port != 22 {
@@ -771,9 +796,20 @@ pub fn ssh_exec_factory(
 #[cfg(test)]
 mod tests {
     use super::{
-        MUX_TEMP_SUFFIX_LEN, SOCKET_PATH_MAX, USERNAME_RESERVE, control_path_in,
+        LogOnce, MUX_TEMP_SUFFIX_LEN, SOCKET_PATH_MAX, USERNAME_RESERVE, control_path_in,
         socket_with_prefix_exists, ssh_control_path,
     };
+
+    /// The jump-host ProxyCommand is rebuilt on every poll; only the first
+    /// poll of a session logs it, and a new session logs it again.
+    #[test]
+    fn proxy_command_is_logged_once_per_session() {
+        let session = LogOnce::default();
+        assert!(session.first());
+        assert!(!session.first());
+        assert!(!session.first());
+        assert!(LogOnce::default().first(), "another session logs its own");
+    }
 
     /// Simulates what OpenSSH actually binds: `%r` expanded to a username of
     /// `username_len` chars plus the temporary master suffix.

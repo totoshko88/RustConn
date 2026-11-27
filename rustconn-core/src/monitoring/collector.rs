@@ -323,13 +323,25 @@ where
                                 "Monitoring command execution failed"
                             );
                             if consecutive_errors >= MAX_CONSECUTIVE_ERRORS {
-                                tracing::warn!(
-                                    errors = consecutive_errors,
-                                    last_error = %err,
-                                    "Monitoring stopped after \
-                                     {MAX_CONSECUTIVE_ERRORS} consecutive \
-                                     execution errors"
-                                );
+                                if host_key_refused(&err) {
+                                    // The probe takes only keys already in
+                                    // known_hosts, on the target and on every
+                                    // jump hop; retrying cannot change that.
+                                    tracing::warn!(
+                                        errors = consecutive_errors,
+                                        last_error = %err,
+                                        "Monitoring stopped: a host key on the route is not in \
+                                         known_hosts, and monitoring never accepts one itself"
+                                    );
+                                } else {
+                                    tracing::warn!(
+                                        errors = consecutive_errors,
+                                        last_error = %err,
+                                        "Monitoring stopped after \
+                                         {MAX_CONSECUTIVE_ERRORS} consecutive \
+                                         execution errors"
+                                    );
+                                }
                                 let _ = event_tx
                                     .send(MetricsEvent::Stopped)
                                     .await;
@@ -348,9 +360,29 @@ where
     (CollectorHandle { stop_tx }, event_rx)
 }
 
+/// Whether an `ssh` failure is OpenSSH refusing a host key it does not know
+/// (or that changed), which `StrictHostKeyChecking=yes` makes fatal.
+fn host_key_refused(error: &str) -> bool {
+    error.contains("Host key verification failed")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn host_key_refusal_is_told_apart_from_other_failures() {
+        assert!(host_key_refused(
+            "SSH command failed (exit exit status: 255): No ED25519 host key is known for \
+             10.0.0.5 and you have requested strict checking.\r\nHost key verification failed. "
+        ));
+        assert!(!host_key_refused(
+            "SSH command failed (exit exit status: 255): Permission denied (publickey). "
+        ));
+        assert!(!host_key_refused(
+            "SSH monitoring command timed out after 10s"
+        ));
+    }
     use crate::monitoring::metrics::{
         CpuSnapshot, DiskMetrics, LoadAverage, MemoryMetrics, NetworkSnapshot, RemoteOsType,
     };
