@@ -107,6 +107,18 @@ fn themed_paintable(name: &str) -> Option<gtk4::gio::Icon> {
     // `IconPaintable` is a `GdkPaintable`, not a `GIcon` — and the tab page
     // takes a `GIcon`. A full-colour icon's file loads straight into pixels;
     // a symbolic one hands back a `ThemedIcon` the tab bar can recolour.
+    // GTK 4.20 deprecates both calls below. The attribute fires only on a
+    // 4.20+ build, so a bare `expect` would be unfulfilled on the v4_14
+    // baseline. ponytail: drop both once the v4_14 floor moves past 4.20 and
+    // the tab icon can come from a non-deprecated lookup.
+    #[cfg_attr(
+        feature = "gtk-4-20",
+        expect(
+            deprecated,
+            reason = "IconPaintable::is_symbolic and Texture::for_pixbuf are the only \
+                      way to hand the tab page a full-colour GIcon"
+        )
+    )]
     if let Some(file) = icon.file()
         && !icon.is_symbolic()
         && let Some(path) = file.path()

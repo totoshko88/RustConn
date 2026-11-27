@@ -1684,6 +1684,7 @@ fn start_vnc_session_internal(
             &program,
             &args,
             ssh_tunnel,
+            password_file,
         );
         return;
     }

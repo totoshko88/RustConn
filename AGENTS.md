@@ -79,7 +79,9 @@ never a macOS-only crate. A pre-write hook blocks both violations; do not rely o
   for `--password`; the account passphrase goes by env); RDP gateway password
   moved, not `Zeroizing`-wrapped, into `ZeroizingGatewayTarget`
   (`rdp_client/client/connection.rs`), because `ironrdp-mstsgu` needs an owned
-  `String`
+  `String`; a VNC password written as a mode-0600 `vncpasswd` file (DES
+  obfuscation, not encryption) in `secret_file_dir()` for TigerVNC-family
+  external viewers, removed when `VncPasswordFile` drops (`protocol/vnc.rs`)
 - Errors → `thiserror::Error`. No `unwrap()`/`expect()` outside tests
 - Logging → `tracing`, never `println!`/`eprintln!`
 - Every user-facing string in `rustconn` → `i18n()` / `i18n_f()` with `{}`

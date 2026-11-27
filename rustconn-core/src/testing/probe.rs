@@ -301,7 +301,22 @@ fn without_userinfo(url: &str) -> String {
         Some((scheme, rest)) => (Some(scheme), rest),
         None => (None, url),
     };
-    let authority_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    let mut authority_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    // A password with an unencoded `/`, `?` or `#` ends the authority early
+    // (`u:pa/ss@h`): `u:pa` then has a `:` followed by something that is not a
+    // port, and an `@` comes later. Read that as userinfo up to the last `@`
+    // rather than print the rest of the password.
+    let first = &rest[..authority_end];
+    if !first.contains('@')
+        && first
+            .rsplit_once(':')
+            .is_some_and(|(_, port)| !port.bytes().all(|b| b.is_ascii_digit()))
+        && let Some(at) = rest.rfind('@')
+    {
+        authority_end = rest[at..]
+            .find(['/', '?', '#'])
+            .map_or(rest.len(), |i| at + i);
+    }
     let (authority, tail) = rest.split_at(authority_end);
     let authority = match authority.rsplit_once('@') {
         Some((_, host)) => format!("***@{host}"),
@@ -791,6 +806,10 @@ mod tests {
 
         assert_eq!(without_userinfo("https://h/p@q"), "https://h/p@q");
         assert_eq!(without_userinfo("u:p@h:1080"), "***@h:1080");
+        // Unencoded delimiters inside the password must not leave a piece of it.
+        let url = without_userinfo("https://u:pa/ss?w#rd@h:9/x");
+        assert_eq!(url, "https://***@h:9/x");
+        assert_eq!(without_userinfo("https://h:8080/p@q"), "https://h:8080/p@q");
     }
 
     #[test]
